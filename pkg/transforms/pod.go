@@ -5,7 +5,7 @@ import "k8s.io/api/core/v1"
 // MCM Search representation of a pod to be put into graphDB
 type PodNode struct {
 	CommonNodeProperties
-	Kind      string
+	Kind      string `json: kind`
 	HostIP    string `json: hostIP`
 	PodIP     string `json: podIP`
 	Restarts  uint   `json: restarts`
