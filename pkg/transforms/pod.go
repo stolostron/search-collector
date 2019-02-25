@@ -2,7 +2,7 @@ package transforms
 
 import (
 	rg "github.com/redislabs/redisgraph-go"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 // Takes a *v1.Pod and extracts the subset of properties that we care about, yielding a transforms.PodNode
