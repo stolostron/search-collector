@@ -1,9 +1,12 @@
 package transforms
 
-import "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	rg "github.com/redislabs/redisgraph-go"
+	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // Extracts the common properties from a given k8s resource and returns them in a map ready to be put in an rg.Node
-func CommonProperties(resource v1.Object) map[string]interface{} {
+func CommonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret := make(map[string]interface{})
 
 	ret["uid"] = string(resource.GetUID())
@@ -16,4 +19,12 @@ func CommonProperties(resource v1.Object) map[string]interface{} {
 	ret["labels"] = resource.GetLabels()
 
 	return ret
+}
+
+// Transforms a resource of unkown type by simply pulling out the common properties.
+func TransformCommon(resource machineryV1.Object) rg.Node {
+	return rg.Node{
+		Label:      "UNKOWN", // TODO there should be a way to figure this out - unsure.
+		Properties: CommonProperties(resource),
+	}
 }
