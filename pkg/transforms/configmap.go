@@ -1,18 +1,18 @@
 package transforms
 
-import v1 "k8s.io/api/core/v1"
+import (
+	rg "github.com/redislabs/redisgraph-go"
+	v1 "k8s.io/api/core/v1"
+)
 
-// MCM Search representation of a pod to be put into graphDB
-type ConfigMapNode struct {
-	CommonNodeProperties
-	Kind string `json: kind`
-}
+// Takes a *v1.ConfigMap and yields a rg.Node
+func TransformConfigMap(resource *v1.ConfigMap) rg.Node {
 
-// Takes a *v1.ConfigMap and yields a transforms.ConfigMapsNode
-func TransformConfigMap(resource *v1.ConfigMap) ConfigMapNode {
+	props := CommonProperties(resource) // Start off with the common properties
 
-	return ConfigMapNode{
-		CommonNodeProperties: TransformCommon(resource),
-		Kind:                 "ConfigMap",
+	// Form these properties into an rg.Node
+	return rg.Node{
+		Label:      "ConfigMap",
+		Properties: props,
 	}
 }
