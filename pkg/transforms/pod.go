@@ -5,6 +5,7 @@ import "k8s.io/api/core/v1"
 // MCM Search representation of a pod to be put into graphDB
 type PodNode struct {
 	CommonNodeProperties
+	Kind      string
 	HostIP    string `json: hostIP`
 	PodIP     string `json: podIP`
 	Restarts  uint   `json: restarts`
@@ -23,6 +24,7 @@ func TransformPod(resource *v1.Pod) PodNode {
 
 	return PodNode{
 		CommonNodeProperties: TransformCommon(resource),
+		Kind:                 "Pod",
 		HostIP:               resource.Status.HostIP,
 		PodIP:                resource.Status.PodIP,
 		Restarts:             restarts,
