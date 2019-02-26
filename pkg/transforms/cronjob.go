@@ -12,7 +12,7 @@ func TransformCronJob(resource *v1.CronJob) rg.Node {
 
 	// Extract the properties specific to this type
 	props["active"] = len(resource.Status.Active)
-	props["lastSchedule"] = resource.Status.LastScheduleTime.String
+	props["lastSchedule"] = resource.Status.LastScheduleTime.String()
 	props["schedule"] = resource.Spec.Schedule
 	props["suspend"] = resource.Spec.Suspend
 
