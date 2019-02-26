@@ -16,15 +16,21 @@ func CommonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret["namespace"] = resource.GetNamespace()
 	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().String()
-	ret["labels"] = resource.GetLabels()
 
+	// RedisGraph doesn't do nested properties. Flatten the map.
+	flatLabels := flattenStringMap("label__", resource.GetLabels())
+
+	// Put all the properties from flattened map into ret.
+	for k, v := range flatLabels {
+		ret[k] = v
+	}
 	return ret
 }
 
-// Transforms a resource of unkown type by simply pulling out the common properties.
+// Transforms a resource of unknown type by simply pulling out the common properties.
 func TransformCommon(resource machineryV1.Object) rg.Node {
 	return rg.Node{
-		Label:      "UNKOWN", // TODO there should be a way to figure this out - unsure.
+		Label:      "UNKNOWN", // TODO there should be a way to figure this out - unsure.
 		Properties: CommonProperties(resource),
 	}
 }
