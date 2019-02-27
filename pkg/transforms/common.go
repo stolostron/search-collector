@@ -22,7 +22,7 @@ func CommonProperties(resource machineryV1.Object) map[string]interface{} {
 // Transforms a resource of unknown type by simply pulling out the common properties.
 func TransformCommon(resource machineryV1.Object) Node {
 	return Node{
-		Uid:        string(resource.GetUID()), // TODO there should be a way to figure this out - unsure.
+		Uid:        string(resource.GetUID()),
 		Properties: CommonProperties(resource),
 	}
 }
