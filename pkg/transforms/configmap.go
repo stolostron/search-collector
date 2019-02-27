@@ -12,5 +12,5 @@ func TransformConfigMap(resource *v1.ConfigMap) Node {
 	// Extract the properties specific to this type
 	configMap.Properties["kind"] = "ConfigMap"
 
-	return ConfigMap
+	return configMap
 }
