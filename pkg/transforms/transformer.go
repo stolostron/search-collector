@@ -19,7 +19,6 @@ const (
 // A generic node type that is passed to the aggregator for translation to whatever graphDB technology.
 type Node struct {
 	Uid        string                 `json: uid`
-	Operation  Operation              `json: operation`
 	Properties map[string]interface{} `json: properties`
 }
 
