@@ -33,6 +33,7 @@ func TransformNode(resource *v1.Node) Node {
 	}
 
 	// Extract the properties specific to this type
+	node.Properties["kind"] = "Node"
 	node.Properties["architecture"] = resource.Status.NodeInfo.Architecture
 	node.Properties["cpu"] = resource.Status.Capacity.Cpu
 	node.Properties["osImage"] = resource.Status.NodeInfo.OSImage
