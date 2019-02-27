@@ -1,18 +1,16 @@
 package transforms
 
 import (
-	rg "github.com/redislabs/redisgraph-go"
 	v1 "k8s.io/api/core/v1"
 )
 
-// Takes a *v1.ConfigMap and yields a rg.Node
-func TransformConfigMap(resource *v1.ConfigMap) rg.Node {
+// Takes a *v1.ConfigMap and yields a Node
+func TransformConfigMap(resource *v1.ConfigMap) Node {
 
-	props := CommonProperties(resource) // Start off with the common properties
+	configMap := TransformCommon(resource) // Start off with the common properties
 
-	// Form these properties into an rg.Node
-	return rg.Node{
-		Label:      "ConfigMap",
-		Properties: props,
-	}
+	// Extract the properties specific to this type
+	configMap.Properties["kind"] = "ConfigMap"
+
+	return ConfigMap
 }
