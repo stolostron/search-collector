@@ -2,6 +2,10 @@ language: go
 
 go:
   - 1.11.x
+  
+branches:
+  only:
+  - master
 
 # Tests don't work in project root yet so I override
 script: go test ./pkg/transforms
