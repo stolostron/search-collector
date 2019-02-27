@@ -2,6 +2,15 @@ language: go
 
 go:
   - 1.11.x
+  
+# Only build on master, stable branches and tag
+# The stable branch and tag should be leading with numbers
+branches:
+  only:
+    - master
+    - /^[0-9]+\..*$/
+    - /^v[0-9]+\..*$/
+    - /^release-[0-9]+\..*$/
 
 # Tests don't work in project root yet so I override
 script: go test ./pkg/transforms
