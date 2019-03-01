@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
@@ -13,6 +14,12 @@ import (
 
 func main() {
 	kubeconfig := os.Getenv("KUBECONFIG")
+
+	if home := os.Getenv("HOME"); kubeconfig == "" && home != "" {
+		log.Println("KUBECONFIG was undefined, using ~/.kube/config")
+		kubeconfig = filepath.Join(home, ".kube", "config")
+	}
+
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
 		panic(err.Error())
