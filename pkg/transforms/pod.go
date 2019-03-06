@@ -8,7 +8,7 @@ import (
 func TransformPod(resource *v1.Pod) Node {
 
 	// Count the number of restarts. We define the number of Pod restarts to be the sum of the container restarts of containers in the Pod.
-	var restarts uint = 0
+	var restarts uint
 	for _, containerStatus := range resource.Status.ContainerStatuses {
 		restarts += uint(containerStatus.RestartCount)
 	}

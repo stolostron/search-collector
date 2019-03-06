@@ -18,15 +18,15 @@ const (
 
 // A generic node type that is passed to the aggregator for translation to whatever graphDB technology.
 type Node struct {
-	Uid        string                 `json: uid`
-	Properties map[string]interface{} `json: properties`
+	UID        string                 `json:"uid"`
+	Properties map[string]interface{} `json:"properties"`
 }
 
 // Object that handles transformation of k8s objects.
 // To use, create one, call Start(), and begin passing in objects.
 type Transformer struct {
 	Input  chan machineryV1.Object // Put k8s objects into here.
-	Output chan Node               // And recieve your redisgraph nodes from here.
+	Output chan Node               // And receive your redisgraph nodes from here.
 	// TODO add stopper channel?
 }
 
@@ -47,16 +47,16 @@ func (t Transformer) Start(numRoutines int) error {
 func transformRoutine(input chan machineryV1.Object, output chan Node) {
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
-		transformed := Node{}
+		var transformed Node
 		// Read from input channel
 		resource := <-input
 
 		// Type switch over input and call the appropriate transform function
-		switch resource.(type) {
+		switch typedResource := resource.(type) {
 		case *v1.Pod:
-			transformed = TransformPod(resource.(*v1.Pod))
+			transformed = TransformPod(typedResource)
 		default:
-			transformed = TransformCommon(resource)
+			transformed = TransformCommon(typedResource)
 		}
 
 		// Send the result through the output channel
