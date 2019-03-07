@@ -1,0 +1,108 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "creationTimestamp": "2019-02-21T21:47:07Z",
+        "labels": {
+            "controller-uid": "3c0e82b5-3622-11e9-85ca-00163e019656",
+            "job-name": "fake-job"
+        },
+        "name": "fake-job",
+        "namespace": "kube-system",
+        "resourceVersion": "4356",
+        "selfLink": "/apis/batch/v1/namespaces/default/jobs/fake-job",
+        "uid": "3c0e82b5-3622-11e9-85ca-00163e019656"
+    },
+    "spec": {
+        "backoffLimit": 6,
+        "completions": 1,
+        "parallelism": 1,
+        "selector": {
+            "matchLabels": {
+                "controller-uid": "3c0e82b5-3622-11e9-85ca-00163e019656"
+            }
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "scheduler.alpha.kubernetes.io/critical-pod": ""
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "controller-uid": "3c0e82b5-3622-11e9-85ca-00163e019656",
+                    "job-name": "fake-job"
+                },
+                "name": "fake-job"
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "command": [
+                            "python",
+                            "/app/scripts/onboard-script.py"
+                        ],
+                        "image": "fake-image:3.1.2",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "fake-job",
+                        "resources": {
+                            "requests": {
+                                "cpu": "500m",
+                                "memory": "256Mi"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/app/fake",
+                                "name": "fake-json"
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "nodeSelector": {
+                    "master": "true"
+                },
+                "priorityClassName": "system-cluster-critical",
+                "restartPolicy": "OnFailure",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "dedicated",
+                        "operator": "Exists"
+                    },
+                    {
+                        "key": "CriticalAddonsOnly",
+                        "operator": "Exists"
+                    }
+                ],
+                "volumes": [
+                    {
+                        "configMap": {
+                            "defaultMode": 484,
+                            "name": "fake-json"
+                        },
+                        "name": "fake-json"
+                    }
+                ]
+            }
+        }
+    },
+    "status": {
+        "completionTime": "2019-02-21T21:47:45Z",
+        "conditions": [
+            {
+                "lastProbeTime": "2019-02-21T21:47:45Z",
+                "lastTransitionTime": "2019-02-21T21:47:45Z",
+                "status": "True",
+                "type": "Complete"
+            }
+        ],
+        "startTime": "2019-02-21T21:47:07Z",
+        "succeeded": 1
+    }
+}

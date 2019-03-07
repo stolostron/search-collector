@@ -1,0 +1,134 @@
+{
+    "apiVersion": "apps/v1",
+    "kind": "StatefulSet",
+    "metadata": {
+        "creationTimestamp": "2019-02-22T20:04:51Z",
+        "generation": 1,
+        "labels": {
+            "app": "fake-set",
+            "chart": "fake-set-3.1.2",
+            "component": "foo",
+            "heritage": "Tiller",
+            "release": "release"
+        },
+        "name": "release-fake-set-foo",
+        "namespace": "default",
+        "resourceVersion": "133429",
+        "selfLink": "/apis/apps/v1/namespaces/default/statefulsets/release-fake-set-foo",
+        "uid": "1cd45590-36dd-11e9-a4d8-00163e019656"
+    },
+    "spec": {
+        "podManagementPolicy": "OrderedReady",
+        "replicas": 1,
+        "revisionHistoryLimit": 10,
+        "selector": {
+            "matchLabels": {
+                "app": "fake-set",
+                "component": "foo",
+                "release": "release"
+            }
+        },
+        "serviceName": "release-fake-set-foo",
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "productID": "",
+                    "productName": "IBM Multi-cloud Manager - Unit Test",
+                    "productVersion": "3.1.2"
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "fake-set",
+                    "chart": "fake-set-3.1.2",
+                    "component": "foo",
+                    "heritage": "Tiller",
+                    "release": "release"
+                },
+                "name": "release-fake-set-foo"
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "command": [
+                            "/usr/local/bin/foobar"
+                        ],
+                        "image": "ibmcom/foo:3.2.24",
+                        "imagePullPolicy": "IfNotPresent",
+                        "livenessProbe": {
+                            "exec": {
+                                "command": [
+                                    "foobar"
+                                ]
+                            },
+                            "failureThreshold": 3,
+                            "initialDelaySeconds": 5,
+                            "periodSeconds": 5,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "name": "foo",
+                        "readinessProbe": {
+                            "exec": {
+                                "command": [
+                                    "foobar"
+                                ]
+                            },
+                            "failureThreshold": 3,
+                            "initialDelaySeconds": 5,
+                            "periodSeconds": 5,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "resources": {},
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/foo",
+                                "name": "foo-certs"
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "hostAliases": [
+                    {
+                        "hostnames": [
+                            "release-fake-set-foo-0.release-fake-set-foo"
+                        ],
+                        "ip": "127.0.0.1"
+                    }
+                ],
+                "restartPolicy": "Always",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30,
+                "volumes": [
+                    {
+                        "name": "foo-certs",
+                        "secret": {
+                            "defaultMode": 420,
+                            "secretName": "release-fake-set-foo-secrets"
+                        }
+                    }
+                ]
+            }
+        },
+        "updateStrategy": {
+            "rollingUpdate": {
+                "partition": 0
+            },
+            "type": "RollingUpdate"
+        }
+    },
+    "status": {
+        "collisionCount": 0,
+        "currentReplicas": 1,
+        "currentRevision": "release-fake-set-foo-6684966558",
+        "observedGeneration": 1,
+        "readyReplicas": 1,
+        "replicas": 1,
+        "updateRevision": "release-fake-set-foo-6684966558",
+        "updatedReplicas": 1
+    }
+}

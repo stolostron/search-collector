@@ -1,0 +1,162 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "DaemonSet",
+    "metadata": {
+        "creationTimestamp": "2019-02-21T21:29:26Z",
+        "generation": 1,
+        "labels": {
+            "addonmanager.kubernetes.io/mode": "Reconcile",
+            "app": "fake",
+            "heritage": "Tiller",
+            "kubernetes.io/cluster-service": "true",
+            "kubernetes.io/name": "CoreDNS",
+            "release": "fake"
+        },
+        "name": "fake",
+        "namespace": "default",
+        "resourceVersion": "898",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/default/daemonsets/fake",
+        "uid": "c3cd2d1e-361f-11e9-85ca-00163e019656"
+    },
+    "spec": {
+        "revisionHistoryLimit": 10,
+        "selector": {
+            "matchLabels": {
+                "app": "fake",
+                "release": "fake"
+            }
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "productID": "fake_3.1.2_00000",
+                    "productName": "fake",
+                    "productVersion": "3.1.2",
+                    "scheduler.alpha.kubernetes.io/critical-pod": "",
+                    "seccomp.security.alpha.kubernetes.io/pod": "docker/default"
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "fake",
+                    "release": "fake"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "image": "fake-image:1.2.2",
+                        "imagePullPolicy": "IfNotPresent",
+                        "lifecycle": {
+                            "preStop": {
+                                "exec": {
+                                    "command": [
+                                        "sleep",
+                                        "10s"
+                                    ]
+                                }
+                            }
+                        },
+                        "livenessProbe": {
+                            "failureThreshold": 5,
+                            "httpGet": {
+                                "path": "/health",
+                                "port": 8080,
+                                "scheme": "HTTP"
+                            },
+                            "initialDelaySeconds": 60,
+                            "periodSeconds": 10,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 5
+                        },
+                        "name": "fake",
+                        "ports": [
+                            {
+                                "containerPort": 53,
+                                "name": "dns",
+                                "protocol": "UDP"
+                            }
+                        ],
+                        "resources": {
+                            "requests": {
+                                "cpu": "100m",
+                                "memory": "70Mi"
+                            }
+                        },
+                        "securityContext": {
+                            "allowPrivilegeEscalation": false,
+                            "capabilities": {
+                                "add": [
+                                    "NET_BIND_SERVICE"
+                                ],
+                                "drop": [
+                                    "all"
+                                ]
+                            },
+                            "procMount": "Default",
+                            "readOnlyRootFilesystem": true
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/etc/foo",
+                                "name": "config-volume",
+                                "readOnly": true
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "Default",
+                "nodeSelector": {
+                    "master": "true"
+                },
+                "restartPolicy": "Always",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30,
+                "tolerations": [
+                    {
+                        "effect": "NoSchedule",
+                        "key": "dedicated",
+                        "operator": "Exists"
+                    },
+                    {
+                        "key": "CriticalAddonsOnly",
+                        "operator": "Exists"
+                    }
+                ],
+                "volumes": [
+                    {
+                        "configMap": {
+                            "defaultMode": 420,
+                            "items": [
+                                {
+                                    "key": "foo",
+                                    "path": "foo"
+                                }
+                            ],
+                            "name": "fake"
+                        },
+                        "name": "config-volume"
+                    }
+                ]
+            }
+        },
+        "templateGeneration": 1,
+        "updateStrategy": {
+            "rollingUpdate": {
+                "maxUnavailable": 1
+            },
+            "type": "RollingUpdate"
+        }
+    },
+    "status": {
+        "currentNumberScheduled": 1,
+        "desiredNumberScheduled": 1,
+        "numberAvailable": 1,
+        "numberMisscheduled": 0,
+        "numberReady": 1,
+        "observedGeneration": 1,
+        "updatedNumberScheduled": 1
+    }
+}

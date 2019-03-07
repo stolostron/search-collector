@@ -1,0 +1,105 @@
+{
+    "apiVersion": "v1",
+    "kind": "Node",
+    "metadata": {
+        "annotations": {
+            "node.alpha.kubernetes.io/ttl": "0",
+            "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+        },
+        "creationTimestamp": "2019-02-21T21:26:10Z",
+        "labels": {
+            "beta.kubernetes.io/arch": "amd64",
+            "beta.kubernetes.io/os": "linux",
+            "etcd": "true",
+            "kubernetes.io/hostname": "1.1.1.1",
+            "management": "true",
+            "master": "true",
+            "node-role.kubernetes.io/etcd": "true",
+            "node-role.kubernetes.io/management": "true",
+            "node-role.kubernetes.io/master": "true",
+            "node-role.kubernetes.io/proxy": "true",
+            "node-role.kubernetes.io/va": "true",
+            "proxy": "true",
+            "role": "master",
+            "va": "true"
+        },
+        "name": "1.1.1.1",
+        "resourceVersion": "1787301",
+        "selfLink": "/api/v1/nodes/1.1.1.1",
+        "uid": "4effc49c-361f-11e9-85ca-00163e019656"
+    },
+    "spec": {
+        "taints": [
+            {
+                "effect": "NoSchedule",
+                "key": "dedicated",
+                "value": "infra"
+            }
+        ]
+    },
+    "status": {
+        "addresses": [
+            {
+                "address": "1.1.1.1",
+                "type": "InternalIP"
+            },
+            {
+                "address": "1.1.1.1",
+                "type": "Hostname"
+            }
+        ],
+        "allocatable": {
+            "cpu": "7600m",
+            "ephemeral-storage": "240844852Ki",
+            "hugepages-1Gi": "0",
+            "hugepages-2Mi": "0",
+            "memory": "23538432Ki",
+            "pods": "80"
+        },
+        "capacity": {
+            "cpu": "8",
+            "ephemeral-storage": "243044404Ki",
+            "hugepages-1Gi": "0",
+            "hugepages-2Mi": "0",
+            "memory": "24689408Ki",
+            "pods": "80"
+        },
+        "conditions": [
+            {
+                "lastHeartbeatTime": "2019-03-06T19:42:14Z",
+                "lastTransitionTime": "2019-02-21T21:26:10Z",
+                "message": "kubelet has sufficient disk space available",
+                "reason": "KubeletHasSufficientDisk",
+                "status": "False",
+                "type": "OutOfDisk"
+            }
+        ],
+        "config": {},
+        "daemonEndpoints": {
+            "kubeletEndpoint": {
+                "Port": 10250
+            }
+        },
+        "images": [
+            {
+                "names": [
+                    "fake-test-image@sha256:9192e54ba49129c94d3c0afdcc0b1a309946dc291f7f2bcce9b488b5a8da294d",
+                    "fake-test-image:3.1.2"
+                ],
+                "sizeBytes": 1031731751
+            }
+        ],
+        "nodeInfo": {
+            "architecture": "amd64",
+            "bootID": "1e832917-b8b0-4c95-b1eb-2207cb141deb",
+            "containerRuntimeVersion": "docker://17.12.1-ce",
+            "kernelVersion": "4.4.0-141-generic",
+            "kubeProxyVersion": "v1.12.4+icp-ee",
+            "kubeletVersion": "v1.12.4+icp-ee",
+            "machineID": "14ce8d70b18c7872179d2d2d5b7b8b35",
+            "operatingSystem": "linux",
+            "osImage": "Ubuntu 16.04.5 LTS",
+            "systemUUID": "4BCDE0D7-CFFB-4A8F-B6F8-0026F347AD93"
+        }
+    }
+}

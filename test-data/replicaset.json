@@ -1,0 +1,182 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "ReplicaSet",
+    "metadata": {
+        "annotations": {
+            "deployment.kubernetes.io/desired-replicas": "1",
+            "deployment.kubernetes.io/max-replicas": "2",
+            "deployment.kubernetes.io/revision": "1"
+        },
+        "creationTimestamp": "2019-02-22T20:04:51Z",
+        "generation": 1,
+        "labels": {
+            "app": "fake-app",
+            "chart": "fake-app-3.1.2",
+            "component": "foo",
+            "heritage": "Tiller",
+            "pod-template-hash": "778b55ff65",
+            "release": "fake-app"
+        },
+        "name": "fake-app-fake-app-foo-778b55ff65",
+        "namespace": "default",
+        "ownerReferences": [
+            {
+                "apiVersion": "apps/v1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "Deployment",
+                "name": "fake-app-fake-app-foo",
+                "uid": "1cc734de-36dd-11e9-a4d8-00163e019656"
+            }
+        ],
+        "resourceVersion": "134381",
+        "selfLink": "/apis/extensions/v1beta1/namespaces/default/replicasets/fake-app-fake-app-foo-778b55ff65",
+        "uid": "1cce3c4b-36dd-11e9-a4d8-00163e019656"
+    },
+    "spec": {
+        "replicas": 1,
+        "selector": {
+            "matchLabels": {
+                "app": "fake-app",
+                "component": "foo",
+                "heritage": "Tiller",
+                "pod-template-hash": "778b55ff65",
+                "release": "fake-app"
+            }
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "productID": "",
+                    "productName": "IBM Multi-cloud Manager - Unit Test",
+                    "productVersion": "3.1.2"
+                },
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "fake-app",
+                    "chart": "fake-app-3.1.2",
+                    "component": "foo",
+                    "heritage": "Tiller",
+                    "pod-template-hash": "778b55ff65",
+                    "release": "fake-app"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "image": "ibmcom/mcm-fake-app:3.3.4",
+                        "imagePullPolicy": "IfNotPresent",
+                        "livenessProbe": {
+                            "exec": {
+                                "command": [
+                                    "sh",
+                                    "/opt/fake-app/bin/fake-app.sh",
+                                    "status"
+                                ]
+                            },
+                            "failureThreshold": 3,
+                            "initialDelaySeconds": 60,
+                            "periodSeconds": 15,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "name": "fake-app",
+                        "ports": [
+                            {
+                                "containerPort": 8182,
+                                "name": "fake-app",
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "exec": {
+                                "command": [
+                                    "sh",
+                                    "/opt/fake-app/bin/fake-app.sh",
+                                    "status"
+                                ]
+                            },
+                            "failureThreshold": 3,
+                            "initialDelaySeconds": 60,
+                            "periodSeconds": 15,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "resources": {
+                            "limits": {
+                                "cpu": "1",
+                                "memory": "1Gi"
+                            },
+                            "requests": {
+                                "cpu": "250m",
+                                "memory": "256Mi"
+                            }
+                        },
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/opt/secrets",
+                                "name": "foo-certs"
+                            }
+                        ]
+                    },
+                    {
+                        "env": [
+                            {
+                                "name": "fooEndpoint",
+                                "value": "wss://fake-app-fake-app-fake-app:8182/foo"
+                            }
+                        ],
+                        "image": "ibmcom/foo:3.1.2",
+                        "imagePullPolicy": "IfNotPresent",
+                        "name": "foo",
+                        "readinessProbe": {
+                            "exec": {
+                                "command": [
+                                    "node",
+                                    "readinessProbe.js"
+                                ]
+                            },
+                            "failureThreshold": 3,
+                            "initialDelaySeconds": 30,
+                            "periodSeconds": 15,
+                            "successThreshold": 1,
+                            "timeoutSeconds": 1
+                        },
+                        "resources": {},
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/opt/secrets",
+                                "name": "foo-certs"
+                            }
+                        ]
+                    }
+                ],
+                "dnsPolicy": "ClusterFirst",
+                "restartPolicy": "Always",
+                "schedulerName": "default-scheduler",
+                "securityContext": {},
+                "terminationGracePeriodSeconds": 30,
+                "volumes": [
+                    {
+                        "name": "foo-certs",
+                        "secret": {
+                            "defaultMode": 420,
+                            "secretName": "fake-app-fake-app-search-secrets"
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "status": {
+        "availableReplicas": 1,
+        "fullyLabeledReplicas": 1,
+        "observedGeneration": 1,
+        "readyReplicas": 1,
+        "replicas": 1
+    }
+}
