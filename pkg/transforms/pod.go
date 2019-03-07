@@ -1,6 +1,8 @@
 package transforms
 
 import (
+	"time"
+
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -20,8 +22,11 @@ func TransformPod(resource *v1.Pod) Node {
 	pod.Properties["hostIP"] = resource.Status.HostIP
 	pod.Properties["podIP"] = resource.Status.PodIP
 	pod.Properties["restarts"] = restarts
-	pod.Properties["startedAt"] = resource.Status.StartTime.String()
 	pod.Properties["status"] = string(resource.Status.Phase)
+	pod.Properties["startedAt"] = ""
+	if resource.Status.StartTime != nil {
+		pod.Properties["startedAt"] = resource.Status.StartTime.UTC().Format(time.RFC3339)
+	}
 
 	return pod
 }

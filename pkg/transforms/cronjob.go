@@ -1,6 +1,8 @@
 package transforms
 
 import (
+	"time"
+
 	v1 "k8s.io/api/batch/v1beta1"
 )
 
@@ -12,9 +14,15 @@ func TransformCronJob(resource *v1.CronJob) Node {
 	// Extract the properties specific to this type
 	cronJob.Properties["kind"] = "CronJob"
 	cronJob.Properties["active"] = len(resource.Status.Active)
-	cronJob.Properties["lastSchedule"] = resource.Status.LastScheduleTime.String()
 	cronJob.Properties["schedule"] = resource.Spec.Schedule
-	cronJob.Properties["suspend"] = resource.Spec.Suspend
+	cronJob.Properties["lastSchedule"] = ""
+	if resource.Status.LastScheduleTime != nil {
+		cronJob.Properties["lastSchedule"] = resource.Status.LastScheduleTime.UTC().Format(time.RFC3339)
+	}
+	cronJob.Properties["suspend"] = false
+	if resource.Spec.Suspend != nil {
+		cronJob.Properties["suspend"] = *(resource.Spec.Suspend)
+	}
 
 	return cronJob
 }
