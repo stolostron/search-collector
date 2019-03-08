@@ -2,9 +2,14 @@ package transforms
 
 import (
 	"errors"
+	"fmt"
 
-	v1 "k8s.io/api/core/v1"                            // This one has all the concrete types
+	apps "k8s.io/api/apps/v1"
+	batch "k8s.io/api/batch/v1"
+	batchBeta "k8s.io/api/batch/v1beta1"
+	core "k8s.io/api/core/v1"                          // This one has all the concrete types
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1" // This one has the interface
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // used to track operations on Nodes/edges
@@ -25,38 +30,68 @@ type Node struct {
 // Object that handles transformation of k8s objects.
 // To use, create one, call Start(), and begin passing in objects.
 type Transformer struct {
-	Input  chan machineryV1.Object // Put k8s objects into here.
-	Output chan Node               // And receive your redisgraph nodes from here.
+	Input        chan machineryV1.Object         // Put default k8s objects into here.
+	DynamicInput chan *unstructured.Unstructured // Put nondefault k8s objects into here.
+	Output       chan Node                       // And recieve your redisgraph nodes from here.
 	// TODO add stopper channel?
 }
 
 // Starts the transformer with a specified number of routines
 func (t Transformer) Start(numRoutines int) error {
+	fmt.Println("Transformer started") // RM
 	if numRoutines < 1 {
 		return errors.New("numRoutines must be 1 or greater")
 	}
 
 	// start numRoutines threads to handle transformation.
 	for i := 0; i < numRoutines; i++ {
-		go transformRoutine(t.Input, t.Output)
+		go transformRoutine(t.Input, t.DynamicInput, t.Output)
 	}
 	return nil
 }
 
 // This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
-func transformRoutine(input chan machineryV1.Object, output chan Node) {
+func transformRoutine(input chan machineryV1.Object, dynamicInput chan *unstructured.Unstructured, output chan Node) {
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
 		var transformed Node
-		// Read from input channel
-		resource := <-input
+		// Read from one of the two input channels
 
-		// Type switch over input and call the appropriate transform function
-		switch typedResource := resource.(type) {
-		case *v1.Pod:
-			transformed = TransformPod(typedResource)
-		default:
-			transformed = TransformCommon(typedResource)
+		select {
+		case resource := <-input: // Reading a default k8s object from the normal channel
+			// Type switch over input and call the appropriate transform function
+			switch typedResource := resource.(type) {
+			case *core.ConfigMap:
+				transformed = TransformConfigMap(typedResource)
+			case *batchBeta.CronJob:
+				transformed = TransformCronJob(typedResource)
+			case *apps.DaemonSet:
+				transformed = TransformDaemonSet(typedResource)
+			case *apps.Deployment:
+				transformed = TransformDeployment(typedResource)
+			case *batch.Job:
+				transformed = TransformJob(typedResource)
+			case *core.Namespace:
+				transformed = TransformNamespace(typedResource)
+			case *core.Node:
+				transformed = TransformNode(typedResource)
+			case *core.PersistentVolume:
+				transformed = TransformPersistentVolume(typedResource)
+			case *core.Pod:
+				transformed = TransformPod(typedResource)
+			case *apps.ReplicaSet:
+				transformed = TransformReplicaSet(typedResource)
+			case *core.Secret:
+				transformed = TransformSecret(typedResource)
+			case *core.Service:
+				transformed = TransformService(typedResource)
+			case *apps.StatefulSet:
+				transformed = TransformStatefulSet(typedResource)
+			default:
+				transformed = TransformCommon(typedResource)
+			}
+		case resource := <-dynamicInput: // Reading a nondefault object from the dynamic channel
+			transformed = TransformUnstructured(resource)
 		}
 
 		// Send the result through the output channel
