@@ -1,6 +1,7 @@
 package transforms
 
 import (
+	"sort"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -23,7 +24,7 @@ func TransformNode(resource *v1.Node) Node {
 	}
 
 	for key, value := range labels {
-		if _, found := roleSet["key"]; found && value == "true" {
+		if _, found := roleSet[key]; found && value == "true" {
 			roles = append(roles, strings.TrimPrefix(key, "node-role.kubernetes.io/"))
 		}
 	}
@@ -32,13 +33,15 @@ func TransformNode(resource *v1.Node) Node {
 		roles = append(roles, "worker")
 	}
 
+	// sort in alphabetical order to make the ui consistant
+	sort.Strings(roles)
+
 	// Extract the properties specific to this type
 	node.Properties["kind"] = "Node"
 	node.Properties["architecture"] = resource.Status.NodeInfo.Architecture
-	node.Properties["cpu"] = resource.Status.Capacity.Cpu
+	node.Properties["cpu"], _ = resource.Status.Capacity.Cpu().AsInt64()
 	node.Properties["osImage"] = resource.Status.NodeInfo.OSImage
-	node.Properties["role"] = roles
+	node.Properties["role"] = strings.Join(roles, ", ")
 
-	// Form these properties into an rg.Node
 	return node
 }

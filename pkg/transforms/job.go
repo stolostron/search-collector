@@ -11,9 +11,15 @@ func TransformJob(resource *v1.Job) Node {
 
 	// Extract the properties specific to this type
 	job.Properties["kind"] = "Job"
-	job.Properties["completions"] = resource.Spec.Completions
-	job.Properties["parallelism"] = resource.Spec.Parallelism
 	job.Properties["successful"] = resource.Status.Succeeded
+	job.Properties["completions"] = int32(0)
+	if resource.Spec.Completions != nil {
+		job.Properties["completions"] = *resource.Spec.Completions
+	}
+	job.Properties["parallelism"] = int32(0)
+	if resource.Spec.Completions != nil {
+		job.Properties["parallelism"] = *resource.Spec.Parallelism
+	}
 
 	return job
 }

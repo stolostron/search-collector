@@ -11,7 +11,7 @@ func TransformNamespace(resource *v1.Namespace) Node {
 
 	// Extract the properties specific to this type
 	namespace.Properties["kind"] = "Namespace"
-	namespace.Properties["status"] = resource.Status.Phase
+	namespace.Properties["status"] = string(resource.Status.Phase)
 
 	return namespace
 }
