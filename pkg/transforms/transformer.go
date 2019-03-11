@@ -52,11 +52,13 @@ func (t Transformer) Start(numRoutines int) error {
 
 // This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
 func transformRoutine(input chan machineryV1.Object, dynamicInput chan *unstructured.Unstructured, output chan Node) {
+	defer handleRoutineExit(input, dynamicInput, output)
+	fmt.Println("Starting transformer routine")
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
 		var transformed Node
-		// Read from one of the two input channels
 
+		// Read from one of the two input channels
 		select {
 		case resource := <-input: // Reading a default k8s object from the normal channel
 			// Type switch over input and call the appropriate transform function
@@ -96,5 +98,18 @@ func transformRoutine(input chan machineryV1.Object, dynamicInput chan *unstruct
 
 		// Send the result through the output channel
 		output <- transformed
+	}
+}
+
+// Handles a panic from inside transformRoutine.
+// If the panic was due to an error, starts another transformRoutine with the same channels as this one.
+// If not, just lets it die.
+func handleRoutineExit(input chan machineryV1.Object, dynamicInput chan *unstructured.Unstructured, output chan Node) {
+	// Recover and check the value. If we are here because of a panic, something will be in it.
+	if r := recover(); r != nil { // Case where we got here from a panic
+		fmt.Printf("Error in transformer routine: %v\n", r)
+
+		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
+		go transformRoutine(input, dynamicInput, output)
 	}
 }
