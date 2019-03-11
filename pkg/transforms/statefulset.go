@@ -12,7 +12,10 @@ func TransformStatefulSet(resource *v1.StatefulSet) Node {
 	// Extract the properties specific to this type
 	statefulSet.Properties["kind"] = "StatefulSet"
 	statefulSet.Properties["current"] = resource.Status.Replicas
-	statefulSet.Properties["desired"] = resource.Spec.Replicas
+	statefulSet.Properties["desired"] = int32(0)
+	if resource.Spec.Replicas != nil {
+		statefulSet.Properties["desired"] = *resource.Spec.Replicas
+	}
 
 	return statefulSet
 }
