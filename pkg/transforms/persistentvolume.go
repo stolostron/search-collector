@@ -13,17 +13,31 @@ func TransformPersistentVolume(resource *v1.PersistentVolume) Node {
 
 	// Extract the properties specific to this type
 	persistentVolume.Properties["kind"] = "PersistentVolume"
-	persistentVolume.Properties["accessModes"] = resource.Spec.AccessModes
-	persistentVolume.Properties["capacity"], _ = resource.Spec.Capacity.StorageEphemeral().AsInt64()
-	persistentVolume.Properties["reclaimPolicy"] = resource.Spec.PersistentVolumeReclaimPolicy
-	persistentVolume.Properties["status"] = resource.Status.Phase
+	persistentVolume.Properties["reclaimPolicy"] = string(resource.Spec.PersistentVolumeReclaimPolicy)
+	persistentVolume.Properties["status"] = string(resource.Status.Phase)
 	persistentVolume.Properties["type"] = getType(&resource.Spec)
 
-	claimRefNamespace := resource.Spec.ClaimRef.Namespace
-	claimRefName := resource.Spec.ClaimRef.Name
-	if claimRefNamespace != "" && claimRefName != "" {
-		s := []string{claimRefNamespace, claimRefName}
-		persistentVolume.Properties["claimRef"] = strings.Join(s, "/")
+	persistentVolume.Properties["capacity"] = 0
+	storage, ok := resource.Spec.Capacity["storage"]
+	if ok {
+		persistentVolume.Properties["capacity"], _ = storage.AsInt64()
+	}
+
+	// can't cast []PersistentVolumeAccessMode to []string without unsafe
+	accessModes := make([]string, len(resource.Spec.AccessModes))
+	for i := 0; i < len(resource.Spec.AccessModes); i++ {
+		accessModes[i] = string(resource.Spec.AccessModes[i])
+	}
+	persistentVolume.Properties["accessModes"] = strings.Join(accessModes, ", ")
+
+	persistentVolume.Properties["claimRef"] = ""
+	if resource.Spec.ClaimRef != nil {
+		claimRefNamespace := resource.Spec.ClaimRef.Namespace
+		claimRefName := resource.Spec.ClaimRef.Name
+		if claimRefNamespace != "" && claimRefName != "" {
+			s := []string{claimRefNamespace, claimRefName}
+			persistentVolume.Properties["claimRef"] = strings.Join(s, "/")
+		}
 	}
 
 	if resource.Spec.Local != nil {
