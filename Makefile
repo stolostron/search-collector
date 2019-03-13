@@ -26,3 +26,5 @@ clean:
 	go clean
 	rm -f cover*
 	rm -rf ./$(BINDIR)
+
+include Makefile.docker
