@@ -7,7 +7,7 @@ import (
 )
 
 // Takes a *v1.Pod and extracts the subset of properties that we care about, yielding a transforms.PodNode
-func TransformPod(resource *v1.Pod) Node {
+func transformPod(resource *v1.Pod) Node {
 
 	// Count the number of restarts. We define the number of Pod restarts to be the sum of the container restarts of containers in the Pod.
 	var restarts uint
@@ -15,7 +15,7 @@ func TransformPod(resource *v1.Pod) Node {
 		restarts += uint(containerStatus.RestartCount)
 	}
 
-	pod := TransformCommon(resource) // Start off with the common properties
+	pod := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	pod.Properties["kind"] = "Pod"

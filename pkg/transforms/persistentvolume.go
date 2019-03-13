@@ -7,9 +7,9 @@ import (
 )
 
 // Takes a *v1.PersistentVolume and yields a Node
-func TransformPersistentVolume(resource *v1.PersistentVolume) Node {
+func transformPersistentVolume(resource *v1.PersistentVolume) Node {
 
-	persistentVolume := TransformCommon(resource) // Start off with the common properties
+	persistentVolume := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	persistentVolume.Properties["kind"] = "PersistentVolume"

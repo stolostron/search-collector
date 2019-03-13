@@ -64,36 +64,36 @@ func transformRoutine(input chan machineryV1.Object, dynamicInput chan *unstruct
 			// Type switch over input and call the appropriate transform function
 			switch typedResource := resource.(type) {
 			case *core.ConfigMap:
-				transformed = TransformConfigMap(typedResource)
+				transformed = transformConfigMap(typedResource)
 			case *batchBeta.CronJob:
-				transformed = TransformCronJob(typedResource)
+				transformed = transformCronJob(typedResource)
 			case *apps.DaemonSet:
-				transformed = TransformDaemonSet(typedResource)
+				transformed = transformDaemonSet(typedResource)
 			case *apps.Deployment:
-				transformed = TransformDeployment(typedResource)
+				transformed = transformDeployment(typedResource)
 			case *batch.Job:
-				transformed = TransformJob(typedResource)
+				transformed = transformJob(typedResource)
 			case *core.Namespace:
-				transformed = TransformNamespace(typedResource)
+				transformed = transformNamespace(typedResource)
 			case *core.Node:
-				transformed = TransformNode(typedResource)
+				transformed = transformNode(typedResource)
 			case *core.PersistentVolume:
-				transformed = TransformPersistentVolume(typedResource)
+				transformed = transformPersistentVolume(typedResource)
 			case *core.Pod:
-				transformed = TransformPod(typedResource)
+				transformed = transformPod(typedResource)
 			case *apps.ReplicaSet:
-				transformed = TransformReplicaSet(typedResource)
+				transformed = transformReplicaSet(typedResource)
 			case *core.Secret:
-				transformed = TransformSecret(typedResource)
+				transformed = transformSecret(typedResource)
 			case *core.Service:
-				transformed = TransformService(typedResource)
+				transformed = transformService(typedResource)
 			case *apps.StatefulSet:
-				transformed = TransformStatefulSet(typedResource)
+				transformed = transformStatefulSet(typedResource)
 			default:
-				transformed = TransformCommon(typedResource)
+				transformed = transformCommon(typedResource)
 			}
 		case resource := <-dynamicInput: // Reading a nondefault object from the dynamic channel
-			transformed = TransformUnstructured(resource)
+			transformed = transformUnstructured(resource)
 		}
 
 		// Send the result through the output channel

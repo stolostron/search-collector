@@ -7,9 +7,9 @@ import (
 )
 
 // Takes a *v1.CronJob and yields a Node
-func TransformCronJob(resource *v1.CronJob) Node {
+func transformCronJob(resource *v1.CronJob) Node {
 
-	cronJob := TransformCommon(resource) // Start off with the common properties
+	cronJob := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	cronJob.Properties["kind"] = "CronJob"

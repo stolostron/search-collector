@@ -9,7 +9,7 @@ import (
 func TestTransformJob(t *testing.T) {
 	var j v1.Job
 	UnmarshalFile("../../test-data/job.json", &j, t)
-	node := TransformJob(&j)
+	node := transformJob(&j)
 
 	// Test only the fields that exist in job - the common test will test the other bits
 	AssertEqual("successful", node.Properties["successful"], int32(1), t)

@@ -5,9 +5,9 @@ import (
 )
 
 // Takes a *v1.ConfigMap and yields a Node
-func TransformConfigMap(resource *v1.ConfigMap) Node {
+func transformConfigMap(resource *v1.ConfigMap) Node {
 
-	configMap := TransformCommon(resource) // Start off with the common properties
+	configMap := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	configMap.Properties["kind"] = "ConfigMap"

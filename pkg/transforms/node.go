@@ -8,9 +8,9 @@ import (
 )
 
 // Takes a *v1.Node and yields a Node
-func TransformNode(resource *v1.Node) Node {
+func transformNode(resource *v1.Node) Node {
 
-	node := TransformCommon(resource) // Start off with the common properties
+	node := transformCommon(resource) // Start off with the common properties
 
 	var roles []string
 	labels := resource.ObjectMeta.Labels

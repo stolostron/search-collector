@@ -5,9 +5,9 @@ import (
 )
 
 // Takes a *v1.Service and yields a Node
-func TransformService(resource *v1.Service) Node {
+func transformService(resource *v1.Service) Node {
 
-	service := TransformCommon(resource) // Start off with the common properties
+	service := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	service.Properties["kind"] = "Service"

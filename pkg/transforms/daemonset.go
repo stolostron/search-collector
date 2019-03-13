@@ -5,9 +5,9 @@ import (
 )
 
 // Takes a *v1.DaemonSet and yields a Node
-func TransformDaemonSet(resource *v1.DaemonSet) Node {
+func transformDaemonSet(resource *v1.DaemonSet) Node {
 
-	daemonSet := TransformCommon(resource) // Start off with the common properties
+	daemonSet := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	daemonSet.Properties["kind"] = "DaemonSet"

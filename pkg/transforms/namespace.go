@@ -5,9 +5,9 @@ import (
 )
 
 // Takes a *v1.Namespace and yields a Node
-func TransformNamespace(resource *v1.Namespace) Node {
+func transformNamespace(resource *v1.Namespace) Node {
 
-	namespace := TransformCommon(resource) // Start off with the common properties
+	namespace := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	namespace.Properties["kind"] = "Namespace"

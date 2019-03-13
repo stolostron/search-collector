@@ -5,9 +5,9 @@ import (
 )
 
 // Takes a *v1.ReplicaSet and yields a Node
-func TransformReplicaSet(resource *v1.ReplicaSet) Node {
+func transformReplicaSet(resource *v1.ReplicaSet) Node {
 
-	replicaSet := TransformCommon(resource) // Start off with the common properties
+	replicaSet := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	replicaSet.Properties["kind"] = "ReplicaSet"

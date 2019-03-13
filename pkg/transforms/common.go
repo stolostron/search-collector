@@ -6,7 +6,7 @@ import (
 )
 
 // Extracts the common properties from a default k8s resource of unknown type and returns them in a map ready to be put in an Node
-func CommonProperties(resource machineryV1.Object) map[string]interface{} {
+func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret := make(map[string]interface{})
 
 	ret["resourceVersion"] = resource.GetResourceVersion()
@@ -20,15 +20,15 @@ func CommonProperties(resource machineryV1.Object) map[string]interface{} {
 }
 
 // Transforms a resource of unknown type by simply pulling out the common properties.
-func TransformCommon(resource machineryV1.Object) Node {
+func transformCommon(resource machineryV1.Object) Node {
 	return Node{
 		UID:        string(resource.GetUID()),
-		Properties: CommonProperties(resource),
+		Properties: commonProperties(resource),
 	}
 }
 
 // Extracts the properties from a non-default k8s resource and returns them in a map ready to be put in an Node
-func UnstructuredProperties(resource *unstructured.Unstructured) map[string]interface{} {
+func unstructuredProperties(resource *unstructured.Unstructured) map[string]interface{} {
 	ret := make(map[string]interface{})
 
 	ret["kind"] = resource.GetKind()
@@ -44,9 +44,9 @@ func UnstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 }
 
 // Transforms an unstrucuted.Unstructured (which represents a non-default k8s object) into a Node
-func TransformUnstructured(resource *unstructured.Unstructured) Node {
+func transformUnstructured(resource *unstructured.Unstructured) Node {
 	return Node{
 		UID:        string(resource.GetUID()),
-		Properties: UnstructuredProperties(resource),
+		Properties: unstructuredProperties(resource),
 	}
 }

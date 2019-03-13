@@ -5,9 +5,9 @@ import (
 )
 
 // Takes a *v1.StatefulSet and yields a Node
-func TransformStatefulSet(resource *v1.StatefulSet) Node {
+func transformStatefulSet(resource *v1.StatefulSet) Node {
 
-	statefulSet := TransformCommon(resource) // Start off with the common properties
+	statefulSet := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	statefulSet.Properties["kind"] = "StatefulSet"

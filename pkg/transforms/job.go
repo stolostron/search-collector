@@ -5,9 +5,9 @@ import (
 )
 
 // Takes a *v1.Job and yields a Node
-func TransformJob(resource *v1.Job) Node {
+func transformJob(resource *v1.Job) Node {
 
-	job := TransformCommon(resource) // Start off with the common properties
+	job := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
 	job.Properties["kind"] = "Job"

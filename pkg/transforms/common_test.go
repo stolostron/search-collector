@@ -32,7 +32,7 @@ func TestCommonProperties(t *testing.T) {
 	res := CreateGenericResource()
 	timeString := timestamp.String()
 
-	cp := CommonProperties(res)
+	cp := commonProperties(res)
 
 	// Test all the fields.
 	AssertEqual("resourceVersion", cp["resourceVersion"], interface{}("1000"), t)

@@ -9,7 +9,7 @@ import (
 func TestTransformReplicaSet(t *testing.T) {
 	var r v1.ReplicaSet
 	UnmarshalFile("../../test-data/replicaset.json", &r, t)
-	node := TransformReplicaSet(&r)
+	node := transformReplicaSet(&r)
 
 	// Test only the fields that exist in replica set - the common test will test the other bits
 	AssertEqual("current", node.Properties["current"], int32(1), t)
