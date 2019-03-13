@@ -2,8 +2,8 @@ package transforms
 
 import (
 	"errors"
-	"fmt"
 
+	"github.com/golang/glog"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
@@ -38,7 +38,7 @@ type Transformer struct {
 
 // Starts the transformer with a specified number of routines
 func (t Transformer) Start(numRoutines int) error {
-	fmt.Println("Transformer started") // RM
+	glog.Info("Transformer started") // RM
 	if numRoutines < 1 {
 		return errors.New("numRoutines must be 1 or greater")
 	}
@@ -53,7 +53,7 @@ func (t Transformer) Start(numRoutines int) error {
 // This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
 func transformRoutine(input chan machineryV1.Object, dynamicInput chan *unstructured.Unstructured, output chan Node) {
 	defer handleRoutineExit(input, dynamicInput, output)
-	fmt.Println("Starting transformer routine")
+	glog.Info("Starting transformer routine")
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
 		var transformed Node
@@ -107,7 +107,7 @@ func transformRoutine(input chan machineryV1.Object, dynamicInput chan *unstruct
 func handleRoutineExit(input chan machineryV1.Object, dynamicInput chan *unstructured.Unstructured, output chan Node) {
 	// Recover and check the value. If we are here because of a panic, something will be in it.
 	if r := recover(); r != nil { // Case where we got here from a panic
-		fmt.Printf("Error in transformer routine: %v\n", r)
+		glog.Errorf("Error in transformer routine: %v\n", r)
 
 		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
 		go transformRoutine(input, dynamicInput, output)

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"flag"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1" // This one has the interface
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -19,7 +19,21 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const (
+	numThreads = 1 // TODO This will be a cli flag or be removed as a concept
+)
+
 func main() {
+	// parse flags
+	flag.Parse()
+	err := flag.Lookup("logtostderr").Value.Set("true") // Glog is weird in that by default it logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).
+	if err != nil {
+		glog.Fatal("Error setting default flag: ", err)
+	}
+	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
+
+	glog.Info("Starting Data Collector")
+
 	// Create in/out channels for the transformer
 	transformInput := make(chan machineryV1.Object)
 	transformDynamicInput := make(chan *unstructured.Unstructured)
@@ -31,33 +45,34 @@ func main() {
 	}
 
 	// Start the transformer with 1 threads doing transformation work.
-	err := t.Start(1)
+	glog.Infof("Starting %d transformer threads", numThreads)
+	err = t.Start(numThreads)
 	if err != nil {
 		panic(err)
 	}
 
+	// Get kubeconfig from env or default to the one kept in home dir
 	kubeconfig := os.Getenv("KUBECONFIG")
-
 	if home := os.Getenv("HOME"); kubeconfig == "" && home != "" {
-		log.Println("KUBECONFIG was undefined, using ~/.kube/config")
+		glog.Info("KUBECONFIG was undefined, using ~/.kube/config")
 		kubeconfig = filepath.Join(home, ".kube", "config")
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		panic(err.Error())
+		glog.Fatal("Error Constructing Client From Config: ", err)
 	}
 
 	// Initialize the normal client, used for CRUD operations on default k8s resources
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		glog.Fatal("Cannot Construct Kubernetes Client From Config: ", err)
 	}
 
 	// Initialize the dynamic client, used for CRUD operations on nondeafult k8s resources
 	dynamicClientset, err := dynamic.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		glog.Fatal("Cannot Construct Dynamic Client From Config: ", err)
 	}
 
 	// Create informer factories
@@ -67,7 +82,7 @@ func main() {
 	// Create special type of client used for discovering resource types
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
@@ -76,7 +91,7 @@ func main() {
 	// List out all the preferred api-resources of this server.
 	apiResources, err := discoveryClient.ServerPreferredResources()
 	if err != nil {
-		panic(err.Error())
+		glog.Fatal("Cannot list supported resources on k8s api-server: ", err)
 	}
 
 	// Filter down to only resources which support WATCH operations.
@@ -98,14 +113,12 @@ func main() {
 	// Use handy converter function to convert into GroupVersionResource objects, which we need in order to make informers
 	gvrList, err := discovery.GroupVersionResources(supportedResources)
 	if err != nil {
-		panic(err.Error())
+		glog.Fatal("Could not read api-resource object", err) // TODO pretty sure this would be fatal but I don't actually know how to produce it, so... we'll see! :)
 	}
 
 	stopper := make(chan struct{}) // We just have one stopper channel that we pass to all the informers, we always stop them together.
 	defer close(stopper)
 
-	fmt.Printf("Supported resource types: %d\n", len(gvrList))
-	// Create informers for every supported resource type.
 	for gvr := range gvrList {
 		genericInformer, err := factory.ForResource(gvr) // Attempt to create standard informer. This will return an erro on non-default k8s resources.
 		var informer cache.SharedIndexInformer
@@ -113,7 +126,7 @@ func main() {
 			if isNoInformerError(err) { // This will be true when the resource is nondefault
 				// In this case we need to create a dynamic informer, since there is no built in informer for this type.
 				dynamicInformer := dynamicFactory.ForResource(gvr)
-				fmt.Printf("Created informer for %+v \n", gvr)
+				glog.Infof("Created informer for %s \n", gvr.String())
 				// Set up handler to pass this informer's resources into transformer
 				informer = dynamicInformer.Informer()
 				informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -122,15 +135,11 @@ func main() {
 						t.DynamicInput <- resource // Send pod into the transformerChannel
 					},
 				})
-				fmt.Printf("Created informer for %+v \n", gvr)
 
 				go informer.Run(stopper)
 			} else { // Some other error
-				fmt.Printf("ERROR: Unable to create informer for %+v \n", gvr)
-				fmt.Println(err)
+				glog.Errorf("Unable to create informer for %s - %v\n", gvr.String(), err)
 			}
-			// TODO check the error and split into 2 cases
-			// TODO declare dynamic informer and start it
 		} else {
 			// TODO success case, run the informer
 			// Set up handler to pass this informer's resources into transformer
@@ -143,7 +152,7 @@ func main() {
 				},
 			})
 			informer := genericInformer.Informer()
-			fmt.Printf("Created informer for %+v \n", gvr)
+			glog.Infof("Created informer for %s \n", gvr.String())
 
 			go informer.Run(stopper)
 		}
@@ -155,7 +164,7 @@ func main() {
 
 // Basic receiver that prints stuff, for my testing
 func receiver(transformOutput chan transforms.Node) {
-	fmt.Println("Receiver started") //RM
+	glog.Info("Receiver started") //RM
 	for {
 		n := <-transformOutput
 		name, ok := n.Properties["name"].(string)
@@ -167,7 +176,7 @@ func receiver(transformOutput chan transforms.Node) {
 		if !ok {
 			kind = "UNKNOWN"
 		}
-		fmt.Println("Received: " + kind + " " + name)
+		glog.Info("Received: " + kind + " " + name)
 	}
 }
 
