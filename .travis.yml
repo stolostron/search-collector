@@ -29,7 +29,7 @@ script:
 deploy:
   skip_cleanup: true
   provider: script
-  script: make image docker-login release
+  script: make build docker-login release
 
 # Publish multi-arch manifest in final job, only if both images are successuly uploaded
 jobs:
