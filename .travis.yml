@@ -31,10 +31,16 @@ deploy:
   provider: script
   script: make image docker-login release
 
-# Publish multi-arch manifest in final job, only if both images are successuly uploaded
-jobs:
-  include:
-    - stage: create multi arch image
-    # run this pipeline only on deployment
-    - if: type != pull_request
-    - script: make manifest-tool multi-arch
+after_deploy:
+  - |
+      curl -Lo travis_after_all.py https://raw.github.com/dmakhno/travis_after_all/master/travis_after_all.py
+      python travis_after_all.py https://travis.ibm.com/api
+      export $(cat .to_export_back)
+      if [[ "$BUILD_LEADER" == "YES" ]]; then
+        if [[ "$BUILD_AGGREGATE_STATUS" == "others_succeeded" ]]; then
+          echo "All jobs succeeded! Creating multi arch image..."
+          make manifest-tool multi-arch
+        else
+          echo "Some jobs failed" && exit 1
+        fi
+      fi
