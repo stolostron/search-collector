@@ -24,12 +24,12 @@ install:
   - make deps
 
 script:
-  - make lint test
+  - make lint test build
 
 deploy:
   skip_cleanup: true
   provider: script
-  script: make build docker-login release
+  script: make image docker-login release
 
 # Publish multi-arch manifest in final job, only if both images are successuly uploaded
 jobs:
