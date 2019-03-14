@@ -1,8 +1,13 @@
 language: go
-
 go:
   - 1.11.x
-  
+
+os:
+  - linux
+  - linux-ppc64le
+services:
+  - docker
+
 # Only build on master, stable branches and tag
 # The stable branch and tag should be leading with numbers
 branches:
@@ -12,8 +17,24 @@ branches:
     - /^v[0-9]+\..*$/
     - /^release-[0-9]+\..*$/
 
-before_script:
+before_install:
+  - source travis-env.sh
+
+install:
   - make deps
 
 script:
   - make lint test
+
+deploy:
+  skip_cleanup: true
+  provider: script
+  script: make image docker-login release
+
+# Publish multi-arch manifest in final job, only if both images are successuly uploaded
+jobs:
+  include:
+    - stage: create multi arch image
+    # run this pipeline only on deployment
+    - if: type != pull_request
+    - script: make manifest-tool multi-arch
