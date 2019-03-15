@@ -2,6 +2,7 @@ package transforms
 
 import (
 	"testing"
+	"time"
 
 	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +31,7 @@ func CreateGenericResource() machineryV1.Object {
 func TestCommonProperties(t *testing.T) {
 
 	res := CreateGenericResource()
-	timeString := timestamp.String()
+	timeString := timestamp.UTC().Format(time.RFC3339)
 
 	cp := commonProperties(res)
 
@@ -43,7 +44,7 @@ func TestCommonProperties(t *testing.T) {
 	AssertEqual("created", cp["created"], interface{}(timeString), t)
 
 	noLabels := true
-	for key, value := range cp["labels"].(map[string]string) {
+	for key, value := range cp["label"].(map[string]string) {
 		noLabels = false
 		if labels[key] != value {
 			t.Error("Incorrect label: " + key)

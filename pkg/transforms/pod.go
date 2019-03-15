@@ -15,6 +15,13 @@ func transformPod(resource *v1.Pod) Node {
 		restarts += uint(containerStatus.RestartCount)
 	}
 
+	var containers []string
+	var images []string
+	for _, container := range resource.Spec.Containers {
+		containers = append(containers, container.Name)
+		images = append(images, container.Image)
+	}
+
 	pod := transformCommon(resource) // Start off with the common properties
 
 	// Extract the properties specific to this type
@@ -23,6 +30,8 @@ func transformPod(resource *v1.Pod) Node {
 	pod.Properties["podIP"] = resource.Status.PodIP
 	pod.Properties["restarts"] = restarts
 	pod.Properties["status"] = string(resource.Status.Phase)
+	pod.Properties["container"] = containers
+	pod.Properties["image"] = images
 	pod.Properties["startedAt"] = ""
 	if resource.Status.StartTime != nil {
 		pod.Properties["startedAt"] = resource.Status.StartTime.UTC().Format(time.RFC3339)

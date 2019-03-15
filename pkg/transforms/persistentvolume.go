@@ -28,7 +28,7 @@ func transformPersistentVolume(resource *v1.PersistentVolume) Node {
 	for i := 0; i < len(resource.Spec.AccessModes); i++ {
 		accessModes[i] = string(resource.Spec.AccessModes[i])
 	}
-	persistentVolume.Properties["accessModes"] = strings.Join(accessModes, ", ")
+	persistentVolume.Properties["accessMode"] = accessModes
 
 	persistentVolume.Properties["claimRef"] = ""
 	if resource.Spec.ClaimRef != nil {

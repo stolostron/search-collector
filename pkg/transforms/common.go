@@ -1,6 +1,8 @@
 package transforms
 
 import (
+	"time"
+
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -14,8 +16,8 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret["name"] = resource.GetName()
 	ret["namespace"] = resource.GetNamespace()
 	ret["selfLink"] = resource.GetSelfLink()
-	ret["created"] = resource.GetCreationTimestamp().String()
-	ret["labels"] = resource.GetLabels()
+	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
+	ret["label"] = resource.GetLabels()
 	return ret
 }
 
@@ -37,13 +39,13 @@ func unstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 	ret["name"] = resource.GetName()
 	ret["namespace"] = resource.GetNamespace()
 	ret["selfLink"] = resource.GetSelfLink()
-	ret["created"] = resource.GetCreationTimestamp().String()
-	ret["labels"] = resource.GetLabels()
+	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
+	ret["label"] = resource.GetLabels()
 	return ret
 
 }
 
-// Transforms an unstrucuted.Unstructured (which represents a non-default k8s object) into a Node
+// Transforms an unstructured.Unstructured (which represents a non-default k8s object) into a Node
 func transformUnstructured(resource *unstructured.Unstructured) Node {
 	return Node{
 		UID:        string(resource.GetUID()),

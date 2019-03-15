@@ -5,6 +5,7 @@ package transforms
 import (
 	"encoding/json"
 	"io/ioutil"
+	"reflect"
 	"testing"
 )
 
@@ -28,6 +29,14 @@ func UnmarshalFile(filepath string, resourceType interface{}, t *testing.T) {
 // NOTE: You can only use this to compare types that are comparable under the hood.
 func AssertEqual(property string, actual, expected interface{}, t *testing.T) {
 	if expected != actual {
+		t.Errorf("%s EXPECTED: %T %v\n", property, expected, expected)
+		t.Errorf("%s ACTUAL: %T %v\n", property, actual, actual)
+		t.Fail()
+	}
+}
+
+func AssertDeepEqual(property string, actual, expected interface{}, t *testing.T) {
+	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("%s EXPECTED: %T %v\n", property, expected, expected)
 		t.Errorf("%s ACTUAL: %T %v\n", property, actual, actual)
 		t.Fail()

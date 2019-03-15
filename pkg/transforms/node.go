@@ -41,7 +41,7 @@ func transformNode(resource *v1.Node) Node {
 	node.Properties["architecture"] = resource.Status.NodeInfo.Architecture
 	node.Properties["cpu"], _ = resource.Status.Capacity.Cpu().AsInt64()
 	node.Properties["osImage"] = resource.Status.NodeInfo.OSImage
-	node.Properties["role"] = strings.Join(roles, ", ")
+	node.Properties["role"] = roles
 
 	return node
 }
