@@ -24,12 +24,15 @@ install:
   - make deps
 
 script:
-  - make lint test build
+  - make lint test build image
+
+# after_success:
+#   - make push
 
 deploy:
   skip_cleanup: true
   provider: script
-  script: make image docker-login release
+  script: make docker-login release
 
 after_deploy:
   - |
