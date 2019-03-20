@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -46,16 +47,22 @@ func main() {
 		panic(err)
 	}
 
-	// Get kubeconfig from env or default to the one kept in home dir
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if home := os.Getenv("HOME"); kubeconfig == "" && home != "" {
-		glog.Info("KUBECONFIG was undefined, using ~/.kube/config")
-		kubeconfig = filepath.Join(home, ".kube", "config")
+	var config *rest.Config
+	var clientConfigError error
+
+	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
+		glog.Info("Creating k8s client using config from KUBECONFIG")
+		config, clientConfigError = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	} else if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".kube", "config")); os.IsNotExist(err) {
+		glog.Info("Creating k8s client using InClusterConfig()")
+		config, clientConfigError = rest.InClusterConfig()
+	} else {
+		glog.Info("Creating k8s client using config from ~/.kube/config")
+		config, clientConfigError = clientcmd.BuildConfigFromFlags("", filepath.Join(os.Getenv("HOME"), ".kube", "config"))
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		glog.Fatal("Error Constructing Client From Config: ", err)
+	if clientConfigError != nil {
+		glog.Fatal("Error Constructing Client From Config: ", clientConfigError)
 	}
 
 	// Initialize the dynamic client, used for CRUD operations on nondeafult k8s resources
