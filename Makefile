@@ -5,8 +5,9 @@ BINDIR        ?= output
 default: search-collector
 
 deps:
-	go get -t -v ./...
 	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	go get -u github.com/golang/dep/cmd/dep
+	dep ensure -v
 
 search-collector:
 	CGO_ENABLED=0 go build -a -v -i -installsuffix cgo -ldflags '-s -w' -o $(BINDIR)/search-collector ./
