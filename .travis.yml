@@ -18,6 +18,8 @@ branches:
     - /^release-[0-9]+\..*$/
 
 before_install:
+  # https://github.com/golang/dep/blob/master/docs/FAQ.md#how-do-i-get-dep-to-authenticate-via-ssh-to-a-git-repo
+  - git config --global url."git@github.ibm.com:".insteadOf "https://github.ibm.com/"
   - source travis-env.sh
 
 install:

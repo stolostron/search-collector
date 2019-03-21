@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/golang/glog"
+	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
@@ -129,6 +130,14 @@ func transformRoutine(input chan *unstructured.Unstructured, output chan Node) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			transformed = transformPersistentVolume(&typedResource)
+
+		case "PlacementPolicy":
+			typedResource := mcm.PlacementPolicy{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			transformed = transformPlacementPolicy(&typedResource)
 
 		case "Pod":
 			typedResource := core.Pod{}

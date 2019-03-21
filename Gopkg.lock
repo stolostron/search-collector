@@ -109,6 +109,20 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
+  branch = "master"
+  digest = "1:e2d916a745e488e5695c8f1297a5db5f1e047f4c8e39838e7c7ff1dcfcf1c28a"
+  name = "github.com/kubernetes-sigs/application"
+  packages = [
+    "pkg/apis/app/v1beta1",
+    "pkg/component",
+    "pkg/customresource",
+    "pkg/finalizer",
+    "pkg/resource",
+  ]
+  pruneopts = "UT"
+  revision = "4ead7f1b87048b7717b3e474a21fdc07e6bce636"
+
+[[projects]]
   digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
   name = "github.com/modern-go/concurrent"
   packages = ["."]
@@ -150,9 +164,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:861bcd5d6dfda4d059816a37544517775e3b0290a46539fa3f73542784e8c927"
+  digest = "1:3cc7d466751f84677b0e66d3241d1c9afcbbf4dd76421c97372e6d3160abb573"
   name = "github.ibm.com/IBMPrivateCloud/hcm-api"
-  packages = ["pkg/apis/mcm"]
+  packages = [
+    "pkg/apis/mcm",
+    "pkg/apis/mcm/v1alpha1",
+  ]
   pruneopts = "UT"
   revision = "3dee203f94fbaf5699d3d88ed3b4c7d1af4af8d3"
 
@@ -507,12 +524,21 @@
   pruneopts = "UT"
   revision = "eb099a00440591a03ff5e38a2ef943098090721d"
 
+[[projects]]
+  digest = "1:84a8609383bec11b71d52dd813f33f1d16614b91966940bdc2aa79bea864fa25"
+  name = "sigs.k8s.io/controller-runtime"
+  packages = ["pkg/runtime/scheme"]
+  pruneopts = "UT"
+  revision = "f6f0bc9611363b43664d08fb097ab13243ef621d"
+  version = "v0.1.9"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/golang/glog",
-    "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm",
+    "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
+    "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/batch/v1beta1",
@@ -522,6 +548,7 @@
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/dynamic",
     "k8s.io/client-go/dynamic/dynamicinformer",
+    "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
   ]

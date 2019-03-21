@@ -1,0 +1,44 @@
+{
+    "apiVersion": "mcm.ibm.com/v1alpha1",
+    "kind": "PlacementPolicy",
+    "metadata": {
+        "annotations": {
+            "mcm.ibm.com/user-group": "redacted",
+            "mcm.ibm.com/user-identity": "redacted"
+        },
+        "creationTimestamp": "2019-03-15T19:42:04Z",
+        "labels": {
+            "app": "test",
+            "chart": "test-0.1.0",
+            "heritage": "Tiller",
+            "name": "test-test",
+            "release": "test",
+            "servicekind": "CacheService"
+        },
+        "name": "test-test",
+        "namespace": "default",
+        "resourceVersion": "171",
+        "selfLink": "/apis/mcm.ibm.com/v1alpha1/namespaces/default/placementpolicies/test-test",
+        "uid": "68c80b8a-475a-11e9-9bcb-c64602ce8a55"
+    },
+    "spec": {
+        "clusterLabels": {
+            "matchLabels": {
+                "environment": "Dev"
+            }
+        },
+        "clusterReplicas": 1,
+        "resourceHint": {
+            "type": "cpu"
+        },
+        "resourceSelector": {}
+    },
+    "status": {
+        "decisions": [
+            {
+                "clusterName": "remote-kl",
+                "clusterNamespace": "remote-ns"
+            }
+        ]
+    }
+}
