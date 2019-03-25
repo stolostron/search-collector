@@ -11,13 +11,16 @@ import (
 func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret := make(map[string]interface{})
 
-	ret["resourceVersion"] = resource.GetResourceVersion()
-	ret["cluster"] = resource.GetClusterName()
 	ret["name"] = resource.GetName()
-	ret["namespace"] = resource.GetNamespace()
 	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
-	ret["label"] = resource.GetLabels()
+
+	if resource.GetLabels() != nil {
+		ret["label"] = resource.GetLabels()
+	}
+	if resource.GetNamespace() != "" {
+		ret["namespace"] = resource.GetNamespace()
+	}
 	return ret
 }
 
@@ -34,13 +37,16 @@ func unstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 	ret := make(map[string]interface{})
 
 	ret["kind"] = resource.GetKind()
-	ret["resourceVersion"] = resource.GetResourceVersion()
-	ret["cluster"] = resource.GetClusterName()
 	ret["name"] = resource.GetName()
-	ret["namespace"] = resource.GetNamespace()
 	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
-	ret["label"] = resource.GetLabels()
+
+	if resource.GetLabels() != nil {
+		ret["label"] = resource.GetLabels()
+	}
+	if resource.GetNamespace() != "" {
+		ret["namespace"] = resource.GetNamespace()
+	}
 	return ret
 
 }

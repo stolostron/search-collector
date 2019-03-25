@@ -117,6 +117,12 @@ func main() {
 
 	// Now that we have a list of all the GVRs for resources we support, make dynamic informers for each one, set them up to pass their data into the transformer, and start them.
 	for gvr := range gvrList {
+		// Ignore events because those cause too much noise.
+		// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
+		if gvr.Resource == "clusters" || gvr.Resource == "clusterstatuses" || gvr.Resource == "events" {
+			continue
+		}
+
 		// In this case we need to create a dynamic informer, since there is no built in informer for this type.
 		dynamicInformer := dynamicFactory.ForResource(gvr)
 		glog.Infof("Created informer for %s \n", gvr.String())
