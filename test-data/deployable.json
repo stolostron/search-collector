@@ -1,0 +1,34 @@
+{
+    "apiVersion": "mcm.ibm.com/v1alpha1",
+    "kind": "Deployable",
+    "metadata": {
+        "annotations": {
+            "mcm.ibm.com/user-group": "redacted",
+            "mcm.ibm.com/user-identity": "redacted"
+        },
+        "creationTimestamp": "2019-03-15T19:42:04Z",
+        "labels": {
+            "app": "test",
+            "chart": "test-0.1.0",
+            "heritage": "Tiller",
+            "name": "test-test",
+            "release": "test",
+            "servicekind": "ApplicationService"
+        },
+        "name": "test-test",
+        "namespace": "default",
+        "resourceVersion": "159",
+        "selfLink": "/apis/mcm.ibm.com/v1alpha1/namespaces/default/deployables/test-test",
+        "uid": "68bfe709-465a-11e9-9bcb-c64602ce8a55"
+    },
+    "spec": {
+        "deployer": {
+            "helm": {
+                "chartURL": "https://awesomewebsite.com/test-0.1.0.tgz",
+                "namespace": "default"
+            },
+            "kind": "helm"
+        }
+    },
+    "status": {}
+}

@@ -1,0 +1,50 @@
+{
+    "apiVersion": "app.k8s.io/v1beta1",
+    "kind": "Application",
+    "metadata": {
+        "annotations": {
+            "apps.ibm.com/applicationrelationships": "foo-gbapp-appfrontend,foo-gbapp-appmaster,foo-gbapp-slave",
+            "apps.ibm.com/dashboard": "https://0.0.0.0:8443/grafana/dashboard/test",
+            "apps.ibm.com/deployables": "foo-gbapp,foo-gbapp-redismaster,foo-gbapp-redisslave",
+            "apps.ibm.com/placementbindings": "foo-gbapp,foo-gbapp-redismaster"
+        },
+        "creationTimestamp": "2019-03-19T20:48:20Z",
+        "generation": 1,
+        "labels": {
+            "app": "gbapp",
+            "chart": "gbapp-0.1.0",
+            "heritage": "Tiller",
+            "name": "foo-gbapp",
+            "release": "foo"
+        },
+        "name": "foo-gbapp",
+        "namespace": "default",
+        "resourceVersion": "3731029",
+        "selfLink": "/apis/app.k8s.io/v1beta1/namespaces/default/applications/foo-gbapp",
+        "uid": "54949050-4a88-11e9-b5e5-005456a017e1"
+    },
+    "spec": {
+        "componentKinds": [
+            {
+                "group": "core",
+                "kind": "Pods"
+            }
+        ],
+        "descriptor": {},
+        "selector": {
+            "matchExpressions": [
+                {
+                    "key": "app",
+                    "operator": "In",
+                    "values": [
+                        "gbapp",
+                        "gbf",
+                        "gbrm",
+                        "gbrs"
+                    ]
+                }
+            ]
+        }
+    },
+    "status": {}
+}

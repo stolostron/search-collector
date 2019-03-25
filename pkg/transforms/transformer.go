@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/golang/glog"
+	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
@@ -67,6 +68,22 @@ func transformRoutine(input chan *unstructured.Unstructured, output chan Node) {
 		}
 		switch kind := resource.GetKind(); kind {
 
+		case "Application":
+			typedResource := app.Application{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			transformed = transformApplication(&typedResource)
+
+		case "ApplicationRelationship":
+			typedResource := mcm.ApplicationRelationship{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			transformed = transformApplicationRelationship(&typedResource)
+
 		case "ConfigMap":
 			typedResource := core.ConfigMap{}
 			err = json.Unmarshal(j, &typedResource)
@@ -90,6 +107,22 @@ func transformRoutine(input chan *unstructured.Unstructured, output chan Node) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			transformed = transformDaemonSet(&typedResource)
+
+		case "Deployable":
+			typedResource := mcm.Deployable{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			transformed = transformDeployable(&typedResource)
+
+		case "DeployableOverride":
+			typedResource := mcm.DeployableOverride{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			transformed = transformDeployableOverride(&typedResource)
 
 		case "Deployment":
 			typedResource := apps.Deployment{}
@@ -130,6 +163,14 @@ func transformRoutine(input chan *unstructured.Unstructured, output chan Node) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			transformed = transformPersistentVolume(&typedResource)
+
+		case "PlacementBinding":
+			typedResource := mcm.PlacementBinding{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			transformed = transformPlacementBinding(&typedResource)
 
 		case "PlacementPolicy":
 			typedResource := mcm.PlacementPolicy{}

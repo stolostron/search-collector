@@ -1,0 +1,39 @@
+{
+    "apiVersion": "mcm.ibm.com/v1alpha1",
+    "kind": "ApplicationRelationship",
+    "metadata": {
+        "annotations": {
+            "mcm.ibm.com/user-group": "redacted",
+            "mcm.ibm.com/user-identity": "redacted"
+        },
+        "creationTimestamp": "2019-03-15T19:42:04Z",
+        "labels": {
+            "app": "test",
+            "chart": "test-0.1.0",
+            "destinationKind": "Deployable",
+            "destinationName": "test-test-redismaster",
+            "heritage": "Tiller",
+            "release": "test",
+            "sourceKind": "Application",
+            "sourceName": "test-test"
+        },
+        "name": "test-test-appmaster",
+        "namespace": "default",
+        "resourceVersion": "169",
+        "selfLink": "/apis/mcm.ibm.com/v1alpha1/namespaces/default/applicationrelationships/test-test-appmaster",
+        "uid": "68bc48e9-475a-11e9-9bcb-c64602ce8a55"
+    },
+    "spec": {
+        "destination": {
+            "kind": "Deployable",
+            "name": "test-test-redismaster"
+        },
+        "livenessProbe": {},
+        "source": {
+            "kind": "Application",
+            "name": "test-test"
+        },
+        "type": "contains"
+    },
+    "status": {}
+}

@@ -1,0 +1,37 @@
+{
+    "apiVersion": "mcm.ibm.com/v1alpha1",
+    "kind": "PlacementBinding",
+    "metadata": {
+        "annotations": {
+            "mcm.ibm.com/user-group": "redacted",
+            "mcm.ibm.com/user-identity": "redacted"
+        },
+        "creationTimestamp": "2019-03-19T20:48:20Z",
+        "labels": {
+            "app": "test",
+            "chart": "test-0.1.0",
+            "heritage": "Tiller",
+            "name": "foo-test",
+            "placementPolicy": "foo-test",
+            "release": "foo",
+            "servicekind": "CacheService"
+        },
+        "name": "foo-test",
+        "namespace": "default",
+        "resourceVersion": "789909",
+        "selfLink": "/apis/mcm.ibm.com/v1alpha1/namespaces/default/placementbindings/foo-test",
+        "uid": "54a18de1-4a88-11e9-a220-be82b1beef7f"
+    },
+    "placementRef": {
+        "apiGroup": "mcm.ibm.com",
+        "kind": "PlacementPolicy",
+        "name": "foo-test"
+    },
+    "subjects": [
+        {
+            "apiGroup": "mcm.ibm.com",
+            "kind": "Deployable",
+            "name": "foo-test"
+        }
+    ]
+}
