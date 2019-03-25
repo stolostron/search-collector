@@ -41,7 +41,7 @@ func main() {
 	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
 		glog.Info("Creating k8s client using Config from KUBECONFIG")
 		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", kubeconfig)
-	} else if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".kube", "clientConfig")); os.IsNotExist(err) {
+	} else if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".kube", "config")); os.IsNotExist(err) {
 		glog.Info("Creating k8s client using InClusterlientConfig()")
 		clientConfig, clientConfigError = rest.InClusterConfig()
 	} else {
@@ -152,13 +152,15 @@ func main() {
 	//TODO make this a lot more robust, handle diffs, etc.
 	// Start a really absic sender routine.
 	go func() {
+		// First time send after 10 seconds, then send every 60 seconds.
+		time.Sleep(10 * time.Second)
 		for {
-			time.Sleep(10 * time.Second)
 			glog.Info("SENDING") //RM
 			err = sender.Send()
 			if err != nil {
 				glog.Error("SENDING ERROR: ", err)
 			}
+			time.Sleep(60 * time.Second)
 		}
 	}()
 

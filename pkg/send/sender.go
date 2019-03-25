@@ -33,9 +33,9 @@ type Diff struct {
 // Represents the Node operations needed to bring the hub's version of this cluster's data into sync.
 // FYI these are only exported because they need to be marhsalled and I didn't want to write my own Marshaller.
 type NodeDiff struct {
-	DeletedResources []string           `json:"deletedResources,omitempty"` // List of UIDs of nodes which need to be deleted
-	AddResources     []*transforms.Node `json:"addedResources,omitempty"`   // List of Nodes that already existed which must be added
-	UpdatedResources []*transforms.Node `json:"updatedResources,omitempty"` // List of Nodes that already existed which must be updated
+	DeletedResources []string           `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
+	AddResources     []*transforms.Node `json:"addResources,omitempty"`    // List of Nodes that already existed which must be added
+	UpdatedResources []*transforms.Node `json:"updatResources,omitempty"`  // List of Nodes that already existed which must be updated
 }
 
 // TODO We really should just import this from the aggregator so that they are guaranteed to match
@@ -105,7 +105,7 @@ func (s *Sender) completePayload() Payload {
 		NodeDiff: NodeDiff{
 			AddResources: s.totalState,
 		},
-		ClearAll: false, //FIXME This needs to be true, it is currently false to deal with temporary bug on the aggregator side
+		ClearAll: true,
 		// In this case, hash, update and delete aren't needed
 	}
 	s.receiverMutex.Unlock() // TODO should this be moved to outside this function?
