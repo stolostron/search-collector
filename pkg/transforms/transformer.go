@@ -2,7 +2,6 @@ package transforms
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
@@ -14,14 +13,26 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// used to track operations on Nodes/edges
-type Operation string
+type Operation int
 
 const (
-	Create Operation = "CREATE"
-	Update Operation = "UPDATE"
-	Delete Operation = "DELETE"
+	Create Operation = 0
+	Update Operation = 1
 )
+
+// This type is used for add and update events.
+type Event struct {
+	Time      int64
+	Operation Operation
+	Resource  *unstructured.Unstructured
+}
+
+// These are the input to the sender. They have the node, and then they keep the time which is used for reconciling this version with other versions that the sender may already have.
+type UpsertNode struct {
+	Time      int64
+	Operation Operation
+	Node      Node
+}
 
 // A generic node type that is passed to the aggregator for translation to whatever graphDB technology.
 type Node struct {
@@ -32,41 +43,46 @@ type Node struct {
 // Object that handles transformation of k8s objects.
 // To use, create one, call Start(), and begin passing in objects.
 type Transformer struct {
-	Input  chan *unstructured.Unstructured // Put your k8s resources in here.
-	Output chan Node                       // And recieve your redisgraph nodes from here.
+	Input  chan *Event     // Put your k8s resources and corresponding times in here.
+	Output chan UpsertNode // And recieve your aggregator-ready nodes (and times) from here.
 	// TODO add stopper channel?
 }
 
-// Starts the transformer with a specified number of routines
-func (t Transformer) Start(numRoutines int) error {
-	glog.Info("Transformer started") // RM
+func NewTransformer(inputChan chan *Event, outputChan chan UpsertNode, numRoutines int) Transformer {
+	glog.Info("Transformer started")
+	nr := numRoutines
 	if numRoutines < 1 {
-		return errors.New("numRoutines must be 1 or greater")
+		glog.Warning(numRoutines, "is an invalid number of routines for Transformer. Using 1 instead.")
+		nr = 1
 	}
 
 	// start numRoutines threads to handle transformation.
-	for i := 0; i < numRoutines; i++ {
-		go transformRoutine(t.Input, t.Output)
+	for i := 0; i < nr; i++ {
+		go transformRoutine(inputChan, outputChan)
 	}
-	return nil
+	return Transformer{
+		Input:  inputChan,
+		Output: outputChan,
+	}
+
 }
 
 // This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
 // If anything goes wrong in here that requires you to skip the current resource, call panic() and the routine will be spun back up by handleRoutineExit and the bad resource won't be in there because it was already taken out by the previous run.
-func transformRoutine(input chan *unstructured.Unstructured, output chan Node) {
+func transformRoutine(input chan *Event, output chan UpsertNode) {
 	defer handleRoutineExit(input, output)
 	glog.Info("Starting transformer routine")
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
 		var transformed Node
 
-		resource := <-input // Read from the input channel
+		event := <-input // Read from the input channel
 		// Pull out the kind and use marshal/unmarshal to convert to the right type.
-		j, err := json.Marshal(resource)
+		j, err := json.Marshal(event.Resource)
 		if err != nil {
 			panic(err) // Will be caught by handleRoutineExit
 		}
-		switch kind := resource.GetKind(); kind {
+		switch kind := event.Resource.GetKind(); kind {
 
 		case "Application":
 			typedResource := app.Application{}
@@ -220,18 +236,23 @@ func transformRoutine(input chan *unstructured.Unstructured, output chan Node) {
 			}
 			transformed = transformStatefulSet(&typedResource)
 		default:
-			transformed = transformUnstructured(resource)
+			transformed = transformUnstructured(event.Resource)
 		}
 
 		// Send the result through the output channel
-		output <- transformed
+		un := UpsertNode{
+			Time:      event.Time,
+			Operation: event.Operation,
+			Node:      transformed,
+		}
+		output <- un
 	}
 }
 
 // Handles a panic from inside transformRoutine.
 // If the panic was due to an error, starts another transformRoutine with the same channels as this one.
 // If not, just lets it die.
-func handleRoutineExit(input chan *unstructured.Unstructured, output chan Node) {
+func handleRoutineExit(input chan *Event, output chan UpsertNode) {
 	// Recover and check the value. If we are here because of a panic, something will be in it.
 	if r := recover(); r != nil { // Case where we got here from a panic
 		glog.Errorf("Error in transformer routine: %v\n", r)

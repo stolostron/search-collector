@@ -1,11 +1,15 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
+
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 
 	"github.com/golang/glog"
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/send"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -18,47 +22,31 @@ import (
 )
 
 const (
-	numThreads = 1 // TODO This will be a cli flag or be removed as a concept
+	numThreads = 2 // TODO This will be a cli flag or be removed as a concept
 )
 
 func main() {
-	// parse flags
-	flag.Parse()
-	err := flag.Lookup("logtostderr").Value.Set("true") // Glog is weird in that by default it logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).
-	if err != nil {
-		glog.Fatal("Error setting default flag: ", err)
-	}
-	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
 
 	glog.Info("Starting Data Collector")
 
-	// Create in/out channels for the transformer
-	transformInput := make(chan *unstructured.Unstructured)
-	transformOutput := make(chan transforms.Node)
-	t := transforms.Transformer{
-		Input:  transformInput,
-		Output: transformOutput,
-	}
+	// Create transformers
+	upsertTransformer := transforms.NewTransformer(make(chan *transforms.Event), make(chan transforms.UpsertNode), numThreads)
 
-	// Start the transformer with 1 threads doing transformation work.
-	glog.Infof("Starting %d transformer threads", numThreads)
-	err = t.Start(numThreads)
-	if err != nil {
-		panic(err)
-	}
+	// Create Sender, attached to transformer
+	sender := send.NewSender(upsertTransformer.Output, make(chan *send.DeleteNode), config.Cfg.AggregatorURL, config.Cfg.ClusterName) //TODO add clusterName and aggregator URL
 
-	var config *rest.Config
+	var clientConfig *rest.Config
 	var clientConfigError error
 
 	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
-		glog.Info("Creating k8s client using config from KUBECONFIG")
-		config, clientConfigError = clientcmd.BuildConfigFromFlags("", kubeconfig)
-	} else if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".kube", "config")); os.IsNotExist(err) {
-		glog.Info("Creating k8s client using InClusterConfig()")
-		config, clientConfigError = rest.InClusterConfig()
+		glog.Info("Creating k8s client using Config from KUBECONFIG")
+		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	} else if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".kube", "clientConfig")); os.IsNotExist(err) {
+		glog.Info("Creating k8s client using InClusterlientConfig()")
+		clientConfig, clientConfigError = rest.InClusterConfig()
 	} else {
-		glog.Info("Creating k8s client using config from ~/.kube/config")
-		config, clientConfigError = clientcmd.BuildConfigFromFlags("", filepath.Join(os.Getenv("HOME"), ".kube", "config"))
+		glog.Info("Creating k8s client using Config from ~/.kube/config")
+		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", filepath.Join(os.Getenv("HOME"), ".kube", "config"))
 	}
 
 	if clientConfigError != nil {
@@ -66,7 +54,7 @@ func main() {
 	}
 
 	// Initialize the dynamic client, used for CRUD operations on nondeafult k8s resources
-	dynamicClientset, err := dynamic.NewForConfig(config)
+	dynamicClientset, err := dynamic.NewForConfig(clientConfig)
 	if err != nil {
 		glog.Fatal("Cannot Construct Dynamic Client From Config: ", err)
 	}
@@ -75,7 +63,7 @@ func main() {
 	dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClientset, 0) // factory for building dynamic informer objects used with CRDs and arbitrary k8s objects
 
 	// Create special type of client used for discovering resource types
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(clientConfig)
 	if err != nil {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
@@ -131,30 +119,51 @@ func main() {
 		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				resource := obj.(*unstructured.Unstructured)
-				t.Input <- resource // Send resource into the transformer input channel
+				upsert := transforms.Event{
+					Time:      time.Now().Unix(),
+					Operation: transforms.Create,
+					Resource:  resource,
+				}
+				upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
+			},
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				resource := newObj.(*unstructured.Unstructured)
+				upsert := transforms.Event{
+					Time:      time.Now().Unix(),
+					Operation: transforms.Update,
+					Resource:  resource,
+				}
+				upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
+			},
+			DeleteFunc: func(obj interface{}) {
+				resource := obj.(*unstructured.Unstructured)
+				uid := string(resource.GetUID())
+				deleteNode := send.DeleteNode{
+					Time: time.Now().Unix(),
+					UID:  uid,
+				}
+				sender.DeleteNodeChannel <- &deleteNode
 			},
 		})
 
 		go informer.Run(stopper)
 	}
 
-	receiver(transformOutput) // Would be the sender. For now, just a simple function to print it for testing.
-}
-
-// Basic receiver that prints stuff, for my testing
-func receiver(transformOutput chan transforms.Node) {
-	glog.Info("Receiver started") //RM
-	for {
-		n := <-transformOutput
-		name, ok := n.Properties["name"].(string)
-		if !ok {
-			name = "UNKNOWN"
+	//TODO make this a lot more robust, handle diffs, etc.
+	// Start a really absic sender routine.
+	go func() {
+		for {
+			time.Sleep(10 * time.Second)
+			glog.Info("SENDING") //RM
+			err = sender.Send()
+			if err != nil {
+				glog.Error("SENDING ERROR: ", err)
+			}
 		}
+	}()
 
-		kind, ok := n.Properties["kind"].(string)
-		if !ok {
-			kind = "UNKNOWN"
-		}
-		glog.Info("Received: " + kind + " " + name)
-	}
+	// We don't actually use this to wait on anything, since the transformer routines don't ever end unless something goes wrong. We just use this to wait forever in main once we start things up.
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	wg.Wait() // This will never end (until we kill the process)
 }

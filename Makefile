@@ -1,6 +1,6 @@
 BINDIR        ?= output
 
-.PHONY: deps default build lint test coverage clean
+.PHONY: deps default build lint test coverage clean search-collector
 
 default: search-collector
 
@@ -11,7 +11,6 @@ deps:
 
 search-collector:
 	CGO_ENABLED=0 go build -a -v -i -installsuffix cgo -ldflags '-s -w' -o $(BINDIR)/search-collector ./
-	strip $(BINDIR)/search-collector
 
 build: search-collector
 
@@ -33,7 +32,6 @@ clean:
 # To build image on Mac and Linux
 local-docker-search-collector:
 	CGO_ENABLED=0 GOOS=linux go build -a -v -i -installsuffix cgo -ldflags '-s -w' -o $(BINDIR)/search-collector ./
-	strip $(BINDIR)/search-collector
 
 .PHONY: local
 local: check-env app-version local-docker-search-collector

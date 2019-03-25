@@ -163,6 +163,14 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:dc48dff981a895912c33cf272b1d869c216d058bd4025736cb481d3ceeed6872"
+  name = "github.com/tkanos/gonfig"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e83209aed2d171bab5ffb312a1e630110481cb99"
+  version = "1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:3cc7d466751f84677b0e66d3241d1c9afcbbf4dd76421c97372e6d3160abb573"
   name = "github.ibm.com/IBMPrivateCloud/hcm-api"
@@ -538,6 +546,7 @@
   input-imports = [
     "github.com/golang/glog",
     "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
+    "github.com/tkanos/gonfig",
     "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
