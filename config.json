@@ -1,4 +1,4 @@
 {
-    "AggregatorURL":"http://localhost:3010",
+    "AggregatorURL":"https://localhost:3010",
     "ClusterName":"localtest"
 }

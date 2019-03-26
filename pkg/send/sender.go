@@ -69,7 +69,7 @@ func NewSender(upsertChan chan transforms.UpsertNode, deleteChan chan *DeleteNod
 		aggregatorURL:        aggregatorURL,
 		aggregatorSyncPath:   strings.Join([]string{"/aggregator/clusters/", clusterName, "/sync"}, ""),
 		aggregatorStatusPath: strings.Join([]string{"/aggregator/clusters/", clusterName, "/status"}, ""),
-		httpClient:           http.Client{}, //default http client. TODO this will need credentials, ssl stuff, etc
+		httpClient:           getHTTPSClient(), //http.Client{}, //default http client. TODO this will need credentials, ssl stuff, etc
 		totalState:           make([]*transforms.Node, 0),
 		diffState:            NodeDiff{},
 		lastHash:             NEVER_SENT,

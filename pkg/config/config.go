@@ -12,7 +12,7 @@ import (
 
 const (
 	DEFAULT_CLUSTER_NAME   = "localtest"
-	DEFAULT_AGGREGATOR_URL = "http://localhost:3010"
+	DEFAULT_AGGREGATOR_URL = "https://localhost:3010"
 )
 
 // Define a config type for gonfig to hold our config properties.
