@@ -1,4 +1,5 @@
 {
-    "AggregatorURL":"https://localhost:3010",
-    "ClusterName":"localtest"
+    "AggregatorURL": "https://localhost:3010",
+    "ClusterName": "localtest",
+    "RuntimeMode": "development"
 }

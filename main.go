@@ -1,8 +1,6 @@
 package main
 
 import (
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -38,15 +36,12 @@ func main() {
 	var clientConfig *rest.Config
 	var clientConfigError error
 
-	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
-		glog.Info("Creating k8s client using Config from KUBECONFIG")
-		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", kubeconfig)
-	} else if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".kube", "config")); os.IsNotExist(err) {
+	if config.Cfg.KubeConfig != "" {
+		glog.Infof("Creating k8s client using path: %s", config.Cfg.KubeConfig)
+		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", config.Cfg.KubeConfig)
+	} else {
 		glog.Info("Creating k8s client using InClusterlientConfig()")
 		clientConfig, clientConfigError = rest.InClusterConfig()
-	} else {
-		glog.Info("Creating k8s client using Config from ~/.kube/config")
-		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", filepath.Join(os.Getenv("HOME"), ".kube", "config"))
 	}
 
 	if clientConfigError != nil {

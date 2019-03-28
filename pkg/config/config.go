@@ -11,14 +11,18 @@ import (
 )
 
 const (
+	DEFAULT_RUNTIME_MODE   = "production"
 	DEFAULT_CLUSTER_NAME   = "localtest"
 	DEFAULT_AGGREGATOR_URL = "https://localhost:3010"
 )
 
 // Define a config type for gonfig to hold our config properties.
 type Config struct {
+	RuntimeMode   string `env:"RUNTIME_MODE"`   // Running mode (development or production)
 	AggregatorURL string `env:"AGGREGATOR_URL"` // URL of the Aggregator, includes port but not any path
 	ClusterName   string `env:"CLUSTER_NAME"`   // The name of this cluster
+	KubeConfig    string `env:"KUBECONFIG"`     // Local kubeconfig path
+	TillerURL     string `env:"TILLER_URL"`     // URL host path of the tiller server
 }
 
 var Cfg = Config{}
@@ -36,7 +40,7 @@ func init() {
 	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
 
 	// Load default config from ./config.json.
-	// These can be overriden in the next step if environment variables are set.
+	// These can be overridden in the next step if environment variables are set.
 	if _, err := os.Stat(filepath.Join(".", "config.json")); !os.IsNotExist(err) {
 		err = gonfig.GetConf(*FilePath, &Cfg)
 		if err != nil {
@@ -48,18 +52,31 @@ func init() {
 	}
 
 	// If environment variables are set, use those values instead of ./config.json
-	if clusterName := os.Getenv("CLUSTER_NAME"); clusterName != "" {
-		glog.Info("Using CLUSTER_NAME from environment: ", clusterName)
-		Cfg.ClusterName = clusterName
-	} else if Cfg.ClusterName == "" {
-		glog.Warning("No ClusterName from file or environment, using default ClusterName: ", DEFAULT_CLUSTER_NAME)
-		Cfg.ClusterName = DEFAULT_CLUSTER_NAME
+	// Simply put, the order of preference is env -> config.json -> default constants (from left to right)
+	setDefault(&Cfg.RuntimeMode, "RUNTIME_MODE", DEFAULT_RUNTIME_MODE)
+	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_AGGREGATOR_URL)
+	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
+
+	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) {
+		// set default to empty string if path does not reslove
+		defaultKubePath = ""
 	}
-	if aggregatorURL := os.Getenv("AGGREGATOR_URL"); aggregatorURL != "" {
-		glog.Info("Using AGGREGATOR_URL from environment: ", aggregatorURL)
-		Cfg.AggregatorURL = aggregatorURL
-	} else if Cfg.AggregatorURL == "" {
-		glog.Warning("No AggregatorURL from file or environment, using default AggregatorURL: ", DEFAULT_AGGREGATOR_URL)
-		Cfg.AggregatorURL = DEFAULT_AGGREGATOR_URL
+	setDefault(&Cfg.KubeConfig, "KUBECONFIG", defaultKubePath)
+
+	// Special case for default url, this is set below
+	setDefault(&Cfg.TillerURL, "TILLER_URL", "")
+	// TODO: tiller url coming soon to a pr near you!!
+}
+
+// Sets config field to perfer the env over config file
+// If no config or env set to the default value
+func setDefault(field *string, env, defaultVal string) {
+	if val := os.Getenv(env); val != "" {
+		glog.Infof("Using %s from environment: %s", env, val)
+		*field = val
+	} else if *field == "" && defaultVal != "" {
+		glog.Infof("No %s from file or environment, using default value: %s", env, defaultVal)
+		*field = defaultVal
 	}
 }
