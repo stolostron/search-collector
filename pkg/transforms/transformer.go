@@ -6,6 +6,8 @@ import (
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
+	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
+	policy "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
@@ -99,6 +101,14 @@ func transformRoutine(input chan *Event, output chan UpsertNode) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			transformed = transformApplicationRelationship(&typedResource)
+
+		case "Compliance":
+			typedResource := com.Compliance{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			transformed = transformCompliance(&typedResource)
 
 		case "ConfigMap":
 			typedResource := core.ConfigMap{}
@@ -203,6 +213,14 @@ func transformRoutine(input chan *Event, output chan UpsertNode) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			transformed = transformPod(&typedResource)
+
+		case "Policy":
+			typedResource := policy.Policy{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			transformed = transformPolicy(&typedResource)
 
 		case "ReplicaSet":
 			typedResource := apps.ReplicaSet{}

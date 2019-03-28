@@ -182,6 +182,31 @@
   revision = "3dee203f94fbaf5699d3d88ed3b4c7d1af4af8d3"
 
 [[projects]]
+  branch = "master"
+  digest = "1:6a7c5ee6039c384ee08cd0f639362c571a409b7f6b49238f63101661740dd219"
+  name = "github.ibm.com/IBMPrivateCloud/hcm-compliance"
+  packages = [
+    "pkg/apis/compliance/v1alpha1",
+    "pkg/apis/policy/v1alpha1",
+  ]
+  pruneopts = "UT"
+  revision = "34d2d6ca611bed748dedeb5fd282b1f54ea1e99d"
+
+[[projects]]
+  digest = "1:3277d1b261870a5d24781d163a868e804d2e1d96f166de54fefd8622addbb928"
+  name = "github.ibm.com/seed/seed-sdk"
+  packages = [
+    "pkg/registry/clientsets",
+    "pkg/registry/config",
+    "pkg/registry/informers",
+    "pkg/scheme",
+  ]
+  pruneopts = "UT"
+  revision = "d4cb2282bd3a0790e52014eb33928167cc37aeb3"
+  source = "git@github.ibm.com:seed/seed-sdk.git"
+  version = "v0.6.2"
+
+[[projects]]
   digest = "1:3f3a05ae0b95893d90b9b3b5afdb79a9b3d96e4e36e099d841ae602e4aca0da8"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
@@ -326,11 +351,19 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a0ac3d2549ab736b793e58f479c4dddf78f0a462ac6d7c40ed47c7f7a901b6b3"
+  digest = "1:5859a579e02f41ee963e9688e54216459bec39b74ebbfacc8e9f04b47db10947"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
     "pkg/apis/apiextensions/v1beta1",
+    "pkg/client/clientset/clientset",
+    "pkg/client/clientset/clientset/scheme",
+    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/apiextensions",
+    "pkg/client/informers/externalversions/apiextensions/v1beta1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/listers/apiextensions/v1beta1",
   ]
   pruneopts = "UT"
   revision = "2af94a2a482fcef53a8c24b7817ecb4ecdc450f8"
@@ -548,6 +581,8 @@
     "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
     "github.com/tkanos/gonfig",
     "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1",
+    "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1",
+    "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/batch/v1beta1",
