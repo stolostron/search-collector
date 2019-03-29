@@ -15,7 +15,7 @@ func TestTransformPersistentVolume(t *testing.T) {
 	AssertEqual("reclaimPolicy", node.Properties["reclaimPolicy"], "Delete", t)
 	AssertEqual("status", node.Properties["status"], "Bound", t)
 	AssertEqual("type", node.Properties["type"], "Hostpath", t)
-	AssertEqual("capacity", node.Properties["capacity"], int64(5368709120), t)
+	AssertEqual("capacity", node.Properties["capacity"], "5Gi", t)
 	AssertDeepEqual("accessMode", node.Properties["accessMode"], []string{"ReadWriteOnce"}, t)
 	AssertEqual("claimRef", node.Properties["claimRef"], "kube-system/test-pvc", t)
 	AssertEqual("path", node.Properties["path"], "/var/lib/icp/helmrepo", t)

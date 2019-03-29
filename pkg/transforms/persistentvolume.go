@@ -20,7 +20,7 @@ func transformPersistentVolume(resource *v1.PersistentVolume) Node {
 	persistentVolume.Properties["capacity"] = 0
 	storage, ok := resource.Spec.Capacity["storage"]
 	if ok {
-		persistentVolume.Properties["capacity"], _ = storage.AsInt64()
+		persistentVolume.Properties["capacity"] = storage.String()
 	}
 
 	// can't cast []PersistentVolumeAccessMode to []string without unsafe
