@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"sync"
 	"time"
 
@@ -19,19 +20,16 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const (
-	numThreads = 2 // TODO This will be a cli flag or be removed as a concept
-)
-
 func main() {
 
+	numThreads := runtime.NumCPU() // determine number of CPUs available. We make that many goroutines for transformation and reconciliation, so that we take maximum advantage of whatever hardware we're on
 	glog.Info("Starting Data Collector")
 
 	// Create transformers
-	upsertTransformer := transforms.NewTransformer(make(chan *transforms.Event), make(chan transforms.UpsertNode), numThreads)
+	upsertTransformer := transforms.NewTransformer(make(chan *transforms.Event), make(chan transforms.NodeEvent), numThreads)
 
 	// Create Sender, attached to transformer
-	sender := send.NewSender(upsertTransformer.Output, make(chan *send.DeleteNode), config.Cfg.AggregatorURL, config.Cfg.ClusterName) //TODO add clusterName and aggregator URL
+	sender := send.NewSender(upsertTransformer.Output, config.Cfg.AggregatorURL, config.Cfg.ClusterName, numThreads)
 
 	var clientConfig *rest.Config
 	var clientConfigError error
@@ -133,11 +131,14 @@ func main() {
 			DeleteFunc: func(obj interface{}) {
 				resource := obj.(*unstructured.Unstructured)
 				uid := string(resource.GetUID())
-				deleteNode := send.DeleteNode{
+				// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
+				ne := transforms.NodeEvent{
 					Time: time.Now().Unix(),
-					UID:  uid,
+					Node: transforms.Node{
+						UID: uid,
+					},
 				}
-				sender.DeleteNodeChannel <- &deleteNode
+				sender.InputChannel <- ne
 			},
 		})
 
@@ -145,17 +146,19 @@ func main() {
 	}
 
 	//TODO make this a lot more robust, handle diffs, etc.
-	// Start a really absic sender routine.
+	// Start a really basic sender routine.
 	go func() {
-		// First time send after 10 seconds, then send every 60 seconds.
+		// First time send after 10 seconds, then send every 5 seconds.
 		time.Sleep(10 * time.Second)
 		for {
-			glog.Info("SENDING") //RM
-			err = sender.Send()
+			glog.Info("Beginning Send Cycle")
+			err = sender.Sync()
 			if err != nil {
 				glog.Error("SENDING ERROR: ", err)
+			} else {
+				glog.Info("Send Cycle Completed Successfully")
 			}
-			time.Sleep(60 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 	}()
 
