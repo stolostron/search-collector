@@ -12,7 +12,7 @@ func TestTransformJob(t *testing.T) {
 	node := transformJob(&j)
 
 	// Test only the fields that exist in job - the common test will test the other bits
-	AssertEqual("successful", node.Properties["successful"], int32(1), t)
-	AssertEqual("completions", node.Properties["completions"], int32(1), t)
-	AssertEqual("parallelism", node.Properties["parallelism"], int32(1), t)
+	AssertEqual("successful", node.Properties["successful"], int64(1), t)
+	AssertEqual("completions", node.Properties["completions"], int64(1), t)
+	AssertEqual("parallelism", node.Properties["parallelism"], int64(1), t)
 }

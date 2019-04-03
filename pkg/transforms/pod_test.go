@@ -19,7 +19,7 @@ func TestTransformPod(t *testing.T) {
 	AssertEqual("kind", node.Properties["kind"], "Pod", t)
 	AssertEqual("hostIP", node.Properties["hostIP"], "1.1.1.1", t)
 	AssertEqual("podIP", node.Properties["podIP"], "2.2.2.2", t)
-	AssertEqual("restarts", node.Properties["restarts"], uint(2), t)
+	AssertEqual("restarts", node.Properties["restarts"], int64(2), t)
 	AssertDeepEqual("container", node.Properties["container"], []string{"fake-pod"}, t)
 	AssertDeepEqual("image", node.Properties["image"], []string{"fake-image:0.5.0.1"}, t)
 	AssertEqual("startedAt", node.Properties["startedAt"], date.UTC().Format(time.RFC3339), t)

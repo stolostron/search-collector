@@ -17,7 +17,7 @@ func TestTransformCronJob(t *testing.T) {
 
 	// Test only the fields that exist in cronjob - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "CronJob", t)
-	AssertEqual("active", node.Properties["active"], 0, t)
+	AssertEqual("active", node.Properties["active"], int64(0), t)
 	AssertEqual("lastSchedule", node.Properties["lastSchedule"], date.UTC().Format(time.RFC3339), t)
 	AssertEqual("schedule", node.Properties["schedule"], "30 23 * * *", t)
 	AssertEqual("suspend", node.Properties["suspend"], false, t)

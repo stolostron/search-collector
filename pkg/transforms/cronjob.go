@@ -13,7 +13,7 @@ func transformCronJob(resource *v1.CronJob) Node {
 
 	// Extract the properties specific to this type
 	cronJob.Properties["kind"] = "CronJob"
-	cronJob.Properties["active"] = len(resource.Status.Active)
+	cronJob.Properties["active"] = int64(len(resource.Status.Active))
 	cronJob.Properties["schedule"] = resource.Spec.Schedule
 	cronJob.Properties["lastSchedule"] = ""
 	if resource.Status.LastScheduleTime != nil {
@@ -21,7 +21,7 @@ func transformCronJob(resource *v1.CronJob) Node {
 	}
 	cronJob.Properties["suspend"] = false
 	if resource.Spec.Suspend != nil {
-		cronJob.Properties["suspend"] = *(resource.Spec.Suspend)
+		cronJob.Properties["suspend"] = *resource.Spec.Suspend
 	}
 
 	return cronJob

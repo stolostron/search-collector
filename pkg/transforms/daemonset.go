@@ -11,11 +11,11 @@ func transformDaemonSet(resource *v1.DaemonSet) Node {
 
 	// Extract the properties specific to this type
 	daemonSet.Properties["kind"] = "DaemonSet"
-	daemonSet.Properties["available"] = resource.Status.NumberAvailable
-	daemonSet.Properties["current"] = resource.Status.CurrentNumberScheduled
-	daemonSet.Properties["desired"] = resource.Status.DesiredNumberScheduled
-	daemonSet.Properties["ready"] = resource.Status.NumberReady
-	daemonSet.Properties["updated"] = resource.Status.UpdatedNumberScheduled
+	daemonSet.Properties["available"] = int64(resource.Status.NumberAvailable)
+	daemonSet.Properties["current"] = int64(resource.Status.CurrentNumberScheduled)
+	daemonSet.Properties["desired"] = int64(resource.Status.DesiredNumberScheduled)
+	daemonSet.Properties["ready"] = int64(resource.Status.NumberReady)
+	daemonSet.Properties["updated"] = int64(resource.Status.UpdatedNumberScheduled)
 
 	return daemonSet
 }

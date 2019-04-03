@@ -38,10 +38,10 @@ func transformCompliance(resource *com.Compliance) Node {
 		}
 	}
 
-	compliance.Properties["policyCompliant"] = policyCompliant
-	compliance.Properties["policyTotal"] = policyTotal
-	compliance.Properties["clusterCompliant"] = clusterCompliant
-	compliance.Properties["clusterTotal"] = clusterTotal
+	compliance.Properties["policyCompliant"] = int64(policyCompliant)
+	compliance.Properties["policyTotal"] = int64(policyTotal)
+	compliance.Properties["clusterCompliant"] = int64(clusterCompliant)
+	compliance.Properties["clusterTotal"] = int64(clusterTotal)
 
 	if policyCompliant == policyTotal {
 		compliance.Properties["status"] = "compliant"

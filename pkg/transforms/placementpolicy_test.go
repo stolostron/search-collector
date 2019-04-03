@@ -13,6 +13,6 @@ func TestTransformPlacementPolicy(t *testing.T) {
 
 	// Test only the fields that exist in placementpolicy - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "PlacementPolicy", t)
-	AssertEqual("replicas", node.Properties["replicas"], int32(1), t)
+	AssertEqual("replicas", node.Properties["replicas"], int64(1), t)
 	AssertDeepEqual("decisions", node.Properties["decisions"], []string{"remote-kl"}, t)
 }

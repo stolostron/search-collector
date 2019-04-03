@@ -12,9 +12,9 @@ func transformPlacementPolicy(resource *mcm.PlacementPolicy) Node {
 	// Extract the properties specific to this type
 	placementPolicy.Properties["kind"] = "PlacementPolicy"
 
-	placementPolicy.Properties["replicas"] = int32(0)
+	placementPolicy.Properties["replicas"] = int64(0)
 	if resource.Spec.ClusterReplicas != nil {
-		placementPolicy.Properties["replicas"] = *resource.Spec.ClusterReplicas
+		placementPolicy.Properties["replicas"] = int64(*resource.Spec.ClusterReplicas)
 	}
 
 	l := len(resource.Status.Decisions)

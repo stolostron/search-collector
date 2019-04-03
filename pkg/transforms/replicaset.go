@@ -11,10 +11,10 @@ func transformReplicaSet(resource *v1.ReplicaSet) Node {
 
 	// Extract the properties specific to this type
 	replicaSet.Properties["kind"] = "ReplicaSet"
-	replicaSet.Properties["current"] = resource.Status.Replicas
-	replicaSet.Properties["desired"] = int32(0)
+	replicaSet.Properties["current"] = int64(resource.Status.Replicas)
+	replicaSet.Properties["desired"] = int64(0)
 	if resource.Spec.Replicas != nil {
-		replicaSet.Properties["desired"] = *resource.Spec.Replicas
+		replicaSet.Properties["desired"] = int64(*resource.Spec.Replicas)
 	}
 
 	return replicaSet

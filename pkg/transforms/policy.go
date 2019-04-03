@@ -15,16 +15,15 @@ func transformPolicy(resource *mcm.Policy) Node {
 	policy.Properties["compliant"] = string(resource.Status.ComplianceState)
 	policy.Properties["valid"] = resource.Status.Valid
 
-	policy.Properties["numRules"] = 0
+	rules := int64(0)
 	if resource.Spec.RoleTemplates != nil {
-		rules := 0
 		for _, role := range resource.Spec.RoleTemplates {
 			if role != nil {
-				rules += len(role.Rules)
+				rules += int64(len(role.Rules))
 			}
 		}
-		policy.Properties["numRules"] = rules
 	}
+	policy.Properties["numRules"] = rules
 
 	return policy
 }

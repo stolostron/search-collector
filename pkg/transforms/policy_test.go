@@ -15,5 +15,5 @@ func TestTransformPolicy(t *testing.T) {
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "enforce", t)
 	AssertEqual("compliant", node.Properties["compliant"], "Compliant", t)
 	AssertEqual("valid", node.Properties["valid"], true, t)
-	AssertEqual("numRules", node.Properties["numRules"], 1, t)
+	AssertEqual("numRules", node.Properties["numRules"], int64(1), t)
 }

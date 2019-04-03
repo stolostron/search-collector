@@ -12,6 +12,6 @@ func TestTransformStatefulSet(t *testing.T) {
 	node := transformStatefulSet(&s)
 
 	// Test only the fields that exist in stateful set - the common test will test the other bits
-	AssertEqual("current", node.Properties["current"], int32(1), t)
-	AssertEqual("desired", node.Properties["desired"], int32(1), t)
+	AssertEqual("current", node.Properties["current"], int64(1), t)
+	AssertEqual("desired", node.Properties["desired"], int64(1), t)
 }

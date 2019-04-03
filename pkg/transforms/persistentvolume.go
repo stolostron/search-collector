@@ -17,7 +17,7 @@ func transformPersistentVolume(resource *v1.PersistentVolume) Node {
 	persistentVolume.Properties["status"] = string(resource.Status.Phase)
 	persistentVolume.Properties["type"] = getType(&resource.Spec)
 
-	persistentVolume.Properties["capacity"] = 0
+	persistentVolume.Properties["capacity"] = ""
 	storage, ok := resource.Spec.Capacity["storage"]
 	if ok {
 		persistentVolume.Properties["capacity"] = storage.String()

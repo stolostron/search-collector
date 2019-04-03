@@ -12,8 +12,8 @@ func TestTransformDeployment(t *testing.T) {
 	node := transformDeployment(&d)
 
 	// Test only the fields that exist in deployment - the common test will test the other bits
-	AssertEqual("available", node.Properties["available"], int32(1), t)
-	AssertEqual("current", node.Properties["current"], int32(1), t)
-	AssertEqual("desired", node.Properties["desired"], int32(1), t)
-	AssertEqual("ready", node.Properties["ready"], int32(1), t)
+	AssertEqual("available", node.Properties["available"], int64(1), t)
+	AssertEqual("current", node.Properties["current"], int64(1), t)
+	AssertEqual("desired", node.Properties["desired"], int64(1), t)
+	AssertEqual("ready", node.Properties["ready"], int64(1), t)
 }

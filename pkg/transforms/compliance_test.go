@@ -12,9 +12,9 @@ func TestTransformCompliance(t *testing.T) {
 	node := transformCompliance(&c)
 
 	// Test only the fields that exist in compliance - the common test will test the other bits
-	AssertEqual("policyCompliant", node.Properties["policyCompliant"], 1, t)
-	AssertEqual("policyTotal", node.Properties["policyTotal"], 1, t)
-	AssertEqual("clusterCompliant", node.Properties["clusterCompliant"], 1, t)
-	AssertEqual("clusterTotal", node.Properties["clusterTotal"], 1, t)
+	AssertEqual("policyCompliant", node.Properties["policyCompliant"], int64(1), t)
+	AssertEqual("policyTotal", node.Properties["policyTotal"], int64(1), t)
+	AssertEqual("clusterCompliant", node.Properties["clusterCompliant"], int64(1), t)
+	AssertEqual("clusterTotal", node.Properties["clusterTotal"], int64(1), t)
 	AssertEqual("status", node.Properties["status"], "compliant", t)
 }
