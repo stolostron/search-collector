@@ -13,6 +13,7 @@ func transformPlacementBinding(resource *mcm.PlacementBinding) Node {
 
 	// Extract the properties specific to this type
 	placementBinding.Properties["kind"] = "PlacementBinding"
+	placementBinding.Properties["apigroup"] = "mcm.ibm.com"
 
 	name := resource.PlacementPolicyRef.Name
 	kind := resource.PlacementPolicyRef.Kind

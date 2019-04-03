@@ -11,6 +11,7 @@ func transformPolicy(resource *mcm.Policy) Node {
 
 	// Extract the properties specific to this type
 	policy.Properties["kind"] = "Policy"
+	policy.Properties["apigroup"] = "policy.mcm.ibm.com"
 	policy.Properties["remediationAction"] = string(resource.Spec.RemediationAction)
 	policy.Properties["compliant"] = string(resource.Status.ComplianceState)
 	policy.Properties["valid"] = resource.Status.Valid

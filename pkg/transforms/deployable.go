@@ -11,6 +11,7 @@ func transformDeployable(resource *mcm.Deployable) Node {
 
 	// Extract the properties specific to this type
 	deployable.Properties["kind"] = "Deployable"
+	deployable.Properties["apigroup"] = "mcm.ibm.com"
 	deployable.Properties["deployerKind"] = string(resource.Spec.Deployer.DeployerKind)
 
 	deployable.Properties["chartUrl"] = ""

@@ -11,6 +11,7 @@ func transformDeployment(resource *v1.Deployment) Node {
 
 	// Extract the properties specific to this type
 	deployment.Properties["kind"] = "Deployment"
+	deployment.Properties["apigroup"] = "apps"
 	deployment.Properties["available"] = int64(resource.Status.AvailableReplicas)
 	deployment.Properties["current"] = int64(resource.Status.Replicas)
 	deployment.Properties["ready"] = int64(resource.Status.ReadyReplicas)

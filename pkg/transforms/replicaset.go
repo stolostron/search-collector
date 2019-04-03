@@ -11,6 +11,7 @@ func transformReplicaSet(resource *v1.ReplicaSet) Node {
 
 	// Extract the properties specific to this type
 	replicaSet.Properties["kind"] = "ReplicaSet"
+	replicaSet.Properties["apigroup"] = "apps"
 	replicaSet.Properties["current"] = int64(resource.Status.Replicas)
 	replicaSet.Properties["desired"] = int64(0)
 	if resource.Spec.Replicas != nil {

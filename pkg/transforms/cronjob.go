@@ -13,6 +13,7 @@ func transformCronJob(resource *v1.CronJob) Node {
 
 	// Extract the properties specific to this type
 	cronJob.Properties["kind"] = "CronJob"
+	cronJob.Properties["apigroup"] = "batch"
 	cronJob.Properties["active"] = int64(len(resource.Status.Active))
 	cronJob.Properties["schedule"] = resource.Spec.Schedule
 	cronJob.Properties["lastSchedule"] = ""

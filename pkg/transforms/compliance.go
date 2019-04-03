@@ -10,6 +10,7 @@ func transformCompliance(resource *com.Compliance) Node {
 
 	compliance := transformCommon(resource) // Start off with the common properties
 	compliance.Properties["kind"] = "Compliance"
+	compliance.Properties["apigroup"] = "compliance.mcm.ibm.com"
 
 	// On a Compliance object, status.status holds an object with a property for each cluster.
 	// First loop through and check cluster object statuses

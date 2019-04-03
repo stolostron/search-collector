@@ -11,6 +11,7 @@ func transformPlacementPolicy(resource *mcm.PlacementPolicy) Node {
 
 	// Extract the properties specific to this type
 	placementPolicy.Properties["kind"] = "PlacementPolicy"
+	placementPolicy.Properties["apigroup"] = "mcm.ibm.com"
 
 	placementPolicy.Properties["replicas"] = int64(0)
 	if resource.Spec.ClusterReplicas != nil {

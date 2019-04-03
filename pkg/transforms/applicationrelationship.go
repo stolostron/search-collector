@@ -10,6 +10,7 @@ func transformApplicationRelationship(resource *mcm.ApplicationRelationship) Nod
 
 	// Extract the properties specific to this type
 	aR.Properties["kind"] = "ApplicationRelationship"
+	aR.Properties["apigroup"] = "mcm.ibm.com"
 	aR.Properties["destination"] = resource.Spec.Destination.Name
 	aR.Properties["source"] = resource.Spec.Source.Name
 	aR.Properties["type"] = string(resource.Spec.RelType)

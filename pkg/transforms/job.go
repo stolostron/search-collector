@@ -11,6 +11,7 @@ func transformJob(resource *v1.Job) Node {
 
 	// Extract the properties specific to this type
 	job.Properties["kind"] = "Job"
+	job.Properties["apigroup"] = "batch"
 	job.Properties["successful"] = int64(resource.Status.Succeeded)
 	job.Properties["completions"] = int64(0)
 	if resource.Spec.Completions != nil {

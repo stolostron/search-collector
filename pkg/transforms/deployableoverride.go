@@ -11,6 +11,7 @@ func transformDeployableOverride(resource *mcm.DeployableOverride) Node {
 
 	// Extract the properties specific to this type
 	dO.Properties["kind"] = "DeployableOverride"
+	dO.Properties["apigroup"] = "mcm.ibm.com"
 
 	return dO
 }

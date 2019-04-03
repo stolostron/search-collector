@@ -11,6 +11,7 @@ func transformApplication(resource *v1.Application) Node {
 
 	// Extract the properties specific to this type
 	application.Properties["kind"] = "Application"
+	application.Properties["apigroup"] = "app.k8s.io"
 	application.Properties["dashboard"] = resource.GetAnnotations()["apps.ibm.com/dashboard"]
 
 	return application

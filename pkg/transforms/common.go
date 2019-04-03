@@ -1,6 +1,7 @@
 package transforms
 
 import (
+	"strings"
 	"time"
 
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +41,13 @@ func unstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 	ret["name"] = resource.GetName()
 	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
+
+	// valid api group with have format of "apigroup/version"
+	// unnamed api groups will have format of "/version"
+	slice := strings.Split(resource.GetAPIVersion(), "/")
+	if len(slice) == 2 {
+		ret["apigroup"] = slice[0]
+	}
 
 	if resource.GetLabels() != nil {
 		ret["label"] = resource.GetLabels()
