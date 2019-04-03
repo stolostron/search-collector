@@ -3,17 +3,23 @@ package config
 import (
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
 	"github.com/golang/glog"
 	"github.com/tkanos/gonfig"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/helm/pkg/tlsutil"
 )
 
+// TODO: change these presets to sane values for production environment
+// running locally should pull from config.js which is not included in docker image
 const (
 	DEFAULT_RUNTIME_MODE   = "production"
 	DEFAULT_CLUSTER_NAME   = "localtest"
 	DEFAULT_AGGREGATOR_URL = "https://localhost:3010"
+	DEFAULT_TILLER_URL     = "tiller-deploy.kube-system.svc.cluster.local"
 )
 
 // Define a config type for gonfig to hold our config properties.
@@ -23,6 +29,7 @@ type Config struct {
 	ClusterName   string `env:"CLUSTER_NAME"`   // The name of this cluster
 	KubeConfig    string `env:"KUBECONFIG"`     // Local kubeconfig path
 	TillerURL     string `env:"TILLER_URL"`     // URL host path of the tiller server
+	TillerOpts    tlsutil.Options
 }
 
 var Cfg = Config{}
@@ -64,9 +71,35 @@ func init() {
 	}
 	setDefault(&Cfg.KubeConfig, "KUBECONFIG", defaultKubePath)
 
-	// Special case for default url, this is set below
-	setDefault(&Cfg.TillerURL, "TILLER_URL", "")
-	// TODO: tiller url coming soon to a pr near you!!
+	defaultTillerUrl := DEFAULT_TILLER_URL
+	if Cfg.RuntimeMode == "development" {
+		// find an external ip address to connect to tiller for dev env
+		// warning: this assumes the proxy node has same ip as master
+		// only use this config to make development life easier
+		client, _ := clientcmd.BuildConfigFromFlags("", Cfg.KubeConfig)
+		if client != nil && client.Host != "" {
+			u, _ := url.Parse(client.Host)
+			defaultTillerUrl = u.Hostname() + ":31514"
+		}
+
+		glog.Warning("Using insecure HTTPS connection to tiller.")
+		Cfg.TillerOpts = tlsutil.Options{
+			CertFile:           filepath.Join(os.Getenv("HOME"), ".helm", "cert.pem"),
+			CaCertFile:         filepath.Join(os.Getenv("HOME"), ".helm", "ca.pem"),
+			KeyFile:            filepath.Join(os.Getenv("HOME"), ".helm", "key.pem"),
+			InsecureSkipVerify: true,
+		}
+	} else {
+		Cfg.TillerOpts = tlsutil.Options{
+			CertFile:           filepath.Join("/helmcerts", "cert.pem"),
+			CaCertFile:         filepath.Join("/helmcerts", "ca.pem"),
+			KeyFile:            filepath.Join("/helmcerts", "key.pem"),
+			InsecureSkipVerify: false,
+		}
+	}
+
+	setDefault(&Cfg.TillerURL, "TILLER_URL", defaultTillerUrl)
+
 }
 
 // Sets config field to perfer the env over config file

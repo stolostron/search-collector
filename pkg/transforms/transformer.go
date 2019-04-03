@@ -47,7 +47,7 @@ type NodeEvent struct {
 // To use, create one, call Start(), and begin passing in objects.
 type Transformer struct {
 	Input  chan *Event    // Put your k8s resources and corresponding times in here.
-	Output chan NodeEvent // And recieve your aggregator-ready nodes (and times) from here.
+	Output chan NodeEvent // And receive your aggregator-ready nodes (and times) from here.
 	// TODO add stopper channel?
 }
 

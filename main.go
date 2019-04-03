@@ -18,6 +18,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/helm/pkg/helm"
+	"k8s.io/helm/pkg/tlsutil"
 )
 
 func main() {
@@ -44,6 +46,19 @@ func main() {
 
 	if clientConfigError != nil {
 		glog.Fatal("Error Constructing Client From Config: ", clientConfigError)
+	}
+
+	helmTlsConfig, err := tlsutil.ClientConfig(config.Cfg.TillerOpts)
+	if err != nil {
+		glog.Error("Error creating helm TLS configuration: ", err)
+	} else {
+		helmClient := helm.NewClient(
+			helm.WithTLS(helmTlsConfig),
+			helm.Host(config.Cfg.TillerURL),
+		)
+		glog.Info("Created new helm client")
+
+		go transforms.HelmTransformation(helmClient, upsertTransformer.Output)
 	}
 
 	// Initialize the dynamic client, used for CRUD operations on nondeafult k8s resources
