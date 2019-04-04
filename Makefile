@@ -42,5 +42,8 @@ local: check-env app-version local-docker-search-collector
 		--build-arg "IMAGE_DESCRIPTION=$(IMAGE_DESCRIPTION)" $(DOCKER_FLAG) .
 	docker tag $(IMAGE_REPO)/$(IMAGE_NAME_ARCH):$(IMAGE_VERSION) $(IMAGE_REPO)/$(IMAGE_NAME_ARCH):$(RELEASE_TAG)
 
+.PHONY: copyright-check
+copyright-check:
+	./build-tools/copyright-check.sh
 
 include Makefile.docker

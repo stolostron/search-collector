@@ -27,6 +27,7 @@ install:
 
 script:
   - make lint test build image
+  - make copyright-check
 
 # after_success:
 #   - make push
