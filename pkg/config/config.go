@@ -99,9 +99,9 @@ func init() {
 		}
 	} else {
 		Cfg.TillerOpts = tlsutil.Options{
-			CertFile:           filepath.Join("/helmcerts", "cert.pem"),
-			CaCertFile:         filepath.Join("/helmcerts", "ca.pem"),
-			KeyFile:            filepath.Join("/helmcerts", "key.pem"),
+			CertFile:           filepath.Join("/helmcerts", "tls.crt"),
+			CaCertFile:         filepath.Join("/helmcerts", "ca.crt"),
+			KeyFile:            filepath.Join("/helmcerts", "tls.key"),
 			InsecureSkipVerify: false,
 		}
 	}
