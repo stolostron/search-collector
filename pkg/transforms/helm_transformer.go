@@ -24,16 +24,16 @@ func HelmTransformation(helmClient *helm.Client, output chan NodeEvent) {
 		releases, err := helmClient.ListReleases()
 
 		if err != nil {
-			glog.Error("Failed to fetch helm releases")
-		}
-
-		for _, release := range releases.Releases {
-			upsert := NodeEvent{
-				Time:      time.Now().Unix(),
-				Operation: Create,
-				Node:      transformRelease(release),
+			glog.Error("Failed to fetch helm releases.  Original error: ", err)
+		} else {
+			for _, release := range releases.Releases {
+				upsert := NodeEvent{
+					Time:      time.Now().Unix(),
+					Operation: Create,
+					Node:      transformRelease(release),
+				}
+				output <- upsert
 			}
-			output <- upsert
 		}
 		time.Sleep(60 * time.Second)
 	}
