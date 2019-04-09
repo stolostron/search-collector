@@ -14,6 +14,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
+
 	"github.com/golang/glog"
 )
 
@@ -44,14 +46,21 @@ func getHTTPSClient() (client http.Client) {
 			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
 			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 		},
-		RootCAs:      caCertPool,
-		Certificates: []tls.Certificate{cert},
 	}
 
-	glog.Warning("Using insecure HTTPS client.")
+	// TLS is different when deployed in hub vs klusterlet.
+	if !config.Cfg.DeployedInHub {
+		glog.Warning("Using insecure HTTPS client.")
+		tlsCfg.InsecureSkipVerify = true
+	} else {
+		tlsCfg.RootCAs = caCertPool
+		tlsCfg.Certificates = []tls.Certificate{cert}
+	}
+
 	tr := &http.Transport{
 		TLSClientConfig: tlsCfg,
 	}
+
 	client = http.Client{Transport: tr}
 
 	return client

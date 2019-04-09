@@ -32,12 +32,15 @@ const (
 
 // Define a config type for gonfig to hold our config properties.
 type Config struct {
-	RuntimeMode   string `env:"RUNTIME_MODE"`   // Running mode (development or production)
-	AggregatorURL string `env:"AGGREGATOR_URL"` // URL of the Aggregator, includes port but not any path
-	ClusterName   string `env:"CLUSTER_NAME"`   // The name of this cluster
-	KubeConfig    string `env:"KUBECONFIG"`     // Local kubeconfig path
-	TillerURL     string `env:"TILLER_URL"`     // URL host path of the tiller server
-	TillerOpts    tlsutil.Options
+	RuntimeMode      string `env:"RUNTIME_MODE"`      // Running mode (development or production)
+	AggregatorURL    string `env:"AGGREGATOR_URL"`    // URL of the Aggregator, includes port but not any path
+	AggregatorToken  string `env:"AGGREGATOR_TOKEN"`  // Bearer token to post to aggregator
+	ClusterName      string `env:"CLUSTER_NAME"`      // The name of this cluster
+	ClusterNamespace string `env:"CLUSTER_NAMESPACE"` // The namespace of this cluster
+	DeployedInHub    bool   `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
+	KubeConfig       string `env:"KUBECONFIG"`        // Local kubeconfig path
+	TillerURL        string `env:"TILLER_URL"`        // URL host path of the tiller server
+	TillerOpts       tlsutil.Options
 }
 
 var Cfg = Config{}
@@ -69,7 +72,8 @@ func init() {
 	// If environment variables are set, use those values instead of ./config.json
 	// Simply put, the order of preference is env -> config.json -> default constants (from left to right)
 	setDefault(&Cfg.RuntimeMode, "RUNTIME_MODE", DEFAULT_RUNTIME_MODE)
-	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_AGGREGATOR_URL)
+	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
+	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
 	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
@@ -107,6 +111,20 @@ func init() {
 	}
 
 	setDefault(&Cfg.TillerURL, "TILLER_URL", defaultTillerUrl)
+
+	Cfg.DeployedInHub = true
+	if hubConfigFile := os.Getenv("HUB_CONFIG"); hubConfigFile != "" {
+		hubConfig, err := clientcmd.BuildConfigFromFlags("", hubConfigFile)
+		if err != nil {
+			glog.Error(err)
+		}
+
+		Cfg.DeployedInHub = false
+		Cfg.AggregatorURL = hubConfig.Host + "/apis/mcm.ibm.com/v1alpha1/namespaces/" + Cfg.ClusterNamespace + "/clusterstatuses"
+		Cfg.AggregatorToken = hubConfig.BearerToken
+
+		glog.Info("Running inside klusterlet.  Aggregator URL: ", Cfg.AggregatorURL)
+	}
 
 }
 

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 )
 
@@ -109,6 +110,10 @@ func NewSender(inputChan chan transforms.NodeEvent, aggregatorURL, clusterName s
 		InputChannel: inputChan,
 	}
 
+	if !config.Cfg.DeployedInHub {
+		s.aggregatorSyncPath = strings.Join([]string{"/", clusterName, "/aggregator/sync"}, "")
+	}
+
 	// Start Reconciler Routines
 	for i := 0; i < reconcileRoutines; i++ {
 		go s.Reconciler()
@@ -170,7 +175,12 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 	}
 	// glog.Warning(string(payloadBytes))
 	payloadBuffer := bytes.NewBuffer(payloadBytes)
-	resp, err := s.httpClient.Post(s.aggregatorURL+s.aggregatorSyncPath, "application/json", payloadBuffer)
+	req, _ := http.NewRequest("POST", s.aggregatorURL+s.aggregatorSyncPath, payloadBuffer)
+	req.Header.Set("Content-type", "application/json")
+	if !config.Cfg.DeployedInHub && config.Cfg.AggregatorToken != "" {
+		req.Header.Set("Authorization", "Bearer "+config.Cfg.AggregatorToken)
+	}
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
