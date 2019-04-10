@@ -39,7 +39,7 @@ func main() {
 	upsertTransformer := transforms.NewTransformer(make(chan *transforms.Event), make(chan transforms.NodeEvent), numThreads)
 
 	// Create Sender, attached to transformer
-	sender := send.NewSender(upsertTransformer.Output, config.Cfg.AggregatorURL, config.Cfg.ClusterName, numThreads)
+	sender := send.NewSender(upsertTransformer.Output, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
 
 	var clientConfig *rest.Config
 	var clientConfigError error

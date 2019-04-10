@@ -94,8 +94,7 @@ type Sender struct {
 
 // Constructs a new Sender using the provided channels.
 // Sends to the URL provided by aggregatorURL, listing itself as clusterName.
-// Spins up a number of routines to handle input reconciliation equal to reconcileRoutines.
-func NewSender(inputChan chan transforms.NodeEvent, aggregatorURL, clusterName string, reconcileRoutines int) *Sender {
+func NewSender(inputChan chan transforms.NodeEvent, aggregatorURL, clusterName string) *Sender {
 
 	// Construct senders
 	s := &Sender{
@@ -114,10 +113,7 @@ func NewSender(inputChan chan transforms.NodeEvent, aggregatorURL, clusterName s
 		s.aggregatorSyncPath = strings.Join([]string{"/", clusterName, "/aggregator/sync"}, "")
 	}
 
-	// Start Reconciler Routines
-	for i := 0; i < reconcileRoutines; i++ {
-		go s.Reconciler()
-	}
+	go s.Reconciler()
 
 	return s
 }
