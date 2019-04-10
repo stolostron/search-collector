@@ -27,7 +27,7 @@ const (
 	DEFAULT_RUNTIME_MODE   = "production"
 	DEFAULT_CLUSTER_NAME   = "localtest"
 	DEFAULT_AGGREGATOR_URL = "https://localhost:3010"
-	DEFAULT_TILLER_URL     = "tiller-deploy.kube-system.svc.cluster.local"
+	DEFAULT_TILLER_URL     = "tiller-deploy:44134"
 )
 
 // Define a config type for gonfig to hold our config properties.
