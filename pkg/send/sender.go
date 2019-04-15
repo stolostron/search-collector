@@ -171,12 +171,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 	}
 	// glog.Warning(string(payloadBytes))
 	payloadBuffer := bytes.NewBuffer(payloadBytes)
-	req, _ := http.NewRequest("POST", s.aggregatorURL+s.aggregatorSyncPath, payloadBuffer)
-	req.Header.Set("Content-type", "application/json")
-	if !config.Cfg.DeployedInHub && config.Cfg.AggregatorToken != "" {
-		req.Header.Set("Authorization", "Bearer "+config.Cfg.AggregatorToken)
-	}
-	resp, err := s.httpClient.Do(req)
+	resp, err := s.httpClient.Post(s.aggregatorURL+s.aggregatorSyncPath, "application/json", payloadBuffer)
 	if err != nil {
 		return err
 	}

@@ -17,6 +17,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/tkanos/gonfig"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/helm/pkg/tlsutil"
 )
@@ -32,15 +33,16 @@ const (
 
 // Define a config type for gonfig to hold our config properties.
 type Config struct {
-	RuntimeMode      string `env:"RUNTIME_MODE"`      // Running mode (development or production)
-	AggregatorURL    string `env:"AGGREGATOR_URL"`    // URL of the Aggregator, includes port but not any path
-	AggregatorToken  string `env:"AGGREGATOR_TOKEN"`  // Bearer token to post to aggregator
-	ClusterName      string `env:"CLUSTER_NAME"`      // The name of this cluster
-	ClusterNamespace string `env:"CLUSTER_NAMESPACE"` // The namespace of this cluster
-	DeployedInHub    bool   `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
-	KubeConfig       string `env:"KUBECONFIG"`        // Local kubeconfig path
-	TillerURL        string `env:"TILLER_URL"`        // URL host path of the tiller server
-	TillerOpts       tlsutil.Options
+	RuntimeMode          string       `env:"RUNTIME_MODE"`   // Running mode (development or production)
+	AggregatorURL        string       `env:"AGGREGATOR_URL"` // URL of the Aggregator, includes port but not any path
+	AggregatorConfigFile string       `env:"HUB_CONFIG"`     // Config file for hub. Will be mounted in a secret.
+	AggregatorConfig     *rest.Config // Config object for hub. Used to get TLS credentials.
+	ClusterName          string       `env:"CLUSTER_NAME"`      // The name of this cluster
+	ClusterNamespace     string       `env:"CLUSTER_NAMESPACE"` // The namespace of this cluster
+	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
+	KubeConfig           string       `env:"KUBECONFIG"`        // Local kubeconfig path
+	TillerURL            string       `env:"TILLER_URL"`        // URL host path of the tiller server
+	TillerOpts           tlsutil.Options
 }
 
 var Cfg = Config{}
@@ -116,16 +118,15 @@ func init() {
 	if hubConfigFile := os.Getenv("HUB_CONFIG"); hubConfigFile != "" {
 		hubConfig, err := clientcmd.BuildConfigFromFlags("", hubConfigFile)
 		if err != nil {
-			glog.Error(err)
+			glog.Error("Error building K8s client from config file [", hubConfigFile, "].  Original error: ", err)
 		}
 
 		Cfg.DeployedInHub = false
 		Cfg.AggregatorURL = hubConfig.Host + "/apis/mcm.ibm.com/v1alpha1/namespaces/" + Cfg.ClusterNamespace + "/clusterstatuses"
-		Cfg.AggregatorToken = hubConfig.BearerToken
+		Cfg.AggregatorConfig = hubConfig
 
 		glog.Info("Running inside klusterlet.  Aggregator URL: ", Cfg.AggregatorURL)
 	}
-
 }
 
 // Sets config field to perfer the env over config file
