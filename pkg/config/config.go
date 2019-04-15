@@ -115,10 +115,11 @@ func init() {
 	setDefault(&Cfg.TillerURL, "TILLER_URL", defaultTillerUrl)
 
 	Cfg.DeployedInHub = true
-	if hubConfigFile := os.Getenv("HUB_CONFIG"); hubConfigFile != "" {
-		hubConfig, err := clientcmd.BuildConfigFromFlags("", hubConfigFile)
+	setDefault(&Cfg.AggregatorConfigFile, "HUB_CONFIG", "")
+	if Cfg.AggregatorConfigFile != "" {
+		hubConfig, err := clientcmd.BuildConfigFromFlags("", Cfg.AggregatorConfigFile)
 		if err != nil {
-			glog.Error("Error building K8s client from config file [", hubConfigFile, "].  Original error: ", err)
+			glog.Error("Error building K8s client from config file [", Cfg.AggregatorConfigFile, "].  Original error: ", err)
 		}
 
 		Cfg.DeployedInHub = false
