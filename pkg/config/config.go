@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/tkanos/gonfig"
@@ -26,9 +27,12 @@ import (
 // running locally should pull from config.js which is not included in docker image
 const (
 	DEFAULT_RUNTIME_MODE   = "production"
-	DEFAULT_CLUSTER_NAME   = "localtest"
+	DEFAULT_CLUSTER_NAME   = "local-cluster"
 	DEFAULT_AGGREGATOR_URL = "https://localhost:3010"
 	DEFAULT_TILLER_URL     = "tiller-deploy:44134"
+)
+const (
+	DEFAULT_REPORT_RATE_MS = 30000
 )
 
 // Define a config type for gonfig to hold our config properties.
@@ -41,6 +45,7 @@ type Config struct {
 	ClusterNamespace     string       `env:"CLUSTER_NAMESPACE"` // The namespace of this cluster
 	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
 	KubeConfig           string       `env:"KUBECONFIG"`        // Local kubeconfig path
+	ReportRateMS         int          `env:"REPORT_RATE_MS"`    // Interval in milliseconds at which changes are reported to the aggregator.
 	TillerURL            string       `env:"TILLER_URL"`        // URL host path of the tiller server
 	TillerOpts           tlsutil.Options
 }
@@ -77,6 +82,10 @@ func init() {
 	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
 	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
 	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
+
+	// TODO: The target report rate is < 5 seconds. BUT I'm currently setting to 30 secnds until the refresh
+	// logic get updated to skip cycles where no updates are needed.
+	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", 30000)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) {
@@ -138,6 +147,21 @@ func setDefault(field *string, env, defaultVal string) {
 		*field = val
 	} else if *field == "" && defaultVal != "" {
 		glog.Infof("No %s from file or environment, using default value: %s", env, defaultVal)
+		*field = defaultVal
+	}
+}
+
+// TODO: Combine with function above.
+func setDefaultInt(field *int, env string, defaultVal int) {
+	if val := os.Getenv(env); val != "" {
+		glog.Infof("Using %s from environment: %s", env, val)
+		var err error
+		*field, err = strconv.Atoi(val)
+		if err != nil {
+			glog.Error("Error parsing env [", env, "].  Expected an integer.  Original error: ", err)
+		}
+	} else if *field == 0 && defaultVal != 0 {
+		glog.Infof("No %s from file or environment, using default value: %d", env, defaultVal)
 		*field = defaultVal
 	}
 }

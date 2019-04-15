@@ -171,8 +171,8 @@ func main() {
 	//TODO make this a lot more robust, handle diffs, etc.
 	// Start a really basic sender routine.
 	go func() {
-		// First time send after 10 seconds, then send every 5 seconds.
-		time.Sleep(10 * time.Second)
+		// First time send after 15 seconds, then send every ReportRateMS miliseconds.
+		time.Sleep(15 * time.Second)
 		for {
 			glog.Info("Beginning Send Cycle")
 			err = sender.Sync()
@@ -181,7 +181,7 @@ func main() {
 			} else {
 				glog.Info("Send Cycle Completed Successfully")
 			}
-			time.Sleep(5 * time.Second)
+			time.Sleep(time.Duration(config.Cfg.ReportRateMS) * time.Millisecond)
 		}
 	}()
 
