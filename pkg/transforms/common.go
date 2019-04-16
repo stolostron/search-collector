@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -23,6 +24,7 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret["name"] = resource.GetName()
 	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
+	ret["_clusterNamespace"] = config.Cfg.ClusterNamespace
 
 	if resource.GetLabels() != nil {
 		ret["label"] = resource.GetLabels()
@@ -49,6 +51,7 @@ func unstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 	ret["name"] = resource.GetName()
 	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
+	ret["_clusterNamespace"] = config.Cfg.ClusterNamespace
 
 	// valid api group with have format of "apigroup/version"
 	// unnamed api groups will have format of "/version"
