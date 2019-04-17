@@ -29,7 +29,7 @@ const (
 	DEFAULT_RUNTIME_MODE   = "production"
 	DEFAULT_CLUSTER_NAME   = "local-cluster"
 	DEFAULT_AGGREGATOR_URL = "https://localhost:3010"
-	DEFAULT_TILLER_URL     = "tiller-deploy:44134"
+	DEFAULT_TILLER_URL     = "tiller-deploy.kube-system:44134"
 )
 const (
 	DEFAULT_REPORT_RATE_MS = 30000
