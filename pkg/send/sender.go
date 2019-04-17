@@ -40,11 +40,11 @@ type Diff struct {
 // TODO import this type from the aggregator.
 // This type is for marshaling json which we send to the aggregator - it has to match the aggregator's API
 type Payload struct {
-	DeletedResources []string           `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
-	AddResources     []*transforms.Node `json:"addResources,omitempty"`    // List of Nodes which must be added
-	UpdatedResources []*transforms.Node `json:"updateResources,omitempty"` // List of Nodes that already existed which must be updated
-	Hash             string             `json:"hash,omitempty"`            // Hash of the previous state, used by aggregator to determine whether it needs to ask for the complete data
-	ClearAll         bool               `json:"clearAll,omitempty"`        // Whether or not the aggregator should clear all data it has for the cluster first
+	DeletedResources []string          `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
+	AddResources     []transforms.Node `json:"addResources,omitempty"`    // List of Nodes which must be added
+	UpdatedResources []transforms.Node `json:"updateResources,omitempty"` // List of Nodes that already existed which must be updated
+	Hash             string            `json:"hash,omitempty"`            // Hash of the previous state, used by aggregator to determine whether it needs to ask for the complete data
+	ClearAll         bool              `json:"clearAll,omitempty"`        // Whether or not the aggregator should clear all data it has for the cluster first
 }
 
 func (p Payload) empty() bool {
@@ -83,8 +83,8 @@ type Sender struct {
 	aggregatorURL      string // URL of the aggregator, minus any path
 	aggregatorSyncPath string // Path of the aggregator's POST route for syncing data, as of today /aggregator/clusters/{clustername}/sync
 	httpClient         http.Client
-	currentState       map[string]*transforms.Node     // In the future this will be an object that has edges in it too
-	previousState      map[string]*transforms.Node     // In the future this will be an object that has edges in it too
+	currentState       map[string]transforms.Node      // In the future this will be an object that has edges in it too
+	previousState      map[string]transforms.Node      // In the future this will be an object that has edges in it too
 	diffState          map[string]transforms.NodeEvent // In the future this will be an object that has edges in it too
 	// lastHash           string                          // The hash that was sent with the last send - the first step of a send operation is to ask the aggregator for this hash, to determine whether we can send a diff or need to send the complete data.
 	lastSentTime int64                     // Time at which we last sent data to the hub
@@ -101,8 +101,8 @@ func NewSender(inputChan chan transforms.NodeEvent, aggregatorURL, clusterName s
 		aggregatorURL:      aggregatorURL,
 		aggregatorSyncPath: strings.Join([]string{"/aggregator/clusters/", clusterName, "/sync"}, ""),
 		httpClient:         getHTTPSClient(),
-		previousState:      make(map[string]*transforms.Node),
-		currentState:       make(map[string]*transforms.Node),
+		previousState:      make(map[string]transforms.Node),
+		currentState:       make(map[string]transforms.Node),
 		diffState:          make(map[string]transforms.NodeEvent),
 		// lastHash:           NEVER_SENT,
 		lastSentTime: -1,
@@ -126,9 +126,9 @@ func (s *Sender) diffPayload() Payload {
 
 	for _, ndo := range s.diffState {
 		if ndo.Operation == transforms.Create {
-			payload.AddResources = append(payload.AddResources, &ndo.Node)
+			payload.AddResources = append(payload.AddResources, ndo.Node)
 		} else if ndo.Operation == transforms.Update {
-			payload.UpdatedResources = append(payload.UpdatedResources, &ndo.Node)
+			payload.UpdatedResources = append(payload.UpdatedResources, ndo.Node)
 		} else if ndo.Operation == transforms.Delete {
 			payload.DeletedResources = append(payload.DeletedResources, ndo.UID)
 		}
@@ -155,7 +155,7 @@ func (s *Sender) completePayload() Payload {
 // Not threadsafe with anything that edits structures in s, locking left up to the caller.
 func (s *Sender) resetDiffs() {
 	s.diffState = make(map[string]transforms.NodeEvent) // We have to reset the diff every time we try to prepare something to send, so that it doesn't get out of sync with the complete/old.
-	s.previousState = make(map[string]*transforms.Node, len(s.currentState))
+	s.previousState = make(map[string]transforms.Node, len(s.currentState))
 
 	for uid, node := range s.currentState {
 		s.previousState[uid] = node
@@ -312,7 +312,7 @@ func (s *Sender) Reconciler() {
 			if inPrevious { // If this was in the previous, our operation for diffs is update, not create
 				op = transforms.Update
 			}
-			s.currentState[ne.UID] = &ne.Node
+			s.currentState[ne.UID] = ne.Node
 			ne.Operation = op
 			s.diffState[ne.UID] = ne
 

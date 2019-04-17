@@ -69,7 +69,7 @@ func main() {
 		go transforms.HelmTransformation(helmClient, upsertTransformer.Output)
 	}
 
-	// Initialize the dynamic client, used for CRUD operations on nondeafult k8s resources
+	// Initialize the dynamic client, used for CRUD operations on arbitrary k8s resources
 	dynamicClientset, err := dynamic.NewForConfig(clientConfig)
 	if err != nil {
 		glog.Fatal("Cannot Construct Dynamic Client From Config: ", err)
