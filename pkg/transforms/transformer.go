@@ -26,9 +26,9 @@ import (
 type Operation int
 
 const (
-	Create Operation = 0
-	Update Operation = 1
-	Delete Operation = 2
+	Create Operation = iota // 0
+	Update                  // 1
+	Delete                  // 2
 )
 
 // This type is used for add and update events.

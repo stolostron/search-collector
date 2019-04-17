@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -272,52 +273,47 @@ func (s *Sender) Sync() error {
 func (s *Sender) Reconciler() {
 	glog.Info("Reconciler Routine Started")
 	for {
-		ne := <-s.InputChannel
-		/*
-			n := ne.Node
-			name, ok := n.Properties["name"].(string)
-			if !ok {
-				name = "UNKNOWN"
-			}
+		reconcileNode(s)
+	}
+}
 
-			kind, ok := n.Properties["kind"].(string)
-			if !ok {
-				kind = "UNKNOWN"
-			}
-			glog.Info(ne.Operation, ": "+kind+" "+name)
-		*/
+// This is a separate funcition so we can defer the mutex unlock and guarantee the lock is lifted every iteration
+func reconcileNode(s *Sender) {
+	ne := <-s.InputChannel
 
-		// Take care of diffState and currentState
-		s.mutex.Lock() // Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit and then blocked, we could end up getting out of order
+	// Take care of diffState and currentState
+	s.mutex.Lock() // Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit and then blocked, we could end up getting out of order
+	defer s.mutex.Unlock()
 
-		// Check whether we already have this node in our current state with a more up to date time. If so, we ignore the version of it we're currently processing.
-		otherNode, inCurrent := s.diffState[ne.Node.UID]
+	// Check whether we already have this node in our current state with a more up to date time. If so, we ignore the version of it we're currently processing.
+	otherNode, inCurrent := s.diffState[ne.Node.UID]
 
-		if inCurrent && otherNode.Time > ne.Time {
-			continue
+	if inCurrent && otherNode.Time > ne.Time {
+		return
+	}
+
+	previousNode, inPrevious := s.previousState[ne.Node.UID]
+
+	if ne.Operation == transforms.Delete {
+		if inPrevious {
+			delete(s.currentState, ne.UID) //Get rid of it from our currentState, if it was ever there.
+			s.diffState[ne.UID] = ne       // Since it was in the previous, we need to have a deletion diff.
+		} else {
+			delete(s.currentState, ne.UID) //Get rid of it from our currentState, if it was ever there.
+			delete(s.diffState, ne.UID)
 		}
+	} else { // This is either an update or create, which look very similar. TODO actually combine the two.
+		op := transforms.Create
+		if inPrevious { // If this was in the previous, our operation for diffs is update, not create
+			op = transforms.Update
 
-		_, inPrevious := s.previousState[ne.Node.UID]
-
-		if ne.Operation == transforms.Delete {
-			if inPrevious {
-				delete(s.currentState, ne.UID) //Get rid of it from our currentState, if it was ever there.
-				s.diffState[ne.UID] = ne       // Since it was in the previous, we need to have a deletion diff.
-			} else {
-				delete(s.currentState, ne.UID) //Get rid of it from our currentState, if it was ever there.
-				delete(s.diffState, ne.UID)
+			// skip updates if new event is redundant to our previous state (a property that we don't care about triggered an update)
+			if reflect.DeepEqual(ne.Node, previousNode) {
+				return
 			}
-		} else { // This is either an update or create, which look very similar. TODO actually combine the two.
-			op := transforms.Create
-			if inPrevious { // If this was in the previous, our operation for diffs is update, not create
-				op = transforms.Update
-			}
-			s.currentState[ne.UID] = ne.Node
-			ne.Operation = op
-			s.diffState[ne.UID] = ne
-
 		}
-
-		s.mutex.Unlock()
+		s.currentState[ne.UID] = ne.Node
+		ne.Operation = op
+		s.diffState[ne.UID] = ne
 	}
 }
