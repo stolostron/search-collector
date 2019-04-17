@@ -175,15 +175,22 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("POST to: %s responsed with error. StatusCode: %d  Message: %s", s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
+		return errors.New(msg)
+	}
+
 	defer resp.Body.Close()
 	r := SyncResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
+		glog.Error("Error decoding JSON response.")
 		return err
 	}
+
 	// Obviously something is wrong if we don't get a 200. But, we sometimes get a 200 and a non-empty list in the errors field, which still means something went wrong.
-	if resp.StatusCode != http.StatusOK || len(r.Errors) != 0 {
-		msg := fmt.Sprintf("Error response from aggregator, Status Code: %d, Aggregator Errors: %v", resp.StatusCode, r.Errors)
+	if len(r.Errors) != 0 {
+		msg := fmt.Sprintf("Aggregator responded with partial errors. Errors: %v", r.Errors)
 		return errors.New(msg)
 	}
 	// TODO Compare size that comes back in r to size that we track.
