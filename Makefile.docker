@@ -3,11 +3,20 @@ ARCH                   = $(shell uname -m)
 DOCKER_FLAG            =
 DOCKER_SERVER         ?= hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com
 GIT_REMOTE_URL         = $(shell git config --get remote.origin.url)
-IMAGE_DESCRIPTION      =
-IMAGE_NAME             = search-collector
 IMAGE_REPO            ?= hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com/ibmcom
 MANIFEST_VERSION      ?= v0.7.0
 RELEASE_TAG           ?= latest
+
+# Variables for Red Hat required labels
+IMAGE_NAME             = search-collector
+IMAGE_DISPLAY_NAME     = Multicloud Manager Search Collector
+IMAGE_DESCRIPTION      = The search-collector is a Multicloud Manager component that sits in each managed cluster. It sends data to the aggregator.
+IMAGE_MAINTAINER       = jpadilla@us.ibm.com
+IMAGE_VENDOR           = IBM
+IMAGE_SUMMARY          = $(IMAGE_DESCRIPTION)
+IMAGE_OPENSHIFT_TAGS   = multicloud-manager
+# IMAGE_VERSION will be set by the app-version target
+# IMAGE_RELEASE will be set by the app-version target
 
 ifeq ($(ARCH), x86_64)
 	IMAGE_NAME_ARCH = $(IMAGE_NAME)-amd64
@@ -31,6 +40,7 @@ app-version:
 	$(eval VCS_REF := $(if $(WORKING_CHANGES),$(GIT_COMMIT)-$(BUILD_DATE),$(GIT_COMMIT)))
 	$(eval APP_VERSION ?= $(if $(shell cat VERSION 2> /dev/null),$(shell cat VERSION 2> /dev/null),0.0.1))
 	$(eval IMAGE_VERSION ?= $(APP_VERSION)-$(GIT_COMMIT))
+	$(eval IMAGE_RELEASE ?= $(VCS_REF))
 	@echo "App: $(IMAGE_NAME_ARCH) $(IMAGE_VERSION)"
 
 check-env:
@@ -50,7 +60,15 @@ image: check-env app-version
 	docker build -t $(IMAGE_REPO)/$(IMAGE_NAME_ARCH):$(IMAGE_VERSION) \
            --build-arg "VCS_REF=$(VCS_REF)" \
            --build-arg "VCS_URL=$(GIT_REMOTE_URL)" \
-           --build-arg "IMAGE_NAME=$(IMAGE_NAME_ARCH)" \
+           --build-arg "IMAGE_NAME=$(IMAGE_NAME)" \
+           --build-arg "IMAGE_DISPLAY_NAME=$(IMAGE_DISPLAY_NAME)" \
+           --build-arg "IMAGE_MAINTAINER=$(IMAGE_MAINTAINER)" \
+           --build-arg "IMAGE_VENDOR=$(IMAGE_VENDOR)" \
+           --build-arg "IMAGE_VERSION=$(IMAGE_VERSION)" \
+           --build-arg "IMAGE_RELEASE=$(IMAGE_RELEASE)" \
+           --build-arg "IMAGE_SUMMARY=$(IMAGE_SUMMARY)" \
+           --build-arg "IMAGE_OPENSHIFT_TAGS=$(IMAGE_OPENSHIFT_TAGS)" \
+           --build-arg "IMAGE_NAME_ARCH=$(IMAGE_NAME_ARCH)" \
            --build-arg "IMAGE_DESCRIPTION=$(IMAGE_DESCRIPTION)" $(DOCKER_FLAG) .
 
 push: check-env app-version
