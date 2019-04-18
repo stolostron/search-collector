@@ -1,6 +1,6 @@
 {
     "AggregatorURL": "https://localhost:3010",
     "ClusterName": "local-cluster",
-    "ReportRateMS": 30000,
+    "ReportRateMS": 5000,
     "RuntimeMode": "development"
 }

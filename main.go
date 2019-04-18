@@ -156,7 +156,8 @@ func main() {
 				uid := string(resource.GetUID())
 				// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
 				ne := transforms.NodeEvent{
-					Time: time.Now().Unix(),
+					Time:      time.Now().Unix(),
+					Operation: transforms.Delete,
 					Node: transforms.Node{
 						UID: uid,
 					},

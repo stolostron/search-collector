@@ -32,7 +32,7 @@ const (
 	DEFAULT_TILLER_URL     = "tiller-deploy.kube-system:44134"
 )
 const (
-	DEFAULT_REPORT_RATE_MS = 30000
+	DEFAULT_REPORT_RATE_MS = 5000 // 5 seconds
 )
 
 // Define a config type for gonfig to hold our config properties.

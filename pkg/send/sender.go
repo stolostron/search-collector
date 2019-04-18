@@ -166,6 +166,8 @@ func (s *Sender) resetDiffs() {
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int) error {
+	glog.Infof("Sending { add: %d, update: %d, delete: %d }", len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources))
+
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -216,9 +218,6 @@ func (s *Sender) Sync() error {
 			glog.Info("Nothing to send this cycle. Waiting for next cycle.")
 			return nil
 		}
-		glog.Infof("Resources to Add: %d", len(payload.AddResources))
-		glog.Infof("Resources to Update: %d", len(payload.UpdatedResources))
-		glog.Infof("Resources: to Delete %d", len(payload.DeletedResources))
 		err := s.send(payload, expectedTotalResources)
 		if err != nil {
 			return err
@@ -239,9 +238,6 @@ func (s *Sender) Sync() error {
 		return nil
 	}
 	glog.Info("Sending diff payload")
-	glog.Infof("Resources to Add: %d", len(payload.AddResources))
-	glog.Infof("Resources to Update: %d", len(payload.UpdatedResources))
-	glog.Infof("Resources: to Delete %d", len(payload.DeletedResources))
 	err := s.send(payload, expectedTotalResources)
 	if err != nil { // If something went wrong here, form a new complete payload (only necessary because currentState may have changed since we got it, and we have to keep our diffs synced)
 		time.Sleep(60 * time.Second) // RM after fixing bug - temp fix
@@ -256,9 +252,6 @@ func (s *Sender) Sync() error {
 			return nil
 		}
 		glog.Warning("Retrying with complete payload")
-		glog.Warningf("Resources to Add: %d", len(payload.AddResources))
-		glog.Warningf("Resources to Update: %d", len(payload.UpdatedResources))
-		glog.Warningf("Resources: to Delete %d", len(payload.DeletedResources))
 		err := s.send(payload, expectedTotalResources)
 		if err != nil {
 			return err
