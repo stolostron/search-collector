@@ -23,15 +23,12 @@ import (
 	"k8s.io/helm/pkg/tlsutil"
 )
 
-// TODO: change these presets to sane values for production environment
-// running locally should pull from config.js which is not included in docker image
+// Out of box defaults
 const (
 	DEFAULT_RUNTIME_MODE   = "production"
 	DEFAULT_CLUSTER_NAME   = "local-cluster"
 	DEFAULT_AGGREGATOR_URL = "https://localhost:3010"
 	DEFAULT_TILLER_URL     = "tiller-deploy.kube-system:44134"
-)
-const (
 	DEFAULT_REPORT_RATE_MS = 5000 // 5 seconds
 )
 
@@ -82,10 +79,7 @@ func init() {
 	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
 	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
 	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
-
-	// TODO: The target report rate is < 5 seconds. BUT I'm currently setting to 30 secnds until the refresh
-	// logic get updated to skip cycles where no updates are needed.
-	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", 30000)
+	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) {
