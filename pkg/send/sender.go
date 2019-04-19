@@ -119,8 +119,12 @@ func NewSender(inputChan chan transforms.NodeEvent, aggregatorURL, clusterName s
 	return s
 }
 
-// Returns a payload containing the add, update and delete operations since the last send.
-func (s *Sender) diffPayload() Payload {
+// Returns a payload and expected total resources, containing the add, update and delete operations since the last send.
+// This function also RESETS THE DIFFS, so make sure you do something with the payload
+func (s *Sender) diffPayload() (Payload, int) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	payload := Payload{
 		ClearAll: false,
 	}
@@ -135,13 +139,17 @@ func (s *Sender) diffPayload() Payload {
 		}
 	}
 
-	return payload
+	expectedTotalResources := len(s.currentState)
+	s.resetDiffs()
+	return payload, expectedTotalResources
 }
 
-// Returns a payload containing the complete set of resources as they currently exist in this cluster, at least up to the point that this sender knows about.
-// This function isn't threadsafe, you need to lock before it.
-// The locking used to be done inside this function, it was moved outside because other use of shared data goes right next to it.
-func (s *Sender) completePayload() Payload {
+// Returns a payload and expected total resources, containing the complete set of resources as they currently exist in this cluster
+// This function also RESETS THE DIFFS, so make sure you do something with the payload
+func (s *Sender) completePayload() (Payload, int) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	payload := Payload{
 		ClearAll: true,
 	}
@@ -149,11 +157,13 @@ func (s *Sender) completePayload() Payload {
 	for _, n := range s.currentState {
 		payload.AddResources = append(payload.AddResources, n)
 	}
-	return payload
+	expectedTotalResources := len(s.currentState)
+	s.resetDiffs()
+	return payload, expectedTotalResources
 }
 
 // Clears out diffState and copies currentState into previousState.
-// Not threadsafe with anything that edits structures in s, locking left up to the caller.
+// NOT THREADSAFE with anything that edits structures in s, locking left up to the caller.
 func (s *Sender) resetDiffs() {
 	s.diffState = make(map[string]transforms.NodeEvent) // We have to reset the diff every time we try to prepare something to send, so that it doesn't get out of sync with the complete/old.
 	s.previousState = make(map[string]transforms.Node, len(s.currentState))
@@ -206,18 +216,9 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 
 // Sends data to the aggregator. Attempts to send a diff, then just sends the complete if the aggregator appears to need that.
 func (s *Sender) Sync() error {
-
 	if s.lastSentTime == -1 { // If we have never sent before, we just send the complete.
 		glog.Info("Sending first ever payload")
-		s.mutex.Lock()
-		payload := s.completePayload()
-		expectedTotalResources := len(s.currentState)
-		s.resetDiffs()
-		s.mutex.Unlock()
-		if payload.empty() {
-			glog.Info("Nothing to send this cycle. Waiting for next cycle.")
-			return nil
-		}
+		payload, expectedTotalResources := s.completePayload()
 		err := s.send(payload, expectedTotalResources)
 		if err != nil {
 			return err
@@ -228,29 +229,21 @@ func (s *Sender) Sync() error {
 	}
 
 	// If this isn't the first time we've sent, we can now attempt to send a diff.
-	s.mutex.Lock()
-	payload := s.diffPayload()
-	expectedTotalResources := len(s.currentState)
-	s.resetDiffs()
-	s.mutex.Unlock()
+	payload, expectedTotalResources := s.diffPayload()
 	if payload.empty() {
-		glog.Info("Nothing to send this cycle. Waiting for next cycle.")
-		return nil
-	}
-	glog.Info("Sending diff payload")
-	err := s.send(payload, expectedTotalResources)
-	if err != nil { // If something went wrong here, form a new complete payload (only necessary because currentState may have changed since we got it, and we have to keep our diffs synced)
-		time.Sleep(60 * time.Second) // RM after fixing bug - temp fix
-		glog.Warning("Error on diff payload sending: ", err)
-		s.mutex.Lock()
-		payload := s.completePayload()
-		expectedTotalResources := len(s.currentState)
-		s.resetDiffs()
-		s.mutex.Unlock()
-		if payload.empty() {
-			glog.Info("Nothing to send this cycle. Waiting for next cycle.")
+		// check if a ping is necessary
+		if time.Now().Unix()-s.lastSentTime < int64(config.Cfg.HeartbeatMS/1000) {
+			glog.Info("Nothing to send, skiping send cycle")
 			return nil
 		}
+		glog.Info("Sending empty payload for heartbeat")
+	} else {
+		glog.Info("Sending diff payload")
+	}
+	err := s.send(payload, expectedTotalResources)
+	if err != nil { // If something went wrong here, form a new complete payload (only necessary because currentState may have changed since we got it, and we have to keep our diffs synced)
+		glog.Warning("Error on diff payload sending: ", err)
+		payload, expectedTotalResources := s.completePayload()
 		glog.Warning("Retrying with complete payload")
 		err := s.send(payload, expectedTotalResources)
 		if err != nil {
@@ -259,6 +252,8 @@ func (s *Sender) Sync() error {
 		s.lastSentTime = time.Now().Unix()
 		return nil
 	}
+
+	s.lastSentTime = time.Now().Unix()
 	return nil
 }
 

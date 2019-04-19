@@ -172,7 +172,7 @@ func main() {
 	//TODO make this a lot more robust, handle diffs, etc.
 	// Start a really basic sender routine.
 	go func() {
-		// First time send after 15 seconds, then send every ReportRateMS miliseconds.
+		// First time send after 15 seconds, then send every ReportRateMS milliseconds.
 		time.Sleep(15 * time.Second)
 		for {
 			glog.Info("Beginning Send Cycle")

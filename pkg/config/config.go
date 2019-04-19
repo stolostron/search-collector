@@ -29,7 +29,8 @@ const (
 	DEFAULT_CLUSTER_NAME   = "local-cluster"
 	DEFAULT_AGGREGATOR_URL = "https://localhost:3010"
 	DEFAULT_TILLER_URL     = "tiller-deploy.kube-system:44134"
-	DEFAULT_REPORT_RATE_MS = 5000 // 5 seconds
+	DEFAULT_REPORT_RATE_MS = 5000  // 5 seconds
+	DEAFULT_HEARTBEAT_MS   = 60000 // 1 min
 )
 
 // Define a config type for gonfig to hold our config properties.
@@ -43,6 +44,7 @@ type Config struct {
 	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
 	KubeConfig           string       `env:"KUBECONFIG"`        // Local kubeconfig path
 	ReportRateMS         int          `env:"REPORT_RATE_MS"`    // Interval in milliseconds at which changes are reported to the aggregator.
+	HeartbeatMS          int          `env:"HEARTBEAT_MS"`      // Interval in milliseconds at which collector sends an empty payload to ensure connection
 	TillerURL            string       `env:"TILLER_URL"`        // URL host path of the tiller server
 	TillerOpts           tlsutil.Options
 }
@@ -80,6 +82,7 @@ func init() {
 	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
 	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
+	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEAFULT_HEARTBEAT_MS)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) {
