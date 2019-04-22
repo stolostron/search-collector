@@ -20,6 +20,7 @@ import (
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -84,13 +85,145 @@ func main() {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 
+	stoppers := make(map[schema.GroupVersionResource]chan struct{}) // We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
+	gvrList, err := supportedResources(discoveryClient)
+	if err != nil {
+		glog.Fatal("Failed to get list of supported resources: ", err)
+	}
+
+	// Declare handler functions used for creating informers.
+
+	informerAddHandler := func(obj interface{}) {
+		resource := obj.(*unstructured.Unstructured)
+		upsert := transforms.Event{
+			Time:      time.Now().Unix(),
+			Operation: transforms.Create,
+			Resource:  resource,
+		}
+		upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
+	}
+
+	informerUpdateHandler := func(oldObj, newObj interface{}) {
+		resource := newObj.(*unstructured.Unstructured)
+		upsert := transforms.Event{
+			Time:      time.Now().Unix(),
+			Operation: transforms.Update,
+			Resource:  resource,
+		}
+		upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
+	}
+
+	informerDeleteHandler := func(obj interface{}) {
+		resource := obj.(*unstructured.Unstructured)
+		uid := string(resource.GetUID())
+		// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
+		ne := transforms.NodeEvent{
+			Time:      time.Now().Unix(),
+			Operation: transforms.Delete,
+			Node: transforms.Node{
+				UID: uid,
+			},
+		}
+		sender.InputChannel <- ne
+	}
+
+	// Now that we have a list of all the GVRs for resources we support, make dynamic informers for each one, set them up to pass their data into the transformer, and start them.
+	for gvr := range gvrList {
+		// Ignore events because those cause too much noise.
+		// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
+		if gvr.Resource == "clusters" || gvr.Resource == "clusterstatuses" || gvr.Resource == "events" {
+			continue
+		}
+
+		// In this case we need to create a dynamic informer, since there is no built in informer for this type.
+		dynamicInformer := dynamicFactory.ForResource(gvr)
+		glog.Infof("Created informer for %s \n", gvr.String())
+		// Set up handler to pass this informer's resources into transformer
+		informer := dynamicInformer.Informer()
+		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    informerAddHandler,
+			UpdateFunc: informerUpdateHandler,
+			DeleteFunc: informerDeleteHandler,
+		})
+
+		stopper := make(chan struct{})
+		stoppers[gvr] = stopper
+		go informer.Run(stopper)
+	}
+
+	// Start a routine to keep our informers up to date.
+	go func() {
+		time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
+		for {
+			glog.Info("Checking for new resources and deleting informers for resources that no longer exist.")
+			gvrList, err := supportedResources(discoveryClient)
+			if err != nil {
+				glog.Error("Failed to rediscover supported resources: ", err)
+			} else {
+				// Loop through the previous list of resources. If we find the entry in the new list we delete it so that we don't end up with 2 informers.
+				// If we don't find it, we stop the informer that's currently running because the resource no longer exists (or no longer supports watch).
+				for gvr, stopper := range stoppers {
+					// If this still exists in the new list, delete it from there as we don't want to recreate an informer
+					if _, ok := gvrList[gvr]; ok {
+						delete(gvrList, gvr)
+						continue
+					} else { // if it's in the old and NOT in the new, stop the informer
+						stopper <- struct{}{}
+						delete(stoppers, gvr)
+					}
+				}
+				// Now, loop through the new list, which after the above deletions, contains only stuff that needs to have a new informer created for it.
+				for gvr := range gvrList {
+					// In this case we need to create a dynamic informer, since there is no built in informer for this type.
+					dynamicInformer := dynamicFactory.ForResource(gvr)
+					glog.Infof("Created informer for %s \n", gvr.String())
+					// Set up handler to pass this informer's resources into transformer
+					informer := dynamicInformer.Informer()
+					informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+						AddFunc:    informerAddHandler,
+						UpdateFunc: informerUpdateHandler,
+						DeleteFunc: informerDeleteHandler,
+					})
+
+					stopper := make(chan struct{})
+					stoppers[gvr] = stopper
+					go informer.Run(stopper)
+				}
+			}
+		}
+	}()
+
+	// Start a routine to send data every interval.
+	go func() {
+		// First time send after 15 seconds, then send every ReportRateMS milliseconds.
+		time.Sleep(15 * time.Second)
+		for {
+			glog.Info("Beginning Send Cycle")
+			err = sender.Sync()
+			if err != nil {
+				glog.Error("SENDING ERROR: ", err)
+			} else {
+				glog.Info("Send Cycle Completed Successfully")
+			}
+			time.Sleep(time.Duration(config.Cfg.ReportRateMS) * time.Millisecond)
+		}
+	}()
+
+	// We don't actually use this to wait on anything, since the transformer routines don't ever end unless something goes wrong. We just use this to wait forever in main once we start things up.
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	wg.Wait() // This will never end (until we kill the process)
+}
+
+// Returns a map containing all the GVRs on the cluster of resources that support WATCH.
+func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}
 
 	// List out all the preferred api-resources of this server.
 	apiResources, err := discoveryClient.ServerPreferredResources()
 	if err != nil {
-		glog.Fatal("Cannot list supported resources on k8s api-server: ", err)
+		return nil, err
 	}
 
 	// Filter down to only resources which support WATCH operations.
@@ -112,82 +245,5 @@ func main() {
 	// Use handy converter function to convert into GroupVersionResource objects, which we need in order to make informers
 	gvrList, err := discovery.GroupVersionResources(supportedResources)
 
-	if err != nil {
-		glog.Fatal("Could not read api-resource object", err) // TODO pretty sure this would be fatal but I don't actually know how to produce it, so... we'll see! :)
-	}
-
-	stopper := make(chan struct{}) // We just have one stopper channel that we pass to all the informers, we always stop them together.
-	defer close(stopper)
-
-	// Now that we have a list of all the GVRs for resources we support, make dynamic informers for each one, set them up to pass their data into the transformer, and start them.
-	for gvr := range gvrList {
-		// Ignore events because those cause too much noise.
-		// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
-		if gvr.Resource == "clusters" || gvr.Resource == "clusterstatuses" || gvr.Resource == "events" {
-			continue
-		}
-
-		// In this case we need to create a dynamic informer, since there is no built in informer for this type.
-		dynamicInformer := dynamicFactory.ForResource(gvr)
-		glog.Infof("Created informer for %s \n", gvr.String())
-		// Set up handler to pass this informer's resources into transformer
-		informer := dynamicInformer.Informer()
-		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				resource := obj.(*unstructured.Unstructured)
-				upsert := transforms.Event{
-					Time:      time.Now().Unix(),
-					Operation: transforms.Create,
-					Resource:  resource,
-				}
-				upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
-			},
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				resource := newObj.(*unstructured.Unstructured)
-				upsert := transforms.Event{
-					Time:      time.Now().Unix(),
-					Operation: transforms.Update,
-					Resource:  resource,
-				}
-				upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
-			},
-			DeleteFunc: func(obj interface{}) {
-				resource := obj.(*unstructured.Unstructured)
-				uid := string(resource.GetUID())
-				// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
-				ne := transforms.NodeEvent{
-					Time:      time.Now().Unix(),
-					Operation: transforms.Delete,
-					Node: transforms.Node{
-						UID: uid,
-					},
-				}
-				sender.InputChannel <- ne
-			},
-		})
-
-		go informer.Run(stopper)
-	}
-
-	//TODO make this a lot more robust, handle diffs, etc.
-	// Start a really basic sender routine.
-	go func() {
-		// First time send after 15 seconds, then send every ReportRateMS milliseconds.
-		time.Sleep(15 * time.Second)
-		for {
-			glog.Info("Beginning Send Cycle")
-			err = sender.Sync()
-			if err != nil {
-				glog.Error("SENDING ERROR: ", err)
-			} else {
-				glog.Info("Send Cycle Completed Successfully")
-			}
-			time.Sleep(time.Duration(config.Cfg.ReportRateMS) * time.Millisecond)
-		}
-	}()
-
-	// We don't actually use this to wait on anything, since the transformer routines don't ever end unless something goes wrong. We just use this to wait forever in main once we start things up.
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	wg.Wait() // This will never end (until we kill the process)
+	return gvrList, err
 }
