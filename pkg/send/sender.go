@@ -185,6 +185,9 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 	// glog.Warning(string(payloadBytes))
 	payloadBuffer := bytes.NewBuffer(payloadBytes)
 	resp, err := s.httpClient.Post(s.aggregatorURL+s.aggregatorSyncPath, "application/json", payloadBuffer)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return err
 	}
@@ -193,7 +196,6 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 		return errors.New(msg)
 	}
 
-	defer resp.Body.Close()
 	r := SyncResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
