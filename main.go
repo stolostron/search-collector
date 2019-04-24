@@ -153,9 +153,8 @@ func main() {
 
 	// Start a routine to keep our informers up to date.
 	go func() {
-		time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
 		for {
-			glog.Info("Checking for new resources and deleting informers for resources that no longer exist.")
+			time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
 			gvrList, err := supportedResources(discoveryClient)
 			if err != nil {
 				glog.Error("Failed to rediscover supported resources: ", err)
@@ -169,6 +168,7 @@ func main() {
 						continue
 					} else { // if it's in the old and NOT in the new, stop the informer
 						stopper <- struct{}{}
+						glog.Infof("Resource %s no longer exists or no longer supports watch, stopping its informer\n", gvr.String())
 						delete(stoppers, gvr)
 					}
 				}
@@ -176,7 +176,7 @@ func main() {
 				for gvr := range gvrList {
 					// In this case we need to create a dynamic informer, since there is no built in informer for this type.
 					dynamicInformer := dynamicFactory.ForResource(gvr)
-					glog.Infof("Created informer for %s \n", gvr.String())
+					glog.Infof("Found new resource %s, creating informer\n", gvr.String())
 					// Set up handler to pass this informer's resources into transformer
 					informer := dynamicInformer.Informer()
 					informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
