@@ -85,14 +85,7 @@ func main() {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 
-	stoppers := make(map[schema.GroupVersionResource]chan struct{}) // We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
-	gvrList, err := supportedResources(discoveryClient)
-	if err != nil {
-		glog.Fatal("Failed to get list of supported resources: ", err)
-	}
-
 	// Declare handler functions used for creating informers.
-
 	informerAddHandler := func(obj interface{}) {
 		resource := obj.(*unstructured.Unstructured)
 		upsert := transforms.Event{
@@ -127,38 +120,18 @@ func main() {
 		sender.InputChannel <- ne
 	}
 
-	// Now that we have a list of all the GVRs for resources we support, make dynamic informers for each one, set them up to pass their data into the transformer, and start them.
-	for gvr := range gvrList {
-		// Ignore events because those cause too much noise.
-		// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
-		if gvr.Resource == "clusters" || gvr.Resource == "clusterstatuses" || gvr.Resource == "events" {
-			continue
-		}
-
-		// In this case we need to create a dynamic informer, since there is no built in informer for this type.
-		dynamicInformer := dynamicFactory.ForResource(gvr)
-		glog.Infof("Created informer for %s \n", gvr.String())
-		// Set up handler to pass this informer's resources into transformer
-		informer := dynamicInformer.Informer()
-		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    informerAddHandler,
-			UpdateFunc: informerUpdateHandler,
-			DeleteFunc: informerDeleteHandler,
-		})
-
-		stopper := make(chan struct{})
-		stoppers[gvr] = stopper
-		go informer.Run(stopper)
-	}
-
+	stoppers := make(map[schema.GroupVersionResource]chan struct{}) // We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
 	// Start a routine to keep our informers up to date.
 	go func() {
 		for {
-			time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
 			gvrList, err := supportedResources(discoveryClient)
 			if err != nil {
-				glog.Error("Failed to rediscover supported resources: ", err)
-			} else {
+				glog.Error("Failed to get complete list of supported resources: ", err)
+			}
+
+			// Sometimes a partial list will be returned even if there is an error.
+			// This could happen during install when a CRD hasn't fully initialized.
+			if gvrList != nil {
 				// Loop through the previous list of resources. If we find the entry in the new list we delete it so that we don't end up with 2 informers.
 				// If we don't find it, we stop the informer that's currently running because the resource no longer exists (or no longer supports watch).
 				for gvr, stopper := range stoppers {
@@ -190,6 +163,8 @@ func main() {
 					go informer.Run(stopper)
 				}
 			}
+
+			time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
 		}
 	}()
 
@@ -215,7 +190,7 @@ func main() {
 	wg.Wait() // This will never end (until we kill the process)
 }
 
-// Returns a map containing all the GVRs on the cluster of resources that support WATCH.
+// Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
 func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}
@@ -232,6 +207,11 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 		watchList.GroupVersion = apiList.GroupVersion
 		watchResources := []machineryV1.APIResource{}      // All the resources for which GET works.
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
+			// Ignore events because those cause too much noise.
+			// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
+			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "events" {
+				continue
+			}
 			for _, verb := range apiResource.Verbs {
 				if verb == "watch" {
 					watchResources = append(watchResources, apiResource)
