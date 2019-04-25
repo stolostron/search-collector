@@ -41,11 +41,15 @@ type Diff struct {
 // TODO import this type from the aggregator.
 // This type is for marshaling json which we send to the aggregator - it has to match the aggregator's API
 type Payload struct {
-	DeletedResources []string          `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
+	DeletedResources []Deletion        `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
 	AddResources     []transforms.Node `json:"addResources,omitempty"`    // List of Nodes which must be added
 	UpdatedResources []transforms.Node `json:"updateResources,omitempty"` // List of Nodes that already existed which must be updated
 	Hash             string            `json:"hash,omitempty"`            // Hash of the previous state, used by aggregator to determine whether it needs to ask for the complete data
 	ClearAll         bool              `json:"clearAll,omitempty"`        // Whether or not the aggregator should clear all data it has for the cluster first
+}
+
+type Deletion struct {
+	UID string `json:"uid,omitempty"`
 }
 
 func (p Payload) empty() bool {
@@ -69,7 +73,9 @@ type SyncResponse struct {
 	TotalDeleted     int
 	TotalResources   int
 	UpdatedTimestamp time.Time
-	Errors           []SyncError
+	DeleteErrors     []SyncError
+	UpdateErrors     []SyncError
+	AddErrors        []SyncError
 }
 
 // TODO import this type from the aggregator.
@@ -88,7 +94,7 @@ type Sender struct {
 	previousState      map[string]transforms.Node      // In the future this will be an object that has edges in it too
 	diffState          map[string]transforms.NodeEvent // In the future this will be an object that has edges in it too
 	// lastHash           string                          // The hash that was sent with the last send - the first step of a send operation is to ask the aggregator for this hash, to determine whether we can send a diff or need to send the complete data.
-	lastSentTime int64                     // Time at which we last sent data to the hub
+	lastSentTime int64                     // Time at which we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
 	InputChannel chan transforms.NodeEvent // Put any nodes to be updated, added or deleted in here
 	mutex        sync.Mutex                // Used to protect currentState and diffState as they are edited and read by multiple goroutines
 }
@@ -135,7 +141,7 @@ func (s *Sender) diffPayload() (Payload, int) {
 		} else if ndo.Operation == transforms.Update {
 			payload.UpdatedResources = append(payload.UpdatedResources, ndo.Node)
 		} else if ndo.Operation == transforms.Delete {
-			payload.DeletedResources = append(payload.DeletedResources, ndo.UID)
+			payload.DeletedResources = append(payload.DeletedResources, Deletion{UID: ndo.UID})
 		}
 	}
 
@@ -203,13 +209,8 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 		return err
 	}
 
-	// Obviously something is wrong if we don't get a 200. But, we sometimes get a 200 and a non-empty list in the errors field, which still means something went wrong.
-	if len(r.Errors) != 0 {
-		msg := fmt.Sprintf("Aggregator responded with partial errors. Errors: %v", r.Errors)
-		return errors.New(msg)
-	}
-	// TODO Compare size that comes back in r to size that we track.
-	if r.TotalResources != expectedTotalResources {
+	// Compare size that comes back in r to size that we track, accounting for the errors reported by the aggregator.
+	if r.TotalResources != (expectedTotalResources + len(r.DeleteErrors) - len(r.AddErrors)) {
 		msg := fmt.Sprintf("Aggregator reported wrong number of total resources. Expected %d, got %d", expectedTotalResources, r.TotalResources)
 		return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
 	}
@@ -219,7 +220,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 // Sends data to the aggregator. Attempts to send a diff, then just sends the complete if the aggregator appears to need that.
 func (s *Sender) Sync() error {
 	if s.lastSentTime == -1 { // If we have never sent before, we just send the complete.
-		glog.Info("Sending first ever payload")
+		glog.Info("First time sending or last Sync cycle failed, sending complete payload")
 		payload, expectedTotalResources := s.completePayload()
 		err := s.send(payload, expectedTotalResources)
 		if err != nil {
@@ -235,7 +236,7 @@ func (s *Sender) Sync() error {
 	if payload.empty() {
 		// check if a ping is necessary
 		if time.Now().Unix()-s.lastSentTime < int64(config.Cfg.HeartbeatMS/1000) {
-			glog.Info("Nothing to send, skiping send cycle")
+			glog.Info("Nothing to send, skipping send cycle")
 			return nil
 		}
 		glog.Info("Sending empty payload for heartbeat")
@@ -249,6 +250,7 @@ func (s *Sender) Sync() error {
 		glog.Warning("Retrying with complete payload")
 		err := s.send(payload, expectedTotalResources)
 		if err != nil {
+			s.lastSentTime = -1 // If this retry fails, we want to start over with a complete payload next time, so we reset as if we've not sent anything before.
 			return err
 		}
 		s.lastSentTime = time.Now().Unix()

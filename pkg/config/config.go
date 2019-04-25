@@ -29,26 +29,28 @@ const (
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
 	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010"
 	DEFAULT_TILLER_URL         = "tiller-deploy.kube-system:44134"
-	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
-	DEAFULT_HEARTBEAT_MS       = 60000  // 1 min
-	DEFAULT_REDISCOVER_RATE_MS = 600000 // 10 min
+	DEFAULT_REPORT_RATE_MS     = 5000    // 5 seconds
+	DEFAULT_HEARTBEAT_MS       = 60000   // 1 min
+	DEFAULT_MAX_BACKOFF_MS     = 3600000 // 1 hour
+	DEFAULT_REDISCOVER_RATE_MS = 600000  // 10 min
 )
 
 // Define a config type for gonfig to hold our config properties.
 type Config struct {
-	RuntimeMode          string       `env:"RUNTIME_MODE"`   // Running mode (development or production)
-	AggregatorURL        string       `env:"AGGREGATOR_URL"` // URL of the Aggregator, includes port but not any path
-	AggregatorConfigFile string       `env:"HUB_CONFIG"`     // Config file for hub. Will be mounted in a secret.
 	AggregatorConfig     *rest.Config // Config object for hub. Used to get TLS credentials.
+	AggregatorConfigFile string       `env:"HUB_CONFIG"`        // Config file for hub. Will be mounted in a secret.
+	AggregatorURL        string       `env:"AGGREGATOR_URL"`    // URL of the Aggregator, includes port but not any path
 	ClusterName          string       `env:"CLUSTER_NAME"`      // The name of this cluster
 	ClusterNamespace     string       `env:"CLUSTER_NAMESPACE"` // The namespace of this cluster
 	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
-	KubeConfig           string       `env:"KUBECONFIG"`        // Local kubeconfig path
-	ReportRateMS         int          `env:"REPORT_RATE_MS"`    // Interval in milliseconds at which changes are reported to the aggregator.
 	HeartbeatMS          int          `env:"HEARTBEAT_MS"`      // Interval in milliseconds at which collector sends an empty payload to ensure connection
+	KubeConfig           string       `env:"KUBECONFIG"`        // Local kubeconfig path
+	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`    // Maximum backoff tiem in MS - sender will never wait longer than this to send
 	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"`
-	TillerURL            string       `env:"TILLER_URL"` // URL host path of the tiller server
+	ReportRateMS         int          `env:"REPORT_RATE_MS"` // Interval in milliseconds at which changes are reported to the aggregator.
+	RuntimeMode          string       `env:"RUNTIME_MODE"`   // Running mode (development or production)
 	TillerOpts           tlsutil.Options
+	TillerURL            string `env:"TILLER_URL"` // URL host path of the tiller server
 }
 
 var Cfg = Config{}
@@ -83,8 +85,10 @@ func init() {
 	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
 	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
 	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
+
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
-	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEAFULT_HEARTBEAT_MS)
+	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
+	setDefaultInt(&Cfg.MaxBackoffMS, "MAX_BACKOFF_MS", DEFAULT_MAX_BACKOFF_MS)
 	setDefaultInt(&Cfg.RediscoverRateMS, "REDISCOVER_RATE_MS", DEFAULT_REDISCOVER_RATE_MS)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")

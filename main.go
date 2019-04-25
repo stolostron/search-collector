@@ -9,6 +9,7 @@ The source code for this program is not published or otherwise divested of its t
 package main
 
 import (
+	"math"
 	"runtime"
 	"sync"
 	"time"
@@ -169,6 +170,7 @@ func main() {
 	}()
 
 	// Start a routine to send data every interval.
+	backoffFactor := float64(0) // Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
 	go func() {
 		// First time send after 15 seconds, then send every ReportRateMS milliseconds.
 		time.Sleep(15 * time.Second)
@@ -177,10 +179,18 @@ func main() {
 			err = sender.Sync()
 			if err != nil {
 				glog.Error("SENDING ERROR: ", err)
+				if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
+					backoffFactor++ // Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max wait time (an hour) so that we don't overflow int.
+				}
 			} else {
 				glog.Info("Send Cycle Completed Successfully")
+				backoffFactor = float64(0)
 			}
-			time.Sleep(time.Duration(config.Cfg.ReportRateMS) * time.Millisecond)
+      timeToSleep := time.Duration(min(config.Cfg.ReportRateMS*int(math.Exp2(backoffFactor)), config.Cfg.MaxBackoffMS)) * time.Millisecond
+      if backoffFactor > 0 {
+        glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
+      }
+			time.Sleep(timeToSleep) // Sleep either for the current backed off interval, or the maximum time defined in the config
 		}
 	}()
 
@@ -188,6 +198,14 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait() // This will never end (until we kill the process)
+}
+
+// Returns the smaller of two ints
+func min(a, b int) int {
+	if a > b {
+		return b
+	}
+	return a
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
