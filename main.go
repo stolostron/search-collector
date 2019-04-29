@@ -186,10 +186,10 @@ func main() {
 				glog.Info("Send Cycle Completed Successfully")
 				backoffFactor = float64(0)
 			}
-      timeToSleep := time.Duration(min(config.Cfg.ReportRateMS*int(math.Exp2(backoffFactor)), config.Cfg.MaxBackoffMS)) * time.Millisecond
-      if backoffFactor > 0 {
-        glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
-      }
+			timeToSleep := time.Duration(min(config.Cfg.ReportRateMS*int(math.Exp2(backoffFactor)), config.Cfg.MaxBackoffMS)) * time.Millisecond
+			if backoffFactor > 0 {
+				glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
+			}
 			time.Sleep(timeToSleep) // Sleep either for the current backed off interval, or the maximum time defined in the config
 		}
 	}()
@@ -215,8 +215,10 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 	// List out all the preferred api-resources of this server.
 	apiResources, err := discoveryClient.ServerPreferredResources()
-	if err != nil {
+	if err != nil && apiResources == nil { // only return if the list is empty
 		return nil, err
+	} else if err != nil {
+		glog.Warning("ServerPreferredResources could not list all available resources: ", err)
 	}
 
 	// Filter down to only resources which support WATCH operations.
