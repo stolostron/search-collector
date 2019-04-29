@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal
+FROM registry.access.redhat.com/ubi7/ubi-minimal
 
 ARG VCS_REF
 ARG VCS_URL
