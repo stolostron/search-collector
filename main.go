@@ -10,6 +10,7 @@ package main
 
 import (
 	"math"
+	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -36,6 +37,9 @@ func main() {
 
 	numThreads := runtime.NumCPU() // determine number of CPUs available. We make that many goroutines for transformation and reconciliation, so that we take maximum advantage of whatever hardware we're on
 	glog.Info("Starting Data Collector")
+	if commit, ok := os.LookupEnv("VCS_REF"); ok {
+		glog.Info("Built from git commit: ", commit)
+	}
 
 	// Create transformers
 	upsertTransformer := transforms.NewTransformer(make(chan *transforms.Event), make(chan transforms.NodeEvent), numThreads)

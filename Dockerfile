@@ -37,6 +37,8 @@ RUN microdnf install ca-certificates vi --nodocs &&\
 
 COPY license.txt /licenses/
 
+ENV VCS_REF="$VCS_REF"
+
 ADD output/search-collector /bin
 
 ENTRYPOINT ["bin/search-collector"]
