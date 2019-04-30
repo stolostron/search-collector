@@ -18,7 +18,7 @@ lint:
 	golangci-lint run
 
 test:
-	go test ./... -v -coverprofile cover.out
+	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
 
 coverage:
 	go tool cover -html=cover.out -o=cover.html

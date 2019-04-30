@@ -127,15 +127,32 @@ func init() {
 
 	setDefault(&Cfg.TillerURL, "TILLER_URL", defaultTillerUrl)
 
-	Cfg.DeployedInHub = true
+	// Special logic for setting DEPLOYED_IN_HUB with default to false
+	if val := os.Getenv("DEPLOYED_IN_HUB"); val != "" {
+		glog.Infof("Using DEPLOYED_IN_HUB from environment: %s", val)
+		var err error
+		Cfg.DeployedInHub, err = strconv.ParseBool(val)
+		if err != nil {
+			glog.Error("Error parsing env DEPLOYED_IN_HUB.  Expected a bool.  Original error: ", err)
+			glog.Info("Leaving flag unchanged, assuming it is a Klusterlet")
+		}
+	} else if !Cfg.DeployedInHub {
+		glog.Info("No DEPLOY_IN_HUB from file or environment, assuming it is a Klusterlet")
+	}
 	setDefault(&Cfg.AggregatorConfigFile, "HUB_CONFIG", "")
+
+	if Cfg.DeployedInHub && Cfg.AggregatorConfigFile != "" {
+		glog.Fatal("Config mismatch: DEPLOYED_IN_HUB is true, but HUB_CONFIG is set to connect to another hub")
+	} else if !Cfg.DeployedInHub && Cfg.AggregatorConfigFile == "" {
+		glog.Fatal("Config mismatch: DEPLOYED_IN_HUB is false, but no HUB_CONFIG is set to connect to another hub")
+	}
+
 	if Cfg.AggregatorConfigFile != "" {
 		hubConfig, err := clientcmd.BuildConfigFromFlags("", Cfg.AggregatorConfigFile)
 		if err != nil {
 			glog.Error("Error building K8s client from config file [", Cfg.AggregatorConfigFile, "].  Original error: ", err)
 		}
 
-		Cfg.DeployedInHub = false
 		Cfg.AggregatorURL = hubConfig.Host + "/apis/mcm.ibm.com/v1alpha1/namespaces/" + Cfg.ClusterNamespace + "/clusterstatuses"
 		Cfg.AggregatorConfig = hubConfig
 

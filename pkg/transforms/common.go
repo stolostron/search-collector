@@ -25,6 +25,9 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
 	ret["_clusterNamespace"] = config.Cfg.ClusterNamespace
+	if config.Cfg.DeployedInHub {
+		ret["_hubClusterResource"] = true
+	}
 
 	if resource.GetLabels() != nil {
 		ret["label"] = resource.GetLabels()
@@ -52,6 +55,9 @@ func unstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
 	ret["_clusterNamespace"] = config.Cfg.ClusterNamespace
+	if config.Cfg.DeployedInHub {
+		ret["_hubClusterResource"] = true
+	}
 
 	// valid api group with have format of "apigroup/version"
 	// unnamed api groups will have format of "/version"
