@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/ptypes"
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/proto/hapi/release"
 )
@@ -58,6 +59,11 @@ func transformRelease(resource *release.Release) Node {
 	node.Properties["revision"] = resource.GetVersion()
 	node.Properties["name"] = resource.GetName()
 	node.Properties["updated"] = timestamp.UTC().Format(time.RFC3339)
+	if config.Cfg.DeployedInHub {
+		node.Properties["_hubClusterResource"] = true
+	} else {
+		node.Properties["_clusterNamespace"] = config.Cfg.ClusterNamespace
+	}
 
 	return node
 }
