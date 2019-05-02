@@ -48,7 +48,7 @@ func transformRelease(resource *release.Release) Node {
 	}
 
 	node := Node{
-		UID:        "Release/" + resource.GetName(),
+		UID:        config.Cfg.ClusterName + "/Release/" + resource.GetName(),
 		Properties: make(map[string]interface{}),
 	}
 	node.Properties["kind"] = "Release"
