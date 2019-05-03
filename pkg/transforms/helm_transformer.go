@@ -25,7 +25,7 @@ func HelmTransformation(helmClient *helm.Client, output chan NodeEvent) {
 		releases, err := helmClient.ListReleases()
 
 		if err != nil {
-			glog.Error("Failed to fetch helm releases.  Original error: ", err)
+			glog.Error("Failed to fetch helm releases. Original error: ", err)
 		} else {
 			for _, release := range releases.Releases {
 				upsert := NodeEvent{
@@ -44,13 +44,16 @@ func transformRelease(resource *release.Release) Node {
 	lastDeployed := resource.GetInfo().GetLastDeployed()
 	timestamp, err := ptypes.Timestamp(lastDeployed)
 	if err != nil {
-		glog.Errorf("Error coneverting %v to native timestamp in helm transform", lastDeployed)
+		glog.Errorf("Error converting %v to native timestamp in helm transform", lastDeployed)
 	}
 
 	node := Node{
 		UID:        config.Cfg.ClusterName + "/Release/" + resource.GetName(),
 		Properties: make(map[string]interface{}),
 	}
+
+	node.ResourceString = "releases"
+
 	node.Properties["kind"] = "Release"
 	node.Properties["chartName"] = resource.GetChart().GetMetadata().GetName()
 	node.Properties["chartVersion"] = resource.GetChart().GetMetadata().GetVersion()

@@ -90,25 +90,31 @@ func main() {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 
-	// Declare handler functions used for creating informers.
-	informerAddHandler := func(obj interface{}) {
-		resource := obj.(*unstructured.Unstructured)
-		upsert := transforms.Event{
-			Time:      time.Now().Unix(),
-			Operation: transforms.Create,
-			Resource:  resource,
+	// These functions return handler functions, which are then used in creation of the informers.
+	createInformerAddHandler := func(resourceName string) func(interface{}) {
+		return func(obj interface{}) {
+			resource := obj.(*unstructured.Unstructured)
+			upsert := transforms.Event{
+				Time:           time.Now().Unix(),
+				Operation:      transforms.Create,
+				Resource:       resource,
+				ResourceString: resourceName,
+			}
+			upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
 		}
-		upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
 	}
 
-	informerUpdateHandler := func(oldObj, newObj interface{}) {
-		resource := newObj.(*unstructured.Unstructured)
-		upsert := transforms.Event{
-			Time:      time.Now().Unix(),
-			Operation: transforms.Update,
-			Resource:  resource,
+	createInformerUpdateHandler := func(resourceName string) func(interface{}, interface{}) {
+		return func(oldObj, newObj interface{}) {
+			resource := newObj.(*unstructured.Unstructured)
+			upsert := transforms.Event{
+				Time:           time.Now().Unix(),
+				Operation:      transforms.Update,
+				Resource:       resource,
+				ResourceString: resourceName,
+			}
+			upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
 		}
-		upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
 	}
 
 	informerDeleteHandler := func(obj interface{}) {
@@ -158,8 +164,8 @@ func main() {
 					// Set up handler to pass this informer's resources into transformer
 					informer := dynamicInformer.Informer()
 					informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-						AddFunc:    informerAddHandler,
-						UpdateFunc: informerUpdateHandler,
+						AddFunc:    createInformerAddHandler(gvr.Resource),
+						UpdateFunc: createInformerUpdateHandler(gvr.Resource),
 						DeleteFunc: informerDeleteHandler,
 					})
 

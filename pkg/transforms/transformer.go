@@ -33,15 +33,17 @@ const (
 
 // This type is used for add and update events.
 type Event struct {
-	Time      int64
-	Operation Operation
-	Resource  *unstructured.Unstructured
+	Time           int64
+	Operation      Operation
+	Resource       *unstructured.Unstructured
+	ResourceString string // This is a plural identifier of the kind, though in k8s this is called a "resource". e.g. for a pod, this is "pods"
 }
 
 // A generic node type that is passed to the aggregator for translation to whatever graphDB technology.
 type Node struct {
-	UID        string                 `json:"uid"`
-	Properties map[string]interface{} `json:"properties"`
+	UID            string                 `json:"uid"`
+	ResourceString string                 `json:"resourceString"`
+	Properties     map[string]interface{} `json:"properties"`
 }
 
 // These are the input to the sender. They have the node, and then they keep the time which is used for reconciling this version with other versions that the sender may already have.
@@ -272,6 +274,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			Operation: event.Operation,
 			Node:      transformed,
 		}
+		ne.ResourceString = event.ResourceString
 		output <- ne
 	}
 }
