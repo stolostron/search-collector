@@ -41,7 +41,7 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 // Transforms a resource of unknown type by simply pulling out the common properties.
 func transformCommon(resource machineryV1.Object) Node {
 	return Node{
-		UID:        string(resource.GetUID()),
+		UID:        strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
 		Properties: commonProperties(resource),
 	}
 }
@@ -79,7 +79,7 @@ func unstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 // Transforms an unstructured.Unstructured (which represents a non-default k8s object) into a Node
 func transformUnstructured(resource *unstructured.Unstructured) Node {
 	return Node{
-		UID:        string(resource.GetUID()),
+		UID:        strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
 		Properties: unstructuredProperties(resource),
 	}
 }
