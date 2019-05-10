@@ -15,6 +15,8 @@ LABEL org.label-schema.vendor="IBM" \
 
 RUN apk --update --no-cache add ca-certificates
 
+COPY license.txt /licenses/
+
 ENV VCS_REF="$VCS_REF"
 
 ADD output/search-collector /bin

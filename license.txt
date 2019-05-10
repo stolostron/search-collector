@@ -1,0 +1,22 @@
+/*
+ * Licensed Materials - Property of IBM
+ * 5737-E67
+ * Copyright IBM Corporation 2019. All Rights Reserved
+ * US Government Users Restricted Rights -
+ * Use, duplication or disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+ */
+
+ To read the International Program License Agreement (IPLA) for IBM Cloud Private 3.2.0
+ and IBM Multicloud Manager 3.2.0, complete the following steps:
+
+ 1. Open the following link: https://www-03.ibm.com/software/sla/sladb.nsf/search?OpenForm
+
+ 2. Search for one of the following License Information numbers:
+   L-TKAO-BA3Q8F - for IBM Cloud Private 3.2.0
+   L-TKAO-BA3Q3J - for IBM Cloud Private Foundation 3.2.0
+   L-ECUN-BALP9Z - for IBM Multicloud Manager Enterprise Edition 3.2.0
+
+For more information, read the notices file and the non-IBM license file:
+ 1. Locate the <install directory>/cfc/license directory.
+ 2. Expand the Stacked_License_for_ICP_ICP_Foundation_MCMEE_3.2.0.zip file.
+ 3. The RTF directory within the expanded directory structure contains the notices.rtf and non_ibm_license.rtf files.
