@@ -91,6 +91,14 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
+  branch = "master"
+  digest = "1:b7cb6054d3dff43b38ad2e92492f220f57ae6087ee797dca298139776749ace8"
+  name = "github.com/golang/groupcache"
+  packages = ["lru"]
+  pruneopts = "UT"
+  revision = "5b532d6fd5efaf7fa130d4e859a2fde0fc3a9e1b"
+
+[[projects]]
   digest = "1:17fe264ee908afc795734e8c4e63db2accabaf57326dbf21763a7d6b86096260"
   name = "github.com/golang/protobuf"
   packages = [
@@ -739,6 +747,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/golang/glog",
+    "github.com/golang/groupcache/lru",
     "github.com/golang/protobuf/ptypes",
     "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
     "github.com/tkanos/gonfig",
@@ -751,6 +760,7 @@
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
+    "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/dynamic",
     "k8s.io/client-go/dynamic/dynamicinformer",

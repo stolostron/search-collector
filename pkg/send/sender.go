@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/golang/groupcache/lru"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 )
@@ -97,6 +98,7 @@ type Sender struct {
 	lastSentTime int64                     // Time at which we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
 	InputChannel chan transforms.NodeEvent // Put any nodes to be updated, added or deleted in here
 	mutex        sync.Mutex                // Used to protect currentState and diffState as they are edited and read by multiple goroutines
+	purgedNodes  *lru.Cache                // used to keep tracked to old purged nodes so the reconciler can throw away old events that predate deletion events
 }
 
 // Constructs a new Sender using the provided channels.
@@ -114,6 +116,7 @@ func NewSender(inputChan chan transforms.NodeEvent, aggregatorURL, clusterName s
 		// lastHash:           NEVER_SENT,
 		lastSentTime: -1,
 		InputChannel: inputChan,
+		purgedNodes:  lru.New(500),
 	}
 
 	if !config.Cfg.DeployedInHub {
@@ -277,22 +280,30 @@ func reconcileNode(s *Sender) {
 	s.mutex.Lock() // Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit and then blocked, we could end up getting out of order
 	defer s.mutex.Unlock()
 
-	// Check whether we already have this node in our current state with a more up to date time. If so, we ignore the version of it we're currently processing.
+	// Check whether we already have this node in our current/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
 	otherNode, inCurrent := s.diffState[ne.Node.UID]
+	nodeInterface, inPurged := s.purgedNodes.Get(ne.Node.UID)
 
 	if inCurrent && otherNode.Time > ne.Time {
 		return
+	}
+	if inPurged {
+		puregedNode, ok := nodeInterface.(transforms.NodeEvent)
+		if ok && puregedNode.Time > ne.Time {
+			return
+		}
 	}
 
 	previousNode, inPrevious := s.previousState[ne.Node.UID]
 
 	if ne.Operation == transforms.Delete {
+		delete(s.currentState, ne.UID) // Get rid of it from our currentState, if it was ever there.
+		s.purgedNodes.Add(ne.UID, ne)  // Add this to the list of node purged resources
+
 		if inPrevious {
-			delete(s.currentState, ne.UID) //Get rid of it from our currentState, if it was ever there.
-			s.diffState[ne.UID] = ne       // Since it was in the previous, we need to have a deletion diff.
+			s.diffState[ne.UID] = ne // Since it was in the previous, we need to have a deletion diff.
 		} else {
-			delete(s.currentState, ne.UID) //Get rid of it from our currentState, if it was ever there.
-			delete(s.diffState, ne.UID)
+			delete(s.diffState, ne.UID) // Otherwise no need to send a payload, just remove from local memory
 		}
 	} else { // This is either an update or create, which look very similar. TODO actually combine the two.
 		op := transforms.Create
