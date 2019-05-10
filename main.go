@@ -185,7 +185,7 @@ func main() {
 		// First time send after 15 seconds, then send every ReportRateMS milliseconds.
 		time.Sleep(15 * time.Second)
 		for {
-			glog.Info("Beginning Send Cycle")
+			glog.V(2).Info("Beginning Send Cycle")
 			err = sender.Sync()
 			if err != nil {
 				glog.Error("SENDING ERROR: ", err)
@@ -193,7 +193,7 @@ func main() {
 					backoffFactor++ // Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max wait time (an hour) so that we don't overflow int.
 				}
 			} else {
-				glog.Info("Send Cycle Completed Successfully")
+				glog.V(2).Info("Send Cycle Completed Successfully")
 				backoffFactor = float64(0)
 			}
 			timeToSleep := time.Duration(min(config.Cfg.ReportRateMS*int(math.Exp2(backoffFactor)), config.Cfg.MaxBackoffMS)) * time.Millisecond
