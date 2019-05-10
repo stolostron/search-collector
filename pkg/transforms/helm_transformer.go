@@ -19,14 +19,29 @@ import (
 )
 
 func HelmTransformation(helmClient *helm.Client, output chan NodeEvent) {
+	allStatuses := helm.ReleaseListStatuses([]release.Status_Code{
+		release.Status_UNKNOWN,
+		release.Status_DEPLOYED,
+		release.Status_DELETED,
+		release.Status_SUPERSEDED,
+		release.Status_FAILED,
+		release.Status_DELETING,
+		release.Status_PENDING_INSTALL,
+		release.Status_PENDING_UPGRADE,
+		release.Status_PENDING_ROLLBACK,
+	})
+	knownReleases := make(map[string]struct{})
+
 	for {
 		glog.Info("Fetching helm releases")
 
-		releases, err := helmClient.ListReleases()
+		releases, err := helmClient.ListReleases(allStatuses)
 
 		if err != nil {
 			glog.Error("Failed to fetch helm releases. Original error: ", err)
 		} else {
+			currentReleases := make(map[string]struct{})
+
 			for _, release := range releases.Releases {
 				upsert := NodeEvent{
 					Time:      time.Now().Unix(),
@@ -34,7 +49,26 @@ func HelmTransformation(helmClient *helm.Client, output chan NodeEvent) {
 					Node:      transformRelease(release),
 				}
 				output <- upsert
+				currentReleases[upsert.Node.UID] = struct{}{}
 			}
+
+			// compute if we need delete events
+			for uid := range knownReleases {
+				if _, ok := currentReleases[uid]; !ok {
+					deleteOp := NodeEvent{
+						Time:      time.Now().Unix(),
+						Operation: Delete,
+						Node: Node{
+							UID: uid,
+						},
+					}
+					output <- deleteOp
+					delete(knownReleases, uid)
+				}
+			}
+
+			// save the previous state
+			knownReleases = currentReleases
 		}
 		time.Sleep(60 * time.Second)
 	}
