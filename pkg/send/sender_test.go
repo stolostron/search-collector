@@ -26,25 +26,27 @@ func TestReconcilerOutOfOrderDelete(t *testing.T) {
 		purgedNodes:   lru.New(10),
 	}
 
+	go func() {
+		s.InputChannel <- transforms.NodeEvent{
+			Time:      time.Now().Unix(),
+			Operation: transforms.Delete,
+			Node: transforms.Node{
+				UID: "test-event",
+			},
+		}
+
+		s.InputChannel <- transforms.NodeEvent{
+			Time:      time.Now().Unix() - 1000, // insert out of order based off of time
+			Operation: transforms.Create,
+			Node: transforms.Node{
+				UID: "test-event",
+			},
+		}
+	}()
+
 	// need two calls to drain the queue
-	go reconcileNode(s)
-	go reconcileNode(s)
-
-	s.InputChannel <- transforms.NodeEvent{
-		Time:      time.Now().Unix(),
-		Operation: transforms.Delete,
-		Node: transforms.Node{
-			UID: "test-event",
-		},
-	}
-
-	s.InputChannel <- transforms.NodeEvent{
-		Time:      time.Now().Unix() - 1000, // insert out of order based off of time
-		Operation: transforms.Create,
-		Node: transforms.Node{
-			UID: "test-event",
-		},
-	}
+	reconcileNode(s)
+	reconcileNode(s)
 
 	if _, found := s.currentState["test-event"]; found {
 		t.Fatal("failed to ignore add event received out of order")
