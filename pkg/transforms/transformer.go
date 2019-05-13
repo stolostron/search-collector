@@ -121,14 +121,6 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			transformed = transformCompliance(&typedResource)
 
-		case "ConfigMap":
-			typedResource := core.ConfigMap{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			transformed = transformConfigMap(&typedResource)
-
 		case "CronJob":
 			typedResource := batchBeta.CronJob{}
 			err = json.Unmarshal(j, &typedResource)
@@ -152,14 +144,6 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			transformed = transformDeployable(&typedResource)
-
-		case "DeployableOverride":
-			typedResource := mcm.DeployableOverride{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			transformed = transformDeployableOverride(&typedResource)
 
 		case "Deployment":
 			typedResource := apps.Deployment{}
@@ -240,22 +224,6 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			transformed = transformReplicaSet(&typedResource)
-
-		case "Secret":
-			typedResource := core.Secret{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			transformed = transformSecret(&typedResource)
-
-		case "Service":
-			typedResource := core.Service{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			transformed = transformService(&typedResource)
 
 		case "StatefulSet":
 			typedResource := apps.StatefulSet{}
