@@ -70,7 +70,7 @@ func HelmTransformation(helmClient *helm.Client, output chan NodeEvent) {
 			// save the previous state
 			knownReleases = currentReleases
 		}
-		time.Sleep(60 * time.Second)
+		time.Sleep(time.Duration(config.Cfg.HelmPullMS) * time.Millisecond)
 	}
 }
 
