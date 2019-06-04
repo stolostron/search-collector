@@ -13,6 +13,7 @@ services:
 branches:
   only:
     - master
+    - development
     - /^[0-9]+\..*$/
     - /^v[0-9]+\..*$/
     - /^release-[0-9]+\..*$/
@@ -36,6 +37,9 @@ deploy:
   skip_cleanup: true
   provider: script
   script: make docker-login release
+  on:
+    all_branches: true
+    condition: $TRAVIS_BRANCH != development
 
 after_deploy:
   - |

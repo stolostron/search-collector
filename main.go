@@ -73,7 +73,8 @@ func main() {
 		)
 		glog.Info("Created new helm client")
 
-		go transforms.HelmTransformation(helmClient, upsertTransformer.Output)
+		ticker := time.NewTicker(time.Duration(config.Cfg.HelmPullMS) * time.Millisecond)
+		go transforms.HelmTransformation(helmClient, ticker.C, upsertTransformer.Output)
 	}
 
 	// Initialize the dynamic client, used for CRUD operations on arbitrary k8s resources

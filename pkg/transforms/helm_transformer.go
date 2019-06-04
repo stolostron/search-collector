@@ -18,7 +18,7 @@ import (
 	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
-func HelmTransformation(helmClient *helm.Client, output chan NodeEvent) {
+func HelmTransformation(helmClient helm.Interface, ticker <-chan time.Time, output chan NodeEvent) {
 	allStatuses := helm.ReleaseListStatuses([]release.Status_Code{
 		release.Status_UNKNOWN,
 		release.Status_DEPLOYED,
@@ -70,7 +70,8 @@ func HelmTransformation(helmClient *helm.Client, output chan NodeEvent) {
 			// save the previous state
 			knownReleases = currentReleases
 		}
-		time.Sleep(time.Duration(config.Cfg.HelmPullMS) * time.Millisecond)
+
+		<-ticker // wait until we get the next tick from our timer
 	}
 }
 

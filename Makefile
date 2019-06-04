@@ -27,7 +27,8 @@ clean:
 	go clean
 	rm -f cover*
 	rm -rf ./$(BINDIR)
-
+	rm -rf ./.vendor-new
+	rm -rf ./vendor
 
 # To build image on Mac and Linux
 local-docker-search-collector:

@@ -98,7 +98,7 @@ type Sender struct {
 	lastSentTime int64                     // Time at which we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
 	InputChannel chan transforms.NodeEvent // Put any nodes to be updated, added or deleted in here
 	mutex        sync.Mutex                // Used to protect currentState and diffState as they are edited and read by multiple goroutines
-	purgedNodes  *lru.Cache                // used to keep tracked to old purged nodes so the reconciler can throw away old events that predate deletion events
+	purgedNodes  *lru.Cache                // Keep track of deleted nodes, so the reconciler can prevent out of order processing of events
 }
 
 // Constructs a new Sender using the provided channels.
@@ -201,7 +201,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		msg := fmt.Sprintf("POST to: %s responsed with error. StatusCode: %d  Message: %s", s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
+		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s", s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
 		return errors.New(msg)
 	}
 
@@ -280,16 +280,16 @@ func reconcileNode(s *Sender) {
 	s.mutex.Lock() // Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit and then blocked, we could end up getting out of order
 	defer s.mutex.Unlock()
 
-	// Check whether we already have this node in our current/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
-	otherNode, inCurrent := s.diffState[ne.Node.UID]
+	// Check whether we already have this node in our diff/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
+	otherNode, inDiff := s.diffState[ne.Node.UID]
 	nodeInterface, inPurged := s.purgedNodes.Get(ne.Node.UID)
 
-	if inCurrent && otherNode.Time > ne.Time {
+	if inDiff && otherNode.Time > ne.Time {
 		return
 	}
 	if inPurged {
-		puregedNode, ok := nodeInterface.(transforms.NodeEvent)
-		if ok && puregedNode.Time > ne.Time {
+		purgedNode, ok := nodeInterface.(transforms.NodeEvent)
+		if ok && purgedNode.Time > ne.Time {
 			return
 		}
 	}
