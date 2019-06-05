@@ -7,10 +7,11 @@ go:
 os:
   - linux
   - linux-ppc64le
+  - linux-s390
 services:
   - docker
 
-# Only build on master, stable branches and tag
+## Only build on master, stable branches and tag
 # The stable branch and tag should be leading with numbers
 branches:
   only:
