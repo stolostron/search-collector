@@ -29,7 +29,7 @@ ERROR=0
 
 echo "##### Copyright check #####"
 #Loop through all files. Ignore .FILENAME types
-for f in `find . -type f ! -iname ".*" ! -path "./sslcert/*" ! -path "./test-data/*" ! -path "./vendor/*"`; do
+for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./sslcert/*" ! -path "./test-data/*" ! -path "./vendor/*"`; do
   if [ ! -f "$f" ] || [ "$f" = "./build-tools/copyright-check.sh" ]; then
     continue
   fi

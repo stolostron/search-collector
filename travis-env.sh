@@ -15,8 +15,17 @@ if [ "$TRAVIS_TAG" != "" ]; then
 fi
 export RELEASE_TAG="$RELEASE_TAG"
 
-# Release Tag
+# only push to integration on a merge that is not the development branch
+if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ] && [ "$TRAVIS_BRANCH" != "development" ]; then
+    DOCKER_REGISTRY=hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com
+else
+    DOCKER_REGISTRY=hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com
+fi
+export DOCKER_REGISTRY="$DOCKER_REGISTRY"
+
+# Echo vars
 echo TRAVIS_EVENT_TYPE=$TRAVIS_EVENT_TYPE
 echo TRAVIS_BRANCH=$TRAVIS_BRANCH
 echo TRAVIS_TAG=$TRAVIS_TAG
 echo RELEASE_TAG="$RELEASE_TAG"
+echo DOCKER_REGISTRY="$DOCKER_REGISTRY"

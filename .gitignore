@@ -1,3 +1,5 @@
 cover*
 output/
 vendor/
+.build-harness
+build-harness/

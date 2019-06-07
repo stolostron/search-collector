@@ -14,6 +14,12 @@ This process runs on remotely managed clusters and collects data about the resou
 4. `./output/search-collector [-c alternate config file] [any glog flags]`
 	- Or run with [glc](https://github.ibm.com/Ethan-Swartzentruber/GlogColor): `./output/search-collector [-c alternate config file] [any glog flags] 2>&1 | glc`
 
+### Running on a cluster (by pushing to scratch repo)
+1. Export your github username (w3id) and personal access token as `GITHUB_USER` and `GITHUB_TOKEN`
+2. Fetch build harness: `make init`
+3. Build and tag image: `make docker:build docker:tag-arch`
+4. Export your `ARTIFACTORY_USER` and `ARTIFACTORY_TOKEN`
+5. Push to scratch repo in Artifactory `make docker:login docker:push-arch`
 
 ### Config File
 A default config file for local development is provided in this repo. The file assumes the [aggregator](https://github.ibm.com/IBMPrivateCloud/search-aggregator) to be running at `http://localhost:3010`. 

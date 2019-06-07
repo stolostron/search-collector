@@ -25,24 +25,18 @@ before_install:
   # https://github.com/golang/dep/blob/master/docs/FAQ.md#how-do-i-get-dep-to-authenticate-via-ssh-to-a-git-repo
   - git config --global url."git@github.ibm.com:".insteadOf "https://github.ibm.com/"
   - source travis-env.sh
+  - make init
 
 install:
   - make deps
 
 script:
-  - make lint test build image
-  - make copyright-check
-
-# after_success:
-#   - make push
+  - make copyright-check lint test build docker:info docker:build docker:tag-arch
 
 deploy:
   skip_cleanup: true
   provider: script
-  script: make docker-login release
-  on:
-    all_branches: true
-    condition: $TRAVIS_BRANCH != development
+  script: make docker:login docker:push-arch
 
 after_deploy:
   - |
@@ -52,7 +46,7 @@ after_deploy:
       if [[ "$BUILD_LEADER" == "YES" ]]; then
         if [[ "$BUILD_AGGREGATE_STATUS" == "others_succeeded" ]]; then
           echo "All jobs succeeded! Creating multi arch image..."
-          make manifest-tool multi-arch
+          make docker:manifest-tool docker:multi-arch
         else
           echo "Some jobs failed" && exit 1
         fi
