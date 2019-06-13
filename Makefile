@@ -8,6 +8,7 @@ DOCKER_BUILD_TAG    ?= latest
 WORKING_CHANGES      = $(shell git status --porcelain)
 BUILD_DATE           = $(shell date +%m/%d@%H:%M:%S)
 GIT_REMOTE_URL       = $(shell git config --get remote.origin.url)
+GIT_COMMIT           = $(shell git rev-parse --short HEAD)
 VCS_REF              = $(if $(WORKING_CHANGES),$(GIT_COMMIT)-$(BUILD_DATE),$(GIT_COMMIT))
 
 # Arch labels
@@ -26,7 +27,7 @@ IMAGE_MAINTAINER       = jpadilla@us.ibm.com
 IMAGE_VENDOR           = IBM
 IMAGE_SUMMARY          = $(IMAGE_DESCRIPTION)
 IMAGE_OPENSHIFT_TAGS   = multicloud-manager
-IMAGE_VERSION         ?= $(APP_VERSION)-$(GIT_COMMIT)
+IMAGE_VERSION         ?= $(RELEASE_TAG)
 IMAGE_RELEASE         ?= $(VCS_REF)
 
 DOCKER_BUILD_OPTS = --build-arg "VCS_REF=$(VCS_REF)" \
