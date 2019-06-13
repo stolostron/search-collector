@@ -37,6 +37,8 @@ deploy:
   skip_cleanup: true
   provider: script
   script: make docker:login docker:push-arch
+  on:
+    all_branches: true
 
 after_deploy:
   - |
