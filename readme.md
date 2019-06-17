@@ -17,7 +17,7 @@ This process runs on remotely managed clusters and collects data about the resou
 ### Running on a cluster (by pushing to scratch repo)
 1. Export your github username (w3id) and personal access token as `GITHUB_USER` and `GITHUB_TOKEN`
 2. Fetch build harness: `make init`
-3. Build and tag image: `make docker:build docker:tag-arch`
+3. Build and tag image: `make build-linux docker:build docker:tag-arch`
 4. Export your `ARTIFACTORY_USER` and `ARTIFACTORY_TOKEN`
 5. Push to scratch repo in Artifactory `make docker:login docker:push-arch`
 

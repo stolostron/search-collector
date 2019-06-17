@@ -4,7 +4,7 @@ DOCKER_USER         ?=$(ARTIFACTORY_USER)
 DOCKER_PASS         ?=$(ARTIFACTORY_TOKEN)
 DOCKER_REGISTRY     ?= hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com
 DOCKER_NAMESPACE    ?= ibmcom
-DOCKER_BUILD_TAG    ?= latest
+DOCKER_BUILD_TAG    ?= $(RELEASE_TAG)
 WORKING_CHANGES      = $(shell git status --porcelain)
 BUILD_DATE           = $(shell date +%m/%d@%H:%M:%S)
 GIT_REMOTE_URL       = $(shell git config --get remote.origin.url)
@@ -17,6 +17,7 @@ ifeq ($(ARCH), x86_64)
 	IMAGE_NAME_ARCH = $(IMAGE_NAME)-amd64
 else
 	IMAGE_NAME_ARCH = $(IMAGE_NAME)-$(ARCH)
+	DOCKER_FILE     = Dockerfile.$(ARCH)
 endif
 
 # Variables for Red Hat required labels
@@ -76,6 +77,20 @@ search-collector:
 
 .PHONY: build
 build: search-collector
+
+.PHONY: build-linux
+build-linux:
+	make search-collector GOOS=linux
+
+.PHONY: release
+release:
+	make docker:login
+	make docker:tag-arch
+	make docker:push-arch
+ifeq ($(ARCH), x86_64)
+	make docker:tag-arch DOCKER_ARCH_URI=$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/$(IMAGE_NAME_ARCH):$(DOCKER_BUILD_TAG)-rhel
+	make docker:push-arch DOCKER_ARCH_URI=$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/$(IMAGE_NAME_ARCH):$(DOCKER_BUILD_TAG)-rhel
+endif
 
 .PHONY: deps
 lint:
