@@ -15,6 +15,7 @@ import (
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	apiTypes "k8s.io/apimachinery/pkg/types"
 )
 
 // Extracts the common properties from a default k8s resource of unknown type and returns them in a map ready to be put in an Node
@@ -41,7 +42,7 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 // Transforms a resource of unknown type by simply pulling out the common properties.
 func transformCommon(resource machineryV1.Object) Node {
 	return Node{
-		UID:        strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
+		UID:        prefixedUID(resource.GetUID()),
 		Properties: commonProperties(resource),
 	}
 }
@@ -79,7 +80,12 @@ func unstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 // Transforms an unstructured.Unstructured (which represents a non-default k8s object) into a Node
 func transformUnstructured(resource *unstructured.Unstructured) Node {
 	return Node{
-		UID:        strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
+		UID:        prefixedUID(resource.GetUID()),
 		Properties: unstructuredProperties(resource),
 	}
+}
+
+// Prefixes the given UID with the cluster name from config and a /
+func prefixedUID(uid apiTypes.UID) string {
+	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
 }

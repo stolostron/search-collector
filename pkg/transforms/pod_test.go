@@ -24,6 +24,7 @@ func TestTransformPod(t *testing.T) {
 	date := time.Date(2019, 02, 21, 21, 30, 33, 0, time.UTC)
 
 	// Test only the fields that exist in pods - the common test will test the other bits
+
 	AssertEqual("kind", node.Properties["kind"], "Pod", t)
 	AssertEqual("hostIP", node.Properties["hostIP"], "1.1.1.1", t)
 	AssertEqual("podIP", node.Properties["podIP"], "2.2.2.2", t)
@@ -32,5 +33,5 @@ func TestTransformPod(t *testing.T) {
 	AssertDeepEqual("image", node.Properties["image"], []string{"fake-image:0.5.0.1"}, t)
 	AssertEqual("startedAt", node.Properties["startedAt"], date.UTC().Format(time.RFC3339), t)
 	AssertEqual("status", node.Properties["status"], string(v1.PodRunning), t)
-
+	AssertEqual("_ownerUID", node.Properties["_ownerUID"], "local-cluster/eb762405-361f-11e9-85ca-00163e019656", t)
 }

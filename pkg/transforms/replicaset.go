@@ -17,11 +17,21 @@ func transformReplicaSet(resource *v1.ReplicaSet) Node {
 
 	replicaSet := transformCommon(resource) // Start off with the common properties
 
+	// Find the resource's owner. Resources can have multiple ownerReferences, but only one controller.
+	ownerUID := ""
+	for _, ref := range resource.OwnerReferences {
+		if *ref.Controller {
+			ownerUID = prefixedUID(ref.UID) // TODO prefix with clustername
+			continue
+		}
+	}
+
 	// Extract the properties specific to this type
 	replicaSet.Properties["kind"] = "ReplicaSet"
 	replicaSet.Properties["apigroup"] = "apps"
 	replicaSet.Properties["current"] = int64(resource.Status.Replicas)
 	replicaSet.Properties["desired"] = int64(0)
+	replicaSet.Properties["_ownerUID"] = ownerUID
 	if resource.Spec.Replicas != nil {
 		replicaSet.Properties["desired"] = int64(*resource.Spec.Replicas)
 	}

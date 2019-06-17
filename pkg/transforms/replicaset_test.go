@@ -22,4 +22,5 @@ func TestTransformReplicaSet(t *testing.T) {
 	// Test only the fields that exist in replica set - the common test will test the other bits
 	AssertEqual("current", node.Properties["current"], int64(1), t)
 	AssertEqual("desired", node.Properties["desired"], int64(1), t)
+	AssertEqual("_ownerUID", node.Properties["_ownerUID"], "local-cluster/1cc734de-36dd-11e9-a4d8-00163e019656", t)
 }

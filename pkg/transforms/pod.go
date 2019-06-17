@@ -94,6 +94,15 @@ func transformPod(pod *v1.Pod) Node {
 		reason = "Terminating"
 	}
 
+	// Find the resource's owner. Resources can have multiple ownerReferences, but only one controller.
+	ownerUID := ""
+	for _, ref := range pod.OwnerReferences {
+		if *ref.Controller {
+			ownerUID = prefixedUID(ref.UID) // TODO prefix with clustername
+			continue
+		}
+	}
+
 	node := transformCommon(pod) // Start off with the common properties
 
 	// Extract the properties specific to this type
@@ -105,6 +114,7 @@ func transformPod(pod *v1.Pod) Node {
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
 	node.Properties["startedAt"] = ""
+	node.Properties["_ownerUID"] = ownerUID
 	if pod.Status.StartTime != nil {
 		node.Properties["startedAt"] = pod.Status.StartTime.UTC().Format(time.RFC3339)
 	}
