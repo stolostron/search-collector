@@ -33,7 +33,7 @@ func HelmTransformation(helmClient helm.Interface, ticker <-chan time.Time, outp
 	knownReleases := make(map[string]struct{})
 
 	for {
-		glog.Info("Fetching helm releases")
+		glog.V(2).Info("Fetching helm releases")
 
 		releases, err := helmClient.ListReleases(allStatuses)
 
