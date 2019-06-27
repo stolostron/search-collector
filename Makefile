@@ -1,10 +1,8 @@
 BINDIR              ?= output
 
-DOCKER_INTEGRATION_REGISTRY ?= hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com
-DOCKER_SCRATCH_REGISTRY     ?= hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com
-DOCKER_REGISTRY             ?=$(DOCKER_INTEGRATION_REGISTRY)
 DOCKER_USER         ?=$(ARTIFACTORY_USER)
 DOCKER_PASS         ?=$(ARTIFACTORY_TOKEN)
+DOCKER_REGISTRY     ?= hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com
 DOCKER_NAMESPACE    ?= ibmcom
 DOCKER_BUILD_TAG    ?= $(RELEASE_TAG)
 WORKING_CHANGES      = $(shell git status --porcelain)
@@ -84,20 +82,14 @@ build: search-collector
 build-linux:
 	make search-collector GOOS=linux
 
-.PHONY: push
-push:
-	make docker:login
-	make docker:tag-arch DOCKER_REGISTRY=$(DOCKER_SCRATCH_REGISTRY) DOCKER_TAG=$(GIT_COMMIT)
-	make docker:push-arch DOCKER_REGISTRY=$(DOCKER_SCRATCH_REGISTRY) DOCKER_TAG=$(GIT_COMMIT)
-
 .PHONY: release
 release:
 	make docker:login
 	make docker:tag-arch
 	make docker:push-arch
 ifeq ($(ARCH), x86_64)
-	make docker:tag-arch DOCKER_ARCH_URI=$(DOCKER_INTEGRATION_REGISTRY)/$(DOCKER_NAMESPACE)/$(IMAGE_NAME_ARCH):$(DOCKER_BUILD_TAG)-rhel
-	make docker:push-arch DOCKER_ARCH_URI=$(DOCKER_INTEGRATION_REGISTRY)/$(DOCKER_NAMESPACE)/$(IMAGE_NAME_ARCH):$(DOCKER_BUILD_TAG)-rhel
+	make docker:tag-arch DOCKER_ARCH_URI=$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/$(IMAGE_NAME_ARCH):$(DOCKER_BUILD_TAG)-rhel
+	make docker:push-arch DOCKER_ARCH_URI=$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/$(IMAGE_NAME_ARCH):$(DOCKER_BUILD_TAG)-rhel
 endif
 
 .PHONY: deps

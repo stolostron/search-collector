@@ -29,19 +29,9 @@ install:
   - make deps
 
 script:
-  - make copyright-check lint test build docker:info docker:build
+  - make copyright-check lint test build docker:info docker:build release
 
 after_success:
-  - test "$TRAVIS_EVENT_TYPE" = "pull_request" && make push
-
-deploy:
-  skip_cleanup: true
-  provider: script
-  script: make release
-  on:
-    all_branches: true
-
-after_deploy:
   - |
       curl -Lo travis_after_all.py https://raw.github.com/dmakhno/travis_after_all/master/travis_after_all.py
       python travis_after_all.py https://travis.ibm.com/api
