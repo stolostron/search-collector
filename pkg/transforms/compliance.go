@@ -13,12 +13,14 @@ import (
 	policy "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
 )
 
-// Takes a *mcm.Compliance and yields a Node
-func transformCompliance(resource *com.Compliance) Node {
+type ComplianceResource struct {
+	*com.Compliance
+}
 
-	compliance := transformCommon(resource) // Start off with the common properties
-	compliance.Properties["kind"] = "Compliance"
-	compliance.Properties["apigroup"] = "compliance.mcm.ibm.com"
+func (c ComplianceResource) BuildNode() Node {
+	node := transformCommon(c) // Start off with the common properties
+	node.Properties["kind"] = "Compliance"
+	node.Properties["apigroup"] = "compliance.mcm.ibm.com"
 
 	// On a Compliance object, status.status holds an object with a property for each cluster.
 	// First loop through and check cluster object statuses
@@ -33,7 +35,7 @@ func transformCompliance(resource *com.Compliance) Node {
 	clusterCompliant := 0
 	clusterTotal := 0
 
-	for _, comStatus := range resource.Status.Status {
+	for _, comStatus := range c.Status.Status {
 		clusterTotal++
 		if comStatus.ComplianceState == policy.Compliant {
 			clusterCompliant++
@@ -47,16 +49,21 @@ func transformCompliance(resource *com.Compliance) Node {
 		}
 	}
 
-	compliance.Properties["policyCompliant"] = int64(policyCompliant)
-	compliance.Properties["policyTotal"] = int64(policyTotal)
-	compliance.Properties["clusterCompliant"] = int64(clusterCompliant)
-	compliance.Properties["clusterTotal"] = int64(clusterTotal)
+	node.Properties["policyCompliant"] = int64(policyCompliant)
+	node.Properties["policyTotal"] = int64(policyTotal)
+	node.Properties["clusterCompliant"] = int64(clusterCompliant)
+	node.Properties["clusterTotal"] = int64(clusterTotal)
 
 	if policyCompliant == policyTotal {
-		compliance.Properties["status"] = "compliant"
+		node.Properties["status"] = "compliant"
 	} else {
-		compliance.Properties["status"] = "noncompliant"
+		node.Properties["status"] = "noncompliant"
 	}
 
-	return compliance
+	return node
+}
+
+func (c ComplianceResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

@@ -12,21 +12,28 @@ import (
 	v1 "k8s.io/api/apps/v1"
 )
 
-// Takes a *v1.Deployment and yields a Node
-func transformDeployment(resource *v1.Deployment) Node {
+type DeploymentResource struct {
+	*v1.Deployment
+}
 
-	deployment := transformCommon(resource) // Start off with the common properties
+func (d DeploymentResource) BuildNode() Node {
+	node := transformCommon(d) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	deployment.Properties["kind"] = "Deployment"
-	deployment.Properties["apigroup"] = "apps"
-	deployment.Properties["available"] = int64(resource.Status.AvailableReplicas)
-	deployment.Properties["current"] = int64(resource.Status.Replicas)
-	deployment.Properties["ready"] = int64(resource.Status.ReadyReplicas)
-	deployment.Properties["desired"] = int64(0)
-	if resource.Spec.Replicas != nil {
-		deployment.Properties["desired"] = int64(*resource.Spec.Replicas)
+	node.Properties["kind"] = "Deployment"
+	node.Properties["apigroup"] = "apps"
+	node.Properties["available"] = int64(d.Status.AvailableReplicas)
+	node.Properties["current"] = int64(d.Status.Replicas)
+	node.Properties["ready"] = int64(d.Status.ReadyReplicas)
+	node.Properties["desired"] = int64(0)
+	if d.Spec.Replicas != nil {
+		node.Properties["desired"] = int64(*d.Spec.Replicas)
 	}
 
-	return deployment
+	return node
+}
+
+func (d DeploymentResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

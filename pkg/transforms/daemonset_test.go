@@ -17,7 +17,7 @@ import (
 func TestTransformDaemonSet(t *testing.T) {
 	var d v1.DaemonSet
 	UnmarshalFile("../../test-data/daemonset.json", &d, t)
-	node := transformDaemonSet(&d)
+	node := DaemonSetResource{&d}.BuildNode()
 
 	// Test only the fields that exist in daemonset - the common test will test the other bits
 	AssertEqual("available", node.Properties["available"], int64(1), t)

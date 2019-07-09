@@ -12,27 +12,34 @@ import (
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
 )
 
-// Takes a *mcm.Policy and yields a Node
-func transformPolicy(resource *mcm.Policy) Node {
+type PolicyResource struct {
+	*mcm.Policy
+}
 
-	policy := transformCommon(resource) // Start off with the common properties
+func (p PolicyResource) BuildNode() Node {
+	node := transformCommon(p) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	policy.Properties["kind"] = "Policy"
-	policy.Properties["apigroup"] = "policy.mcm.ibm.com"
-	policy.Properties["remediationAction"] = string(resource.Spec.RemediationAction)
-	policy.Properties["compliant"] = string(resource.Status.ComplianceState)
-	policy.Properties["valid"] = resource.Status.Valid
+	node.Properties["kind"] = "Policy"
+	node.Properties["apigroup"] = "policy.mcm.ibm.com"
+	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
+	node.Properties["compliant"] = string(p.Status.ComplianceState)
+	node.Properties["valid"] = p.Status.Valid
 
 	rules := int64(0)
-	if resource.Spec.RoleTemplates != nil {
-		for _, role := range resource.Spec.RoleTemplates {
+	if p.Spec.RoleTemplates != nil {
+		for _, role := range p.Spec.RoleTemplates {
 			if role != nil {
 				rules += int64(len(role.Rules))
 			}
 		}
 	}
-	policy.Properties["numRules"] = rules
+	node.Properties["numRules"] = rules
 
-	return policy
+	return node
+}
+
+func (p PolicyResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

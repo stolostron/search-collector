@@ -12,22 +12,29 @@ import (
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 )
 
-// Takes a *mcm.Deployable and yields a Node
-func transformDeployable(resource *mcm.Deployable) Node {
+type DeployableResource struct {
+	*mcm.Deployable
+}
 
-	deployable := transformCommon(resource) // Start off with the common properties
+func (d DeployableResource) BuildNode() Node {
+	node := transformCommon(d) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	deployable.Properties["kind"] = "Deployable"
-	deployable.Properties["apigroup"] = "mcm.ibm.com"
-	deployable.Properties["deployerKind"] = string(resource.Spec.Deployer.DeployerKind)
+	node.Properties["kind"] = "Deployable"
+	node.Properties["apigroup"] = "mcm.ibm.com"
+	node.Properties["deployerKind"] = string(d.Spec.Deployer.DeployerKind)
 
-	deployable.Properties["chartUrl"] = ""
-	deployable.Properties["deployerNamespace"] = ""
-	if resource.Spec.Deployer.HelmDeployer != nil {
-		deployable.Properties["chartUrl"] = resource.Spec.Deployer.HelmDeployer.ChartURL
-		deployable.Properties["deployerNamespace"] = resource.Spec.Deployer.HelmDeployer.Namespace
+	node.Properties["chartUrl"] = ""
+	node.Properties["deployerNamespace"] = ""
+	if d.Spec.Deployer.HelmDeployer != nil {
+		node.Properties["chartUrl"] = d.Spec.Deployer.HelmDeployer.ChartURL
+		node.Properties["deployerNamespace"] = d.Spec.Deployer.HelmDeployer.Namespace
 	}
 
-	return deployable
+	return node
+}
+
+func (d DeployableResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

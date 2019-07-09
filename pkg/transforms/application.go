@@ -12,15 +12,22 @@ import (
 	v1 "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 )
 
-// Takes a *mcm.Application and yields a Node
-func transformApplication(resource *v1.Application) Node {
+type ApplicationResource struct {
+	*v1.Application
+}
 
-	application := transformCommon(resource) // Start off with the common properties
+func (a ApplicationResource) BuildNode() Node {
+	node := transformCommon(a)
 
 	// Extract the properties specific to this type
-	application.Properties["kind"] = "Application"
-	application.Properties["apigroup"] = "app.k8s.io"
-	application.Properties["dashboard"] = resource.GetAnnotations()["apps.ibm.com/dashboard"]
+	node.Properties["kind"] = "Application"
+	node.Properties["apigroup"] = "app.k8s.io"
+	node.Properties["dashboard"] = a.GetAnnotations()["apps.ibm.com/dashboard"]
 
-	return application
+	return node
+}
+
+func (a ApplicationResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

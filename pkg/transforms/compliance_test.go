@@ -17,7 +17,7 @@ import (
 func TestTransformCompliance(t *testing.T) {
 	var c com.Compliance
 	UnmarshalFile("../../test-data/compliance.json", &c, t)
-	node := transformCompliance(&c)
+	node := ComplianceResource{&c}.BuildNode()
 
 	// Test only the fields that exist in compliance - the common test will test the other bits
 	AssertEqual("policyCompliant", node.Properties["policyCompliant"], int64(1), t)

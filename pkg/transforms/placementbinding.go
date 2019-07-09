@@ -14,27 +14,34 @@ import (
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 )
 
-// Takes a *mcm.PlacementBinding and yields a Node
-func transformPlacementBinding(resource *mcm.PlacementBinding) Node {
+type PlacementBindingResource struct {
+	*mcm.PlacementBinding
+}
 
-	placementBinding := transformCommon(resource) // Start off with the common properties
+func (p PlacementBindingResource) BuildNode() Node {
+	node := transformCommon(p) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	placementBinding.Properties["kind"] = "PlacementBinding"
-	placementBinding.Properties["apigroup"] = "mcm.ibm.com"
+	node.Properties["kind"] = "PlacementBinding"
+	node.Properties["apigroup"] = "mcm.ibm.com"
 
-	name := resource.PlacementPolicyRef.Name
-	kind := resource.PlacementPolicyRef.Kind
-	placementBinding.Properties["placementpolicy"] = fmt.Sprintf("%s (%s)", name, kind)
+	name := p.PlacementPolicyRef.Name
+	kind := p.PlacementPolicyRef.Kind
+	node.Properties["placementpolicy"] = fmt.Sprintf("%s (%s)", name, kind)
 
-	l := len(resource.Subjects)
+	l := len(p.Subjects)
 	subjects := make([]string, l)
 	for i := 0; i < l; i++ {
-		name := resource.Subjects[i].Name
-		kind := resource.Subjects[i].Kind
+		name := p.Subjects[i].Name
+		kind := p.Subjects[i].Kind
 		subjects[i] = fmt.Sprintf("%s (%s)", name, kind)
 	}
-	placementBinding.Properties["subject"] = subjects
+	node.Properties["subject"] = subjects
 
-	return placementBinding
+	return node
+}
+
+func (p PlacementBindingResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

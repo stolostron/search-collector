@@ -12,14 +12,16 @@ import (
 	v1 "k8s.io/api/apps/v1"
 )
 
-// Takes a *v1.ReplicaSet and yields a Node
-func transformReplicaSet(resource *v1.ReplicaSet) Node {
+type ReplicaSetResource struct {
+	*v1.ReplicaSet
+}
 
-	replicaSet := transformCommon(resource) // Start off with the common properties
+func (r ReplicaSetResource) BuildNode() Node {
+	node := transformCommon(r) // Start off with the common properties
 
 	// Find the resource's owner. Resources can have multiple ownerReferences, but only one controller.
 	ownerUID := ""
-	for _, ref := range resource.OwnerReferences {
+	for _, ref := range r.OwnerReferences {
 		if *ref.Controller {
 			ownerUID = prefixedUID(ref.UID) // TODO prefix with clustername
 			continue
@@ -27,14 +29,19 @@ func transformReplicaSet(resource *v1.ReplicaSet) Node {
 	}
 
 	// Extract the properties specific to this type
-	replicaSet.Properties["kind"] = "ReplicaSet"
-	replicaSet.Properties["apigroup"] = "apps"
-	replicaSet.Properties["current"] = int64(resource.Status.Replicas)
-	replicaSet.Properties["desired"] = int64(0)
-	replicaSet.Properties["_ownerUID"] = ownerUID
-	if resource.Spec.Replicas != nil {
-		replicaSet.Properties["desired"] = int64(*resource.Spec.Replicas)
+	node.Properties["kind"] = "ReplicaSet"
+	node.Properties["apigroup"] = "apps"
+	node.Properties["current"] = int64(r.Status.Replicas)
+	node.Properties["desired"] = int64(0)
+	node.Properties["_ownerUID"] = ownerUID
+	if r.Spec.Replicas != nil {
+		node.Properties["desired"] = int64(*r.Spec.Replicas)
 	}
 
-	return replicaSet
+	return node
+}
+
+func (r ReplicaSetResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

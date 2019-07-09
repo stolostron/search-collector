@@ -17,7 +17,7 @@ import (
 func TestTransformPlacementPolicy(t *testing.T) {
 	var p mcm.PlacementPolicy
 	UnmarshalFile("../../test-data/placementpolicy.json", &p, t)
-	node := transformPlacementPolicy(&p)
+	node := PlacementPolicyResource{&p}.BuildNode()
 
 	// Test only the fields that exist in placementpolicy - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "PlacementPolicy", t)

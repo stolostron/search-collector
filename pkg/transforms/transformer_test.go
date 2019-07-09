@@ -26,7 +26,7 @@ func TestTransformRoutine(t *testing.T) {
 	var appInput unstructured.Unstructured
 	UnmarshalFile("../../test-data/application.json", &appTyped, t)
 	UnmarshalFile("../../test-data/application.json", &appInput, t)
-	appNode := transformApplication(&appTyped)
+	appNode := ApplicationResource{&appTyped}.BuildNode()
 
 	unstructuredInput := unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -36,7 +36,7 @@ func TestTransformRoutine(t *testing.T) {
 			},
 		},
 	}
-	unstructuredNode := transformUnstructured(&unstructuredInput)
+	unstructuredNode := UnstructuredResource{&unstructuredInput}.BuildNode()
 
 	var tests = []struct {
 		name     string
@@ -90,6 +90,8 @@ func TestTransformRoutine(t *testing.T) {
 		input <- test.in
 		actual := <-output
 
-		AssertDeepEqual(test.name, actual, test.expected, t)
+		AssertDeepEqual(test.name, actual.Node, test.expected.Node, t)
+		AssertEqual(test.name, actual.Time, test.expected.Time, t)
+		AssertEqual(test.name, actual.Operation, test.expected.Operation, t)
 	}
 }

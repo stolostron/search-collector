@@ -17,7 +17,7 @@ import (
 func TestTransformApplicationRelationship(t *testing.T) {
 	var aR mcm.ApplicationRelationship
 	UnmarshalFile("../../test-data/applicationrelationship.json", &aR, t)
-	node := transformApplicationRelationship(&aR)
+	node := ApplicationRelationshipResource{&aR}.BuildNode()
 
 	// Test only the fields that exist in applicationrelationship - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "ApplicationRelationship", t)

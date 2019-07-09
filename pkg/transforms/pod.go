@@ -15,8 +15,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// Takes a *v1.Pod and extracts the subset of properties that we care about, yielding a transforms.PodNode
-func transformPod(pod *v1.Pod) Node {
+type PodResource struct {
+	*v1.Pod
+}
+
+func (pod PodResource) BuildNode() Node {
 	// Loop over spec to get the container and image names
 	var containers []string
 	var images []string
@@ -120,4 +123,9 @@ func transformPod(pod *v1.Pod) Node {
 	}
 
 	return node
+}
+
+func (p PodResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

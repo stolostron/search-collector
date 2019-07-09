@@ -12,23 +12,30 @@ import (
 	v1 "k8s.io/api/batch/v1"
 )
 
-// Takes a *v1.Job and yields a Node
-func transformJob(resource *v1.Job) Node {
+type JobResource struct {
+	*v1.Job
+}
 
-	job := transformCommon(resource) // Start off with the common properties
+func (j JobResource) BuildNode() Node {
+	node := transformCommon(j) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	job.Properties["kind"] = "Job"
-	job.Properties["apigroup"] = "batch"
-	job.Properties["successful"] = int64(resource.Status.Succeeded)
-	job.Properties["completions"] = int64(0)
-	if resource.Spec.Completions != nil {
-		job.Properties["completions"] = int64(*resource.Spec.Completions)
+	node.Properties["kind"] = "Job"
+	node.Properties["apigroup"] = "batch"
+	node.Properties["successful"] = int64(j.Status.Succeeded)
+	node.Properties["completions"] = int64(0)
+	if j.Spec.Completions != nil {
+		node.Properties["completions"] = int64(*j.Spec.Completions)
 	}
-	job.Properties["parallelism"] = int64(0)
-	if resource.Spec.Completions != nil {
-		job.Properties["parallelism"] = int64(*resource.Spec.Parallelism)
+	node.Properties["parallelism"] = int64(0)
+	if j.Spec.Completions != nil {
+		node.Properties["parallelism"] = int64(*j.Spec.Parallelism)
 	}
 
-	return job
+	return node
+}
+
+func (j JobResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

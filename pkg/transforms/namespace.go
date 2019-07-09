@@ -12,14 +12,21 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// Takes a *v1.Namespace and yields a Node
-func transformNamespace(resource *v1.Namespace) Node {
+type NamespaceResource struct {
+	*v1.Namespace
+}
 
-	namespace := transformCommon(resource) // Start off with the common properties
+func (n NamespaceResource) BuildNode() Node {
+	node := transformCommon(n) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	namespace.Properties["kind"] = "Namespace"
-	namespace.Properties["status"] = string(resource.Status.Phase)
+	node.Properties["kind"] = "Namespace"
+	node.Properties["status"] = string(n.Status.Phase)
 
-	return namespace
+	return node
+}
+
+func (n NamespaceResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

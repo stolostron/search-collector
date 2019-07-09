@@ -49,8 +49,33 @@ type Node struct {
 // These are the input to the sender. They have the node, and then they keep the time which is used for reconciling this version with other versions that the sender may already have.
 type NodeEvent struct {
 	Node
-	Time      int64
-	Operation Operation
+	ComputeEdges func(state map[string]Node) []Edge
+	Time         int64
+	Operation    Operation
+}
+
+// A specific type designated for relationship type
+type EdgeType string
+
+// TODO: to be used later
+// Differnet values for EdgeType
+// const (
+// 	ownedBy    EdgeType = "ownedBy"
+// 	attachedTo EdgeType = "attachedTo"
+// 	runsOn     EdgeType = "runsOn"
+// 	selects    EdgeType = "selects"
+// )
+
+// Structure to hold Edge, containing the type and UIDs to relationships
+type Edge struct {
+	EdgeType
+	SourceUID, DestUID string
+}
+
+// interface for each tranform
+type Transform interface {
+	BuildNode() Node
+	BuildEdges(state map[string]Node) []Edge
 }
 
 // Object that handles transformation of k8s objects.
@@ -87,7 +112,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 	glog.Info("Starting transformer routine")
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
-		var transformed Node
+		var trans Transform
 
 		event := <-input // Read from the input channel
 		// Pull out the kind and use marshal/unmarshal to convert to the right type.
@@ -103,7 +128,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformApplication(&typedResource)
+			trans = ApplicationResource{&typedResource}
 
 		case "ApplicationRelationship":
 			typedResource := mcm.ApplicationRelationship{}
@@ -111,7 +136,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformApplicationRelationship(&typedResource)
+			trans = ApplicationRelationshipResource{&typedResource}
 
 		case "Compliance":
 			typedResource := com.Compliance{}
@@ -119,7 +144,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformCompliance(&typedResource)
+			trans = ComplianceResource{&typedResource}
 
 		case "CronJob":
 			typedResource := batchBeta.CronJob{}
@@ -127,7 +152,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformCronJob(&typedResource)
+			trans = CronJobResource{&typedResource}
 
 		case "DaemonSet":
 			typedResource := apps.DaemonSet{}
@@ -135,7 +160,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformDaemonSet(&typedResource)
+			trans = DaemonSetResource{&typedResource}
 
 		case "Deployable":
 			typedResource := mcm.Deployable{}
@@ -143,7 +168,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformDeployable(&typedResource)
+			trans = DeployableResource{&typedResource}
 
 		case "Deployment":
 			typedResource := apps.Deployment{}
@@ -151,7 +176,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformDeployment(&typedResource)
+			trans = DeploymentResource{&typedResource}
 
 		case "Job":
 			typedResource := batch.Job{}
@@ -159,7 +184,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformJob(&typedResource)
+			trans = JobResource{&typedResource}
 
 		case "Namespace":
 			typedResource := core.Namespace{}
@@ -167,7 +192,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformNamespace(&typedResource)
+			trans = NamespaceResource{&typedResource}
 
 		case "Node":
 			typedResource := core.Node{}
@@ -175,7 +200,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformNode(&typedResource)
+			trans = NodeResource{&typedResource}
 
 		case "PersistentVolume":
 			typedResource := core.PersistentVolume{}
@@ -183,7 +208,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformPersistentVolume(&typedResource)
+			trans = PersistentVolumeResource{&typedResource}
 
 		case "PlacementBinding":
 			typedResource := mcm.PlacementBinding{}
@@ -191,7 +216,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformPlacementBinding(&typedResource)
+			trans = PlacementBindingResource{&typedResource}
 
 		case "PlacementPolicy":
 			typedResource := mcm.PlacementPolicy{}
@@ -199,7 +224,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformPlacementPolicy(&typedResource)
+			trans = PlacementPolicyResource{&typedResource}
 
 		case "Pod":
 			typedResource := core.Pod{}
@@ -207,7 +232,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformPod(&typedResource)
+			trans = PodResource{&typedResource}
 
 		case "Policy":
 			typedResource := policy.Policy{}
@@ -215,7 +240,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformPolicy(&typedResource)
+			trans = PolicyResource{&typedResource}
 
 		case "ReplicaSet":
 			typedResource := apps.ReplicaSet{}
@@ -223,7 +248,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformReplicaSet(&typedResource)
+			trans = ReplicaSetResource{&typedResource}
 
 		case "StatefulSet":
 			typedResource := apps.StatefulSet{}
@@ -231,16 +256,17 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			transformed = transformStatefulSet(&typedResource)
+			trans = StatefulSetResource{&typedResource}
 		default:
-			transformed = transformUnstructured(event.Resource)
+			trans = UnstructuredResource{event.Resource}
 		}
 
 		// Send the result through the output channel
 		ne := NodeEvent{
-			Time:      event.Time,
-			Operation: event.Operation,
-			Node:      transformed,
+			Time:         event.Time,
+			Operation:    event.Operation,
+			Node:         trans.BuildNode(),
+			ComputeEdges: trans.BuildEdges,
 		}
 		ne.ResourceString = event.ResourceString
 		output <- ne

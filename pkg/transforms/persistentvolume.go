@@ -14,47 +14,49 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// Takes a *v1.PersistentVolume and yields a Node
-func transformPersistentVolume(resource *v1.PersistentVolume) Node {
+type PersistentVolumeResource struct {
+	*v1.PersistentVolume
+}
 
-	persistentVolume := transformCommon(resource) // Start off with the common properties
+func (p PersistentVolumeResource) BuildNode() Node {
+	node := transformCommon(p) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	persistentVolume.Properties["kind"] = "PersistentVolume"
-	persistentVolume.Properties["reclaimPolicy"] = string(resource.Spec.PersistentVolumeReclaimPolicy)
-	persistentVolume.Properties["status"] = string(resource.Status.Phase)
-	persistentVolume.Properties["type"] = getType(&resource.Spec)
+	node.Properties["kind"] = "PersistentVolume"
+	node.Properties["reclaimPolicy"] = string(p.Spec.PersistentVolumeReclaimPolicy)
+	node.Properties["status"] = string(p.Status.Phase)
+	node.Properties["type"] = getType(&p.Spec)
 
-	persistentVolume.Properties["capacity"] = ""
-	storage, ok := resource.Spec.Capacity["storage"]
+	node.Properties["capacity"] = ""
+	storage, ok := p.Spec.Capacity["storage"]
 	if ok {
-		persistentVolume.Properties["capacity"] = storage.String()
+		node.Properties["capacity"] = storage.String()
 	}
 
 	// can't cast []PersistentVolumeAccessMode to []string without unsafe
-	accessModes := make([]string, len(resource.Spec.AccessModes))
-	for i := 0; i < len(resource.Spec.AccessModes); i++ {
-		accessModes[i] = string(resource.Spec.AccessModes[i])
+	accessModes := make([]string, len(p.Spec.AccessModes))
+	for i := 0; i < len(p.Spec.AccessModes); i++ {
+		accessModes[i] = string(p.Spec.AccessModes[i])
 	}
-	persistentVolume.Properties["accessMode"] = accessModes
+	node.Properties["accessMode"] = accessModes
 
-	persistentVolume.Properties["claimRef"] = ""
-	if resource.Spec.ClaimRef != nil {
-		claimRefNamespace := resource.Spec.ClaimRef.Namespace
-		claimRefName := resource.Spec.ClaimRef.Name
+	node.Properties["claimRef"] = ""
+	if p.Spec.ClaimRef != nil {
+		claimRefNamespace := p.Spec.ClaimRef.Namespace
+		claimRefName := p.Spec.ClaimRef.Name
 		if claimRefNamespace != "" && claimRefName != "" {
 			s := []string{claimRefNamespace, claimRefName}
-			persistentVolume.Properties["claimRef"] = strings.Join(s, "/")
+			node.Properties["claimRef"] = strings.Join(s, "/")
 		}
 	}
 
-	if resource.Spec.Local != nil {
-		persistentVolume.Properties["path"] = resource.Spec.Local.Path
+	if p.Spec.Local != nil {
+		node.Properties["path"] = p.Spec.Local.Path
 	} else {
-		persistentVolume.Properties["path"] = resource.Spec.HostPath.Path
+		node.Properties["path"] = p.Spec.HostPath.Path
 	}
 
-	return persistentVolume
+	return node
 }
 
 func getType(spec *v1.PersistentVolumeSpec) string {
@@ -87,4 +89,9 @@ func getType(spec *v1.PersistentVolumeSpec) string {
 	}
 
 	return ""
+}
+
+func (p PersistentVolumeResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

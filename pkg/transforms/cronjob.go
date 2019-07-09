@@ -14,24 +14,31 @@ import (
 	v1 "k8s.io/api/batch/v1beta1"
 )
 
-// Takes a *v1.CronJob and yields a Node
-func transformCronJob(resource *v1.CronJob) Node {
+type CronJobResource struct {
+	*v1.CronJob
+}
 
-	cronJob := transformCommon(resource) // Start off with the common properties
+func (c CronJobResource) BuildNode() Node {
+	node := transformCommon(c) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	cronJob.Properties["kind"] = "CronJob"
-	cronJob.Properties["apigroup"] = "batch"
-	cronJob.Properties["active"] = int64(len(resource.Status.Active))
-	cronJob.Properties["schedule"] = resource.Spec.Schedule
-	cronJob.Properties["lastSchedule"] = ""
-	if resource.Status.LastScheduleTime != nil {
-		cronJob.Properties["lastSchedule"] = resource.Status.LastScheduleTime.UTC().Format(time.RFC3339)
+	node.Properties["kind"] = "CronJob"
+	node.Properties["apigroup"] = "batch"
+	node.Properties["active"] = int64(len(c.Status.Active))
+	node.Properties["schedule"] = c.Spec.Schedule
+	node.Properties["lastSchedule"] = ""
+	if c.Status.LastScheduleTime != nil {
+		node.Properties["lastSchedule"] = c.Status.LastScheduleTime.UTC().Format(time.RFC3339)
 	}
-	cronJob.Properties["suspend"] = false
-	if resource.Spec.Suspend != nil {
-		cronJob.Properties["suspend"] = *resource.Spec.Suspend
+	node.Properties["suspend"] = false
+	if c.Spec.Suspend != nil {
+		node.Properties["suspend"] = *c.Spec.Suspend
 	}
 
-	return cronJob
+	return node
+}
+
+func (c CronJobResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

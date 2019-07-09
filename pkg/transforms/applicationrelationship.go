@@ -12,16 +12,23 @@ import (
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 )
 
-// Takes a *mcm.ApplicationRelationship and yields a Node
-func transformApplicationRelationship(resource *mcm.ApplicationRelationship) Node {
-	aR := transformCommon(resource) // Start off with the common properties
+type ApplicationRelationshipResource struct {
+	*mcm.ApplicationRelationship
+}
 
-	// Extract the properties specific to this type
-	aR.Properties["kind"] = "ApplicationRelationship"
-	aR.Properties["apigroup"] = "mcm.ibm.com"
-	aR.Properties["destination"] = resource.Spec.Destination.Name
-	aR.Properties["source"] = resource.Spec.Source.Name
-	aR.Properties["type"] = string(resource.Spec.RelType)
+func (a ApplicationRelationshipResource) BuildNode() Node {
+	node := transformCommon(a)
 
-	return aR
+	node.Properties["kind"] = "ApplicationRelationship"
+	node.Properties["apigroup"] = "mcm.ibm.com"
+	node.Properties["destination"] = a.Spec.Destination.Name
+	node.Properties["source"] = a.Spec.Source.Name
+	node.Properties["type"] = string(a.Spec.RelType)
+
+	return node
+}
+
+func (a ApplicationRelationshipResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

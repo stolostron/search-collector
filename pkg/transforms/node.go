@@ -15,13 +15,15 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// Takes a *v1.Node and yields a Node
-func transformNode(resource *v1.Node) Node {
+type NodeResource struct {
+	*v1.Node
+}
 
-	node := transformCommon(resource) // Start off with the common properties
+func (n NodeResource) BuildNode() Node {
+	node := transformCommon(n) // Start off with the common properties
 
 	var roles []string
-	labels := resource.ObjectMeta.Labels
+	labels := n.ObjectMeta.Labels
 	roleSet := map[string]struct{}{
 		"node-role.kubernetes.io/proxy":      {},
 		"node-role.kubernetes.io/management": {},
@@ -46,10 +48,15 @@ func transformNode(resource *v1.Node) Node {
 
 	// Extract the properties specific to this type
 	node.Properties["kind"] = "Node"
-	node.Properties["architecture"] = resource.Status.NodeInfo.Architecture
-	node.Properties["cpu"], _ = resource.Status.Capacity.Cpu().AsInt64()
-	node.Properties["osImage"] = resource.Status.NodeInfo.OSImage
+	node.Properties["architecture"] = n.Status.NodeInfo.Architecture
+	node.Properties["cpu"], _ = n.Status.Capacity.Cpu().AsInt64()
+	node.Properties["osImage"] = n.Status.NodeInfo.OSImage
 	node.Properties["role"] = roles
 
 	return node
+}
+
+func (n NodeResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

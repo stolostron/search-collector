@@ -12,26 +12,33 @@ import (
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 )
 
-// Takes a *mcm.PlacementPolicy and yields a Node
-func transformPlacementPolicy(resource *mcm.PlacementPolicy) Node {
+type PlacementPolicyResource struct {
+	*mcm.PlacementPolicy
+}
 
-	placementPolicy := transformCommon(resource) // Start off with the common properties
+func (p PlacementPolicyResource) BuildNode() Node {
+	node := transformCommon(p) // Start off with the common properties
 
 	// Extract the properties specific to this type
-	placementPolicy.Properties["kind"] = "PlacementPolicy"
-	placementPolicy.Properties["apigroup"] = "mcm.ibm.com"
+	node.Properties["kind"] = "PlacementPolicy"
+	node.Properties["apigroup"] = "mcm.ibm.com"
 
-	placementPolicy.Properties["replicas"] = int64(0)
-	if resource.Spec.ClusterReplicas != nil {
-		placementPolicy.Properties["replicas"] = int64(*resource.Spec.ClusterReplicas)
+	node.Properties["replicas"] = int64(0)
+	if p.Spec.ClusterReplicas != nil {
+		node.Properties["replicas"] = int64(*p.Spec.ClusterReplicas)
 	}
 
-	l := len(resource.Status.Decisions)
+	l := len(p.Status.Decisions)
 	decisions := make([]string, l)
 	for i := 0; i < l; i++ {
-		decisions[i] = resource.Status.Decisions[i].ClusterName
+		decisions[i] = p.Status.Decisions[i].ClusterName
 	}
-	placementPolicy.Properties["decisions"] = decisions
+	node.Properties["decisions"] = decisions
 
-	return placementPolicy
+	return node
+}
+
+func (p PlacementPolicyResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }

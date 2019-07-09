@@ -48,7 +48,7 @@ func transformCommon(resource machineryV1.Object) Node {
 }
 
 // Extracts the properties from a non-default k8s resource and returns them in a map ready to be put in an Node
-func unstructuredProperties(resource *unstructured.Unstructured) map[string]interface{} {
+func unstructuredProperties(resource UnstructuredResource) map[string]interface{} {
 	ret := make(map[string]interface{})
 
 	ret["kind"] = resource.GetKind()
@@ -77,12 +77,20 @@ func unstructuredProperties(resource *unstructured.Unstructured) map[string]inte
 
 }
 
-// Transforms an unstructured.Unstructured (which represents a non-default k8s object) into a Node
-func transformUnstructured(resource *unstructured.Unstructured) Node {
+type UnstructuredResource struct {
+	*unstructured.Unstructured
+}
+
+func (u UnstructuredResource) BuildNode() Node {
 	return Node{
-		UID:        prefixedUID(resource.GetUID()),
-		Properties: unstructuredProperties(resource),
+		UID:        prefixedUID(u.GetUID()),
+		Properties: unstructuredProperties(u),
 	}
+}
+
+func (u UnstructuredResource) BuildEdges(state map[string]Node) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
 }
 
 // Prefixes the given UID with the cluster name from config and a /
