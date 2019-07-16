@@ -49,7 +49,7 @@ type Node struct {
 // These are the input to the sender. They have the node, and then they keep the time which is used for reconciling this version with other versions that the sender may already have.
 type NodeEvent struct {
 	Node
-	ComputeEdges func(state map[string]Node) []Edge
+	ComputeEdges func(ns NodeStore) []Edge
 	Time         int64
 	Operation    Operation
 }
@@ -75,7 +75,7 @@ type Edge struct {
 // interface for each tranform
 type Transform interface {
 	BuildNode() Node
-	BuildEdges(state map[string]Node) []Edge
+	BuildEdges(ns NodeStore) []Edge
 }
 
 // Object that handles transformation of k8s objects.

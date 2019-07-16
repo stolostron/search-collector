@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/glog"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -97,15 +98,6 @@ func (pod PodResource) BuildNode() Node {
 		reason = "Terminating"
 	}
 
-	// Find the resource's owner. Resources can have multiple ownerReferences, but only one controller.
-	ownerUID := ""
-	for _, ref := range pod.OwnerReferences {
-		if *ref.Controller {
-			ownerUID = prefixedUID(ref.UID) // TODO prefix with clustername
-			continue
-		}
-	}
-
 	node := transformCommon(pod) // Start off with the common properties
 
 	// Extract the properties specific to this type
@@ -117,7 +109,6 @@ func (pod PodResource) BuildNode() Node {
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
 	node.Properties["startedAt"] = ""
-	node.Properties["_ownerUID"] = ownerUID
 	if pod.Status.StartTime != nil {
 		node.Properties["startedAt"] = pod.Status.StartTime.UTC().Format(time.RFC3339)
 	}
@@ -125,7 +116,126 @@ func (pod PodResource) BuildNode() Node {
 	return node
 }
 
-func (p PodResource) BuildEdges(state map[string]Node) []Edge {
-	//no op for now to implement interface
-	return []Edge{}
+func (p PodResource) BuildEdges(ns NodeStore) []Edge {
+	ret := make([]Edge, 0, 8)
+
+	//ownedBy edge
+	ownerUID := ""
+	UID := prefixedUID(p.Pod.UID)
+	nameSpace := p.Pod.Namespace
+
+	// Find the resource's owner. Resources can have multiple ownerReferences, but only one controller.
+	for _, ref := range p.Pod.OwnerReferences {
+		if *ref.Controller {
+			ownerUID = prefixedUID(ref.UID) // TODO prefix with clustername
+			continue
+		}
+	}
+
+	//Lookup by UID to see if the owner Node exists
+	if ownerUID != "" {
+		if _, ok := ns.ByUID[ownerUID]; ok {
+			ret = append(ret, Edge{
+				SourceUID: UID,
+				DestUID:   ownerUID,
+				EdgeType:  "ownedBy",
+			})
+		} else {
+			glog.Errorf("ownedBy edge not created as node with ownerUID %s doesn't exist for pod %s", ownerUID, UID)
+		}
+	}
+
+	//attachedTo edge
+	secretMap := make(map[string]bool)
+	configmapMap := make(map[string]bool)
+	volumeClaimMap := make(map[string]bool)
+
+	for _, container := range p.Pod.Spec.Containers {
+		for _, envVal := range container.Env {
+			if envVal.ValueFrom != nil {
+				//If the env variable is a secret, add it to the map if it is not there
+				if envVal.ValueFrom.SecretKeyRef != nil {
+					secretName := envVal.ValueFrom.SecretKeyRef.Name
+					//Check if the secretName already exists in secretMap
+					if !secretMap[secretName] {
+						secretMap[secretName] = true
+					}
+					//If the env variable is a ConfigMap, add it to the map if it is not there
+				} else if envVal.ValueFrom.ConfigMapKeyRef != nil {
+					configMapName := envVal.ValueFrom.ConfigMapKeyRef.Name
+					if !configmapMap[configMapName] {
+						configmapMap[configMapName] = true
+					}
+				}
+			}
+		}
+	}
+	for _, volume := range p.Pod.Spec.Volumes {
+		if volume.Secret != nil {
+			secretName := volume.Secret.SecretName
+			if !secretMap[secretName] {
+				secretMap[secretName] = true
+			}
+		} else if volume.ConfigMap != nil {
+			configMapName := volume.ConfigMap.Name
+			if !configmapMap[configMapName] {
+				configmapMap[configMapName] = true
+			}
+		} else if volume.PersistentVolumeClaim != nil {
+			volumeClaimName := volume.PersistentVolumeClaim.ClaimName
+			if !volumeClaimMap[volumeClaimName] {
+				volumeClaimMap[volumeClaimName] = true
+			}
+		}
+	}
+	var secrets []string
+	for secret := range secretMap {
+		secrets = append(secrets, secret)
+	}
+	var configmaps []string
+	for configmap := range configmapMap {
+		configmaps = append(configmaps, configmap)
+	}
+	var volumeClaims []string
+	for volumeClaim := range volumeClaimMap {
+		volumeClaims = append(volumeClaims, volumeClaim)
+	}
+
+	// Inner function used to get all edges for a specific destKind - the propLists are lists of resource names
+	edgesByDestinationName := func(propList []string, destKind string) []Edge {
+		attachedToEdges := []Edge{}
+		if len(propList) > 0 {
+			for _, name := range propList {
+				if _, ok := ns.ByKindNamespaceName[destKind][nameSpace][name]; ok {
+					attachedToEdges = append(attachedToEdges, Edge{
+						SourceUID: UID,
+						DestUID:   ns.ByKindNamespaceName[destKind][nameSpace][name].UID,
+						EdgeType:  "attachedTo",
+					})
+
+				} else {
+					glog.Errorf("attachedto edge not created as %s named %s not found", destKind, name)
+				}
+			}
+		}
+		return attachedToEdges
+	}
+	ret = append(ret, edgesByDestinationName(secrets, "Secret")...)
+	ret = append(ret, edgesByDestinationName(configmaps, "ConfigMap")...)
+	ret = append(ret, edgesByDestinationName(volumeClaims, "PersistentVolumeClaim")...)
+
+	//runsOn edges
+	if p.Pod.Spec.NodeName != "" {
+		nodeName := p.Pod.Spec.NodeName
+		if _, ok := ns.ByKindNamespaceName["Node"]["_NONE"][nodeName]; ok {
+			ret = append(ret, Edge{
+				SourceUID: UID,
+				DestUID:   ns.ByKindNamespaceName["Node"]["_NONE"][nodeName].UID,
+				EdgeType:  "runsOn",
+			})
+		} else {
+			glog.Errorf("runsOn edge not created as node named %s of kind NODE not found", nodeName)
+		}
+	}
+	return ret
 }

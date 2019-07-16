@@ -34,7 +34,7 @@ func (d DeployableResource) BuildNode() Node {
 	return node
 }
 
-func (d DeployableResource) BuildEdges(state map[string]Node) []Edge {
+func (d DeployableResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

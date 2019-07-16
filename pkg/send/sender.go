@@ -14,15 +14,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/golang/groupcache/lru"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/reconciler"
+	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 )
 
 // A UID of a node to be deleted, and the time at which it was deleted.
@@ -42,11 +40,14 @@ type Diff struct {
 // TODO import this type from the aggregator.
 // This type is for marshaling json which we send to the aggregator - it has to match the aggregator's API
 type Payload struct {
-	DeletedResources []Deletion        `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
-	AddResources     []transforms.Node `json:"addResources,omitempty"`    // List of Nodes which must be added
-	UpdatedResources []transforms.Node `json:"updateResources,omitempty"` // List of Nodes that already existed which must be updated
-	Hash             string            `json:"hash,omitempty"`            // Hash of the previous state, used by aggregator to determine whether it needs to ask for the complete data
-	ClearAll         bool              `json:"clearAll,omitempty"`        // Whether or not the aggregator should clear all data it has for the cluster first
+	DeletedResources []Deletion `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
+	AddResources     []tr.Node  `json:"addResources,omitempty"`    // List of Nodes which must be added
+	UpdatedResources []tr.Node  `json:"updateResources,omitempty"` // List of Nodes that already existed which must be updated
+
+	AddEdges    []tr.Edge `json:"addEdges,omitempty"`    // List of Edges which must be added
+	DeleteEdges []tr.Edge `json:"deleteEdges,omitempty"` // List of Edges which must be deleted
+	Hash        string    `json:"hash,omitempty"`        // Hash of the previous state, used by aggregator to determine whether it needs to ask for the complete data
+	ClearAll    bool      `json:"clearAll,omitempty"`    // Whether or not the aggregator should clear all data it has for the cluster first
 }
 
 type Deletion struct {
@@ -91,101 +92,78 @@ type Sender struct {
 	aggregatorURL      string // URL of the aggregator, minus any path
 	aggregatorSyncPath string // Path of the aggregator's POST route for syncing data, as of today /aggregator/clusters/{clustername}/sync
 	httpClient         http.Client
-	currentState       map[string]transforms.Node      // In the future this will be an object that has edges in it too
-	previousState      map[string]transforms.Node      // In the future this will be an object that has edges in it too
-	diffState          map[string]transforms.NodeEvent // In the future this will be an object that has edges in it too
 	// lastHash           string                          // The hash that was sent with the last send - the first step of a send operation is to ask the aggregator for this hash, to determine whether we can send a diff or need to send the complete data.
-	lastSentTime int64                     // Time at which we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
-	InputChannel chan transforms.NodeEvent // Put any nodes to be updated, added or deleted in here
-	mutex        sync.Mutex                // Used to protect currentState and diffState as they are edited and read by multiple goroutines
-	purgedNodes  *lru.Cache                // Keep track of deleted nodes, so the reconciler can prevent out of order processing of events
+	lastSentTime int64 // Time at which we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
+	rec          *reconciler.Reconciler
 }
 
 // Constructs a new Sender using the provided channels.
 // Sends to the URL provided by aggregatorURL, listing itself as clusterName.
-func NewSender(inputChan chan transforms.NodeEvent, aggregatorURL, clusterName string) *Sender {
+func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *Sender {
 
 	// Construct senders
 	s := &Sender{
 		aggregatorURL:      aggregatorURL,
 		aggregatorSyncPath: strings.Join([]string{"/aggregator/clusters/", clusterName, "/sync"}, ""),
 		httpClient:         getHTTPSClient(),
-		previousState:      make(map[string]transforms.Node),
-		currentState:       make(map[string]transforms.Node),
-		diffState:          make(map[string]transforms.NodeEvent),
-		// lastHash:           NEVER_SENT,
-		lastSentTime: -1,
-		InputChannel: inputChan,
-		purgedNodes:  lru.New(500),
+		lastSentTime:       -1,
+		rec:                rec,
 	}
 
 	if !config.Cfg.DeployedInHub {
 		s.aggregatorSyncPath = strings.Join([]string{"/", clusterName, "/aggregator/sync"}, "")
 	}
 
-	go s.Reconciler()
-
 	return s
 }
 
 // Returns a payload and expected total resources, containing the add, update and delete operations since the last send.
-// This function also RESETS THE DIFFS, so make sure you do something with the payload
 func (s *Sender) diffPayload() (Payload, int) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+
+	diff := s.rec.Diff()
+	// glog.Warningf("%+v", diff) //RM
 
 	payload := Payload{
 		ClearAll: false,
+
+		AddResources:     diff.AddNodes,
+		UpdatedResources: diff.UpdateNodes,
+		DeletedResources: make([]Deletion, len(diff.DeleteNodes)),
+
+		AddEdges:    diff.AddEdges,
+		DeleteEdges: diff.DeleteEdges,
 	}
 
-	for _, ndo := range s.diffState {
-		if ndo.Operation == transforms.Create {
-			payload.AddResources = append(payload.AddResources, ndo.Node)
-		} else if ndo.Operation == transforms.Update {
-			payload.UpdatedResources = append(payload.UpdatedResources, ndo.Node)
-		} else if ndo.Operation == transforms.Delete {
-			payload.DeletedResources = append(payload.DeletedResources, Deletion{UID: ndo.UID})
-		}
+	for _, uid := range diff.DeleteNodes {
+		payload.DeletedResources = append(payload.DeletedResources, Deletion{uid})
 	}
 
-	expectedTotalResources := len(s.currentState)
-	s.resetDiffs()
-	return payload, expectedTotalResources
+	return payload, s.rec.ResourceCount()
 }
 
 // Returns a payload and expected total resources, containing the complete set of resources as they currently exist in this cluster
 // This function also RESETS THE DIFFS, so make sure you do something with the payload
 func (s *Sender) completePayload() (Payload, int) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 
+	complete := s.rec.Complete()
+	// glog.Warningf("%+v", complete) //RM
+
+	// Hash, Delete and Update aren't needed when we're sending all the data. Just fill out the adds.
 	payload := Payload{
 		ClearAll: true,
-	}
-	// Hash, Delete and Update aren't needed when we're sending all the data. We do need to fill out addResources, though.
-	for _, n := range s.currentState {
-		payload.AddResources = append(payload.AddResources, n)
-	}
-	expectedTotalResources := len(s.currentState)
-	s.resetDiffs()
-	return payload, expectedTotalResources
-}
 
-// Clears out diffState and copies currentState into previousState.
-// NOT THREADSAFE with anything that edits structures in s, locking left up to the caller.
-func (s *Sender) resetDiffs() {
-	s.diffState = make(map[string]transforms.NodeEvent) // We have to reset the diff every time we try to prepare something to send, so that it doesn't get out of sync with the complete/old.
-	s.previousState = make(map[string]transforms.Node, len(s.currentState))
+		AddResources: complete.Nodes,
 
-	for uid, node := range s.currentState {
-		s.previousState[uid] = node
+		AddEdges: complete.Edges,
 	}
+	return payload, s.rec.ResourceCount()
 }
 
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int) error {
-	glog.Infof("Sending { add: %d, update: %d, delete: %d }", len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources))
+	glog.Infof("Sending Nodes { add: %d, update: %d, delete: %d }", len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources))
+	glog.Infof("Sending Edges { add: %d, delete: %d }", len(payload.AddEdges), len(payload.DeleteEdges))
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -262,61 +240,4 @@ func (s *Sender) Sync() error {
 
 	s.lastSentTime = time.Now().Unix()
 	return nil
-}
-
-// This method takes a channel and constantly receives from it, reconciling the input with whatever is currently stored in the sender.
-func (s *Sender) Reconciler() {
-	glog.Info("Reconciler Routine Started")
-	for {
-		reconcileNode(s)
-	}
-}
-
-// This is a separate funcition so we can defer the mutex unlock and guarantee the lock is lifted every iteration
-func reconcileNode(s *Sender) {
-	ne := <-s.InputChannel
-
-	// Take care of diffState and currentState
-	s.mutex.Lock() // Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit and then blocked, we could end up getting out of order
-	defer s.mutex.Unlock()
-
-	// Check whether we already have this node in our diff/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
-	otherNode, inDiff := s.diffState[ne.Node.UID]
-	nodeInterface, inPurged := s.purgedNodes.Get(ne.Node.UID)
-
-	if inDiff && otherNode.Time > ne.Time {
-		return
-	}
-	if inPurged {
-		purgedNode, ok := nodeInterface.(transforms.NodeEvent)
-		if ok && purgedNode.Time > ne.Time {
-			return
-		}
-	}
-
-	previousNode, inPrevious := s.previousState[ne.Node.UID]
-
-	if ne.Operation == transforms.Delete {
-		delete(s.currentState, ne.UID) // Get rid of it from our currentState, if it was ever there.
-		s.purgedNodes.Add(ne.UID, ne)  // Add this to the list of node purged resources
-
-		if inPrevious {
-			s.diffState[ne.UID] = ne // Since it was in the previous, we need to have a deletion diff.
-		} else {
-			delete(s.diffState, ne.UID) // Otherwise no need to send a payload, just remove from local memory
-		}
-	} else { // This is either an update or create, which look very similar. TODO actually combine the two.
-		op := transforms.Create
-		if inPrevious { // If this was in the previous, our operation for diffs is update, not create
-			op = transforms.Update
-
-			// skip updates if new event is redundant to our previous state (a property that we don't care about triggered an update)
-			if reflect.DeepEqual(ne.Node, previousNode) {
-				return
-			}
-		}
-		s.currentState[ne.UID] = ne.Node
-		ne.Operation = op
-		s.diffState[ne.UID] = ne
-	}
 }

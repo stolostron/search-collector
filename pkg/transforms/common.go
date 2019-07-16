@@ -18,6 +18,13 @@ import (
 	apiTypes "k8s.io/apimachinery/pkg/types"
 )
 
+// An object given to the Edge Building methods in the transforms package.
+// Contains representations of the Node list that are useful for them to efficiently find the nodes that they need.
+type NodeStore struct {
+	ByUID               map[string]Node
+	ByKindNamespaceName map[string]map[string]map[string]Node
+}
+
 // Extracts the common properties from a default k8s resource of unknown type and returns them in a map ready to be put in an Node
 func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret := make(map[string]interface{})
@@ -88,7 +95,7 @@ func (u UnstructuredResource) BuildNode() Node {
 	}
 }
 
-func (u UnstructuredResource) BuildEdges(state map[string]Node) []Edge {
+func (u UnstructuredResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

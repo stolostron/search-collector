@@ -31,7 +31,7 @@ func (d DaemonSetResource) BuildNode() Node {
 	return node
 }
 
-func (d DaemonSetResource) BuildEdges(state map[string]Node) []Edge {
+func (d DaemonSetResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

@@ -27,7 +27,7 @@ func (a ApplicationResource) BuildNode() Node {
 	return node
 }
 
-func (a ApplicationResource) BuildEdges(state map[string]Node) []Edge {
+func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

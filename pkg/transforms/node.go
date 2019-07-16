@@ -56,7 +56,7 @@ func (n NodeResource) BuildNode() Node {
 	return node
 }
 
-func (n NodeResource) BuildEdges(state map[string]Node) []Edge {
+func (n NodeResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

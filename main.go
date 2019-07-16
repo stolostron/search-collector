@@ -17,10 +17,11 @@ import (
 	"time"
 
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
+	rec "github.ibm.com/IBMPrivateCloud/search-collector/pkg/reconciler"
+	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 
 	"github.com/golang/glog"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/send"
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,10 +44,14 @@ func main() {
 	}
 
 	// Create transformers
-	upsertTransformer := transforms.NewTransformer(make(chan *transforms.Event), make(chan transforms.NodeEvent), numThreads)
+	upsertTransformer := tr.NewTransformer(make(chan *tr.Event), make(chan tr.NodeEvent), numThreads)
+
+	// Init reconciler
+	reconciler := rec.NewReconciler()
+	reconciler.Input = upsertTransformer.Output
 
 	// Create Sender, attached to transformer
-	sender := send.NewSender(upsertTransformer.Output, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
+	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
 
 	var clientConfig *rest.Config
 	var clientConfigError error
@@ -74,7 +79,7 @@ func main() {
 		glog.Info("Created new helm client")
 
 		ticker := time.NewTicker(time.Duration(config.Cfg.HelmPullMS) * time.Millisecond)
-		go transforms.HelmTransformation(helmClient, ticker.C, upsertTransformer.Output)
+		go tr.HelmTransformation(helmClient, ticker.C, upsertTransformer.Output)
 	}
 
 	// Initialize the dynamic client, used for CRUD operations on arbitrary k8s resources
@@ -96,9 +101,9 @@ func main() {
 	createInformerAddHandler := func(resourceName string) func(interface{}) {
 		return func(obj interface{}) {
 			resource := obj.(*unstructured.Unstructured)
-			upsert := transforms.Event{
+			upsert := tr.Event{
 				Time:           time.Now().Unix(),
-				Operation:      transforms.Create,
+				Operation:      tr.Create,
 				Resource:       resource,
 				ResourceString: resourceName,
 			}
@@ -109,9 +114,9 @@ func main() {
 	createInformerUpdateHandler := func(resourceName string) func(interface{}, interface{}) {
 		return func(oldObj, newObj interface{}) {
 			resource := newObj.(*unstructured.Unstructured)
-			upsert := transforms.Event{
+			upsert := tr.Event{
 				Time:           time.Now().Unix(),
-				Operation:      transforms.Update,
+				Operation:      tr.Update,
 				Resource:       resource,
 				ResourceString: resourceName,
 			}
@@ -122,14 +127,14 @@ func main() {
 	informerDeleteHandler := func(obj interface{}) {
 		resource := obj.(*unstructured.Unstructured)
 		// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
-		ne := transforms.NodeEvent{
+		ne := tr.NodeEvent{
 			Time:      time.Now().Unix(),
-			Operation: transforms.Delete,
-			Node: transforms.Node{
+			Operation: tr.Delete,
+			Node: tr.Node{
 				UID: strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
 			},
 		}
-		sender.InputChannel <- ne
+		reconciler.Input <- ne
 	}
 
 	stoppers := make(map[schema.GroupVersionResource]chan struct{}) // We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.

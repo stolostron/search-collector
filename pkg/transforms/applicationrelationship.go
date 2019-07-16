@@ -28,7 +28,7 @@ func (a ApplicationRelationshipResource) BuildNode() Node {
 	return node
 }
 
-func (a ApplicationRelationshipResource) BuildEdges(state map[string]Node) []Edge {
+func (a ApplicationRelationshipResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

@@ -38,7 +38,7 @@ func (p PlacementPolicyResource) BuildNode() Node {
 	return node
 }
 
-func (p PlacementPolicyResource) BuildEdges(state map[string]Node) []Edge {
+func (p PlacementPolicyResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

@@ -91,7 +91,7 @@ func getType(spec *v1.PersistentVolumeSpec) string {
 	return ""
 }
 
-func (p PersistentVolumeResource) BuildEdges(state map[string]Node) []Edge {
+func (p PersistentVolumeResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

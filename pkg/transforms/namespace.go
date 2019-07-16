@@ -26,7 +26,7 @@ func (n NamespaceResource) BuildNode() Node {
 	return node
 }
 
-func (n NamespaceResource) BuildEdges(state map[string]Node) []Edge {
+func (n NamespaceResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

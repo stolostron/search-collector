@@ -41,7 +41,7 @@ func (p PlacementBindingResource) BuildNode() Node {
 	return node
 }
 
-func (p PlacementBindingResource) BuildEdges(state map[string]Node) []Edge {
+func (p PlacementBindingResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

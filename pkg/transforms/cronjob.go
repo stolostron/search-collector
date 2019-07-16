@@ -38,7 +38,7 @@ func (c CronJobResource) BuildNode() Node {
 	return node
 }
 
-func (c CronJobResource) BuildEdges(state map[string]Node) []Edge {
+func (c CronJobResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

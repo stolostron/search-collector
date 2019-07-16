@@ -63,7 +63,7 @@ func (c ComplianceResource) BuildNode() Node {
 	return node
 }
 
-func (c ComplianceResource) BuildEdges(state map[string]Node) []Edge {
+func (c ComplianceResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

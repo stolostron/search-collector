@@ -31,7 +31,7 @@ func (s StatefulSetResource) BuildNode() Node {
 	return node
 }
 
-func (s StatefulSetResource) BuildEdges(state map[string]Node) []Edge {
+func (s StatefulSetResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }

@@ -35,7 +35,7 @@ func (j JobResource) BuildNode() Node {
 	return node
 }
 
-func (j JobResource) BuildEdges(state map[string]Node) []Edge {
+func (j JobResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
 }
