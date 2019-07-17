@@ -162,8 +162,7 @@ func (s *Sender) completePayload() (Payload, int) {
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int) error {
-	glog.Infof("Sending Nodes { add: %d, update: %d, delete: %d }", len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources))
-	glog.Infof("Sending Edges { add: %d, delete: %d }", len(payload.AddEdges), len(payload.DeleteEdges))
+	glog.Infof("Sending Resources { add: %d, update: %d, delete: %d edge add: %d edge delete: %d }", len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources), len(payload.AddEdges), len(payload.DeleteEdges))
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {

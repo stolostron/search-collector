@@ -141,7 +141,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 				EdgeType:  "ownedBy",
 			})
 		} else {
-			glog.Errorf("ownedBy edge not created as node with ownerUID %s doesn't exist for pod %s", ownerUID, UID)
+			glog.V(2).Infof("Pod %s ownedBy edge not created: ownerUID %s not found", p.GetNamespace()+"/"+p.GetName(), ownerUID)
 		}
 	}
 
@@ -214,7 +214,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 					})
 
 				} else {
-					glog.Errorf("attachedto edge not created as %s named %s not found", destKind, name)
+					glog.V(2).Infof("Pod %s attachedTo edge not created: %s %s not found", p.GetNamespace()+"/"+p.GetName(), destKind, nameSpace+"/"+name)
 				}
 			}
 		}
@@ -234,7 +234,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 				EdgeType:  "runsOn",
 			})
 		} else {
-			glog.Errorf("runsOn edge not created as node named %s of kind NODE not found", nodeName)
+			glog.V(2).Infof("Pod %s runsOn edge not created: Node %s not found", p.GetNamespace()+"/"+p.GetName(), "_NONE/"+nodeName)
 		}
 	}
 	return ret
