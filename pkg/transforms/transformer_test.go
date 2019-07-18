@@ -84,7 +84,7 @@ func TestTransformRoutine(t *testing.T) {
 		},
 	}
 
-	go transformRoutine(input, output)
+	go transformRoutine(input, output, nil)
 
 	for _, test := range tests {
 		input <- test.in

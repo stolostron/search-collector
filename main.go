@@ -43,8 +43,21 @@ func main() {
 		glog.Info("Built from git commit: ", commit)
 	}
 
+	// Create Helm client for transformer
+	var helmClient *helm.Client
+	helmTlsConfig, err := tlsutil.ClientConfig(config.Cfg.TillerOpts)
+	if err != nil {
+		glog.Error("Error creating helm TLS configuration: ", err)
+	} else {
+		helmClient = helm.NewClient(
+			helm.WithTLS(helmTlsConfig),
+			helm.Host(config.Cfg.TillerURL),
+		)
+		glog.Info("Created new helm client")
+	}
+
 	// Create transformers
-	upsertTransformer := tr.NewTransformer(make(chan *tr.Event), make(chan tr.NodeEvent), numThreads)
+	upsertTransformer := tr.NewTransformer(make(chan *tr.Event), make(chan tr.NodeEvent), numThreads, helmClient)
 
 	// Init reconciler
 	reconciler := rec.NewReconciler()
@@ -66,20 +79,6 @@ func main() {
 
 	if clientConfigError != nil {
 		glog.Fatal("Error Constructing Client From Config: ", clientConfigError)
-	}
-
-	helmTlsConfig, err := tlsutil.ClientConfig(config.Cfg.TillerOpts)
-	if err != nil {
-		glog.Error("Error creating helm TLS configuration: ", err)
-	} else {
-		helmClient := helm.NewClient(
-			helm.WithTLS(helmTlsConfig),
-			helm.Host(config.Cfg.TillerURL),
-		)
-		glog.Info("Created new helm client")
-
-		ticker := time.NewTicker(time.Duration(config.Cfg.HelmPullMS) * time.Millisecond)
-		go tr.HelmTransformation(helmClient, ticker.C, upsertTransformer.Output)
 	}
 
 	// Initialize the dynamic client, used for CRUD operations on arbitrary k8s resources

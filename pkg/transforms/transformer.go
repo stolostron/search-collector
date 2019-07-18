@@ -16,11 +16,14 @@ import (
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
+
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/helm/pkg/helm"
+	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
 type Operation int
@@ -52,6 +55,19 @@ type NodeEvent struct {
 	ComputeEdges func(ns NodeStore) []Edge
 	Time         int64
 	Operation    Operation
+}
+
+// make new constructor here, dry up code, then start testing
+
+func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEvent {
+	ne := NodeEvent{
+		Time:         event.Time,
+		Operation:    event.Operation,
+		Node:         trans.BuildNode(),
+		ComputeEdges: trans.BuildEdges,
+	}
+	ne.ResourceString = resourceString
+	return ne
 }
 
 // A specific type designated for relationship type
@@ -86,7 +102,7 @@ type Transformer struct {
 	// TODO add stopper channel?
 }
 
-func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutines int) Transformer {
+func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutines int, helmClient *helm.Client) Transformer {
 	glog.Info("Transformer started")
 	nr := numRoutines
 	if numRoutines < 1 {
@@ -96,7 +112,7 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 
 	// start numRoutines threads to handle transformation.
 	for i := 0; i < nr; i++ {
-		go transformRoutine(inputChan, outputChan)
+		go transformRoutine(inputChan, outputChan, helmClient)
 	}
 	return Transformer{
 		Input:  inputChan,
@@ -107,8 +123,8 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 
 // This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
 // If anything goes wrong in here that requires you to skip the current resource, call panic() and the routine will be spun back up by handleRoutineExit and the bad resource won't be in there because it was already taken out by the previous run.
-func transformRoutine(input chan *Event, output chan NodeEvent) {
-	defer handleRoutineExit(input, output)
+func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm.Client) {
+	defer handleRoutineExit(input, output, helmClient)
 	glog.Info("Starting transformer routine")
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
@@ -269,27 +285,58 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = UnstructuredResource{event.Resource}
 		}
 
-		// Send the result through the output channel
-		ne := NodeEvent{
-			Time:         event.Time,
-			Operation:    event.Operation,
-			Node:         trans.BuildNode(),
-			ComputeEdges: trans.BuildEdges,
+		output <- NewNodeEvent(event, trans, event.ResourceString)
+
+		if isHelmRelease(event.Resource) {
+			typedResource := core.ConfigMap{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			releaseName := typedResource.GetLabels()["NAME"]
+			release := getReleaseFromHelm(helmClient, releaseName) // either Release from Tiller or nil if Tiller unavailable
+			releaseTrans := HelmReleaseResource{&typedResource, release}
+			output <- NewNodeEvent(event, releaseTrans, "releases")
 		}
-		ne.ResourceString = event.ResourceString
-		output <- ne
 	}
+}
+
+//	If the resource is a ConfigMap with label "OWNER:TILLER", it references a Helm Release
+func isHelmRelease(resource *unstructured.Unstructured) bool {
+	if kind := resource.GetKind(); kind == "ConfigMap" {
+		for label, value := range resource.GetLabels() {
+			if label == "OWNER" && value == "TILLER" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func getReleaseFromHelm(helmClient *helm.Client, releaseName string) *release.Release {
+	if helmClient == nil {
+		glog.Error("Helm client not defined; Failed to fetch helm release:", releaseName)
+		return nil
+	}
+
+	rc, err := helmClient.ReleaseContent(releaseName)
+
+	if err != nil {
+		glog.Error("Failed to fetch helm release: ", releaseName, err)
+		return nil
+	}
+	return rc.GetRelease()
 }
 
 // Handles a panic from inside transformRoutine.
 // If the panic was due to an error, starts another transformRoutine with the same channels as this one.
 // If not, just lets it die.
-func handleRoutineExit(input chan *Event, output chan NodeEvent) {
+func handleRoutineExit(input chan *Event, output chan NodeEvent, helmClient *helm.Client) {
 	// Recover and check the value. If we are here because of a panic, something will be in it.
 	if r := recover(); r != nil { // Case where we got here from a panic
 		glog.Errorf("Error in transformer routine: %v\n", r)
 
 		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
-		go transformRoutine(input, output)
+		go transformRoutine(input, output, helmClient)
 	}
 }
