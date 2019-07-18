@@ -250,6 +250,14 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ReplicaSetResource{&typedResource}
 
+		case "Service":
+			typedResource := core.Service{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = ServiceResource{&typedResource}
+
 		case "StatefulSet":
 			typedResource := apps.StatefulSet{}
 			err = json.Unmarshal(j, &typedResource)

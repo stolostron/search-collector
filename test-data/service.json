@@ -1,0 +1,41 @@
+{
+    "apiVersion": "v1",
+    "kind": "Service",
+    "metadata": {
+        "creationTimestamp": "2019-05-07T18:23:00Z",
+        "labels": {
+            "app": "test-fixture",
+            "chart": "test-fixture-3.1.2",
+            "heritage": "Tiller",
+            "release": "test-fixture"
+        },
+        "name": "test-fixture-test-fixture",
+        "namespace": "default",
+        "resourceVersion": "1234",
+        "selfLink": "/api/v1/namespaces/kube-system/services/test-fixture-test-fixture",
+        "uid": "255596bf-70f5-11e9-acdf-00163e03g660"
+    },
+    "spec": {
+        "clusterIP": "10.0.0.5",
+        "externalTrafficPolicy": "Cluster",
+        "ports": [
+            {
+                "name": "test-fixture",
+                "nodePort": 30005,
+                "port": 3333,
+                "protocol": "TCP",
+                "targetPort": 3333
+            }
+        ],
+        "selector": {
+            "app": "test-fixture-selector",
+            "release": "test-fixture-selector-release"
+        },
+        "sessionAffinity": "None",
+        "type": "NodePort"
+    },
+    "status": {
+        "loadBalancer": {}
+    }
+}
+
