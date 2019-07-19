@@ -71,6 +71,7 @@ type Reconciler struct {
 	edgeFuncs map[string]func(ns tr.NodeStore) []tr.Edge // Edge building functions, keyed by UID
 
 	previousEdges map[string]map[string]tr.Edge // Keyed by source then dest so we can quickly compare the new list
+	totalEdges    int                           // Save the total count as we build to avoid looping when needed
 
 	Input       chan tr.NodeEvent
 	mutex       sync.Mutex // Used to protect currentState and diffState as they are edited and read by multiple goroutines
@@ -150,8 +151,6 @@ func (r *Reconciler) Complete() CompleteState {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	glog.Warning("CURRENT NODES: ", len(r.currentNodes)) //RM
-
 	allNodes := make([]tr.Node, 0, len(r.currentNodes)) // We know the size ahead of time
 	for _, n := range r.currentNodes {
 		allNodes = append(allNodes, n)
@@ -188,10 +187,13 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
 	}
 
+	totalEdges := 0
+
 	// Loop across all the nodes and build their edges.
 	for uid, ef := range r.edgeFuncs {
 		glog.V(3).Infof("Calculating edges UID: %s", uid)
 		edges := ef(ns) // Get edges from this specific node
+		totalEdges += len(edges)
 
 		for _, edge := range edges {
 			if _, ok := ret[edge.SourceUID]; !ok { // Init if it's not there
@@ -200,6 +202,8 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 			ret[edge.SourceUID][edge.DestUID] = edge
 		}
 	}
+
+	r.totalEdges = totalEdges
 
 	return ret
 }
@@ -210,6 +214,13 @@ func (r *Reconciler) ResourceCount() int {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	return len(r.currentNodes)
+}
+
+// Retruns the total number of intra edges on a cluster
+func (r *Reconciler) EdgeCount() int {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	return r.totalEdges
 }
 
 // This method takes a channel and constantly receives from it, reconciling the input with whatever is currently stored.

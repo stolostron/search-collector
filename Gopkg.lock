@@ -157,6 +157,14 @@
   revision = "787624de3eb7bd915c329cba748687a3b22666a6"
 
 [[projects]]
+  digest = "1:88e0b0baeb9072f0a4afbcf12dda615fc8be001d1802357538591155998da21b"
+  name = "github.com/hashicorp/go-version"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ac23dc3fea5d1a983c43f6a0f6e2c13f0195d8bd"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:3f90d23757c18b1e07bf11494dbe737ee2c44d881c0f41e681611abdadad62fa"
   name = "github.com/hashicorp/golang-lru"
   packages = [
@@ -749,6 +757,7 @@
     "github.com/golang/glog",
     "github.com/golang/groupcache/lru",
     "github.com/golang/protobuf/ptypes",
+    "github.com/hashicorp/go-version",
     "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
     "github.com/tkanos/gonfig",
     "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1",

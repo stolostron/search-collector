@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/hashicorp/go-version"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/reconciler"
 	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
@@ -46,7 +47,6 @@ type Payload struct {
 
 	AddEdges    []tr.Edge `json:"addEdges,omitempty"`    // List of Edges which must be added
 	DeleteEdges []tr.Edge `json:"deleteEdges,omitempty"` // List of Edges which must be deleted
-	Hash        string    `json:"hash,omitempty"`        // Hash of the previous state, used by aggregator to determine whether it needs to ask for the complete data
 	ClearAll    bool      `json:"clearAll,omitempty"`    // Whether or not the aggregator should clear all data it has for the cluster first
 }
 
@@ -60,7 +60,6 @@ func (p Payload) empty() bool {
 
 // TODO import this type from the aggregator.
 type GetResponse struct {
-	Hash           string
 	LastUpdated    string
 	TotalResources int
 	MaxQueueTime   int
@@ -69,15 +68,19 @@ type GetResponse struct {
 // TODO import this type from the aggregator.
 // SyncResponse - Response to a SyncEvent
 type SyncResponse struct {
-	Hash             string
-	TotalAdded       int
-	TotalUpdated     int
-	TotalDeleted     int
-	TotalResources   int
-	UpdatedTimestamp time.Time
-	DeleteErrors     []SyncError
-	UpdateErrors     []SyncError
-	AddErrors        []SyncError
+	TotalAdded        int
+	TotalUpdated      int
+	TotalDeleted      int
+	TotalResources    int
+	TotalEdgesAdded   int
+	TotalEdgesDeleted int
+	TotalEdges        int
+	AddErrors         []SyncError
+	UpdateErrors      []SyncError
+	DeleteErrors      []SyncError
+	AddEdgeErrors     []SyncError
+	DeleteEdgeErrors  []SyncError
+	version           string
 }
 
 // TODO import this type from the aggregator.
@@ -92,9 +95,8 @@ type Sender struct {
 	aggregatorURL      string // URL of the aggregator, minus any path
 	aggregatorSyncPath string // Path of the aggregator's POST route for syncing data, as of today /aggregator/clusters/{clustername}/sync
 	httpClient         http.Client
-	// lastHash           string                          // The hash that was sent with the last send - the first step of a send operation is to ask the aggregator for this hash, to determine whether we can send a diff or need to send the complete data.
-	lastSentTime int64 // Time at which we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
-	rec          *reconciler.Reconciler
+	lastSentTime       int64 // Time at which we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
+	rec                *reconciler.Reconciler
 }
 
 // Constructs a new Sender using the provided channels.
@@ -118,10 +120,9 @@ func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *S
 }
 
 // Returns a payload and expected total resources, containing the add, update and delete operations since the last send.
-func (s *Sender) diffPayload() (Payload, int) {
+func (s *Sender) diffPayload() (Payload, int, int) {
 
 	diff := s.rec.Diff()
-	// glog.Warningf("%+v", diff) //RM
 
 	payload := Payload{
 		ClearAll: false,
@@ -138,17 +139,16 @@ func (s *Sender) diffPayload() (Payload, int) {
 		payload.DeletedResources = append(payload.DeletedResources, Deletion{uid})
 	}
 
-	return payload, s.rec.ResourceCount()
+	return payload, s.rec.ResourceCount(), s.rec.EdgeCount()
 }
 
 // Returns a payload and expected total resources, containing the complete set of resources as they currently exist in this cluster
 // This function also RESETS THE DIFFS, so make sure you do something with the payload
-func (s *Sender) completePayload() (Payload, int) {
+func (s *Sender) completePayload() (Payload, int, int) {
 
 	complete := s.rec.Complete()
-	// glog.Warningf("%+v", complete) //RM
 
-	// Hash, Delete and Update aren't needed when we're sending all the data. Just fill out the adds.
+	// Delete and Update aren't needed when we're sending all the data. Just fill out the adds.
 	payload := Payload{
 		ClearAll: true,
 
@@ -156,12 +156,12 @@ func (s *Sender) completePayload() (Payload, int) {
 
 		AddEdges: complete.Edges,
 	}
-	return payload, s.rec.ResourceCount()
+	return payload, s.rec.ResourceCount(), s.rec.EdgeCount()
 }
 
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
-func (s *Sender) send(payload Payload, expectedTotalResources int) error {
+func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
 	glog.Infof("Sending Resources { add: %d, update: %d, delete: %d edge add: %d edge delete: %d }", len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources), len(payload.AddEdges), len(payload.DeleteEdges))
 
 	payloadBytes, err := json.Marshal(payload)
@@ -194,6 +194,18 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 		msg := fmt.Sprintf("Aggregator reported wrong number of total resources. Expected %d, got %d", expectedTotalResources, r.TotalResources)
 		return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
 	}
+
+	// compute edges check only if aggregator
+	aggApi, remoteErr := version.NewVersion(r.version)
+	localApi, localErr := version.NewVersion(config.AGGREGATOR_API_VERSION)
+	if remoteErr != nil && localErr != nil && aggApi.GreaterThanOrEqual(localApi) {
+		if r.TotalEdges != (expectedTotalEdges + len(r.DeleteEdgeErrors) - len(r.AddEdgeErrors)) {
+			msg := fmt.Sprintf("Aggregator reported wrong number of total intra edges. Expected %d, got %d", expectedTotalEdges, r.TotalEdges)
+			return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
+		}
+	}
+
+	// Check the total
 	return nil
 }
 
@@ -201,8 +213,8 @@ func (s *Sender) send(payload Payload, expectedTotalResources int) error {
 func (s *Sender) Sync() error {
 	if s.lastSentTime == -1 { // If we have never sent before, we just send the complete.
 		glog.Info("First time sending or last Sync cycle failed, sending complete payload")
-		payload, expectedTotalResources := s.completePayload()
-		err := s.send(payload, expectedTotalResources)
+		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
+		err := s.send(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
 			return err
 		}
@@ -212,7 +224,7 @@ func (s *Sender) Sync() error {
 	}
 
 	// If this isn't the first time we've sent, we can now attempt to send a diff.
-	payload, expectedTotalResources := s.diffPayload()
+	payload, expectedTotalResources, expectedTotalEdges := s.diffPayload()
 	if payload.empty() {
 		// check if a ping is necessary
 		if time.Now().Unix()-s.lastSentTime < int64(config.Cfg.HeartbeatMS/1000) {
@@ -223,12 +235,12 @@ func (s *Sender) Sync() error {
 	} else {
 		glog.V(2).Info("Sending diff payload")
 	}
-	err := s.send(payload, expectedTotalResources)
+	err := s.send(payload, expectedTotalResources, expectedTotalEdges)
 	if err != nil { // If something went wrong here, form a new complete payload (only necessary because currentState may have changed since we got it, and we have to keep our diffs synced)
 		glog.Warning("Error on diff payload sending: ", err)
-		payload, expectedTotalResources := s.completePayload()
+		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
 		glog.Warning("Retrying with complete payload")
-		err := s.send(payload, expectedTotalResources)
+		err := s.send(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
 			s.lastSentTime = -1 // If this retry fails, we want to start over with a complete payload next time, so we reset as if we've not sent anything before.
 			return err

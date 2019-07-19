@@ -34,6 +34,7 @@ const (
 	DEFAULT_HELM_PULL_MS       = 30000   // 30 seconds
 	DEFAULT_MAX_BACKOFF_MS     = 3600000 // 1 hour
 	DEFAULT_REDISCOVER_RATE_MS = 60000   // 1 min
+	AGGREGATOR_API_VERSION     = "4.1.0"
 )
 
 // Define a config type for gonfig to hold our config properties.
