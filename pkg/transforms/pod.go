@@ -145,84 +145,53 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 		}
 	}
 
-	//attachedTo edge
-	secretMap := make(map[string]bool)
-	configmapMap := make(map[string]bool)
-	volumeClaimMap := make(map[string]bool)
+	//attachedTo edges
+	secretMap := make(map[string]struct{})
+	configmapMap := make(map[string]struct{})
+	volumeClaimMap := make(map[string]struct{})
 
 	for _, container := range p.Pod.Spec.Containers {
 		for _, envVal := range container.Env {
 			if envVal.ValueFrom != nil {
-				//If the env variable is a secret, add it to the map if it is not there
 				if envVal.ValueFrom.SecretKeyRef != nil {
-					secretName := envVal.ValueFrom.SecretKeyRef.Name
-					//Check if the secretName already exists in secretMap
-					if !secretMap[secretName] {
-						secretMap[secretName] = true
-					}
-					//If the env variable is a ConfigMap, add it to the map if it is not there
+					secretMap[envVal.ValueFrom.SecretKeyRef.Name] = struct{}{}
 				} else if envVal.ValueFrom.ConfigMapKeyRef != nil {
-					configMapName := envVal.ValueFrom.ConfigMapKeyRef.Name
-					if !configmapMap[configMapName] {
-						configmapMap[configMapName] = true
-					}
+					configmapMap[envVal.ValueFrom.ConfigMapKeyRef.Name] = struct{}{}
 				}
 			}
 		}
 	}
 	for _, volume := range p.Pod.Spec.Volumes {
 		if volume.Secret != nil {
-			secretName := volume.Secret.SecretName
-			if !secretMap[secretName] {
-				secretMap[secretName] = true
-			}
+			secretMap[volume.Secret.SecretName] = struct{}{}
 		} else if volume.ConfigMap != nil {
-			configMapName := volume.ConfigMap.Name
-			if !configmapMap[configMapName] {
-				configmapMap[configMapName] = true
-			}
+			configmapMap[volume.ConfigMap.Name] = struct{}{}
 		} else if volume.PersistentVolumeClaim != nil {
-			volumeClaimName := volume.PersistentVolumeClaim.ClaimName
-			if !volumeClaimMap[volumeClaimName] {
-				volumeClaimMap[volumeClaimName] = true
-			}
+			volumeClaimMap[volume.PersistentVolumeClaim.ClaimName] = struct{}{}
 		}
-	}
-	var secrets []string
-	for secret := range secretMap {
-		secrets = append(secrets, secret)
-	}
-	var configmaps []string
-	for configmap := range configmapMap {
-		configmaps = append(configmaps, configmap)
-	}
-	var volumeClaims []string
-	for volumeClaim := range volumeClaimMap {
-		volumeClaims = append(volumeClaims, volumeClaim)
 	}
 
 	// Inner function used to get all edges for a specific destKind - the propLists are lists of resource names
-	edgesByDestinationName := func(propList []string, destKind string) []Edge {
+	edgesByDestinationName := func(propSet map[string]struct{}, destKind string) []Edge {
 		attachedToEdges := []Edge{}
-		if len(propList) > 0 {
-			for _, name := range propList {
-				if _, ok := ns.ByKindNamespaceName[destKind][nameSpace][name]; ok {
-					attachedToEdges = append(attachedToEdges, Edge{
-						SourceUID: UID,
-						DestUID:   ns.ByKindNamespaceName[destKind][nameSpace][name].UID,
-						EdgeType:  "attachedTo",
-					})
+		for name := range propSet {
+			if _, ok := ns.ByKindNamespaceName[destKind][nameSpace][name]; ok {
+				attachedToEdges = append(attachedToEdges, Edge{
+					SourceUID: UID,
+					DestUID:   ns.ByKindNamespaceName[destKind][nameSpace][name].UID,
+					EdgeType:  "attachedTo",
+				})
 
-				} else {
-					glog.V(2).Infof("Pod %s attachedTo edge not created: %s %s not found", p.GetNamespace()+"/"+p.GetName(), destKind, nameSpace+"/"+name)
-				}
+			} else {
+				glog.V(2).Infof("Pod %s attachedTo edge not created: %s %s not found", p.GetNamespace()+"/"+p.GetName(), destKind, nameSpace+"/"+name)
 			}
 		}
+
 		return attachedToEdges
 	}
-	ret = append(ret, edgesByDestinationName(secrets, "Secret")...)
-	ret = append(ret, edgesByDestinationName(configmaps, "ConfigMap")...)
-	ret = append(ret, edgesByDestinationName(volumeClaims, "PersistentVolumeClaim")...)
+	ret = append(ret, edgesByDestinationName(secretMap, "Secret")...)
+	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap")...)
+	ret = append(ret, edgesByDestinationName(volumeClaimMap, "PersistentVolumeClaim")...)
 
 	//runsOn edges
 	if p.Pod.Spec.NodeName != "" {
