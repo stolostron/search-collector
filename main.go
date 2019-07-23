@@ -134,6 +134,17 @@ func main() {
 			},
 		}
 		reconciler.Input <- ne
+
+		if tr.IsHelmRelease(resource) {
+			releaseNE := tr.NodeEvent{
+				Time:      time.Now().Unix(),
+				Operation: tr.Delete,
+				Node: tr.Node{
+					UID: tr.GetHelmReleaseUID(resource.GetLabels()["NAME"]),
+				},
+			}
+			reconciler.Input <- releaseNE
+		}
 	}
 
 	stoppers := make(map[schema.GroupVersionResource]chan struct{}) // We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.

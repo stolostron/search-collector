@@ -287,7 +287,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)
 
-		if isHelmRelease(event.Resource) {
+		if IsHelmRelease(event.Resource) {
 			typedResource := core.ConfigMap{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -302,7 +302,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm
 }
 
 //	If the resource is a ConfigMap with label "OWNER:TILLER", it references a Helm Release
-func isHelmRelease(resource *unstructured.Unstructured) bool {
+func IsHelmRelease(resource *unstructured.Unstructured) bool {
 	if kind := resource.GetKind(); kind == "ConfigMap" {
 		for label, value := range resource.GetLabels() {
 			if label == "OWNER" && value == "TILLER" {
