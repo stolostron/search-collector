@@ -132,10 +132,9 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 		if _, ok := ns.ByKindNamespaceName[resource.Kind][h.GetNamespace()][resource.Name]; ok {
 			edges = append(edges, Edge{
 				SourceUID: ns.ByKindNamespaceName[resource.Kind][h.GetNamespace()][resource.Name].UID,
-				DestUID:   GetHelmReleaseUID(resource.Name),
+				DestUID:   GetHelmReleaseUID(h.GetLabels()["NAME"]),
 				EdgeType:  "ownedBy",
 			})
-
 		} else {
 			glog.V(2).Infof("%s %s edge ownedBy Helm Release %s not created: not found", resource.Kind, resource.Name, h.GetLabels()["NAME"])
 		}
