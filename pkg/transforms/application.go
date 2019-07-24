@@ -9,6 +9,8 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
+	"strings"
+
 	v1 "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 )
 
@@ -28,6 +30,27 @@ func (a ApplicationResource) BuildNode() Node {
 }
 
 func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
-	//no op for now to implement interface
-	return []Edge{}
+	ret := []Edge{}
+	UID := prefixedUID(a.UID)
+
+	//glog.Info("Annotations: ", a.ObjectMeta.Annotations)
+	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, EdgeType: "contains", Kind: a.Kind, Name: a.Name}
+
+	if len(a.GetAnnotations()["apps.ibm.com/deployables"]) > 0 {
+		deployableMap := make(map[string]struct{})
+		for _, deployable := range strings.Split(a.GetAnnotations()["apps.ibm.com/deployables"], ",") {
+			deployableMap[deployable] = struct{}{}
+		}
+		ret = append(ret, edgesByDestinationName(deployableMap, ret, "Deployable", nodeInfo, ns)...)
+	}
+
+	if len(a.GetAnnotations()["apps.ibm.com/placementbindings"]) > 0 {
+		placementbindingMap := make(map[string]struct{})
+		for _, placementbinding := range strings.Split(a.GetAnnotations()["apps.ibm.com/placementbindings"], ",") {
+			placementbindingMap[placementbinding] = struct{}{}
+		}
+		ret = append(ret, edgesByDestinationName(placementbindingMap, ret, "PlacementBinding", nodeInfo, ns)...)
+	}
+
+	return ret
 }

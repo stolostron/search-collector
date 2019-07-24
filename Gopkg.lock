@@ -34,6 +34,14 @@
   version = "2.19.0"
 
 [[projects]]
+  digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
+  name = "github.com/blang/semver"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ba2c2ddd89069b46a7011d4106f6868f17ee1705"
+  version = "v3.6.1"
+
+[[projects]]
   digest = "1:ec66ad050342a3573ed2f5a4337d51b4c6d5d2a717cc6c9ecf86b081235a5759"
   name = "github.com/cyphar/filepath-securejoin"
   packages = ["."]
@@ -228,6 +236,18 @@
   version = "1.0.1"
 
 [[projects]]
+  digest = "1:66c50fc6179aae05bfbde10245a724c8a0fcc56c04e8bb38b064a6f8876f09df"
+  name = "github.com/operator-framework/operator-lifecycle-manager"
+  packages = [
+    "pkg/api/apis/operators",
+    "pkg/api/apis/operators/v1alpha1",
+    "pkg/lib/version",
+  ]
+  pruneopts = "UT"
+  revision = "b8a4faf68e36feb6d99a6aec623b405e587b17b1"
+  version = "0.10.1"
+
+[[projects]]
   branch = "master"
   digest = "1:3bf17a6e6eaa6ad24152148a631d18662f7212e21637c2699bff3369b7f00fa2"
   name = "github.com/petar/GoLLRB"
@@ -266,6 +286,22 @@
   pruneopts = "UT"
   revision = "e83209aed2d171bab5ffb312a1e630110481cb99"
   version = "1.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:0aca96c85b6ac44dedd56d8e381d5e438d2b1b1884d9dc1c0dee01b1483db6f2"
+  name = "github.ibm.com/IBMMulticloudPlatform/channel"
+  packages = ["pkg/apis/app/v1alpha1"]
+  pruneopts = "UT"
+  revision = "fba487df3771b86b53bd8f3c9da367238dc5d3f3"
+
+[[projects]]
+  branch = "master"
+  digest = "1:36e521903c98006b787ca48c02e37d31fe4e671020f5d558f51936b6f66cff20"
+  name = "github.ibm.com/IBMMulticloudPlatform/placementrule"
+  packages = ["pkg/apis/app/v1alpha1"]
+  pruneopts = "UT"
+  revision = "c442cf3376bbd7bebcaf86ffc8e6ab63491e59a3"
 
 [[projects]]
   branch = "master"
@@ -521,7 +557,7 @@
   revision = "2af94a2a482fcef53a8c24b7817ecb4ecdc450f8"
 
 [[projects]]
-  digest = "1:9319e18416e200598ec28ed5fe0e32d58f75f01771bebd457d46aaa20b984fba"
+  digest = "1:1960485a3d1b234ae30e76813a2cef31bf93ad036d9891a0e9b52e70b136a400"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -552,16 +588,19 @@
     "pkg/util/framer",
     "pkg/util/intstr",
     "pkg/util/json",
+    "pkg/util/mergepatch",
     "pkg/util/naming",
     "pkg/util/net",
     "pkg/util/runtime",
     "pkg/util/sets",
+    "pkg/util/strategicpatch",
     "pkg/util/validation",
     "pkg/util/validation/field",
     "pkg/util/wait",
     "pkg/util/yaml",
     "pkg/version",
     "pkg/watch",
+    "third_party/forked/golang/json",
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
@@ -569,7 +608,7 @@
   version = "kubernetes-1.12.3"
 
 [[projects]]
-  digest = "1:d4a9589e7f384dfb7575388e8bad5f104803b63b479fab24d1af2e9ad04d4eb4"
+  digest = "1:e33c4cefa7a959066dfba21494826d1c793a0ec1f9d34af79e38ce2a773cfcf4"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -695,6 +734,7 @@
     "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
+    "tools/record",
     "tools/reference",
     "transport",
     "util/buffer",
@@ -743,6 +783,14 @@
   version = "v2.13.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:22abb5d4204ab1a0dcc9cda64906a31c43965ff5159e8b9f766c9d2a162dbed5"
+  name = "k8s.io/kube-openapi"
+  packages = ["pkg/util/proto"]
+  pruneopts = "UT"
+  revision = "5e22f3d471e6f24ca20becfdffdc6206c7cecac8"
+
+[[projects]]
   digest = "1:84a8609383bec11b71d52dd813f33f1d16614b91966940bdc2aa79bea864fa25"
   name = "sigs.k8s.io/controller-runtime"
   packages = ["pkg/runtime/scheme"]
@@ -759,7 +807,10 @@
     "github.com/golang/protobuf/ptypes",
     "github.com/hashicorp/go-version",
     "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
+    "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1",
     "github.com/tkanos/gonfig",
+    "github.ibm.com/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1",
+    "github.ibm.com/IBMMulticloudPlatform/placementrule/pkg/apis/app/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1",

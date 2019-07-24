@@ -122,7 +122,6 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	//ownedBy edge
 	ownerUID := ""
 	UID := prefixedUID(p.Pod.UID)
-	nameSpace := p.Pod.Namespace
 
 	// Find the resource's owner. Resources can have multiple ownerReferences, but only one controller.
 	for _, ref := range p.Pod.OwnerReferences {
@@ -171,27 +170,11 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 		}
 	}
 
-	// Inner function used to get all edges for a specific destKind - the propLists are lists of resource names
-	edgesByDestinationName := func(propSet map[string]struct{}, destKind string) []Edge {
-		attachedToEdges := []Edge{}
-		for name := range propSet {
-			if _, ok := ns.ByKindNamespaceName[destKind][nameSpace][name]; ok {
-				attachedToEdges = append(attachedToEdges, Edge{
-					SourceUID: UID,
-					DestUID:   ns.ByKindNamespaceName[destKind][nameSpace][name].UID,
-					EdgeType:  "attachedTo",
-				})
-
-			} else {
-				glog.V(2).Infof("Pod %s attachedTo edge not created: %s %s not found", p.GetNamespace()+"/"+p.GetName(), destKind, nameSpace+"/"+name)
-			}
-		}
-
-		return attachedToEdges
-	}
-	ret = append(ret, edgesByDestinationName(secretMap, "Secret")...)
-	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap")...)
-	ret = append(ret, edgesByDestinationName(volumeClaimMap, "PersistentVolumeClaim")...)
+	nodeInfo := NodeInfo{NameSpace: p.Namespace, UID: UID, EdgeType: "attachedTo", Kind: p.Kind}
+	//Create all 'attachedTo' edges between pod and nodes of a specific kind(secrets, configmaps, volumeClaims)
+	ret = append(ret, edgesByDestinationName(secretMap, ret, "Secret", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(configmapMap, ret, "ConfigMap", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(volumeClaimMap, ret, "PersistentVolumeClaim", nodeInfo, ns)...)
 
 	//runsOn edges
 	if p.Pod.Spec.NodeName != "" {

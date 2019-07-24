@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -103,4 +104,45 @@ func (u UnstructuredResource) BuildEdges(ns NodeStore) []Edge {
 // Prefixes the given UID with the cluster name from config and a /
 func prefixedUID(uid apiTypes.UID) string {
 	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
+}
+
+type NodeInfo struct {
+	EdgeType
+	Name, NameSpace, UID, Kind string
+}
+
+// Function used to get all edges for a specific destKind - the propLists are lists of resource names, nodeInfo has additional info about the node and nodestore has all the current nodes
+func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge, destKind string, nodeInfo NodeInfo, ns NodeStore) []Edge {
+
+	if len(propSet) > 0 {
+		for name := range propSet {
+			// For channels, get the channel namespace and name from each string
+			if destKind == "Channel" {
+				channelInfo := strings.Split(name, "/")
+				nodeInfo.NameSpace = channelInfo[0]
+				name = channelInfo[1]
+			}
+			//glog.Info("Source: ", nodeInfo.Kind, "/", nodeInfo.Name)
+			if _, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
+				attachedToEdges = append(attachedToEdges, Edge{
+					SourceUID: nodeInfo.UID,
+					DestUID:   ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name].UID,
+					EdgeType:  nodeInfo.EdgeType,
+				})
+			} else {
+				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
+			}
+		}
+		// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
+		// Call the edgesByOwner recursively to create the uses edge
+		if nextSrc, ok := ns.ByUID[nodeInfo.UID]; ok {
+			if nextSrc.Properties["_ownerUID"] != nil {
+				nodeInfo.UID = nextSrc.Properties["_ownerUID"].(string)
+				nodeInfo.Kind = ns.ByUID[nextSrc.Properties["_ownerUID"].(string)].Properties["kind"].(string)
+				nodeInfo.EdgeType = "uses"
+				attachedToEdges = append(attachedToEdges, edgesByDestinationName(propSet, attachedToEdges, destKind, nodeInfo, ns)...)
+			}
+		}
+	}
+	return attachedToEdges
 }

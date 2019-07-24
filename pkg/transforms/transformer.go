@@ -13,6 +13,8 @@ import (
 
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
+	subscription "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	mcmapp "github.ibm.com/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1"
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
@@ -154,6 +156,14 @@ func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm
 			}
 			trans = ApplicationRelationshipResource{&typedResource}
 
+		case "Channel":
+			typedResource := mcmapp.Channel{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = ChannelResource{&typedResource}
+
 		case "Compliance":
 			typedResource := com.Compliance{}
 			err = json.Unmarshal(j, &typedResource)
@@ -281,6 +291,15 @@ func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = StatefulSetResource{&typedResource}
+
+		case "Subscription":
+			typedResource := subscription.Subscription{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = SubscriptionResource{&typedResource}
+
 		default:
 			trans = UnstructuredResource{event.Resource}
 		}
