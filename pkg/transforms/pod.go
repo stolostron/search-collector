@@ -119,36 +119,24 @@ func (pod PodResource) BuildNode() Node {
 func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	ret := make([]Edge, 0, 8)
 
-	//ownedBy edge
-	ownerUID := ""
-	UID := prefixedUID(p.Pod.UID)
+	UID := prefixedUID(p.UID)
+	podNode := ns.ByUID[UID]
 
-	// Find the resource's owner. Resources can have multiple ownerReferences, but only one controller.
-	for _, ref := range p.Pod.OwnerReferences {
-		if *ref.Controller {
-			ownerUID = prefixedUID(ref.UID) // TODO prefix with clustername
-			continue
-		}
-	}
-
-	//Lookup by UID to see if the owner Node exists
-	if ownerUID != "" {
-		if _, ok := ns.ByUID[ownerUID]; ok {
-			ret = append(ret, Edge{
-				SourceUID: UID,
-				DestUID:   ownerUID,
-				EdgeType:  "ownedBy",
-			})
-		} else {
-			glog.V(2).Infof("Pod %s ownedBy edge not created: ownerUID %s not found", p.GetNamespace()+"/"+p.GetName(), ownerUID)
-		}
+	nodeInfo := NodeInfo{Name: p.Name, NameSpace: p.Namespace, UID: UID, EdgeType: "ownedBy", Kind: p.Kind}
+	//ownedBy edges
+	if podNode.OwnerUID != "" {
+		ret = append(ret, edgesByOwner(podNode.OwnerUID, ret, ns, nodeInfo)...)
 	}
 
 	//attachedTo edges
+	nodeInfo.EdgeType = "attachedTo"
+
 	secretMap := make(map[string]struct{})
 	configmapMap := make(map[string]struct{})
 	volumeClaimMap := make(map[string]struct{})
+	volumeMap := make(map[string]struct{})
 
+	// Parse the pod's spec to create a list of all the secrets, configmaps and volumes it is attached to
 	for _, container := range p.Pod.Spec.Containers {
 		for _, envVal := range container.Env {
 			if envVal.ValueFrom != nil {
@@ -166,19 +154,26 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 		} else if volume.ConfigMap != nil {
 			configmapMap[volume.ConfigMap.Name] = struct{}{}
 		} else if volume.PersistentVolumeClaim != nil {
-			volumeClaimMap[volume.PersistentVolumeClaim.ClaimName] = struct{}{}
+			volumeClaimName := volume.PersistentVolumeClaim.ClaimName
+			volumeClaimMap[volumeClaimName] = struct{}{}
+			if pvClaimNode, ok := ns.ByKindNamespaceName["PersistentVolumeClaim"][nodeInfo.NameSpace][volumeClaimName]; ok {
+				if volName, ok := pvClaimNode.Properties["volumeName"].(string); ok && pvClaimNode.Properties["volumeName"] != "" {
+					volumeMap[volName] = struct{}{}
+				}
+			}
 		}
 	}
 
-	nodeInfo := NodeInfo{NameSpace: p.Namespace, UID: UID, EdgeType: "attachedTo", Kind: p.Kind}
-	//Create all 'attachedTo' edges between pod and nodes of a specific kind(secrets, configmaps, volumeClaims)
+	//Create all 'attachedTo' edges between pod and nodes of a specific kind(secrets, configmaps, volumeClaims, volumes)
 	ret = append(ret, edgesByDestinationName(secretMap, ret, "Secret", nodeInfo, ns)...)
 	ret = append(ret, edgesByDestinationName(configmapMap, ret, "ConfigMap", nodeInfo, ns)...)
 	ret = append(ret, edgesByDestinationName(volumeClaimMap, ret, "PersistentVolumeClaim", nodeInfo, ns)...)
+	nodeInfo.NameSpace = "_NONE"
+	ret = append(ret, edgesByDestinationName(volumeMap, ret, "PersistentVolume", nodeInfo, ns)...)
 
 	//runsOn edges
-	if p.Pod.Spec.NodeName != "" {
-		nodeName := p.Pod.Spec.NodeName
+	if p.Spec.NodeName != "" {
+		nodeName := p.Spec.NodeName
 		if _, ok := ns.ByKindNamespaceName["Node"]["_NONE"][nodeName]; ok {
 			ret = append(ret, Edge{
 				SourceUID: UID,

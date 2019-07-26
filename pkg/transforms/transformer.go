@@ -49,6 +49,7 @@ type Node struct {
 	UID            string                 `json:"uid"`
 	ResourceString string                 `json:"resourceString"`
 	Properties     map[string]interface{} `json:"properties"`
+	OwnerUID       string                 `json:"ownerUID"` //TODO: Convert to map if we need to refer to additional metadata for a node. Currently, we retrieve only the OwnerUID
 }
 
 // These are the input to the sender. They have the node, and then they keep the time which is used for reconciling this version with other versions that the sender may already have.
@@ -235,6 +236,14 @@ func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PersistentVolumeResource{&typedResource}
+
+		case "PersistentVolumeClaim":
+			typedResource := core.PersistentVolumeClaim{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = PersistentVolumeClaimResource{&typedResource}
 
 		case "PlacementBinding":
 			typedResource := mcm.PlacementBinding{}

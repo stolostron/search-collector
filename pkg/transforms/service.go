@@ -43,11 +43,12 @@ func (service ServiceResource) BuildNode() Node {
 }
 
 func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
-	nameSpace := s.Namespace
-
 	serviceSelector := s.Spec.Selector
-	pods := ns.ByKindNamespaceName["Pod"][nameSpace]
+	// TODO future: Match a pod in another namespace , but config will be different in those cases.
+	pods := ns.ByKindNamespaceName["Pod"][s.Namespace]
+	nodeInfo := NodeInfo{Name: s.Name, NameSpace: s.Namespace, UID: prefixedUID(s.UID), EdgeType: "usedBy", Kind: s.Kind}
 
+	//Inner function to match the service and pod labels
 	match := func(podLabels, serviceSelector map[string]string) bool {
 		for selKey, selVal := range serviceSelector {
 			if podVal, ok := podLabels[selKey]; podVal != selVal || !ok {
@@ -56,17 +57,14 @@ func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
 		}
 		return true
 	}
+
+	//usedBy edges
 	ret := []Edge{}
 	for _, p := range pods {
 		if podLabels, ok := p.Properties["label"].(map[string]string); ok {
 			if match(podLabels, serviceSelector) {
-				ret = append(ret, Edge{
-					SourceUID: prefixedUID(s.UID),
-					DestUID:   p.UID,
-					EdgeType:  "selects",
-				})
+				ret = append(ret, edgesByOwner(p.UID, ret, ns, nodeInfo)...)
 			}
-
 		}
 	}
 	return ret

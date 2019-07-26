@@ -9,7 +9,6 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	"github.com/golang/glog"
 	v1 "k8s.io/api/apps/v1"
 )
 
@@ -34,29 +33,13 @@ func (r ReplicaSetResource) BuildNode() Node {
 
 func (r ReplicaSetResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
-
-	//ownedBy edge
-	ownerUID := ""
 	UID := prefixedUID(r.ReplicaSet.UID)
+	rsNode := ns.ByUID[UID]
+	nodeInfo := NodeInfo{Name: r.Name, NameSpace: r.Namespace, UID: UID, EdgeType: "ownedBy", Kind: r.Kind}
 
-	// Find the resource's owner. Resources can have multiple ownerReferences, but only one controller.
-	for _, ref := range r.ReplicaSet.OwnerReferences {
-
-		if *ref.Controller {
-			ownerUID = prefixedUID(ref.UID) // TODO prefix with clustername
-			continue
-		}
+	//ownedBy edges
+	if rsNode.OwnerUID != "" {
+		ret = append(ret, edgesByOwner(rsNode.OwnerUID, ret, ns, nodeInfo)...)
 	}
-	//Check if node referred to by ownerUID exists
-	if _, ok := ns.ByUID[ownerUID]; ok {
-		ret = append(ret, Edge{
-			SourceUID: UID,
-			DestUID:   ownerUID,
-			EdgeType:  "ownedBy",
-		})
-	} else {
-		glog.Infof("ownedBy edge not created as node with ownerUID %s doesn't exist.", ownerUID)
-	}
-
 	return ret
 }
