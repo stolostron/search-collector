@@ -10,6 +10,7 @@ package transforms
 
 import (
 	"encoding/json"
+	"runtime/debug"
 
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
@@ -363,6 +364,7 @@ func handleRoutineExit(input chan *Event, output chan NodeEvent, helmClient *hel
 	// Recover and check the value. If we are here because of a panic, something will be in it.
 	if r := recover(); r != nil { // Case where we got here from a panic
 		glog.Errorf("Error in transformer routine: %v\n", r)
+		glog.Error(string(debug.Stack()))
 
 		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
 		go transformRoutine(input, output, helmClient)
