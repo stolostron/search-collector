@@ -112,7 +112,7 @@ func prefixedUID(uid apiTypes.UID) string {
 func ownerRefUID(ownerReferences []machineryV1.OwnerReference) string {
 	ownerUID := ""
 	for _, ref := range ownerReferences {
-		if *ref.Controller {
+		if ref.Controller != nil && *ref.Controller {
 			ownerUID = prefixedUID(ref.UID)
 			continue
 		}

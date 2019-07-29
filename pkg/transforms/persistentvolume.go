@@ -52,7 +52,7 @@ func (p PersistentVolumeResource) BuildNode() Node {
 
 	if p.Spec.Local != nil {
 		node.Properties["path"] = p.Spec.Local.Path
-	} else {
+	} else if p.Spec.HostPath != nil {
 		node.Properties["path"] = p.Spec.HostPath.Path
 	}
 

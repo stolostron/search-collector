@@ -23,7 +23,9 @@ func (p PersistentVolumeClaimResource) BuildNode() Node {
 	node.Properties["kind"] = "PersistentVolumeClaim"
 	node.Properties["status"] = string(p.Status.Phase)
 	node.Properties["volumeName"] = string(p.Spec.VolumeName)
-	node.Properties["storageClassName"] = *p.Spec.StorageClassName
+	if p.Spec.StorageClassName != nil {
+		node.Properties["storageClassName"] = *p.Spec.StorageClassName
+	}
 	node.Properties["capacity"] = ""
 	storage, ok := p.Status.Capacity["storage"]
 	if ok {
