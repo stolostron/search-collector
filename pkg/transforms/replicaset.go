@@ -38,8 +38,8 @@ func (r ReplicaSetResource) BuildEdges(ns NodeStore) []Edge {
 	nodeInfo := NodeInfo{Name: r.Name, NameSpace: r.Namespace, UID: UID, EdgeType: "ownedBy", Kind: r.Kind}
 
 	//ownedBy edges
-	if rsNode.OwnerUID != "" {
-		ret = append(ret, edgesByOwner(rsNode.OwnerUID, ret, ns, nodeInfo)...)
+	if rsNode.GetMetadata("OwnerUID") != "" {
+		ret = append(ret, edgesByOwner(rsNode.GetMetadata("OwnerUID"), ret, ns, nodeInfo)...)
 	}
 	return ret
 }

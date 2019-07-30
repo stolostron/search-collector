@@ -36,6 +36,7 @@ func (h HelmReleaseResource) BuildNode() Node {
 	node := Node{
 		UID:        GetHelmReleaseUID(releaseName),
 		Properties: make(map[string]interface{}),
+		Metadata:   make(map[string]string),
 	}
 	node.Properties["kind"] = "Release"
 	node.Properties["name"] = releaseName
@@ -129,6 +130,10 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 	edges := []Edge{}
 
 	for _, resource := range smr {
+		resourceNode := ns.ByKindNamespaceName[resource.Kind][h.GetNamespace()][resource.Name]
+		if resourceNode.Metadata != nil { // Metadata can be nil if no node found
+			resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"]) // update node metadata to include release for upstream edge from resource to Release
+		}
 		if _, ok := ns.ByKindNamespaceName[resource.Kind][h.GetNamespace()][resource.Name]; ok {
 			edges = append(edges, Edge{
 				SourceUID: ns.ByKindNamespaceName[resource.Kind][h.GetNamespace()][resource.Name].UID,

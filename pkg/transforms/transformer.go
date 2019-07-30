@@ -50,7 +50,18 @@ type Node struct {
 	UID            string                 `json:"uid"`
 	ResourceString string                 `json:"resourceString"`
 	Properties     map[string]interface{} `json:"properties"`
-	OwnerUID       string                 `json:"ownerUID"` //TODO: Convert to map if we need to refer to additional metadata for a node. Currently, we retrieve only the OwnerUID
+	Metadata       map[string]string
+}
+
+func (n Node) hasMetadata(md string) bool {
+	return n.Metadata != nil && n.Metadata[md] != ""
+}
+
+func (n Node) GetMetadata(md string) string {
+	if n.hasMetadata(md) {
+		return n.Metadata[md]
+	}
+	return ""
 }
 
 // These are the input to the sender. They have the node, and then they keep the time which is used for reconciling this version with other versions that the sender may already have.
@@ -349,7 +360,6 @@ func getReleaseFromHelm(helmClient *helm.Client, releaseName string) *release.Re
 	}
 
 	rc, err := helmClient.ReleaseContent(releaseName)
-
 	if err != nil {
 		glog.Error("Failed to fetch helm release: ", releaseName, err)
 		return nil

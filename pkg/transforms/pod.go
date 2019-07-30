@@ -124,8 +124,8 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 
 	nodeInfo := NodeInfo{Name: p.Name, NameSpace: p.Namespace, UID: UID, EdgeType: "ownedBy", Kind: p.Kind}
 	//ownedBy edges
-	if podNode.OwnerUID != "" {
-		ret = append(ret, edgesByOwner(podNode.OwnerUID, ret, ns, nodeInfo)...)
+	if podNode.GetMetadata("OwnerUID") != "" {
+		ret = append(ret, edgesByOwner(podNode.GetMetadata("OwnerUID"), ret, ns, nodeInfo)...)
 	}
 
 	//attachedTo edges

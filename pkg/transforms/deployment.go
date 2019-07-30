@@ -34,6 +34,5 @@ func (d DeploymentResource) BuildNode() Node {
 }
 
 func (d DeploymentResource) BuildEdges(ns NodeStore) []Edge {
-	//no op for now to implement interface
 	return []Edge{}
 }

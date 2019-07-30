@@ -49,11 +49,13 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 
 // Transforms a resource of unknown type by simply pulling out the common properties.
 func transformCommon(resource machineryV1.Object) Node {
-	return Node{
+	n := Node{
 		UID:        prefixedUID(resource.GetUID()),
-		OwnerUID:   ownerRefUID(resource.GetOwnerReferences()),
 		Properties: commonProperties(resource),
+		Metadata:   make(map[string]string),
 	}
+	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
+	return n
 }
 
 // Extracts the properties from a non-default k8s resource and returns them in a map ready to be put in an Node
@@ -91,11 +93,13 @@ type UnstructuredResource struct {
 }
 
 func (u UnstructuredResource) BuildNode() Node {
-	return Node{
+	n := Node{
 		UID:        prefixedUID(u.GetUID()),
-		OwnerUID:   ownerRefUID(u.GetOwnerReferences()),
 		Properties: unstructuredProperties(u),
+		Metadata:   make(map[string]string),
 	}
+	n.Metadata["OwnerUID"] = ownerRefUID(u.GetOwnerReferences())
+	return n
 }
 
 func (u UnstructuredResource) BuildEdges(ns NodeStore) []Edge {
@@ -136,11 +140,23 @@ func edgesByOwner(destUID string, ownedByEdges []Edge, ns NodeStore, nodeInfo No
 				DestUID:   destUID,
 				EdgeType:  nodeInfo.EdgeType,
 			})
+
+			if dest.GetMetadata("ReleaseUID") != "" { // If owner included/owned by a release...
+				if _, ok := ns.ByUID[dest.GetMetadata("ReleaseUID")]; ok { // ...make sure the release exists...
+					ownedByEdges = append(ownedByEdges, Edge{ // ... then add edge from source to release
+						SourceUID: nodeInfo.UID,
+						DestUID:   dest.GetMetadata("ReleaseUID"),
+						EdgeType:  "ownedBy",
+					})
+				}
+			}
+
 			// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 			// Call the edgesByOwner recursively to create the ownedBy edge
-			if dest.OwnerUID != "" {
-				ownedByEdges = append(ownedByEdges, edgesByOwner(dest.OwnerUID, ownedByEdges, ns, nodeInfo)...)
+			if dest.GetMetadata("OwnerUID") != "" {
+				ownedByEdges = append(ownedByEdges, edgesByOwner(dest.GetMetadata("OwnerUID"), ownedByEdges, ns, nodeInfo)...)
 			}
+
 		} else {
 			glog.V(2).Infof("For %s, %s, %s edge not created: ownerUID %s not found", nodeInfo.Kind, nodeInfo.NameSpace+"/"+nodeInfo.Name, nodeInfo.EdgeType, destUID)
 		}
@@ -175,9 +191,9 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 		// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 		// Call the edgesByOwner recursively to create the uses edge
 		if nextSrc, ok := ns.ByUID[nodeInfo.UID]; ok {
-			if nextSrc.OwnerUID != "" {
-				if nextSrcOwner, ok := ns.ByUID[nextSrc.OwnerUID]; ok {
-					nodeInfo.UID = nextSrc.OwnerUID
+			if nextSrc.GetMetadata("OwnerUID") != "" {
+				if nextSrcOwner, ok := ns.ByUID[nextSrc.GetMetadata("OwnerUID")]; ok {
+					nodeInfo.UID = nextSrc.GetMetadata("OwnerUID")
 					nodeInfo.Kind = nextSrcOwner.Properties["kind"].(string)
 					nodeInfo.EdgeType = "uses"
 					attachedToEdges = append(attachedToEdges, edgesByDestinationName(propSet, attachedToEdges, destKind, nodeInfo, ns)...)
