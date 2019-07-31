@@ -175,6 +175,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		glog.Error("httpClient error: ", err)
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -216,6 +217,7 @@ func (s *Sender) Sync() error {
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
 		err := s.send(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
+			glog.Error("Sync sender error. ", err)
 			return err
 		}
 
@@ -242,6 +244,7 @@ func (s *Sender) Sync() error {
 		glog.Warning("Retrying with complete payload")
 		err := s.send(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
+			glog.Error("Error resending complete payload.")
 			s.lastSentTime = -1 // If this retry fails, we want to start over with a complete payload next time, so we reset as if we've not sent anything before.
 			return err
 		}
