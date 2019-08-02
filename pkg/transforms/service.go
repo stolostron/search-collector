@@ -44,6 +44,10 @@ func (service ServiceResource) BuildNode() Node {
 
 func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
 	serviceSelector := s.Spec.Selector
+
+	if serviceSelector == nil {
+		return []Edge{}
+	}
 	// TODO future: Match a pod in another namespace , but config will be different in those cases.
 	pods := ns.ByKindNamespaceName["Pod"][s.Namespace]
 	nodeInfo := NodeInfo{Name: s.Name, NameSpace: s.Namespace, UID: prefixedUID(s.UID), EdgeType: "usedBy", Kind: s.Kind}
