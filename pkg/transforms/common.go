@@ -44,6 +44,13 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	if resource.GetNamespace() != "" {
 		ret["namespace"] = resource.GetNamespace()
 	}
+
+	if resource.GetAnnotations()["app.ibm.com/hosting-subscription"] != "" {
+		ret["_app.ibm.com/hosting-subscription"] = resource.GetAnnotations()["app.ibm.com/hosting-subscription"]
+	}
+	if resource.GetAnnotations()["app.ibm.com/hosting-deployable"] != "" {
+		ret["_app.ibm.com/hosting-deployable"] = resource.GetAnnotations()["app.ibm.com/hosting-deployable"]
+	}
 	return ret
 }
 
@@ -83,6 +90,12 @@ func unstructuredProperties(resource UnstructuredResource) map[string]interface{
 	}
 	if resource.GetNamespace() != "" {
 		ret["namespace"] = resource.GetNamespace()
+	}
+	if resource.GetAnnotations()["app.ibm.com/hosting-subscription"] != "" {
+		ret["_app.ibm.com/hosting-subscription"] = resource.GetAnnotations()["app.ibm.com/hosting-subscription"]
+	}
+	if resource.GetAnnotations()["app.ibm.com/hosting-deployable"] != "" {
+		ret["_app.ibm.com/hosting-deployable"] = resource.GetAnnotations()["app.ibm.com/hosting-deployable"]
 	}
 	return ret
 
