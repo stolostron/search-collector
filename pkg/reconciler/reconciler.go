@@ -187,13 +187,10 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
 	}
 
-	totalEdges := 0
-
 	// Loop across all the nodes and build their edges.
 	for uid, ef := range r.edgeFuncs {
 		glog.V(3).Infof("Calculating edges UID: %s", uid)
 		edges := ef(ns) // Get edges from this specific node
-		totalEdges += len(edges)
 
 		for _, edge := range edges {
 			if _, ok := ret[edge.SourceUID]; !ok { // Init if it's not there
@@ -203,6 +200,11 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 		}
 	}
 
+	totalEdges := 0
+	// loop over double map to get the total number we added
+	for _, destUID := range ret {
+		totalEdges += len(destUID)
+	}
 	r.totalEdges = totalEdges
 
 	return ret

@@ -55,7 +55,7 @@ type Deletion struct {
 }
 
 func (p Payload) empty() bool {
-	return len(p.DeletedResources) == 0 && len(p.AddResources) == 0 && len(p.UpdatedResources) == 0
+	return len(p.DeletedResources) == 0 && len(p.AddResources) == 0 && len(p.UpdatedResources) == 0 && len(p.AddEdges) == 0 && len(p.DeleteEdges) == 0
 }
 
 // TODO import this type from the aggregator.
@@ -80,7 +80,7 @@ type SyncResponse struct {
 	DeleteErrors      []SyncError
 	AddEdgeErrors     []SyncError
 	DeleteEdgeErrors  []SyncError
-	version           string
+	Version           string
 }
 
 // TODO import this type from the aggregator.
@@ -197,9 +197,9 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	}
 
 	// compute edges check only if aggregator
-	aggApi, remoteErr := version.NewVersion(r.version)
-	localApi, localErr := version.NewVersion(config.AGGREGATOR_API_VERSION)
-	if remoteErr != nil && localErr != nil && aggApi.GreaterThanOrEqual(localApi) {
+	aggApi, _ := version.NewVersion(r.Version)
+	localApi, _ := version.NewVersion(config.AGGREGATOR_API_VERSION)
+	if aggApi != nil && localApi != nil && aggApi.GreaterThanOrEqual(localApi) {
 		if r.TotalEdges != (expectedTotalEdges + len(r.DeleteEdgeErrors) - len(r.AddEdgeErrors)) {
 			msg := fmt.Sprintf("Aggregator reported wrong number of total intra edges. Expected %d, got %d", expectedTotalEdges, r.TotalEdges)
 			return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
