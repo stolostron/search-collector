@@ -11,20 +11,27 @@ package transforms
 import (
 	"strings"
 
-	operatorv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	app "github.ibm.com/IBMMulticloudPlatform/subscription/pkg/apis/app/v1alpha1"
 )
 
 type SubscriptionResource struct {
-	*operatorv1alpha1.Subscription
+	*app.Subscription
 }
 
 func (s SubscriptionResource) BuildNode() Node {
 	node := transformCommon(s)
 
 	node.Properties["kind"] = "Subscription"
-	node.Properties["package"] = string(s.Spec.Package)
-	node.Properties["status"] = string(s.Status.State)
-
+	if s.Spec.Package != "" {
+		node.Properties["package"] = string(s.Spec.Package)
+	}
+	if s.Spec.PackageFilter.Version != "" {
+		node.Properties["packageFilterVersion"] = string(s.Spec.PackageFilter.Version)
+	}
+	if s.Spec.Channel != "" {
+		node.Properties["channel"] = s.Spec.Channel
+	}
+	//TODO: Add property Status
 	return node
 }
 

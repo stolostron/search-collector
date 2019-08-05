@@ -44,12 +44,12 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 		ret = append(ret, edgesByDestinationName(deployableMap, ret, "Deployable", nodeInfo, ns)...)
 	}
 
-	if len(a.GetAnnotations()["apps.ibm.com/placementbindings"]) > 0 {
-		placementbindingMap := make(map[string]struct{})
-		for _, placementbinding := range strings.Split(a.GetAnnotations()["apps.ibm.com/placementbindings"], ",") {
-			placementbindingMap[placementbinding] = struct{}{}
+	if len(a.GetAnnotations()["app.ibm.com/subscriptions"]) > 0 {
+		subscriptionMap := make(map[string]struct{})
+		for _, subscription := range strings.Split(a.GetAnnotations()["app.ibm.com/subscriptions"], ",") {
+			subscriptionMap[subscription] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(placementbindingMap, ret, "PlacementBinding", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(subscriptionMap, ret, "Subscription", nodeInfo, ns)...)
 	}
 
 	return ret

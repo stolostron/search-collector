@@ -14,8 +14,8 @@ import (
 
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
-	subscription "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	mcmapp "github.ibm.com/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1"
+	subscription "github.ibm.com/IBMMulticloudPlatform/subscription/pkg/apis/app/v1alpha1"
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
