@@ -23,16 +23,18 @@ const CACHE_SIZE = 500
 // Public type for the complete state of the system.
 // Looks a little different than the format of reconciler's internal state because this is friendlier for outside use by other packages
 type CompleteState struct {
-	Nodes []tr.Node // All the nodes
-	Edges []tr.Edge // All the edges
+	Nodes                  []tr.Node // All the nodes
+	Edges                  []tr.Edge // All the edges
+	TotalNodes, TotalEdges int
 }
 
 // Public type for the diff state of the system since the previous.
 // Looks a little different than the format of reconciler's internal state because this is friendlier for outside use by other packages
 type Diff struct {
-	AddNodes, UpdateNodes []tr.Node // Nodes to be added or updated
-	DeleteNodes           []string  // UIDs of nodes to be deleted
-	AddEdges, DeleteEdges []tr.Edge // Edges to be added or deleted
+	AddNodes, UpdateNodes  []tr.Node // Nodes to be added or updated
+	DeleteNodes            []string  // UIDs of nodes to be deleted
+	AddEdges, DeleteEdges  []tr.Edge // Edges to be added or deleted
+	TotalNodes, TotalEdges int
 }
 
 // Create mapping with kind, namespace, and name as keys, and the Node itself as the value.
@@ -143,6 +145,9 @@ func (r *Reconciler) Diff() Diff {
 	r.previousEdges = newEdges
 
 	r.resetDiffs()
+
+	ret.TotalNodes = len(r.currentNodes)
+	ret.TotalEdges = r.totalEdges
 	return ret
 }
 
@@ -173,6 +178,9 @@ func (r *Reconciler) Complete() CompleteState {
 	r.previousEdges = newEdges
 
 	r.resetDiffs()
+
+	ret.TotalNodes = len(r.currentNodes)
+	ret.TotalEdges = r.totalEdges
 	return ret
 }
 
@@ -208,21 +216,6 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 	r.totalEdges = totalEdges
 
 	return ret
-}
-
-// Returns the total number of resources known to the reconciler at this particular moment
-// Pretty sure the lock isn't necessary, but not COMPLETELY sure.
-func (r *Reconciler) ResourceCount() int {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	return len(r.currentNodes)
-}
-
-// Retruns the total number of intra edges on a cluster
-func (r *Reconciler) EdgeCount() int {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	return r.totalEdges
 }
 
 // This method takes a channel and constantly receives from it, reconciling the input with whatever is currently stored.
@@ -268,9 +261,9 @@ func (r *Reconciler) reconcileNode() {
 			delete(r.diffNodes, ne.UID) // Otherwise no need to send a payload, just remove from local memory
 		}
 	} else { // This is either an update or create, which look very similar. TODO actually combine the two.
-		op := tr.Create
+		ne.Operation = tr.Create
 		if inPrevious { // If this was in the previous, our operation for diffs is update, not create
-			op = tr.Update
+			ne.Operation = tr.Update
 
 			// skip updates if new event is redundant to our previous state (a property that we don't care about triggered an update)
 			if reflect.DeepEqual(ne.Node, previousNode) {
@@ -279,7 +272,6 @@ func (r *Reconciler) reconcileNode() {
 		}
 		r.currentNodes[ne.UID] = ne.Node
 		r.edgeFuncs[ne.UID] = ne.ComputeEdges
-		ne.Operation = op
 		r.diffNodes[ne.UID] = ne
 	}
 }
@@ -289,8 +281,6 @@ func (r *Reconciler) reconcileNode() {
 func (r *Reconciler) resetDiffs() {
 	r.diffNodes = make(map[string]tr.NodeEvent) // We have to reset the diff every time we try to prepare something to send, so that it doesn't get out of sync with the complete/old.
 	r.previousNodes = make(map[string]tr.Node, len(r.currentNodes))
-
-	r.previousNodes = r.currentNodes
 
 	for uid, node := range r.currentNodes {
 		r.previousNodes[uid] = node

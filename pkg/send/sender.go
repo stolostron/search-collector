@@ -84,7 +84,7 @@ type SyncResponse struct {
 }
 
 // TODO import this type from the aggregator.
-// SyncError is used to respond whith errors.
+// SyncError is used to respond with errors.
 type SyncError struct {
 	ResourceUID string
 	Message     string
@@ -135,11 +135,12 @@ func (s *Sender) diffPayload() (Payload, int, int) {
 		DeleteEdges: diff.DeleteEdges,
 	}
 
-	for _, uid := range diff.DeleteNodes {
-		payload.DeletedResources = append(payload.DeletedResources, Deletion{uid})
+	// DeletedResources was allocated with len of DeltedNode so we can copy via indexing
+	for i, uid := range diff.DeleteNodes {
+		payload.DeletedResources[i] = Deletion{uid}
 	}
 
-	return payload, s.rec.ResourceCount(), s.rec.EdgeCount()
+	return payload, diff.TotalNodes, diff.TotalEdges
 }
 
 // Returns a payload and expected total resources, containing the complete set of resources as they currently exist in this cluster
@@ -156,7 +157,7 @@ func (s *Sender) completePayload() (Payload, int, int) {
 
 		AddEdges: complete.Edges,
 	}
-	return payload, s.rec.ResourceCount(), s.rec.EdgeCount()
+	return payload, complete.TotalNodes, complete.TotalEdges
 }
 
 // Sends data to the aggregator and returns an error if it didn't work.
