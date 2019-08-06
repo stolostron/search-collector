@@ -36,6 +36,10 @@ func (j JobResource) BuildNode() Node {
 }
 
 func (j JobResource) BuildEdges(ns NodeStore) []Edge {
-	//no op for now to implement interface
-	return []Edge{}
+	ret := []Edge{}
+	UID := prefixedUID(j.UID)
+	//deployer subscriber edges
+	nodeInfo := NodeInfo{NameSpace: j.Namespace, UID: UID, Kind: j.Kind, Name: j.Name}
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+	return ret
 }

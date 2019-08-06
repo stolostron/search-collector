@@ -71,5 +71,9 @@ func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
 			}
 		}
 	}
+
+	//deployer subscriber edges
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+
 	return ret
 }

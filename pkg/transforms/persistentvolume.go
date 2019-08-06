@@ -92,6 +92,10 @@ func getType(spec *v1.PersistentVolumeSpec) string {
 }
 
 func (p PersistentVolumeResource) BuildEdges(ns NodeStore) []Edge {
-	//no op for now to implement interface
-	return []Edge{}
+	ret := []Edge{}
+	UID := prefixedUID(p.UID)
+	//deployer subscriber edges
+	nodeInfo := NodeInfo{NameSpace: "_NONE", UID: UID, Kind: p.Kind, Name: p.Name}
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+	return ret
 }

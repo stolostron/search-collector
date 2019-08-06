@@ -1,0 +1,73 @@
+{
+    "apiVersion": "app.ibm.com/v1alpha1",
+    "kind": "Deployable",
+    "metadata": {
+        "annotations": {
+            "app.ibm.com/is-local-deployable": "true",
+            "app.ibm.com/managed-cluster": "/"
+        },
+        "creationTimestamp": "2019-07-24T16:47:35Z",
+        "generation": 1,
+        "name": "test-app-deployable",
+        "namespace": "default",
+        "ownerReferences": [
+            {
+                "apiVersion": "app.ibm.com/v1alpha1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "Subscription",
+                "name": "test-subscription",
+                "uid": "66ee106e-a80c-11e9-914a-0e59e642c7ac"
+            }
+        ],
+        "resourceVersion": "12254502",
+        "selfLink": "/apis/app.ibm.com/v1alpha1/namespaces/default/deployables/test-app-deployable",
+        "uid": "be2e4519-zf21-22f1-225v-1f64f531d8bd"
+    },
+    "spec": {
+        "placement": {
+            "clusters": [
+                {
+                    "name": "test-cluster-1"
+                },
+                {
+                    "name": "test-cluster-2"
+                },
+                {
+                    "name": "test-cluster-3"
+                }
+            ]
+        },
+        "template": {
+            "apiVersion": "app.ibm.com/v1alpha1",
+            "kind": "Subscription",
+            "metadata": {
+                "creationTimestamp": "2019-07-16T20:58:03Z",
+                "generation": 2,
+                "name": "test-subscription",
+                "namespace": "default",
+                "selfLink": "/apis/app.ibm.com/v1alpha1/namespaces/default/subscriptions/test-subscription"
+            },
+            "spec": {
+                "channel": "testNs/test",
+                "name": "",
+                "packageFilter": {
+                    "version": "1.x"
+                },
+                "source": "",
+                "sourceNamespace": ""
+            },
+            "status": {}
+        }
+    },
+    "status": {
+        "lastUpdateTime": "2019-08-02T16:15:48Z",
+        "phase": "Propagated",
+        "targetClusters": {
+            "test-cluster-1": {
+                "lastUpdateTime": null,
+                "phase": ""
+            }
+        }
+    }
+}

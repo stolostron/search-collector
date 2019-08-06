@@ -39,6 +39,10 @@ func (c CronJobResource) BuildNode() Node {
 }
 
 func (c CronJobResource) BuildEdges(ns NodeStore) []Edge {
-	//no op for now to implement interface
-	return []Edge{}
+	ret := []Edge{}
+	UID := prefixedUID(c.UID)
+	//deployer subscriber edges
+	nodeInfo := NodeInfo{NameSpace: c.Namespace, UID: UID, Kind: c.Kind, Name: c.Name}
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+	return ret
 }

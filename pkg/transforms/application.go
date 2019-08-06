@@ -52,5 +52,7 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 		ret = append(ret, edgesByDestinationName(subscriptionMap, ret, "Subscription", nodeInfo, ns)...)
 	}
 
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+
 	return ret
 }

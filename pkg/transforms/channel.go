@@ -45,5 +45,7 @@ func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
 	ret = append(ret, edgesByDestinationName(secretMap, ret, "Secret", nodeInfo, ns)...)
 	ret = append(ret, edgesByDestinationName(configmapMap, ret, "ConfigMap", nodeInfo, ns)...)
 
+	//deployer subscriber edges
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 	return ret
 }

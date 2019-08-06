@@ -41,5 +41,9 @@ func (r ReplicaSetResource) BuildEdges(ns NodeStore) []Edge {
 	if rsNode.GetMetadata("OwnerUID") != "" {
 		ret = append(ret, edgesByOwner(rsNode.GetMetadata("OwnerUID"), ret, ns, nodeInfo)...)
 	}
+
+	//deployer subscriber edges
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+
 	return ret
 }

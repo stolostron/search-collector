@@ -37,6 +37,10 @@
   name = "github.ibm.com/IBMPrivateCloud/hcm-api"
   branch = "master"
 
+[[constraint]]
+  name = "github.ibm.com/IBMMulticloudPlatform/deployable"
+  branch = "master"
+  
 [[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.12.3"

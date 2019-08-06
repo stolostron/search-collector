@@ -128,6 +128,9 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 		ret = append(ret, edgesByOwner(podNode.GetMetadata("OwnerUID"), ret, ns, nodeInfo)...)
 	}
 
+	//deployer subscriber edges
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+
 	//attachedTo edges
 	nodeInfo.EdgeType = "attachedTo"
 

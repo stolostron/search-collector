@@ -188,9 +188,11 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 				if len(channelInfo) > 1 {
 					nodeInfo.NameSpace = channelInfo[0]
 					name = channelInfo[1]
+				} else {
+					glog.V(2).Infof("For %s, %s edge not created as %s is not in namespace/name format", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind+"/"+name)
+					continue
 				}
 			}
-			//glog.Info("Source: ", nodeInfo.Kind, "/", nodeInfo.Name)
 			if _, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
 				attachedToEdges = append(attachedToEdges, Edge{
 					SourceUID: nodeInfo.UID,
@@ -215,4 +217,43 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 		}
 	}
 	return attachedToEdges
+}
+
+// Function used to get edges to deployable and subscription
+func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
+	ret := []Edge{}
+	// Inner function used to connect to subscription and deployable
+	edgesByDepSub := func(destNsName, destKind string) []Edge {
+		depSubedges := []Edge{}
+
+		if destNsName != "" && strings.Contains(destNsName, "/") {
+			namespace := strings.Split(destNsName, "/")[0]
+			name := strings.Split(destNsName, "/")[1]
+
+			if _, ok := ns.ByKindNamespaceName[destKind][namespace][name]; ok {
+				depSubedges = append(depSubedges, Edge{
+					SourceUID: nodeInfo.UID,
+					DestUID:   ns.ByKindNamespaceName[destKind][namespace][name].UID,
+					EdgeType:  nodeInfo.EdgeType,
+				})
+			} else {
+				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, namespace+"/"+name)
+			}
+		} else {
+			glog.V(2).Infof("For %s, %s edge not created as %s is not in namespace/name format", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destNsName)
+		}
+		return depSubedges
+	}
+	if node, ok := ns.ByUID[nodeInfo.UID]; ok {
+
+		if subscription, ok := node.Properties["_app.ibm.com/hosting-subscription"].(string); ok && node.Properties["_app.ibm.com/hosting-subscription"] != "" {
+			nodeInfo.EdgeType = "deployedBy"
+			ret = append(ret, edgesByDepSub(subscription, "Subscription")...)
+		}
+		if deployable, ok := node.Properties["_app.ibm.com/hosting-deployable"].(string); ok && node.Properties["_app.ibm.com/hosting-deployable"] != "" {
+			nodeInfo.EdgeType = "definedBy"
+			ret = append(ret, edgesByDepSub(deployable, "Deployable")...)
+		}
+	}
+	return ret
 }

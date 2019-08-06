@@ -34,5 +34,10 @@ func (d DeploymentResource) BuildNode() Node {
 }
 
 func (d DeploymentResource) BuildEdges(ns NodeStore) []Edge {
-	return []Edge{}
+	ret := []Edge{}
+	UID := prefixedUID(d.UID)
+	//deployer subscriber edges
+	nodeInfo := NodeInfo{NameSpace: d.Namespace, UID: UID, Kind: d.Kind, Name: d.Name}
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+	return ret
 }
