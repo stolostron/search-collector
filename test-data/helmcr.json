@@ -1,0 +1,36 @@
+{
+    "apiVersion": "helm.bitnami.com/v1",
+    "kind": "HelmRelease",
+    "metadata": {
+        "creationTimestamp": "2019-08-05T15:01:13Z",
+        "finalizers": [
+            "helm.bitnami.com/helmrelease"
+        ],
+        "generation": 1,
+        "labels": {
+            "subscriptionKind": "Subscription",
+            "subscriptionName": "testSubscription"
+        },
+        "name": "testHelmCR",
+        "namespace": "default",
+        "ownerReferences": [
+            {
+                "apiVersion": "app.ibm.com/v1alpha1",
+                "kind": "Subscription",
+                "name": "testSubscription",
+                "uid": "e10b4cf1-c800-02f1-91z1-12272f121a23"
+            }
+        ],
+        "resourceVersion": "9469478",
+        "selfLink": "/apis/helm.bitnami.com/v1/namespaces/default/helmreleases/testSubscription-ngnix",
+        "uid": "ef154gdf-c821-11f1-71b1-11234f120g23"
+    },
+    "spec": {
+        "auth": {},
+        "chartName": "test",
+        "releaseName": "testSubscription-ngnix",
+        "repoUrl": "https://kubernetes-charts.storage.googleapis.com",
+        "values": "replicaCount: 2\n",
+        "version": "3.6.1"
+    }
+}

@@ -305,6 +305,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:27dc3af29e0fc4511f3ed460a45d0e6296fe92a60dd6357af6bda1c2d92ce860"
+  name = "github.ibm.com/IBMMulticloudPlatform/helm-crd"
+  packages = ["pkg/apis/helm.bitnami.com/v1"]
+  pruneopts = "UT"
+  revision = "2530ff425c720cab94c1c50788fdc180db5fd771"
+
+[[projects]]
+  branch = "master"
   digest = "1:36e521903c98006b787ca48c02e37d31fe4e671020f5d558f51936b6f66cff20"
   name = "github.ibm.com/IBMMulticloudPlatform/placementrule"
   packages = ["pkg/apis/app/v1alpha1"]
@@ -827,6 +835,7 @@
     "github.com/tkanos/gonfig",
     "github.ibm.com/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1",
     "github.ibm.com/IBMMulticloudPlatform/deployable/pkg/apis/app/v1alpha1",
+    "github.ibm.com/IBMMulticloudPlatform/helm-crd/pkg/apis/helm.bitnami.com/v1",
     "github.ibm.com/IBMMulticloudPlatform/subscription/pkg/apis/app/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1",

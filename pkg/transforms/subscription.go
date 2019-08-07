@@ -25,7 +25,7 @@ func (s SubscriptionResource) BuildNode() Node {
 	if s.Spec.Package != "" {
 		node.Properties["package"] = string(s.Spec.Package)
 	}
-	if s.Spec.PackageFilter.Version != "" {
+	if s.Spec.PackageFilter != nil && s.Spec.PackageFilter.Version != "" {
 		node.Properties["packageFilterVersion"] = string(s.Spec.PackageFilter.Version)
 	}
 	if s.Spec.Channel != "" {
