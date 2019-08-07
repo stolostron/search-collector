@@ -244,16 +244,32 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 		}
 		return depSubedges
 	}
-	if node, ok := ns.ByUID[nodeInfo.UID]; ok {
 
-		if subscription, ok := node.Properties["_app.ibm.com/hosting-subscription"].(string); ok && node.Properties["_app.ibm.com/hosting-subscription"] != "" {
-			nodeInfo.EdgeType = "deployedBy"
-			ret = append(ret, edgesByDepSub(subscription, "Subscription")...)
+	//Inner function to call edgesByDepSub for creating edges from node to hosting deployable/subscription - recursively calls with the owner's properties if the incoming node doesn't have them
+	var findSub func(string) []Edge
+	findSub = func(UID string) []Edge {
+		subscription := ""
+		deployable := ""
+		if node, ok := ns.ByUID[UID]; ok {
+			if subscription, ok = node.Properties["_app.ibm.com/hosting-subscription"].(string); ok && node.Properties["_app.ibm.com/hosting-subscription"] != "" {
+				nodeInfo.EdgeType = "deployedBy"
+				ret = append(ret, edgesByDepSub(subscription, "Subscription")...)
+			}
+			if deployable, ok = node.Properties["_app.ibm.com/hosting-deployable"].(string); ok && node.Properties["_app.ibm.com/hosting-deployable"] != "" {
+				nodeInfo.EdgeType = "definedBy"
+				ret = append(ret, edgesByDepSub(deployable, "Deployable")...)
+			}
+			// Recursively call the function with ownerUID, if the node doesn't have hosting deployable/subscription properties but has an owner reference.
+			// This is mainly to create edges from pods to subscription/deployable, when the hosting deployable/subscription properties are not in pods, but present in deployments
+			if subscription == "" && deployable == "" {
+				if node.GetMetadata("OwnerUID") != "" {
+					node = ns.ByUID[node.GetMetadata("OwnerUID")]
+					ret = findSub(node.UID)
+				}
+			}
 		}
-		if deployable, ok := node.Properties["_app.ibm.com/hosting-deployable"].(string); ok && node.Properties["_app.ibm.com/hosting-deployable"] != "" {
-			nodeInfo.EdgeType = "definedBy"
-			ret = append(ret, edgesByDepSub(deployable, "Deployable")...)
-		}
+		return ret
 	}
+	ret = findSub(nodeInfo.UID)
 	return ret
 }

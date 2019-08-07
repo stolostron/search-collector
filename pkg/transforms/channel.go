@@ -47,5 +47,19 @@ func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
 
 	//deployer subscriber edges
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+
+	//deploys edges
+	//HelmRepo channel to deployables edges
+	if c.Spec.Type == "HelmRepo" {
+		deployables := ns.ByKindNamespaceName["Deployable"][c.Namespace]
+		if len(deployables) > 1 {
+			nodeInfo.EdgeType = "deploys"
+			deployableMap := make(map[string]struct{}, len(deployables))
+			for deployable := range deployables {
+				deployableMap[deployable] = struct{}{}
+			}
+			ret = append(ret, edgesByDestinationName(deployableMap, ret, "Deployable", nodeInfo, ns)...)
+		}
+	}
 	return ret
 }

@@ -31,6 +31,9 @@ func (s SubscriptionResource) BuildNode() Node {
 	if s.Spec.Channel != "" {
 		node.Properties["channel"] = s.Spec.Channel
 	}
+	if s.GetAnnotations()["_app.ibm.com/hosting-subscription"] != "" {
+		node.Properties["_hostingSubscription"] = s.GetAnnotations()["_app.ibm.com/hosting-subscription"]
+	}
 	//TODO: Add property Status
 	return node
 }
