@@ -40,6 +40,15 @@
 [[constraint]]
   name = "github.ibm.com/IBMMulticloudPlatform/deployable"
   branch = "master"
+
+[[constraint]]
+  name = "github.ibm.com/IBMMulticloudPlatform/placementrule"
+  source = "git@github.ibm.com:IBMMulticloudPlatform/placementrule.git"
+  branch = "master"
+
+[[constraint]]
+  name = "github.ibm.com/IBMMulticloudPlatform/subscription"
+  branch = "master"
   
 [[override]]
   name = "k8s.io/api"

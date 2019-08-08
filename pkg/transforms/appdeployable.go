@@ -39,6 +39,15 @@ func (d AppDeployableResource) BuildEdges(ns NodeStore) []Edge {
 		}
 		ret = append(ret, edgesByDestinationName(channelMap, ret, "Channel", nodeInfo, ns)...)
 	}
+
+	//refersTo edges
+	//Builds edges between deployable and placement rule
+	if d.Spec.Placement != nil && d.Spec.Placement.PlacementRef != nil && d.Spec.Placement.PlacementRef.Name != "" {
+		nodeInfo.EdgeType = "refersTo"
+		placementRuleMap := make(map[string]struct{})
+		placementRuleMap[d.Spec.Placement.PlacementRef.Name] = struct{}{}
+		ret = append(ret, edgesByDestinationName(placementRuleMap, ret, "PlacementRule", nodeInfo, ns)...)
+	}
 	//deployer subscriber edges
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 	return ret

@@ -33,7 +33,6 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
 	UID := prefixedUID(a.UID)
 
-	//glog.Info("Annotations: ", a.ObjectMeta.Annotations)
 	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, EdgeType: "contains", Kind: a.Kind, Name: a.Name}
 
 	if len(a.GetAnnotations()["apps.ibm.com/deployables"]) > 0 {
@@ -44,14 +43,21 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 		ret = append(ret, edgesByDestinationName(deployableMap, ret, "Deployable", nodeInfo, ns)...)
 	}
 
-	if len(a.GetAnnotations()["app.ibm.com/subscriptions"]) > 0 {
+	if len(a.GetAnnotations()["apps.ibm.com/subscriptions"]) > 0 {
 		subscriptionMap := make(map[string]struct{})
-		for _, subscription := range strings.Split(a.GetAnnotations()["app.ibm.com/subscriptions"], ",") {
+		for _, subscription := range strings.Split(a.GetAnnotations()["apps.ibm.com/subscriptions"], ",") {
 			subscriptionMap[subscription] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(subscriptionMap, ret, "Subscription", nodeInfo, ns)...)
 	}
 
+	if len(a.GetAnnotations()["apps.ibm.com/placementbindings"]) > 0 {
+		placementBindingMap := make(map[string]struct{})
+		for _, placementBinding := range strings.Split(a.GetAnnotations()["apps.ibm.com/placementbindings"], ",") {
+			placementBindingMap[placementBinding] = struct{}{}
+		}
+		ret = append(ret, edgesByDestinationName(placementBindingMap, ret, "PlacementBinding", nodeInfo, ns)...)
+	}
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 
 	return ret

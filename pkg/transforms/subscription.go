@@ -52,7 +52,14 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		}
 		ret = append(ret, edgesByDestinationName(channelMap, ret, "Channel", nodeInfo, ns)...)
 	}
-
+	//refersTo edges
+	//Builds edges between subscription and placement rule
+	if s.Spec.Placement != nil && s.Spec.Placement.PlacementRef != nil && s.Spec.Placement.PlacementRef.Name != "" {
+		nodeInfo.EdgeType = "refersTo"
+		placementRuleMap := make(map[string]struct{})
+		placementRuleMap[s.Spec.Placement.PlacementRef.Name] = struct{}{}
+		ret = append(ret, edgesByDestinationName(placementRuleMap, ret, "PlacementRule", nodeInfo, ns)...)
+	}
 	//deployer subscriber edges
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 

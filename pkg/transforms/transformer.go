@@ -17,6 +17,7 @@ import (
 	mcmapp "github.ibm.com/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1"
 	appDeployable "github.ibm.com/IBMMulticloudPlatform/deployable/pkg/apis/app/v1alpha1"
 	helmRelease "github.ibm.com/IBMMulticloudPlatform/helm-crd/pkg/apis/helm.bitnami.com/v1"
+	rule "github.ibm.com/IBMMulticloudPlatform/placementrule/pkg/apis/app/v1alpha1"
 	subscription "github.ibm.com/IBMMulticloudPlatform/subscription/pkg/apis/app/v1alpha1"
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
@@ -292,6 +293,14 @@ func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PlacementPolicyResource{&typedResource}
+
+		case "PlacementRule":
+			typedResource := rule.PlacementRule{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = PlacementRuleResource{&typedResource}
 
 		case "Pod":
 			typedResource := core.Pod{}

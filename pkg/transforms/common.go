@@ -182,12 +182,14 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 
 	if len(propSet) > 0 {
 		for name := range propSet {
-			// For channels, get the channel namespace and name from each string
-			if destKind == "Channel" {
-				channelInfo := strings.Split(name, "/")
-				if len(channelInfo) > 1 {
-					nodeInfo.NameSpace = channelInfo[0]
-					name = channelInfo[1]
+			// For channels or (subscriptions or deployables) with namespace, get the namespace and name from each string
+			if (destKind == "Channel" || destKind == "Deployable" || destKind == "Subscription") && strings.Contains(name, "/") {
+				destKindInfo := strings.Split(name, "/")
+				if len(destKindInfo) == 2 {
+					nodeInfo.NameSpace = destKindInfo[0]
+					name = destKindInfo[1]
+				} else if len(destKindInfo) == 1 {
+					name = destKindInfo[0]
 				} else {
 					glog.V(2).Infof("For %s, %s edge not created as %s is not in namespace/name format", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind+"/"+name)
 					continue

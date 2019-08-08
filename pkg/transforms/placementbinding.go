@@ -42,6 +42,15 @@ func (p PlacementBindingResource) BuildNode() Node {
 }
 
 func (p PlacementBindingResource) BuildEdges(ns NodeStore) []Edge {
-	//no op for now to implement interface
-	return []Edge{}
+	ret := []Edge{}
+	UID := prefixedUID(p.UID)
+	//refersTo edges
+	//Builds edges between placement binding and placement policy.
+	nodeInfo := NodeInfo{NameSpace: p.Namespace, UID: UID, EdgeType: "refersTo", Kind: p.Kind, Name: p.Name}
+	if p.PlacementPolicyRef.Name != "" {
+		placementPolicyMap := make(map[string]struct{})
+		placementPolicyMap[p.PlacementPolicyRef.Name] = struct{}{}
+		ret = append(ret, edgesByDestinationName(placementPolicyMap, ret, "PlacementPolicy", nodeInfo, ns)...)
+	}
+	return ret
 }
