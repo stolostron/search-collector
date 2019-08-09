@@ -29,11 +29,11 @@ const (
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
 	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010"
 	DEFAULT_TILLER_URL         = "tiller-deploy.kube-system:44134"
-	DEFAULT_REPORT_RATE_MS     = 5000    // 5 seconds
-	DEFAULT_HEARTBEAT_MS       = 60000   // 1 min
-	DEFAULT_HELM_PULL_MS       = 30000   // 30 seconds
-	DEFAULT_MAX_BACKOFF_MS     = 3600000 // 1 hour
-	DEFAULT_REDISCOVER_RATE_MS = 60000   // 1 min
+	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
+	DEFAULT_HEARTBEAT_MS       = 60000  // 1 min
+	DEFAULT_HELM_PULL_MS       = 30000  // 30 seconds
+	DEFAULT_MAX_BACKOFF_MS     = 300000 // 5 min
+	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
 	AGGREGATOR_API_VERSION     = "4.1.0"
 )
 
