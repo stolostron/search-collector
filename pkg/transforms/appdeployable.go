@@ -23,6 +23,9 @@ func (d AppDeployableResource) BuildNode() Node {
 	node.Properties["kind"] = "Deployable"
 	node.Properties["apigroup"] = "app.ibm.com"
 	//TODO: Add properties, TEMPLATE-KIND   TEMPLATE-APIVERSION    AGE   STATUS
+	if d.Status.Phase != "" {
+		node.Properties["status"] = d.Status.Phase
+	}
 	return node
 }
 

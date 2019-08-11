@@ -46,10 +46,10 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	}
 
 	if resource.GetAnnotations()["app.ibm.com/hosting-subscription"] != "" {
-		ret["_app.ibm.com/hosting-subscription"] = resource.GetAnnotations()["app.ibm.com/hosting-subscription"]
+		ret["_hostingSubscription"] = resource.GetAnnotations()["app.ibm.com/hosting-subscription"]
 	}
 	if resource.GetAnnotations()["app.ibm.com/hosting-deployable"] != "" {
-		ret["_app.ibm.com/hosting-deployable"] = resource.GetAnnotations()["app.ibm.com/hosting-deployable"]
+		ret["_hostingDeployable"] = resource.GetAnnotations()["app.ibm.com/hosting-deployable"]
 	}
 	return ret
 }
@@ -92,10 +92,10 @@ func unstructuredProperties(resource UnstructuredResource) map[string]interface{
 		ret["namespace"] = resource.GetNamespace()
 	}
 	if resource.GetAnnotations()["app.ibm.com/hosting-subscription"] != "" {
-		ret["_app.ibm.com/hosting-subscription"] = resource.GetAnnotations()["app.ibm.com/hosting-subscription"]
+		ret["_hostingSubscription"] = resource.GetAnnotations()["app.ibm.com/hosting-subscription"]
 	}
 	if resource.GetAnnotations()["app.ibm.com/hosting-deployable"] != "" {
-		ret["_app.ibm.com/hosting-deployable"] = resource.GetAnnotations()["app.ibm.com/hosting-deployable"]
+		ret["_hostingDeployable"] = resource.GetAnnotations()["app.ibm.com/hosting-deployable"]
 	}
 	return ret
 
@@ -182,8 +182,8 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 
 	if len(propSet) > 0 {
 		for name := range propSet {
-			// For channels or (subscriptions or deployables) with namespace, get the namespace and name from each string
-			if (destKind == "Channel" || destKind == "Deployable" || destKind == "Subscription") && strings.Contains(name, "/") {
+			// For channels/subscriptions/deployables/applications, get the namespace and name from each string, if present. Else, assume it is in the node's namespace
+			if destKind == "Channel" || destKind == "Deployable" || destKind == "Subscription" || destKind == "Application" {
 				destKindInfo := strings.Split(name, "/")
 				if len(destKindInfo) == 2 {
 					nodeInfo.NameSpace = destKindInfo[0]
@@ -195,12 +195,26 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 					continue
 				}
 			}
-			if _, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
+			if destNode, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
 				attachedToEdges = append(attachedToEdges, Edge{
 					SourceUID: nodeInfo.UID,
-					DestUID:   ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name].UID,
+					DestUID:   destNode.UID,
 					EdgeType:  nodeInfo.EdgeType,
 				})
+				//Add all the applications connected to a subscription in the Subscription  node's metadata - this metadata will be used to connect other nodes to Application
+				if destKind == "Subscription" && nodeInfo.Kind == "Application" {
+					if destNode.Metadata["_hostingApplication"] != "" {
+						destNode.Metadata["_hostingApplication"] = destNode.Metadata["_hostingApplication"] + "," + nodeInfo.NameSpace + "/" + nodeInfo.Name
+					} else {
+						destNode.Metadata["_hostingApplication"] = nodeInfo.NameSpace + "/" + nodeInfo.Name
+					}
+				} else if destKind == "Subscription" && nodeInfo.Kind != "Application" { //Connect incoming node to all applications in the Subscription node's metadata
+					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, destNode.UID)...)
+				} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to deployables
+					subUID := nodeInfo.UID
+					nodeInfo = NodeInfo{UID: destNode.UID, Name: name, NameSpace: nodeInfo.NameSpace, Kind: destKind, EdgeType: "contains"}
+					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, subUID)...)
+				}
 			} else {
 				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
 			}
@@ -232,12 +246,20 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 			namespace := strings.Split(destNsName, "/")[0]
 			name := strings.Split(destNsName, "/")[1]
 
-			if _, ok := ns.ByKindNamespaceName[destKind][namespace][name]; ok {
+			if dest, ok := ns.ByKindNamespaceName[destKind][namespace][name]; ok {
 				depSubedges = append(depSubedges, Edge{
 					SourceUID: nodeInfo.UID,
-					DestUID:   ns.ByKindNamespaceName[destKind][namespace][name].UID,
+					DestUID:   dest.UID,
 					EdgeType:  nodeInfo.EdgeType,
 				})
+				//Connect incoming node to all applications in the Subscription node's metadata
+				if destKind == "Subscription" && nodeInfo.Kind != "Application" {
+					depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, dest.UID)...)
+				} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to the hosting-deployable
+					subUID := nodeInfo.UID
+					nodeInfo = NodeInfo{UID: dest.UID, Name: name, NameSpace: namespace, Kind: destKind, EdgeType: "contains"}
+					depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, subUID)...)
+				}
 			} else {
 				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, namespace+"/"+name)
 			}
@@ -253,11 +275,11 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 		subscription := ""
 		deployable := ""
 		if node, ok := ns.ByUID[UID]; ok {
-			if subscription, ok = node.Properties["_app.ibm.com/hosting-subscription"].(string); ok && node.Properties["_app.ibm.com/hosting-subscription"] != "" {
+			if subscription, ok = node.Properties["_hostingSubscription"].(string); ok && node.Properties["_hostingSubscription"] != "" {
 				nodeInfo.EdgeType = "deployedBy"
 				ret = append(ret, edgesByDepSub(subscription, "Subscription")...)
 			}
-			if deployable, ok = node.Properties["_app.ibm.com/hosting-deployable"].(string); ok && node.Properties["_app.ibm.com/hosting-deployable"] != "" {
+			if deployable, ok = node.Properties["_hostingDeployable"].(string); ok && node.Properties["_hostingDeployable"] != "" {
 				nodeInfo.EdgeType = "definedBy"
 				ret = append(ret, edgesByDepSub(deployable, "Deployable")...)
 			}
@@ -270,8 +292,25 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 				}
 			}
 		}
+
 		return ret
 	}
 	ret = findSub(nodeInfo.UID)
+	return ret
+
+}
+
+//Build edges from the source node in nodeInfo to all applications in the subscription's metadata. UID is the subscription node's UID
+func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string) []Edge {
+	ret := []Edge{}
+	// Connect all applications connected to the subscription (using metadata _hostingApplication)
+	subNode := ns.ByUID[UID]
+	if subNode.GetMetadata("_hostingApplication") != "" {
+		applicationMap := make(map[string]struct{})
+		for _, app := range strings.Split(subNode.GetMetadata("_hostingApplication"), ",") {
+			applicationMap[app] = struct{}{}
+		}
+		ret = append(ret, edgesByDestinationName(applicationMap, ret, "Application", nodeInfo, ns)...)
+	}
 	return ret
 }

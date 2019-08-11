@@ -20,7 +20,6 @@ type SubscriptionResource struct {
 
 func (s SubscriptionResource) BuildNode() Node {
 	node := transformCommon(s)
-
 	node.Properties["kind"] = "Subscription"
 	if s.Spec.Package != "" {
 		node.Properties["package"] = string(s.Spec.Package)
@@ -31,9 +30,11 @@ func (s SubscriptionResource) BuildNode() Node {
 	if s.Spec.Channel != "" {
 		node.Properties["channel"] = s.Spec.Channel
 	}
-	if s.GetAnnotations()["_app.ibm.com/hosting-subscription"] != "" {
-		node.Properties["_hostingSubscription"] = s.GetAnnotations()["_app.ibm.com/hosting-subscription"]
+	// Phase is Propagated if Subscription is in hub or Subscribed if it is in endpoint
+	if s.Status.Phase != "" {
+		node.Properties["phase"] = s.Status.Phase
 	}
+
 	//TODO: Add property Status
 	return node
 }
@@ -60,6 +61,16 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		placementRuleMap[s.Spec.Placement.PlacementRef.Name] = struct{}{}
 		ret = append(ret, edgesByDestinationName(placementRuleMap, ret, "PlacementRule", nodeInfo, ns)...)
 	}
+	//subscribesTo edges
+	if len(s.GetAnnotations()["app.ibm.com/deployables"]) > 0 {
+		nodeInfo.EdgeType = "subscribesTo"
+		deployableMap := make(map[string]struct{})
+		for _, deployable := range strings.Split(s.GetAnnotations()["app.ibm.com/deployables"], ",") {
+			deployableMap[deployable] = struct{}{}
+		}
+		ret = append(ret, edgesByDestinationName(deployableMap, ret, "Deployable", nodeInfo, ns)...)
+	}
+
 	//deployer subscriber edges
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 
