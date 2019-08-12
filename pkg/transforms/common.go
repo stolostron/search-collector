@@ -209,11 +209,11 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 						destNode.Metadata["_hostingApplication"] = nodeInfo.NameSpace + "/" + nodeInfo.Name
 					}
 				} else if destKind == "Subscription" && nodeInfo.Kind != "Application" { //Connect incoming node to all applications in the Subscription node's metadata
-					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, destNode.UID)...)
+					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, destNode.UID, false)...)
 				} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to deployables
 					subUID := nodeInfo.UID
 					nodeInfo = NodeInfo{UID: destNode.UID, Name: name, NameSpace: nodeInfo.NameSpace, Kind: destKind, EdgeType: "contains"}
-					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, subUID)...)
+					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, subUID, true)...)
 				}
 			} else {
 				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
@@ -254,11 +254,11 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 				})
 				//Connect incoming node to all applications in the Subscription node's metadata
 				if destKind == "Subscription" && nodeInfo.Kind != "Application" {
-					depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, dest.UID)...)
+					depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, dest.UID, false)...)
 				} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to the hosting-deployable
 					subUID := nodeInfo.UID
 					nodeInfo = NodeInfo{UID: dest.UID, Name: name, NameSpace: namespace, Kind: destKind, EdgeType: "contains"}
-					depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, subUID)...)
+					depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, subUID, true)...)
 				}
 			} else {
 				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, namespace+"/"+name)
@@ -300,8 +300,8 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 
 }
 
-//Build edges from the source node in nodeInfo to all applications in the subscription's metadata. UID is the subscription node's UID
-func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string) []Edge {
+//Build edges from the source node in nodeInfo to all applications/channels in the subscription's metadata. UID is the subscription node's UID. Connect to only application if the onlyApplication parameter is true
+func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string, onlyApplication bool) []Edge {
 	ret := []Edge{}
 	// Connect all applications connected to the subscription (using metadata _hostingApplication)
 	subNode := ns.ByUID[UID]
@@ -311,6 +311,15 @@ func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string) []Edge {
 			applicationMap[app] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(applicationMap, ret, "Application", nodeInfo, ns)...)
+	}
+	if !onlyApplication {
+		if subNode.GetMetadata("_channels") != "" {
+			channelMap := make(map[string]struct{})
+			for _, channel := range strings.Split(subNode.GetMetadata("_channels"), ",") {
+				channelMap[channel] = struct{}{}
+			}
+			ret = append(ret, edgesByDestinationName(channelMap, ret, "Channel", nodeInfo, ns)...)
+		}
 	}
 	return ret
 }

@@ -48,6 +48,8 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 	// TODO: This will work only for subscription in hub cluster - confirm logic
 	// TODO: Connect subscription and channel in remote cluster as they might not be in the same namespace
 	if len(s.Spec.Channel) > 0 {
+		subNode := ns.ByUID[UID]
+		subNode.Metadata["_channels"] = s.Spec.Channel
 		for _, channel := range strings.Split(s.Spec.Channel, ",") {
 			channelMap[channel] = struct{}{}
 		}
