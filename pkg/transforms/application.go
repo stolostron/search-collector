@@ -24,7 +24,7 @@ func (a ApplicationResource) BuildNode() Node {
 	// Extract the properties specific to this type
 	node.Properties["kind"] = "Application"
 	node.Properties["apigroup"] = "app.k8s.io"
-	node.Properties["dashboard"] = a.GetAnnotations()["apps.ibm.com/dashboard"]
+	node.Properties["dashboard"] = a.GetAnnotations()["app.ibm.com/dashboard"]
 
 	return node
 }
@@ -35,25 +35,25 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 
 	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, EdgeType: "contains", Kind: a.Kind, Name: a.Name}
 
-	if len(a.GetAnnotations()["apps.ibm.com/deployables"]) > 0 {
+	if len(a.GetAnnotations()["app.ibm.com/deployables"]) > 0 {
 		deployableMap := make(map[string]struct{})
-		for _, deployable := range strings.Split(a.GetAnnotations()["apps.ibm.com/deployables"], ",") {
+		for _, deployable := range strings.Split(a.GetAnnotations()["app.ibm.com/deployables"], ",") {
 			deployableMap[deployable] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(deployableMap, ret, "Deployable", nodeInfo, ns)...)
 	}
 
-	if len(a.GetAnnotations()["apps.ibm.com/subscriptions"]) > 0 {
+	if len(a.GetAnnotations()["app.ibm.com/subscriptions"]) > 0 {
 		subscriptionMap := make(map[string]struct{})
-		for _, subscription := range strings.Split(a.GetAnnotations()["apps.ibm.com/subscriptions"], ",") {
+		for _, subscription := range strings.Split(a.GetAnnotations()["app.ibm.com/subscriptions"], ",") {
 			subscriptionMap[subscription] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(subscriptionMap, ret, "Subscription", nodeInfo, ns)...)
 	}
 
-	if len(a.GetAnnotations()["apps.ibm.com/placementbindings"]) > 0 {
+	if len(a.GetAnnotations()["app.ibm.com/placementbindings"]) > 0 {
 		placementBindingMap := make(map[string]struct{})
-		for _, placementBinding := range strings.Split(a.GetAnnotations()["apps.ibm.com/placementbindings"], ",") {
+		for _, placementBinding := range strings.Split(a.GetAnnotations()["app.ibm.com/placementbindings"], ",") {
 			placementBindingMap[placementBinding] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(placementBindingMap, ret, "PlacementBinding", nodeInfo, ns)...)

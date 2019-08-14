@@ -3,10 +3,10 @@
     "kind": "Application",
     "metadata": {
         "annotations": {
-            "apps.ibm.com/applicationrelationships": "foo-gbapp-appfrontend,foo-gbapp-appmaster,foo-gbapp-slave",
-            "apps.ibm.com/dashboard": "https://0.0.0.0:8443/grafana/dashboard/test",
-            "apps.ibm.com/deployables": "foo-gbapp,foo-gbapp-redismaster,foo-gbapp-redisslave",
-            "apps.ibm.com/placementbindings": "foo-gbapp,foo-gbapp-redismaster"
+            "app.ibm.com/applicationrelationships": "foo-gbapp-appfrontend,foo-gbapp-appmaster,foo-gbapp-slave",
+            "app.ibm.com/dashboard": "https://0.0.0.0:8443/grafana/dashboard/test",
+            "app.ibm.com/deployables": "foo-gbapp,foo-gbapp-redismaster,foo-gbapp-redisslave",
+            "app.ibm.com/placementbindings": "foo-gbapp,foo-gbapp-redismaster"
         },
         "creationTimestamp": "2019-03-19T20:48:20Z",
         "generation": 1,
