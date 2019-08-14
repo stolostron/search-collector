@@ -91,6 +91,7 @@ ifeq ($(ARCH), x86_64)
 	make docker:tag-arch DOCKER_ARCH_URI=$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/$(IMAGE_NAME_ARCH):$(DOCKER_BUILD_TAG)-rhel
 	make docker:push-arch DOCKER_ARCH_URI=$(DOCKER_REGISTRY)/$(DOCKER_NAMESPACE)/$(IMAGE_NAME_ARCH):$(DOCKER_BUILD_TAG)-rhel
 endif
+	docker images --no-trunc # print the full image id so you can reference the image in artifactory
 
 .PHONY: deps
 lint:
