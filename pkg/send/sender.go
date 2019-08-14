@@ -231,12 +231,12 @@ func (s *Sender) Sync() error {
 	if payload.empty() {
 		// check if a ping is necessary
 		if time.Now().Unix()-s.lastSentTime < int64(config.Cfg.HeartbeatMS/1000) {
-			glog.V(2).Info("Nothing to send, skipping send cycle")
+			glog.V(3).Info("Nothing to send, skipping send cycle.")
 			return nil
 		}
-		glog.Info("Sending empty payload for heartbeat")
+		glog.V(2).Info("Sending empty payload for heartbeat.")
 	} else {
-		glog.V(2).Info("Sending diff payload")
+		glog.V(2).Info("Sending diff payload.")
 	}
 	err := s.send(payload, expectedTotalResources, expectedTotalEdges)
 	if err != nil { // If something went wrong here, form a new complete payload (only necessary because currentState may have changed since we got it, and we have to keep our diffs synced)
