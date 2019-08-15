@@ -20,6 +20,8 @@ if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ] && [ "$TRAVIS_BRANCH" != "developm
     DOCKER_REGISTRY=hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com
 else
     DOCKER_REGISTRY=hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com
+    GIT_COMMIT="$(git rev-parse --short HEAD)"
+    RELEASE_TAG=$GIT_COMMIT
 fi
 export DOCKER_REGISTRY="$DOCKER_REGISTRY"
 
