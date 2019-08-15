@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -48,6 +49,7 @@ type Payload struct {
 	AddEdges    []tr.Edge `json:"addEdges,omitempty"`    // List of Edges which must be added
 	DeleteEdges []tr.Edge `json:"deleteEdges,omitempty"` // List of Edges which must be deleted
 	ClearAll    bool      `json:"clearAll,omitempty"`    // Whether or not the aggregator should clear all data it has for the cluster first
+	RequestId   int       `json:"requestId,omitempty"`
 }
 
 type Deletion struct {
@@ -125,7 +127,8 @@ func (s *Sender) diffPayload() (Payload, int, int) {
 	diff := s.rec.Diff()
 
 	payload := Payload{
-		ClearAll: false,
+		ClearAll:  false,
+		RequestId: rand.Intn(999999),
 
 		AddResources:     diff.AddNodes,
 		UpdatedResources: diff.UpdateNodes,
@@ -151,8 +154,8 @@ func (s *Sender) completePayload() (Payload, int, int) {
 
 	// Delete and Update aren't needed when we're sending all the data. Just fill out the adds.
 	payload := Payload{
-		ClearAll: true,
-
+		ClearAll:     true,
+		RequestId:    rand.Intn(999999),
 		AddResources: complete.Nodes,
 
 		AddEdges: complete.Edges,
@@ -163,7 +166,7 @@ func (s *Sender) completePayload() (Payload, int, int) {
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
-	glog.Infof("Sending Resources { add: %d, update: %d, delete: %d edge add: %d edge delete: %d }", len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources), len(payload.AddEdges), len(payload.DeleteEdges))
+	glog.Infof("Sending Resources { request: %d, add: %d, update: %d, delete: %d edge add: %d edge delete: %d }", payload.RequestId, len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources), len(payload.AddEdges), len(payload.DeleteEdges))
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
