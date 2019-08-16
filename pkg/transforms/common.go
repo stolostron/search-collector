@@ -212,8 +212,8 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, destNode.UID, false)...)
 				} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to deployables
 					subUID := nodeInfo.UID
-					nodeInfo = NodeInfo{UID: destNode.UID, Name: name, NameSpace: nodeInfo.NameSpace, Kind: destKind, EdgeType: "contains"}
-					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, subUID, true)...)
+					nodeInfoDestApp := NodeInfo{UID: destNode.UID, Name: name, NameSpace: nodeInfo.NameSpace, Kind: destKind, EdgeType: "contains"}
+					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfoDestApp, ns, subUID, true)...)
 				}
 			} else {
 				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
@@ -257,8 +257,8 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 					depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, dest.UID, false)...)
 				} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to the hosting-deployable
 					subUID := nodeInfo.UID
-					nodeInfo = NodeInfo{UID: dest.UID, Name: name, NameSpace: namespace, Kind: destKind, EdgeType: "contains"}
-					depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, subUID, true)...)
+					nodeInfoDestApp := NodeInfo{UID: dest.UID, Name: name, NameSpace: namespace, Kind: destKind, EdgeType: "contains"}
+					depSubedges = append(depSubedges, edgesToApplication(nodeInfoDestApp, ns, subUID, true)...)
 				}
 			} else {
 				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, namespace+"/"+name)
