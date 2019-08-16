@@ -31,7 +31,6 @@ const (
 	DEFAULT_TILLER_URL         = "tiller-deploy.kube-system:44134"
 	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
 	DEFAULT_HEARTBEAT_MS       = 60000  // 1 min
-	DEFAULT_HELM_PULL_MS       = 30000  // 30 seconds
 	DEFAULT_MAX_BACKOFF_MS     = 300000 // 5 min
 	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
 	AGGREGATOR_API_VERSION     = "4.1.0"
@@ -46,7 +45,6 @@ type Config struct {
 	ClusterNamespace     string       `env:"CLUSTER_NAMESPACE"` // The namespace of this cluster
 	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
 	HeartbeatMS          int          `env:"HEARTBEAT_MS"`      // Interval in milliseconds at which collector sends an empty payload to ensure connection
-	HelmPullMS           int          `env:"HELM_PULL_MS"`      // Interval in milliseconds at which to pull helm releases from server
 	KubeConfig           string       `env:"KUBECONFIG"`        // Local kubeconfig path
 	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`    // Maximum backoff tiem in MS - sender will never wait longer than this to send
 	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"`
@@ -91,7 +89,6 @@ func init() {
 
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
-	setDefaultInt(&Cfg.HelmPullMS, "HELM_PULL_MS", DEFAULT_HELM_PULL_MS)
 	setDefaultInt(&Cfg.MaxBackoffMS, "MAX_BACKOFF_MS", DEFAULT_MAX_BACKOFF_MS)
 	setDefaultInt(&Cfg.RediscoverRateMS, "REDISCOVER_RATE_MS", DEFAULT_REDISCOVER_RATE_MS)
 
