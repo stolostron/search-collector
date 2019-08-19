@@ -221,13 +221,16 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 		}
 		// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 		// Call the edgesByOwner recursively to create the uses edge
-		if nextSrc, ok := ns.ByUID[nodeInfo.UID]; ok {
-			if nextSrc.GetMetadata("OwnerUID") != "" {
-				if nextSrcOwner, ok := ns.ByUID[nextSrc.GetMetadata("OwnerUID")]; ok {
-					nodeInfo.UID = nextSrc.GetMetadata("OwnerUID")
-					nodeInfo.Kind = nextSrcOwner.Properties["kind"].(string)
-					nodeInfo.EdgeType = "uses"
-					attachedToEdges = append(attachedToEdges, edgesByDestinationName(propSet, attachedToEdges, destKind, nodeInfo, ns)...)
+		if nodeInfo.Kind != "Deployable" { //Adding this edge case to avoid duplicating edges between subsciption to placementrules and applications
+			//deployable's owner will be subscription - this edge is already covered in subscription
+			if nextSrc, ok := ns.ByUID[nodeInfo.UID]; ok {
+				if nextSrc.GetMetadata("OwnerUID") != "" {
+					if nextSrcOwner, ok := ns.ByUID[nextSrc.GetMetadata("OwnerUID")]; ok {
+						nodeInfo.UID = nextSrc.GetMetadata("OwnerUID")
+						nodeInfo.Kind = nextSrcOwner.Properties["kind"].(string)
+						nodeInfo.EdgeType = "uses"
+						attachedToEdges = append(attachedToEdges, edgesByDestinationName(propSet, attachedToEdges, destKind, nodeInfo, ns)...)
+					}
 				}
 			}
 		}
