@@ -204,7 +204,10 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 				//Add all the applications connected to a subscription in the Subscription  node's metadata - this metadata will be used to connect other nodes to Application
 				if destKind == "Subscription" && nodeInfo.Kind == "Application" {
 					if destNode.Metadata["_hostingApplication"] != "" {
-						destNode.Metadata["_hostingApplication"] = destNode.Metadata["_hostingApplication"] + "," + nodeInfo.NameSpace + "/" + nodeInfo.Name
+						currAppInfo := nodeInfo.NameSpace + "/" + nodeInfo.Name
+						if !strings.Contains(destNode.Metadata["_hostingApplication"], currAppInfo) {
+							destNode.Metadata["_hostingApplication"] = destNode.Metadata["_hostingApplication"] + "," + nodeInfo.NameSpace + "/" + nodeInfo.Name
+						}
 					} else {
 						destNode.Metadata["_hostingApplication"] = nodeInfo.NameSpace + "/" + nodeInfo.Name
 					}
