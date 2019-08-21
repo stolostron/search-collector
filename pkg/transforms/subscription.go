@@ -32,10 +32,9 @@ func (s SubscriptionResource) BuildNode() Node {
 	}
 	// Phase is Propagated if Subscription is in hub or Subscribed if it is in endpoint
 	if s.Status.Phase != "" {
-		node.Properties["phase"] = s.Status.Phase
+		node.Properties["status"] = s.Status.Phase
 	}
 
-	//TODO: Add property Status
 	return node
 }
 
