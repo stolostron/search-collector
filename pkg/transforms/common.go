@@ -144,11 +144,12 @@ type NodeInfo struct {
 
 // Function to create an edge between the pod and it's owner, if it exists
 // If the pod is owned by a replicaset which in turn is owned by a deployment, the function will be recursively called to create edges between pod->replicaset and pod->deployment
-func edgesByOwner(destUID string, ownedByEdges []Edge, ns NodeStore, nodeInfo NodeInfo) []Edge {
+func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo) []Edge {
+	ret := []Edge{}
 	if destUID != "" {
 		//Lookup by UID to see if the owner Node exists
 		if dest, ok := ns.ByUID[destUID]; ok {
-			ownedByEdges = append(ownedByEdges, Edge{
+			ret = append(ret, Edge{
 				SourceUID: nodeInfo.UID,
 				DestUID:   destUID,
 				EdgeType:  nodeInfo.EdgeType,
@@ -156,7 +157,7 @@ func edgesByOwner(destUID string, ownedByEdges []Edge, ns NodeStore, nodeInfo No
 
 			if dest.GetMetadata("ReleaseUID") != "" { // If owner included/owned by a release...
 				if _, ok := ns.ByUID[dest.GetMetadata("ReleaseUID")]; ok { // ...make sure the release exists...
-					ownedByEdges = append(ownedByEdges, Edge{ // ... then add edge from source to release
+					ret = append(ret, Edge{ // ... then add edge from source to release
 						SourceUID: nodeInfo.UID,
 						DestUID:   dest.GetMetadata("ReleaseUID"),
 						EdgeType:  "ownedBy",
@@ -167,19 +168,19 @@ func edgesByOwner(destUID string, ownedByEdges []Edge, ns NodeStore, nodeInfo No
 			// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 			// Call the edgesByOwner recursively to create the ownedBy edge
 			if dest.GetMetadata("OwnerUID") != "" {
-				ownedByEdges = append(ownedByEdges, edgesByOwner(dest.GetMetadata("OwnerUID"), ownedByEdges, ns, nodeInfo)...)
+				ret = append(ret, edgesByOwner(dest.GetMetadata("OwnerUID"), ns, nodeInfo)...)
 			}
 
 		} else {
 			glog.V(2).Infof("For %s, %s, %s edge not created: ownerUID %s not found", nodeInfo.Kind, nodeInfo.NameSpace+"/"+nodeInfo.Name, nodeInfo.EdgeType, destUID)
 		}
 	}
-	return ownedByEdges
+	return ret
 }
 
 // Function used to get all edges for a specific destKind - the propSet are maps of resource names, nodeInfo has additional info about the node and nodestore has all the current nodes
-func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge, destKind string, nodeInfo NodeInfo, ns NodeStore) []Edge {
-
+func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeInfo NodeInfo, ns NodeStore) []Edge {
+	ret := []Edge{}
 	if len(propSet) > 0 {
 		for name := range propSet {
 			// For channels/subscriptions/deployables/applications, get the namespace and name from each string, if present. Else, assume it is in the node's namespace
@@ -196,7 +197,7 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 				}
 			}
 			if destNode, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
-				attachedToEdges = append(attachedToEdges, Edge{
+				ret = append(ret, Edge{
 					SourceUID: nodeInfo.UID,
 					DestUID:   destNode.UID,
 					EdgeType:  nodeInfo.EdgeType,
@@ -212,11 +213,11 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 						destNode.Metadata["_hostingApplication"] = nodeInfo.NameSpace + "/" + nodeInfo.Name
 					}
 				} else if destKind == "Subscription" && nodeInfo.Kind != "Application" { //Connect incoming node to all applications in the Subscription node's metadata
-					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfo, ns, destNode.UID, false)...)
+					ret = append(ret, edgesToApplication(nodeInfo, ns, destNode.UID, false)...)
 				} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to deployables
 					subUID := nodeInfo.UID
 					nodeInfoDestApp := NodeInfo{UID: destNode.UID, Name: name, NameSpace: nodeInfo.NameSpace, Kind: destKind, EdgeType: "contains"}
-					attachedToEdges = append(attachedToEdges, edgesToApplication(nodeInfoDestApp, ns, subUID, true)...)
+					ret = append(ret, edgesToApplication(nodeInfoDestApp, ns, subUID, true)...)
 				}
 			} else {
 				glog.V(2).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
@@ -224,7 +225,7 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 		}
 		// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 		// Call the edgesByOwner recursively to create the uses edge
-		if nodeInfo.Kind != "Deployable" { //Adding this edge case to avoid duplicating edges between subsciption to placementrules and applications
+		if nodeInfo.Kind != "Deployable" { //Adding this edge case to avoid duplicating edges between subscription to placementrules and applications
 			//deployable's owner will be subscription - this edge is already covered in subscription
 			if nextSrc, ok := ns.ByUID[nodeInfo.UID]; ok {
 				if nextSrc.GetMetadata("OwnerUID") != "" {
@@ -232,13 +233,13 @@ func edgesByDestinationName(propSet map[string]struct{}, attachedToEdges []Edge,
 						nodeInfo.UID = nextSrc.GetMetadata("OwnerUID")
 						nodeInfo.Kind = nextSrcOwner.Properties["kind"].(string)
 						nodeInfo.EdgeType = "uses"
-						attachedToEdges = append(attachedToEdges, edgesByDestinationName(propSet, attachedToEdges, destKind, nodeInfo, ns)...)
+						ret = append(ret, edgesByDestinationName(propSet, destKind, nodeInfo, ns)...)
 					}
 				}
 			}
 		}
 	}
-	return attachedToEdges
+	return ret
 }
 
 // Function used to get edges to deployable and subscription
@@ -316,7 +317,7 @@ func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string, onlyApplica
 		for _, app := range strings.Split(subNode.GetMetadata("_hostingApplication"), ",") {
 			applicationMap[app] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(applicationMap, ret, "Application", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(applicationMap, "Application", nodeInfo, ns)...)
 	}
 	if !onlyApplication {
 		if subNode.GetMetadata("_channels") != "" {
@@ -324,7 +325,7 @@ func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string, onlyApplica
 			for _, channel := range strings.Split(subNode.GetMetadata("_channels"), ",") {
 				channelMap[channel] = struct{}{}
 			}
-			ret = append(ret, edgesByDestinationName(channelMap, ret, "Channel", nodeInfo, ns)...)
+			ret = append(ret, edgesByDestinationName(channelMap, "Channel", nodeInfo, ns)...)
 		}
 	}
 	return ret

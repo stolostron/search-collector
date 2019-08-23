@@ -67,7 +67,7 @@ func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
 	for _, p := range pods {
 		if podLabels, ok := p.Properties["label"].(map[string]string); ok {
 			if match(podLabels, serviceSelector) {
-				ret = append(ret, edgesByOwner(p.UID, ret, ns, nodeInfo)...)
+				ret = append(ret, edgesByOwner(p.UID, ns, nodeInfo)...)
 			}
 		}
 	}

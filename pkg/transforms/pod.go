@@ -125,7 +125,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	nodeInfo := NodeInfo{Name: p.Name, NameSpace: p.Namespace, UID: UID, EdgeType: "ownedBy", Kind: p.Kind}
 	//ownedBy edges
 	if podNode.GetMetadata("OwnerUID") != "" {
-		ret = append(ret, edgesByOwner(podNode.GetMetadata("OwnerUID"), ret, ns, nodeInfo)...)
+		ret = append(ret, edgesByOwner(podNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
 	}
 
 	//deployer subscriber edges
@@ -168,11 +168,11 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	}
 
 	//Create all 'attachedTo' edges between pod and nodes of a specific kind(secrets, configmaps, volumeClaims, volumes)
-	ret = append(ret, edgesByDestinationName(secretMap, ret, "Secret", nodeInfo, ns)...)
-	ret = append(ret, edgesByDestinationName(configmapMap, ret, "ConfigMap", nodeInfo, ns)...)
-	ret = append(ret, edgesByDestinationName(volumeClaimMap, ret, "PersistentVolumeClaim", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(volumeClaimMap, "PersistentVolumeClaim", nodeInfo, ns)...)
 	nodeInfo.NameSpace = "_NONE"
-	ret = append(ret, edgesByDestinationName(volumeMap, ret, "PersistentVolume", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(volumeMap, "PersistentVolume", nodeInfo, ns)...)
 
 	//runsOn edges
 	if p.Spec.NodeName != "" {

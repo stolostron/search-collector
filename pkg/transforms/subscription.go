@@ -52,7 +52,7 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		for _, channel := range strings.Split(s.Spec.Channel, ",") {
 			channelMap[channel] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(channelMap, ret, "Channel", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(channelMap, "Channel", nodeInfo, ns)...)
 	}
 	//refersTo edges
 	//Builds edges between subscription and placement rule
@@ -60,7 +60,7 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		nodeInfo.EdgeType = "refersTo"
 		placementRuleMap := make(map[string]struct{})
 		placementRuleMap[s.Spec.Placement.PlacementRef.Name] = struct{}{}
-		ret = append(ret, edgesByDestinationName(placementRuleMap, ret, "PlacementRule", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns)...)
 	}
 	//subscribesTo edges
 	if len(s.GetAnnotations()["app.ibm.com/deployables"]) > 0 {
@@ -69,7 +69,7 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		for _, deployable := range strings.Split(s.GetAnnotations()["app.ibm.com/deployables"], ",") {
 			deployableMap[deployable] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(deployableMap, ret, "Deployable", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
 	}
 
 	//deployer subscriber edges

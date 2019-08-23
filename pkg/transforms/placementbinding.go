@@ -50,7 +50,7 @@ func (p PlacementBindingResource) BuildEdges(ns NodeStore) []Edge {
 	if p.PlacementPolicyRef.Name != "" {
 		placementPolicyMap := make(map[string]struct{})
 		placementPolicyMap[p.PlacementPolicyRef.Name] = struct{}{}
-		ret = append(ret, edgesByDestinationName(placementPolicyMap, ret, "PlacementPolicy", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(placementPolicyMap, "PlacementPolicy", nodeInfo, ns)...)
 	}
 	return ret
 }

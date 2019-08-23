@@ -37,7 +37,7 @@ func (h HelmCRResource) BuildEdges(ns NodeStore) []Edge {
 
 	if h.Spec.ReleaseName != "" {
 		releaseMap[h.Spec.ReleaseName] = struct{}{}
-		ret = append(ret, edgesByDestinationName(releaseMap, ret, "Release", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
 	}
 	//deployer subscriber edges
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)

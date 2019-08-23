@@ -52,7 +52,7 @@ func (p PersistentVolumeClaimResource) BuildEdges(ns NodeStore) []Edge {
 	if pvClaimNode.Properties["volumeName"] != "" {
 		if volName, ok := pvClaimNode.Properties["volumeName"].(string); ok {
 			volumeMap[volName] = struct{}{}
-			ret = append(ret, edgesByDestinationName(volumeMap, ret, "PersistentVolume", nodeInfo, ns)...)
+			ret = append(ret, edgesByDestinationName(volumeMap, "PersistentVolume", nodeInfo, ns)...)
 		}
 	}
 	//deployer subscriber edges
