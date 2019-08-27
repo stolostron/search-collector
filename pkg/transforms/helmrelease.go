@@ -105,6 +105,9 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 			kindstart := strings.Index(resource, kindstr) + len(kindstr)
 			kindstop := strings.Index(resource[kindstart:], newline) + kindstart
 			kind = resource[kindstart:kindstop] // ... pull `KIND` value out of `kind: KIND` line ...
+			if strings.Contains(kind, "'") || strings.Contains(kind, "\r") {
+				kind = strings.TrimRight(strings.TrimLeft(kind, "'\r"), "'\r") // ... remove surrounding single quotes '' or carriage returns \r, if any
+			}
 		}
 
 		name := ""
@@ -113,6 +116,9 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 			namestop := strings.Index(resource[namestart:], newline) + namestart
 			name = resource[namestart:namestop]        // ... pull `"NAME"` value out of `name: "NAME"` line...
 			name = strings.Replace(name, "\"", "", -1) // ... and remove surrounding "" from `"NAME"`
+			if strings.Contains(name, "'") || strings.Contains(name, "\r") {
+				name = strings.TrimRight(strings.TrimLeft(name, "'\r"), "'\r") // ... remove surrounding single quotes '' or carriage returns \r, if any
+			}
 		}
 
 		if name != "" && kind != "" { // ... and if both resource kind and name defined...
@@ -130,18 +136,30 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 	edges := []Edge{}
 
 	for _, resource := range smr {
-		resourceNode := ns.ByKindNamespaceName[resource.Kind][h.GetNamespace()][resource.Name]
-		if resourceNode.Metadata != nil { // Metadata can be nil if no node found
-			resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"]) // update node metadata to include release for upstream edge from resource to Release
+		namespace := h.GetNamespace()
+		kind := resource.Kind
+
+		// These are non-namespaced resources. So check in namespace "_NONE"
+		if kind == "ClusterRole" || kind == "ClusterRoleBinding" || kind == "CustomResourceDefinition" || kind == "APIService" {
+			namespace = "_NONE"
 		}
-		if _, ok := ns.ByKindNamespaceName[resource.Kind][h.GetNamespace()][resource.Name]; ok {
-			edges = append(edges, Edge{
-				SourceUID: ns.ByKindNamespaceName[resource.Kind][h.GetNamespace()][resource.Name].UID,
-				DestUID:   GetHelmReleaseUID(h.GetLabels()["NAME"]),
-				EdgeType:  "ownedBy",
-			})
+
+		// ownedBy edges
+		if resourceNode, ok := ns.ByKindNamespaceName[kind][namespace][resource.Name]; ok {
+			if resourceNode.Metadata != nil { // Metadata can be nil if no node found
+				resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"]) // update node metadata to include release for upstream edge from resource to Release
+			}
+			if GetHelmReleaseUID(h.GetLabels()["NAME"]) != "" {
+				edges = append(edges, Edge{
+					SourceUID: resourceNode.UID,
+					DestUID:   GetHelmReleaseUID(h.GetLabels()["NAME"]),
+					EdgeType:  "ownedBy",
+				})
+			} else {
+				glog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found", kind, resource.Name, h.GetLabels()["NAME"])
+			}
 		} else {
-			glog.V(2).Infof("%s %s edge ownedBy Helm Release %s not created: not found", resource.Kind, resource.Name, h.GetLabels()["NAME"])
+			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found", h.GetLabels()["NAME"], kind, resource.Name)
 		}
 	}
 
