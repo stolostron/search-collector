@@ -31,9 +31,9 @@ type CompleteState struct {
 // Public type for the diff state of the system since the previous.
 // Looks a little different than the format of reconciler's internal state because this is friendlier for outside use by other packages
 type Diff struct {
-	AddNodes, UpdateNodes  []tr.Node // Nodes to be added or updated
-	DeleteNodes            []string  // UIDs of nodes to be deleted
-	AddEdges, DeleteEdges  []tr.Edge // Edges to be added or deleted
+	AddNodes, UpdateNodes  []tr.Node     // Nodes to be added or updated
+	DeleteNodes            []tr.Deletion // UIDs of nodes to be deleted
+	AddEdges, DeleteEdges  []tr.Edge     // Edges to be added or deleted
 	TotalNodes, TotalEdges int
 }
 
@@ -113,7 +113,7 @@ func (r *Reconciler) Diff() Diff {
 		} else if ne.Operation == tr.Update {
 			ret.UpdateNodes = append(ret.UpdateNodes, ne.Node)
 		} else if ne.Operation == tr.Delete {
-			ret.DeleteNodes = append(ret.DeleteNodes, ne.UID)
+			ret.DeleteNodes = append(ret.DeleteNodes, tr.Deletion{UID: ne.UID})
 		}
 	}
 

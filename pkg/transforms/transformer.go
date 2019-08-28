@@ -75,6 +75,10 @@ type NodeEvent struct {
 	Operation    Operation
 }
 
+type Deletion struct {
+	UID string `json:"uid,omitempty"`
+}
+
 // make new constructor here, dry up code, then start testing
 
 func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEvent {

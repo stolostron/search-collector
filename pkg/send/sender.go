@@ -31,29 +31,17 @@ type DeleteNode struct {
 	UID  string
 }
 
-// Represents the operations needed to bring the hub's version of this cluster's data into sync.
-/* I'll put this back in once we add edges - Ethan
-type Diff struct {
-	nodes NodeDiff `json:"nodes"`
-	// edges EdgeDiff
-}
-*/
-
 // TODO import this type from the aggregator.
 // This type is for marshaling json which we send to the aggregator - it has to match the aggregator's API
 type Payload struct {
-	DeletedResources []Deletion `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
-	AddResources     []tr.Node  `json:"addResources,omitempty"`    // List of Nodes which must be added
-	UpdatedResources []tr.Node  `json:"updateResources,omitempty"` // List of Nodes that already existed which must be updated
+	DeletedResources []tr.Deletion `json:"deleteResources,omitempty"` // List of UIDs of nodes which need to be deleted
+	AddResources     []tr.Node     `json:"addResources,omitempty"`    // List of Nodes which must be added
+	UpdatedResources []tr.Node     `json:"updateResources,omitempty"` // List of Nodes that already existed which must be updated
 
 	AddEdges    []tr.Edge `json:"addEdges,omitempty"`    // List of Edges which must be added
 	DeleteEdges []tr.Edge `json:"deleteEdges,omitempty"` // List of Edges which must be deleted
 	ClearAll    bool      `json:"clearAll,omitempty"`    // Whether or not the aggregator should clear all data it has for the cluster first
 	RequestId   int       `json:"requestId,omitempty"`
-}
-
-type Deletion struct {
-	UID string `json:"uid,omitempty"`
 }
 
 func (p Payload) empty() bool {
@@ -132,22 +120,16 @@ func (s *Sender) diffPayload() (Payload, int, int) {
 
 		AddResources:     diff.AddNodes,
 		UpdatedResources: diff.UpdateNodes,
-		DeletedResources: make([]Deletion, len(diff.DeleteNodes)),
+		DeletedResources: diff.DeleteNodes,
 
 		AddEdges:    diff.AddEdges,
 		DeleteEdges: diff.DeleteEdges,
 	}
 
-	// DeletedResources was allocated with len of DeltedNode so we can copy via indexing
-	for i, uid := range diff.DeleteNodes {
-		payload.DeletedResources[i] = Deletion{uid}
-	}
-
 	return payload, diff.TotalNodes, diff.TotalEdges
 }
 
-// Returns a payload and expected total resources, containing the complete set of resources as they currently exist in this cluster
-// This function also RESETS THE DIFFS, so make sure you do something with the payload
+// Fetches complete state from the reconciler and transforms into payload struct
 func (s *Sender) completePayload() (Payload, int, int) {
 
 	complete := s.rec.Complete()
