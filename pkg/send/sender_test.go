@@ -8,166 +8,16 @@ The source code for this program is not published or otherwise divested of its t
 
 package send
 
-/*
-// Taking these out for now so that the package will compile, go tools are annoying when tests are broken.
-// Will have to be rewritten later.
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 
-func initTestSender() *Sender {
-	return &Sender{
-		previousState: make(map[string]transforms.Node),
-		currentState:  make(map[string]transforms.Node),
-		diffState:     make(map[string]transforms.NodeEvent),
-		lastSentTime:  -1,
-		InputChannel:  make(chan transforms.NodeEvent),
-		purgedNodes:   lru.New(10),
-	}
-}
-
-func TestReconcilerOutOfOrderDelete(t *testing.T) {
-	s := initTestSender()
-	ts := time.Now().Unix()
-
-	go func() {
-		s.InputChannel <- transforms.NodeEvent{
-			Time:      ts,
-			Operation: transforms.Delete,
-			Node: transforms.Node{
-				UID: "test-event",
-			},
-		}
-
-		s.InputChannel <- transforms.NodeEvent{
-			Time:      ts - 1000, // insert out of order based off of time
-			Operation: transforms.Create,
-			Node: transforms.Node{
-				UID: "test-event",
-			},
-		}
-	}()
-
-	// need two calls to drain the queue
-	reconcileNode(s)
-	reconcileNode(s)
-
-	if _, found := s.currentState["test-event"]; found {
-		t.Fatal("failed to ignore add event received out of order")
-	}
-
-	if _, found := s.purgedNodes.Get("test-event"); !found {
-		t.Fatal("failed to added deleted NodeEvent to purgedNodes cache")
-	}
-}
-
-func TestReconcilerOutOfOrderAdd(t *testing.T) {
-	s := initTestSender()
-	ts := time.Now().Unix()
-
-	go func() {
-		s.InputChannel <- transforms.NodeEvent{
-			Time:      ts,
-			Operation: transforms.Create,
-			Node: transforms.Node{
-				UID: "test-event",
-			},
-		}
-
-		s.InputChannel <- transforms.NodeEvent{
-			Time:      ts - 1000, // insert out of order based off of time
-			Operation: transforms.Create,
-			Node: transforms.Node{
-				UID: "test-event",
-				Properties: map[string]interface{}{
-					"staleData": true,
-				},
-			},
-		}
-	}()
-
-	// need two calls to drain the queue
-	reconcileNode(s)
-	reconcileNode(s)
-
-	testNode, ok := s.currentState["test-event"]
-	if !ok {
-		t.Fatal("failed to add test node to current state")
-	}
-
-	if _, ok := testNode.Properties["staleData"]; ok {
-		t.Fatal("inserted nodes out of order: found stale data")
-	}
-}
-
-func TestReconcilerAddDelete(t *testing.T) {
-	s := initTestSender()
-
-	go func() {
-		s.InputChannel <- transforms.NodeEvent{
-			Time:      time.Now().Unix(),
-			Operation: transforms.Create,
-			Node: transforms.Node{
-				UID: "test-event",
-			},
-		}
-	}()
-
-	reconcileNode(s)
-
-	if _, ok := s.currentState["test-event"]; !ok {
-		t.Fatal("failed to add test event to current state")
-	}
-	if _, ok := s.diffState["test-event"]; !ok {
-		t.Fatal("failed to add test event to diff state")
-	}
-
-	go func() {
-		s.InputChannel <- transforms.NodeEvent{
-			Time:      time.Now().Unix(),
-			Operation: transforms.Delete,
-			Node: transforms.Node{
-				UID: "test-event",
-			},
-		}
-	}()
-
-	reconcileNode(s)
-
-	if _, ok := s.currentState["test-event"]; ok {
-		t.Fatal("failed to remove test event from current state")
-	}
-	if _, ok := s.diffState["test-event"]; ok {
-		t.Fatal("failed to remove test event from diff state")
-	}
-}
-
-func TestReconcilerRedundant(t *testing.T) {
-	s := initTestSender()
-	s.previousState["test-event"] = transforms.Node{
-		UID: "test-event",
-		Properties: map[string]interface{}{
-			"very": "important",
-		},
-	}
-
-	go func() {
-		s.InputChannel <- transforms.NodeEvent{
-			Time:      time.Now().Unix(),
-			Operation: transforms.Create,
-			Node: transforms.Node{
-				UID: "test-event",
-				Properties: map[string]interface{}{
-					"very": "important",
-				},
-			},
-		}
-	}()
-
-	reconcileNode(s)
-
-	if _, ok := s.diffState["test-event"]; ok {
-		t.Fatal("failed to ignore redundant add event")
-	}
-}
-
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
+)
 
 func TestSenderWrongCount(t *testing.T) {
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -183,13 +33,14 @@ func TestSenderWrongCount(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	s := initTestSender()
-	s.httpClient = *ts.Client()
-	s.aggregatorURL = ts.URL
+	s := Sender{
+		httpClient:    *ts.Client(),
+		aggregatorURL: ts.URL,
+	}
 
 	payload := Payload{}
 
-	err := s.send(payload, 5)
+	err := s.send(payload, 5, 0)
 	if err == nil {
 		t.Fatal("send function does not error when expected count differs")
 	}
@@ -207,13 +58,14 @@ func TestSenderUnavailable(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	s := initTestSender()
-	s.httpClient = *ts.Client()
-	s.aggregatorURL = ts.URL
+	s := Sender{
+		httpClient:    *ts.Client(),
+		aggregatorURL: ts.URL,
+	}
 
 	payload := Payload{}
 
-	err := s.send(payload, 0)
+	err := s.send(payload, 0, 0)
 	if err == nil {
 		t.Fatal("send function does not error if server returns a 503")
 	}
@@ -230,9 +82,9 @@ func TestSenderSuccessful(t *testing.T) {
 
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := SyncResponse{
-			TotalResources:   n,
-			TotalAdded:       n,
-			UpdatedTimestamp: time.Now(),
+			TotalResources: n,
+			TotalAdded:     n,
+			TotalEdges:     n,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
@@ -243,9 +95,10 @@ func TestSenderSuccessful(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	s := initTestSender()
-	s.httpClient = *ts.Client()
-	s.aggregatorURL = ts.URL
+	s := Sender{
+		httpClient:    *ts.Client(),
+		aggregatorURL: ts.URL,
+	}
 
 	payload := Payload{
 		ClearAll: false,
@@ -257,9 +110,8 @@ func TestSenderSuccessful(t *testing.T) {
 		})
 	}
 
-	err := s.send(payload, n)
+	err := s.send(payload, n, n)
 	if err != nil {
 		t.Fatal("send function reports error:", err)
 	}
 }
-*/
