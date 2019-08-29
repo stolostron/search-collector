@@ -243,7 +243,9 @@ func (r *Reconciler) reconcileNode() {
 	}
 	if inPurged {
 		purgedNode, ok := nodeInterface.(tr.NodeEvent)
-		if ok && purgedNode.Time > ne.Time {
+		// If the event is already present in purged list , check if the purge time is
+		// equal or greater than the current time. Then we can skip processing the event
+		if ok && purgedNode.Time >= ne.Time {
 			return
 		}
 	}
