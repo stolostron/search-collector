@@ -31,9 +31,9 @@ const (
 	DEFAULT_TILLER_URL         = "tiller-deploy.kube-system:44134"
 	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
 	DEFAULT_HEARTBEAT_MS       = 60000  // 1 min
-	DEFAULT_MAX_BACKOFF_MS     = 300000 // 5 min
+	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
 	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
-	AGGREGATOR_API_VERSION     = "4.1.0"
+	AGGREGATOR_API_VERSION     = "3.2.1"
 )
 
 // Define a config type for gonfig to hold our config properties.
