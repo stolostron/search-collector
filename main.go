@@ -253,9 +253,11 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 		watchList.GroupVersion = apiList.GroupVersion
 		watchResources := []machineryV1.APIResource{}      // All the resources for which GET works.
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
-			// Ignore events because those cause too much noise.
+			// TODO: Use env variable for ignored resource kinds.
 			// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
-			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "events" {
+			// Ignore events because those cause too much noise.
+			// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
+			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "events" || apiResource.Name == "oauthaccesstoken" {
 				continue
 			}
 			for _, verb := range apiResource.Verbs {
