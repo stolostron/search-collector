@@ -257,7 +257,7 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 			// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
 			// Ignore events because those cause too much noise.
 			// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
-			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "events" || apiResource.Name == "oauthaccesstoken" {
+			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "events" || apiResource.Name == "oauthaccesstokens" {
 				continue
 			}
 			for _, verb := range apiResource.Verbs {
