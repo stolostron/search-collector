@@ -150,11 +150,13 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 				resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"]) // update node metadata to include release for upstream edge from resource to Release
 			}
 			if GetHelmReleaseUID(h.GetLabels()["NAME"]) != "" {
-				edges = append(edges, Edge{
-					SourceUID: resourceNode.UID,
-					DestUID:   GetHelmReleaseUID(h.GetLabels()["NAME"]),
-					EdgeType:  "ownedBy",
-				})
+				if resourceNode.UID != GetHelmReleaseUID(h.GetLabels()["NAME"]) { //avoid connecting node to itself
+					edges = append(edges, Edge{
+						SourceUID: resourceNode.UID,
+						DestUID:   GetHelmReleaseUID(h.GetLabels()["NAME"]),
+						EdgeType:  "ownedBy",
+					})
+				}
 			} else {
 				glog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found", kind, resource.Name, h.GetLabels()["NAME"])
 			}

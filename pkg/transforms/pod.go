@@ -177,12 +177,14 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	//runsOn edges
 	if p.Spec.NodeName != "" {
 		nodeName := p.Spec.NodeName
-		if _, ok := ns.ByKindNamespaceName["Node"]["_NONE"][nodeName]; ok {
-			ret = append(ret, Edge{
-				SourceUID: UID,
-				DestUID:   ns.ByKindNamespaceName["Node"]["_NONE"][nodeName].UID,
-				EdgeType:  "runsOn",
-			})
+		if dest, ok := ns.ByKindNamespaceName["Node"]["_NONE"][nodeName]; ok {
+			if UID != dest.UID { //avoid connecting node to itself
+				ret = append(ret, Edge{
+					SourceUID: UID,
+					DestUID:   dest.UID,
+					EdgeType:  "runsOn",
+				})
+			}
 		} else {
 			glog.V(2).Infof("Pod %s runsOn edge not created: Node %s not found", p.GetNamespace()+"/"+p.GetName(), "_NONE/"+nodeName)
 		}
