@@ -246,7 +246,7 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	} else if err != nil {
 		glog.Warning("ServerPreferredResources could not list all available resources: ", err)
 	}
-
+	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 	// Filter down to only resources which support WATCH operations.
 	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
 		watchList := machineryV1.APIResourceList{} // This is a copy of apiList but we only insert resources for which GET is supported.
@@ -259,6 +259,10 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 			// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
 			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "events" || apiResource.Name == "oauthaccesstokens" {
 				continue
+			}
+			//add non-namespaced resource to NonNSResourceMap
+			if !apiResource.Namespaced {
+				tr.NonNSResourceMap[apiResource.Kind] = struct{}{}
 			}
 			for _, verb := range apiResource.Verbs {
 				if verb == "watch" {

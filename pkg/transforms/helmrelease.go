@@ -108,6 +108,7 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 			if strings.Contains(kind, "'") || strings.Contains(kind, "\r") {
 				kind = strings.TrimRight(strings.TrimLeft(kind, "'\r"), "'\r") // ... remove surrounding single quotes '' or carriage returns \r, if any
 			}
+			kind = strings.TrimSpace(kind)
 		}
 
 		name := ""
@@ -119,6 +120,7 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 			if strings.Contains(name, "'") || strings.Contains(name, "\r") {
 				name = strings.TrimRight(strings.TrimLeft(name, "'\r"), "'\r") // ... remove surrounding single quotes '' or carriage returns \r, if any
 			}
+			name = strings.TrimSpace(name)
 		}
 
 		if name != "" && kind != "" { // ... and if both resource kind and name defined...
@@ -140,7 +142,7 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 		kind := resource.Kind
 
 		// These are non-namespaced resources. So check in namespace "_NONE"
-		if kind == "ClusterRole" || kind == "ClusterRoleBinding" || kind == "CustomResourceDefinition" || kind == "APIService" {
+		if _, ok := NonNSResourceMap[kind]; ok {
 			namespace = "_NONE"
 		}
 
@@ -161,7 +163,7 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 				glog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found", kind, resource.Name, h.GetLabels()["NAME"])
 			}
 		} else {
-			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found", h.GetLabels()["NAME"], kind, resource.Name)
+			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s", h.GetLabels()["NAME"], kind, resource.Name, namespace)
 		}
 	}
 

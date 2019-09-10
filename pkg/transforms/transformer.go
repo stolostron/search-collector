@@ -124,6 +124,8 @@ type Transformer struct {
 	// TODO add stopper channel?
 }
 
+var NonNSResourceMap map[string]struct{} //store non-namespaced resources in this map
+
 func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutines int, helmClient *helm.Client) Transformer {
 	glog.Info("Transformer started")
 	nr := numRoutines
