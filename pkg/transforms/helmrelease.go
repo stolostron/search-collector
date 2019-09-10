@@ -54,17 +54,14 @@ func (h HelmReleaseResource) BuildNode() Node {
 		node.Properties["_clusterNamespace"] = config.Cfg.ClusterNamespace
 	}
 
-	if h.Release == nil { // if release retrieval from Tiller failed...
-		return node // ...return node with partially-filled Properties
+	if h.Release != nil {
+		lastDeployed := h.Release.GetInfo().GetLastDeployed()
+		timestamp, _ := ptypes.Timestamp(lastDeployed)
+		node.Properties["chartName"] = h.Release.GetChart().GetMetadata().GetName()
+		node.Properties["chartVersion"] = h.Release.GetChart().GetMetadata().GetVersion()
+		node.Properties["namespace"] = h.Release.GetNamespace()
+		node.Properties["updated"] = timestamp.UTC().Format(time.RFC3339)
 	}
-
-	lastDeployed := h.Release.GetInfo().GetLastDeployed()
-	timestamp, _ := ptypes.Timestamp(lastDeployed)
-	node.Properties["chartName"] = h.Release.GetChart().GetMetadata().GetName()
-	node.Properties["chartVersion"] = h.Release.GetChart().GetMetadata().GetVersion()
-	node.Properties["namespace"] = h.Release.GetNamespace()
-	node.Properties["updated"] = timestamp.UTC().Format(time.RFC3339)
-
 	return node
 }
 

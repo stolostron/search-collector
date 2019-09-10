@@ -31,8 +31,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/tlsutil"
 )
 
 func main() {
@@ -43,21 +41,11 @@ func main() {
 		glog.Info("Built from git commit: ", commit)
 	}
 
-	// Create Helm client for transformer
-	var helmClient *helm.Client
-	helmTlsConfig, err := tlsutil.ClientConfig(config.Cfg.TillerOpts)
-	if err != nil {
-		glog.Error("Error creating helm TLS configuration: ", err)
-	} else {
-		helmClient = helm.NewClient(
-			helm.WithTLS(helmTlsConfig),
-			helm.Host(config.Cfg.TillerURL),
-		)
-		glog.Info("Created new helm client")
-	}
+	// Create input channel
+	transformChannel := make(chan *tr.Event)
 
 	// Create transformers
-	upsertTransformer := tr.NewTransformer(make(chan *tr.Event), make(chan tr.NodeEvent), numThreads, helmClient)
+	upsertTransformer := tr.NewTransformer(transformChannel, make(chan tr.NodeEvent), numThreads)
 
 	// Init reconciler
 	reconciler := rec.NewReconciler()
@@ -65,6 +53,8 @@ func main() {
 
 	// Create Sender, attached to transformer
 	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
+
+	tr.StartHelmClientProvider(transformChannel);
 
 	var clientConfig *rest.Config
 	var clientConfigError error

@@ -28,7 +28,6 @@ import (
 	batchBeta "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
@@ -126,7 +125,7 @@ type Transformer struct {
 
 var NonNSResourceMap map[string]struct{} //store non-namespaced resources in this map
 
-func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutines int, helmClient *helm.Client) Transformer {
+func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutines int) Transformer {
 	glog.Info("Transformer started")
 	nr := numRoutines
 	if numRoutines < 1 {
@@ -136,7 +135,7 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 
 	// start numRoutines threads to handle transformation.
 	for i := 0; i < nr; i++ {
-		go transformRoutine(inputChan, outputChan, helmClient)
+		go transformRoutine(inputChan, outputChan)
 	}
 	return Transformer{
 		Input:  inputChan,
@@ -147,8 +146,8 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 
 // This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
 // If anything goes wrong in here that requires you to skip the current resource, call panic() and the routine will be spun back up by handleRoutineExit and the bad resource won't be in there because it was already taken out by the previous run.
-func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm.Client) {
-	defer handleRoutineExit(input, output, helmClient)
+func transformRoutine(input chan *Event, output chan NodeEvent) {
+	defer handleRoutineExit(input, output)
 	glog.Info("Starting transformer routine")
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
@@ -369,7 +368,10 @@ func transformRoutine(input chan *Event, output chan NodeEvent, helmClient *helm
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			releaseName := typedResource.GetLabels()["NAME"]
-			release := getReleaseFromHelm(helmClient, releaseName) // either Release from Tiller or nil if Tiller unavailable
+			release := getReleaseFromHelm(releaseName) 
+			if release == nil {
+				AddToRetryChannel(event)
+			}
 			releaseTrans := HelmReleaseResource{&typedResource, release}
 			output <- NewNodeEvent(event, releaseTrans, "releases")
 		}
@@ -388,30 +390,32 @@ func IsHelmRelease(resource *unstructured.Unstructured) bool {
 	return false
 }
 
-func getReleaseFromHelm(helmClient *helm.Client, releaseName string) *release.Release {
-	if helmClient == nil {
-		glog.Error("Helm client not defined; Failed to fetch helm release:", releaseName)
+func getReleaseFromHelm( releaseName string) *release.Release {
+	helmClient := GetHelmClient();
+	if !HealthyConnection(){
+		glog.Warning("Helm client not healthy; Cannot fetch helm release:", releaseName)
 		return nil
 	}
 
 	rc, err := helmClient.ReleaseContent(releaseName)
 	if err != nil {
-		glog.Error("Failed to fetch helm release: ", releaseName, err)
+		glog.Warning("Failed to fetch helm release: ", releaseName, err)
 		return nil
 	}
+	glog.V(3).Info("Retrieved helm release from Tiller: ", releaseName)
 	return rc.GetRelease()
 }
 
 // Handles a panic from inside transformRoutine.
 // If the panic was due to an error, starts another transformRoutine with the same channels as this one.
 // If not, just lets it die.
-func handleRoutineExit(input chan *Event, output chan NodeEvent, helmClient *helm.Client) {
+func handleRoutineExit(input chan *Event, output chan NodeEvent) {
 	// Recover and check the value. If we are here because of a panic, something will be in it.
 	if r := recover(); r != nil { // Case where we got here from a panic
 		glog.Errorf("Error in transformer routine: %v\n", r)
 		glog.Error(string(debug.Stack()))
 
 		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
-		go transformRoutine(input, output, helmClient)
+		go transformRoutine(input, output)
 	}
 }
