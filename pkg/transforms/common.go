@@ -116,8 +116,11 @@ func (u UnstructuredResource) BuildNode() Node {
 }
 
 func (u UnstructuredResource) BuildEdges(ns NodeStore) []Edge {
-	//no op for now to implement interface
-	return []Edge{}
+	ret := []Edge{}
+	nodeInfo := NodeInfo{NameSpace: u.GetNamespace(), UID: prefixedUID(u.GetUID()), Kind: u.GetKind(), Name: u.GetName()}
+	//deployer subscriber edges
+	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+	return ret
 }
 
 // Prefixes the given UID with the cluster name from config and a /
