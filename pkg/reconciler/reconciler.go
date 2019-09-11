@@ -268,7 +268,8 @@ func (r *Reconciler) reconcileNode() {
 			ne.Operation = tr.Update
 
 			// skip updates if new event is redundant to our previous state (a property that we don't care about triggered an update)
-			if reflect.DeepEqual(ne.Node, previousNode) {
+			// We only care about the Properties, the Metadata is only used to compute the edges and not sent with the node data.
+			if reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) {
 				return
 			}
 		}
