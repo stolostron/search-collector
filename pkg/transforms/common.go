@@ -340,3 +340,20 @@ func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string, onlyApplica
 	}
 	return ret
 }
+
+// SliceDiff returns the elements in bigSlice that aren't in smallSlice
+func SliceDiff(bigSlice, smallSlice []string) []string {
+	smallMap := make(map[string]struct{}, len(smallSlice))
+	for _, elem := range smallSlice {
+		smallMap[elem] = struct{}{}
+	}
+
+	var diff []string
+
+	for _, elem := range bigSlice {
+		if _, ok := smallMap[elem]; !ok {
+			diff = append(diff, elem)
+		}
+	}
+	return diff
+}

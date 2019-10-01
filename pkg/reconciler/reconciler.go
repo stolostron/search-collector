@@ -195,10 +195,31 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
 	}
 
+	//After building the nodestore, get all the application UIDs in appUIDs and others in otherUIDs.
+	//Process the application nodes first while building edges so that _hostingApplication metadata gets populated for subscription nodes
+	allUIDs := make([]string, len(r.edgeFuncs))
+
+	// Copy all uids from reconciler edgeFuncs
+	i := 0
+	for uid := range r.edgeFuncs {
+		allUIDs[i] = uid
+		i++
+	}
+	// Filter all application nodes, store their UIDs in appUIDs
+	apps := ns.ByKindNamespaceName["Application"]
+	var appUIDs []string
+	for namespace := range apps {
+		for name := range apps[namespace] {
+			appUIDs = append(appUIDs, apps[namespace][name].UID)
+		}
+	}
+	// Store non-app UIDs in otherUIDs
+	otherUIDs := tr.SliceDiff(allUIDs, appUIDs)
+
 	// Loop across all the nodes and build their edges.
-	for uid, ef := range r.edgeFuncs {
+	for _, uid := range append(appUIDs, otherUIDs...) {
 		glog.V(3).Infof("Calculating edges UID: %s", uid)
-		edges := ef(ns) // Get edges from this specific node
+		edges := r.edgeFuncs[uid](ns) // Get edges from this specific node
 
 		for _, edge := range edges {
 			if _, ok := ret[edge.SourceUID]; !ok { // Init if it's not there
