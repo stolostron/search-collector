@@ -11,6 +11,7 @@ package transforms
 import (
 	"encoding/json"
 	"runtime/debug"
+	"sync"
 
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
@@ -123,7 +124,10 @@ type Transformer struct {
 	// TODO add stopper channel?
 }
 
-var NonNSResourceMap map[string]struct{} //store non-namespaced resources in this map
+var (
+	NonNSResourceMap map[string]struct{} //store non-namespaced resources in this map
+	NonNSResMapMutex = sync.RWMutex{}
+)
 
 func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutines int) Transformer {
 	glog.Info("Transformer started")
@@ -368,7 +372,7 @@ func transformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			releaseName := typedResource.GetLabels()["NAME"]
-			release := getReleaseFromHelm(releaseName) 
+			release := getReleaseFromHelm(releaseName)
 			if release == nil {
 				AddToRetryChannel(event)
 			}
@@ -390,9 +394,9 @@ func IsHelmRelease(resource *unstructured.Unstructured) bool {
 	return false
 }
 
-func getReleaseFromHelm( releaseName string) *release.Release {
-	helmClient := GetHelmClient();
-	if !HealthyConnection(){
+func getReleaseFromHelm(releaseName string) *release.Release {
+	helmClient := GetHelmClient()
+	if !HealthyConnection() {
 		glog.Warning("Helm client not healthy; Cannot fetch helm release:", releaseName)
 		return nil
 	}

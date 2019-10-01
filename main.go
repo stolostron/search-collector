@@ -54,7 +54,7 @@ func main() {
 	// Create Sender, attached to transformer
 	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
 
-	tr.StartHelmClientProvider(transformChannel);
+	tr.StartHelmClientProvider(transformChannel)
 
 	var clientConfig *rest.Config
 	var clientConfigError error
@@ -252,7 +252,12 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 			}
 			//add non-namespaced resource to NonNSResourceMap
 			if !apiResource.Namespaced {
-				tr.NonNSResourceMap[apiResource.Kind] = struct{}{}
+				tr.NonNSResMapMutex.Lock()
+				if _, ok := tr.NonNSResourceMap[apiResource.Kind]; !ok {
+					tr.NonNSResourceMap[apiResource.Kind] = struct{}{}
+				}
+				tr.NonNSResMapMutex.Unlock()
+
 			}
 			for _, verb := range apiResource.Verbs {
 				if verb == "watch" {

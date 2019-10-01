@@ -138,8 +138,13 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 		namespace := h.GetNamespace()
 		kind := resource.Kind
 
-		// These are non-namespaced resources. So check in namespace "_NONE"
-		if _, ok := NonNSResourceMap[kind]; ok {
+		//Obtain Read Lock before checking the map
+		NonNSResMapMutex.RLock()
+		_, notNameSpaced := NonNSResourceMap[kind]
+		NonNSResMapMutex.RUnlock()
+
+		if notNameSpaced {
+			// These are non-namespaced resources. So check in namespace "_NONE"
 			namespace = "_NONE"
 		}
 
