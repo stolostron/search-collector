@@ -3,14 +3,14 @@
     "kind": "Channel",
     "metadata": {
         "annotations": {
-            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"app.ibm.com/v1alpha1\",\"kind\":\"Channel\",\"metadata\":{\"annotations\":{},\"name\":\"qa\",\"namespace\":\"kube-system\"},\"spec\":{\"criteria\":{\"annotations\":{\"dev-ready\":true},\"labelSelector\":null,\"name\":null,\"sourceNamespace\":\"default\"},\"pathname\":\"https://s3-or-minio-url/abucket\",\"secretRef\":{\"name\":\"secname\"},\"type\":\"ObjectBucket\"}}\n"
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"app.ibm.com/v1alpha1\",\"kind\":\"Channel\",\"metadata\":{\"annotations\":{},\"name\":\"test-channel\",\"namespace\":\"testNs\"},\"spec\":{\"criteria\":{\"annotations\":{\"dev-ready\":true},\"labelSelector\":null,\"name\":null,\"sourceNamespace\":\"default\"},\"pathname\":\"https://s3-or-minio-url/abucket\",\"secretRef\":{\"name\":\"secname\"},\"type\":\"ObjectBucket\"}}\n"
         },
         "creationTimestamp": "2019-06-26T19:42:49Z",
         "generation": 1,
-        "name": "qa",
-        "namespace": "kube-system",
+        "name": "test-channel",
+        "namespace": "testNs",
         "resourceVersion": "4775785",
-        "selfLink": "/apis/app.ibm.com/v1alpha1/namespaces/kube-system/channels/qa",
+        "selfLink": "/apis/app.ibm.com/v1alpha1/namespaces/testNs/channels/test-channel",
         "uid": "9453cd67-984a-11e9-a05f-0d59e642c7ac"
     },
     "spec": {

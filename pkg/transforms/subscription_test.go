@@ -23,5 +23,5 @@ func TestTransformSubscription(t *testing.T) {
 	AssertEqual("kind", node.Properties["kind"], "Subscription", t)
 	AssertEqual("packageFilterVersion", node.Properties["packageFilterVersion"], "1.x", t)
 	AssertEqual("package", node.Properties["package"], "test-package", t)
-	AssertEqual("channel", node.Properties["channel"], "testNs/test", t)
+	AssertEqual("channel", node.Properties["channel"], "testNs/test-channel", t)
 }

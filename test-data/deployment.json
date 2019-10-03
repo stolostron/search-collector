@@ -3,7 +3,9 @@
     "kind": "Deployment",
     "metadata": {
         "annotations": {
-            "deployment.kubernetes.io/revision": "1"
+            "deployment.kubernetes.io/revision": "1",
+            "app.ibm.com/hosting-deployable": "default/test-app-deployable",
+            "app.ibm.com/hosting-subscription": "default/test-subscription"
         },
         "creationTimestamp": "2019-02-21T21:30:33Z",
         "generation": 1,
@@ -13,11 +15,11 @@
             "heritage": "Tiller",
             "release": "test-fixture"
         },
-        "name": "test-fixture-test-fixture",
+        "name": "fake-deployment",
         "namespace": "default",
         "resourceVersion": "1142",
-        "selfLink": "/apis/extensions/v1beta1/namespaces/default/deployments/test-fixture-test-fixture",
-        "uid": "eb74b6ce-361f-11e9-85ca-00163e019656"
+        "selfLink": "/apis/extensions/v1beta1/namespaces/default/deployments/fake-deployment",
+        "uid": "1cc734de-36dd-11e9-a4d8-00163e019656" 
     },
     "spec": {
         "progressDeadlineSeconds": 600,
@@ -133,7 +135,7 @@
             {
                 "lastTransitionTime": "2019-02-21T21:30:33Z",
                 "lastUpdateTime": "2019-02-21T21:30:54Z",
-                "message": "ReplicaSet \"test-fixture-test-fixture-57845467b7\" has successfully progressed.",
+                "message": "ReplicaSet \"fake-replicaset\" has successfully progressed.",
                 "reason": "NewReplicaSetAvailable",
                 "status": "True",
                 "type": "Progressing"

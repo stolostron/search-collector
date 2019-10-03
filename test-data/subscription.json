@@ -3,7 +3,7 @@
     "kind": "Subscription",
     "metadata": {
         "annotations": {
-            "app.ibm.com/hosting-deployable": "default/test-deployable",
+            "app.ibm.com/deployables": "default/test-app-deployable",
             "app.ibm.com/managed-cluster": "/"
         },
         "creationTimestamp": "2019-07-16T20:58:03Z",
@@ -15,12 +15,22 @@
         "uid": "57fd017f-b91d-20d1-803z-1f61f731b8bb"
     },
     "spec": {
-        "channel": "testNs/test",
+        "channel": "testNs/test-channel",
         "name": "test-package",
         "packageFilter": {
             "version": "1.x"
         },
         "source": "",
-        "sourceNamespace": ""
-    }
+        "sourceNamespace": "",
+        "placement": {
+            "placementRef": {
+                "kind": "PlacementRule",
+                "name": "test-placementrule"
+            }
+        }
+    },
+    "status": {
+        "lastUpdateTime": "2019-07-16T21:51:28Z",
+        "phase": "Propagated"
+        }
 }

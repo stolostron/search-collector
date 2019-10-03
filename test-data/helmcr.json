@@ -28,7 +28,7 @@
     "spec": {
         "auth": {},
         "chartName": "test",
-        "releaseName": "testSubscription-ngnix",
+        "releaseName": "helmrelease-ex",
         "repoUrl": "https://kubernetes-charts.storage.googleapis.com",
         "values": "replicaCount: 2\n",
         "version": "3.6.1"

@@ -26,6 +26,10 @@
     },
     "spec": {
         "placement": {
+            "placementRef": {
+              "kind": "PlacementRule",
+              "name": "test-placementrule"
+            },
             "clusters": [
                 {
                     "name": "test-cluster-1"

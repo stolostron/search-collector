@@ -17,7 +17,7 @@
             "pod-template-hash": "778b55ff65",
             "release": "fake-app"
         },
-        "name": "fake-app-fake-app-foo-778b55ff65",
+        "name": "fake-replicaset",
         "namespace": "default",
         "ownerReferences": [
             {
@@ -25,13 +25,13 @@
                 "blockOwnerDeletion": true,
                 "controller": true,
                 "kind": "Deployment",
-                "name": "fake-app-fake-app-foo",
+                "name": "fake-deployment",
                 "uid": "1cc734de-36dd-11e9-a4d8-00163e019656"
             }
         ],
         "resourceVersion": "134381",
-        "selfLink": "/apis/extensions/v1beta1/namespaces/default/replicasets/fake-app-fake-app-foo-778b55ff65",
-        "uid": "1cce3c4b-36dd-11e9-a4d8-00163e019656"
+        "selfLink": "/apis/extensions/v1beta1/namespaces/default/replicasets/fake-replicaset",
+        "uid": "eb762405-361f-11e9-85ca-00163e019656"
     },
     "spec": {
         "replicas": 1,

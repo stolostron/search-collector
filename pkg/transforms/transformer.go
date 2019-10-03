@@ -139,7 +139,7 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 
 	// start numRoutines threads to handle transformation.
 	for i := 0; i < nr; i++ {
-		go transformRoutine(inputChan, outputChan)
+		go TransformRoutine(inputChan, outputChan)
 	}
 	return Transformer{
 		Input:  inputChan,
@@ -150,7 +150,7 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 
 // This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
 // If anything goes wrong in here that requires you to skip the current resource, call panic() and the routine will be spun back up by handleRoutineExit and the bad resource won't be in there because it was already taken out by the previous run.
-func transformRoutine(input chan *Event, output chan NodeEvent) {
+func TransformRoutine(input chan *Event, output chan NodeEvent) {
 	defer handleRoutineExit(input, output)
 	glog.Info("Starting transformer routine")
 	// TODO not exactly sure, but we may need a stopper channel here.
@@ -420,6 +420,6 @@ func handleRoutineExit(input chan *Event, output chan NodeEvent) {
 		glog.Error(string(debug.Stack()))
 
 		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
-		go transformRoutine(input, output)
+		go TransformRoutine(input, output)
 	}
 }
