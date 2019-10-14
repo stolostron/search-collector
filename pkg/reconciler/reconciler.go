@@ -289,8 +289,9 @@ func (r *Reconciler) reconcileNode() {
 			ne.Operation = tr.Update
 
 			// skip updates if new event is redundant to our previous state (a property that we don't care about triggered an update)
-			// We only care about the Properties, the Metadata is only used to compute the edges and not sent with the node data.
-			if reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) {
+			// For nodes that are not applications or subscriptions, We only care about the Properties, the Metadata is only used to compute the edges and not sent with the node data.
+			// If the node is an application or subscription, it might have changes to its metadata we need to account for - don't skip updates on those
+			if reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) && ne.Node.Properties["kind"] != "Application" && ne.Node.Properties["kind"] != "Subscription" {
 				return
 			}
 		}
