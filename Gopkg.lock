@@ -351,6 +351,22 @@
   revision = "34d2d6ca611bed748dedeb5fd282b1f54ea1e99d"
 
 [[projects]]
+  branch = "master"
+  digest = "1:57d8b6c755f9c8500822c34b6768bee5c3935bbb4162a2b19db3bae9776564b1"
+  name = "github.ibm.com/IBMPrivateCloud/ma-mcm-controller"
+  packages = ["pkg/apis/mcm/v1alpha1"]
+  pruneopts = "UT"
+  revision = "8728f496c08f5d8cf95972aca97d31456e821d60"
+
+[[projects]]
+  branch = "master"
+  digest = "1:76009cdf60799fc7032fcf49dc395dd503e3e25a8ab02b499885c093ab289419"
+  name = "github.ibm.com/IBMPrivateCloud/va-mcm-controller"
+  packages = ["pkg/apis/mcm/v1alpha1"]
+  pruneopts = "UT"
+  revision = "bd4327355f5924dbd2077cec71ed0896b6092651"
+
+[[projects]]
   digest = "1:3277d1b261870a5d24781d163a868e804d2e1d96f166de54fefd8622addbb928"
   name = "github.ibm.com/seed/seed-sdk"
   packages = [
@@ -841,6 +857,8 @@
     "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1",
+    "github.ibm.com/IBMPrivateCloud/ma-mcm-controller/pkg/apis/mcm/v1alpha1",
+    "github.ibm.com/IBMPrivateCloud/va-mcm-controller/pkg/apis/mcm/v1alpha1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/batch/v1beta1",

@@ -1,0 +1,55 @@
+{
+    "apiVersion": "policies.ibm.com/v1alpha1",
+    "kind": "MutationPolicy",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"policies.ibm.com/v1alpha1\",\"kind\":\"MutationPolicy\",\"metadata\":{\"annotations\":{},\"label\":{\"category\":\"System-Integrity\"},\"name\":\"mutation-policy-example\",\"namespace\":\"kube-system\"},\"spec\":{\"conditions\":{\"ownership\":[\"ReplicaSet\",\"Deployment\",\"DaemonSet\",\"ReplicationController\"]},\"namespaceSelector\":{\"exclude\":[\"kube-system\"],\"include\":[\"default\",\"kube-*\"]},\"remediationAction\":\"inform\"}}\n"
+        },
+        "creationTimestamp": "2019-10-17T18:22:43Z",
+        "finalizers": [
+            "finalizer.policies.ibm.com"
+        ],
+        "generation": 3,
+        "labels": {
+            "category": "system-and-information-integrity"
+        },
+        "name": "mutation-policy-example",
+        "namespace": "kube-system",
+        "resourceVersion": "5318931",
+        "selfLink": "/apis/policies.ibm.com/v1alpha1/namespaces/kube-system/mutationpolicies/mutation-policy-example",
+        "uid": "1c403cd6-f10b-11e9-ba0f-0016ac10172d"
+    },
+    "spec": {
+        "conditions": {
+            "ownership": [
+                "ReplicaSet",
+                "Deployment",
+                "DaemonSet",
+                "ReplicationController"
+            ]
+        },
+        "namespaceSelector": {
+            "exclude": [
+                "kube-system"
+            ],
+            "include": [
+                "default",
+                "kube-*"
+            ]
+        },
+        "remediationAction": "inform"
+    },
+    "status": {
+        "compliancyDetails": {
+            "mutation-policy-example": {
+                "default": [
+                    "2 mutated pods detected in namespace `default`"
+                ],
+                "kube-public": [
+                    "3 mutated pods detected in namespace `kube-public`"
+                ]
+            }
+        },
+        "compliant": "Compliant"
+    }
+}

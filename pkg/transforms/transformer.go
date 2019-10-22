@@ -23,6 +23,8 @@ import (
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
+	mapolicy "github.ibm.com/IBMPrivateCloud/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
+	vapolicy "github.ibm.com/IBMPrivateCloud/va-mcm-controller/pkg/apis/mcm/v1alpha1"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
@@ -238,6 +240,21 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeploymentResource{&typedResource}
 
+		case "Event":
+			typedResource := core.Event{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			//We want to process only if the Event is of our interest VA and MA
+			var checkType *core.Event
+			checkType = &typedResource
+			if checkType.InvolvedObject.Kind == "VulnerabilityPolicy" || checkType.InvolvedObject.Kind == "MutationPolicy" {
+				trans = EventResource{&typedResource}
+			} else {
+				continue
+			}
+
 		//This is the application's HelmCR of kind HelmRelease
 		case "HelmRelease":
 			typedResource := helmRelease.HelmRelease{}
@@ -254,6 +271,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = JobResource{&typedResource}
+
+		case "MutationPolicy":
+			typedResource := mapolicy.MutationPolicy{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = MutationPolicyResource{&typedResource}
 
 		case "Namespace":
 			typedResource := core.Namespace{}
@@ -358,6 +383,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = SubscriptionResource{&typedResource}
+
+		case "VulnerabilityPolicy":
+			typedResource := vapolicy.VulnerabilityPolicy{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = VulnerabilityPolicyResource{&typedResource}
 
 		default:
 			trans = UnstructuredResource{event.Resource}

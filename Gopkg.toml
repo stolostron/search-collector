@@ -34,6 +34,14 @@
   branch = "master"
 
 [[constraint]]
+  name = "github.ibm.com/IBMPrivateCloud/va-mcm-controller"
+  branch = "master"
+
+[[constraint]]
+  name = "github.ibm.com/IBMPrivateCloud/ma-mcm-controller"
+  branch = "master"
+
+[[constraint]]
   name = "github.ibm.com/IBMPrivateCloud/hcm-api"
   branch = "master"
 

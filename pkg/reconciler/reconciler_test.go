@@ -29,11 +29,12 @@ type NodeEdge struct {
 
 func initTestReconciler() *Reconciler {
 	return &Reconciler{
-		currentNodes:  make(map[string]tr.Node),
-		previousNodes: make(map[string]tr.Node),
-		diffNodes:     make(map[string]tr.NodeEvent),
-
-		edgeFuncs: make(map[string]func(ns tr.NodeStore) []tr.Edge),
+		currentNodes:       make(map[string]tr.Node),
+		previousNodes:      make(map[string]tr.Node),
+		diffNodes:          make(map[string]tr.NodeEvent),
+		k8sEventNodes:      make(map[string]tr.NodeEvent),
+		previousEventEdges: make(map[string]tr.Edge),
+		edgeFuncs:          make(map[string]func(ns tr.NodeStore) []tr.Edge),
 
 		Input:       make(chan tr.NodeEvent),
 		purgedNodes: lru.New(CACHE_SIZE),
@@ -270,9 +271,42 @@ func TestReconcilerDiff(t *testing.T) {
 			"very": "important",
 		},
 	}
+
+	// Verify K8S Event Update - to verify Policy and Offending resource
+	// We need a Policy and a Resource (Pod) and a Event which has the message with Vulnerability
+	testReconciler.currentNodes["local-cluster/eb790c2e-361f-11e9-85ca-00163e019656"] = tr.Node{
+		UID: "local-cluster/eb790c2e-361f-11e9-85ca-00163e019656",
+		Properties: map[string]interface{}{
+			"very": "important",
+			"kind": "Pod",
+		},
+	}
+	testReconciler.currentNodes["local-cluster/1c403cd6-f10b-11e9-ba0f-0016ac10172d"] = tr.Node{
+		UID: "local-cluster/1c403cd6-f10b-11e9-ba0f-0016ac10172d",
+		Properties: map[string]interface{}{
+			"very": "important",
+			"kind": "MutationPolicy",
+		},
+	}
+	k8EventNode := tr.Node{
+		UID: "local-cluster/9ad2d2e0-f04b-11e9-ba0f-0016ac10172d",
+		Properties: map[string]interface{}{
+			"very":               "important",
+			"kind":               "Event",
+			"InvolvedObject.uid": "1c403cd6-f10b-11e9-ba0f-0016ac10172d",
+			"message.uid":        "eb790c2e-361f-11e9-85ca-00163e019656",
+		},
+	}
+	// This will create a Edge using the Event , MutationPolicy and Pod
+	k8sNodeEvent := tr.NodeEvent{
+		Time:      time.Now().Unix(),
+		Operation: tr.Create,
+		Node:      k8EventNode,
+	}
+
 	//Add events
 	events := createNodeEvents()
-
+	events = append(events, k8sNodeEvent)
 	//Input node events to reconciler
 	go func() {
 		for _, ne := range events {
@@ -285,11 +319,34 @@ func TestReconcilerDiff(t *testing.T) {
 	}
 	//Compute reconciler diff - this time there should be 1 node and edge to add, 1 node to update
 	diff := testReconciler.Diff()
+	// Delete the k8sNodeEvent - This should trigger a delete Edge in the Next diff
+	k8sNodeEvent = tr.NodeEvent{
+		Time:      time.Now().Unix(),
+		Operation: tr.Delete,
+		Node:      k8EventNode,
+	}
+	go func() {
+		testReconciler.Input <- k8sNodeEvent
+	}()
+	testReconciler.reconcileNode()
 	//Compute reconciler diff again - this time there shouldn't be any new edges or nodes to add/update
 	nextDiff := testReconciler.Diff()
 
-	if (len(diff.AddNodes) != 1 || len(diff.UpdateNodes) != 1 || len(diff.AddEdges) != 1) ||
-		(len(nextDiff.AddNodes) != 0 || len(nextDiff.UpdateNodes) != 0 || len(nextDiff.AddEdges) != 0) {
+	//We are all set . IF we get the Delete Event again Verify next diff has No changes
+
+	k8sNodeEvent = tr.NodeEvent{
+		Time:      time.Now().Unix(),
+		Operation: tr.Delete,
+		Node:      k8EventNode,
+	}
+	go func() {
+		testReconciler.Input <- k8sNodeEvent
+	}()
+	testReconciler.reconcileNode()
+	thirdDiff := testReconciler.Diff()
+
+	if (len(diff.AddNodes) != 1 || len(diff.UpdateNodes) != 1 || len(diff.AddEdges) != 2) ||
+		(len(nextDiff.AddNodes) != 0 || len(nextDiff.UpdateNodes) != 0 || len(nextDiff.AddEdges) != 0 || nextDiff.DeleteEdges[0].EdgeType != "Violation" || len(thirdDiff.DeleteEdges) != 0) {
 		t.Fatal("Error: Reconciler Diff() not working as expected")
 	} else {
 		t.Log("Reconciler Diff() working as expected")
@@ -365,10 +422,21 @@ func TestReconcilerComplete(t *testing.T) {
 		}()
 		testReconciler.reconcileNode()
 	}
+	_, pass := testReconciler.k8sEventNodes["local-cluster/a1140d22-f04b-11e9-ba0f-0016ac10172d"]
+	if !pass {
+		t.Log(len(testReconciler.k8sEventNodes))
+		for k := range testReconciler.k8sEventNodes {
+			t.Logf("Event UIDs present : %s", k)
+		}
+		t.Fatal("Error: Reconciler Missing EventNode")
+
+	}
+
 	// Compute reconciler Complete() state
 	com := testReconciler.Complete()
-	// Currently we have 25 nodes and 27 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
-	if len(com.Edges) != 27 || com.TotalEdges != 27 || len(com.Nodes) != 25 || com.TotalNodes != 25 {
+	// Currently we have 28 nodes and 27 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
+	// We dont create Nodes for kind = Event
+	if len(com.Edges) != 28 || com.TotalEdges != 28 || len(com.Nodes) != 27 || com.TotalNodes != 27 {
 		t.Fatal("Error: Reconciler Complete() not working as expected")
 	} else {
 		t.Log("Reconciler Complete() working as expected")

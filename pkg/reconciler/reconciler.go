@@ -10,10 +10,12 @@ package reconciler
 
 import (
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
+	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 )
 
@@ -66,11 +68,12 @@ func nodeTripleMap(allNodes map[string]tr.Node) map[string]map[string]map[string
 
 // This object tracks and stores resources, and can regurgitate diffs based on the last time it was asked.
 type Reconciler struct {
-	currentNodes  map[string]tr.Node      // Keyed by UID
-	previousNodes map[string]tr.Node      // Keyed by UID
-	diffNodes     map[string]tr.NodeEvent // Keyed by UID
-
-	edgeFuncs map[string]func(ns tr.NodeStore) []tr.Edge // Edge building functions, keyed by UID
+	currentNodes       map[string]tr.Node                         // Keyed by UID
+	previousNodes      map[string]tr.Node                         // Keyed by UID
+	diffNodes          map[string]tr.NodeEvent                    // Keyed by UID
+	k8sEventNodes      map[string]tr.NodeEvent                    // Keyed by UID
+	previousEventEdges map[string]tr.Edge                         // Keyed by UID
+	edgeFuncs          map[string]func(ns tr.NodeStore) []tr.Edge // Edge building functions, keyed by UID
 
 	previousEdges map[string]map[string]tr.Edge // Keyed by source then dest so we can quickly compare the new list
 	totalEdges    int                           // Save the total count as we build to avoid looping when needed
@@ -83,11 +86,12 @@ type Reconciler struct {
 // Creates a new Reconciler with a nil Input - you must set the Input and then start sending things through in order to use it.
 func NewReconciler() *Reconciler {
 	r := &Reconciler{
-		currentNodes:  make(map[string]tr.Node),
-		previousNodes: make(map[string]tr.Node),
-		diffNodes:     make(map[string]tr.NodeEvent),
-
-		edgeFuncs: make(map[string]func(ns tr.NodeStore) []tr.Edge),
+		currentNodes:       make(map[string]tr.Node),
+		previousNodes:      make(map[string]tr.Node),
+		diffNodes:          make(map[string]tr.NodeEvent),
+		k8sEventNodes:      make(map[string]tr.NodeEvent),
+		previousEventEdges: make(map[string]tr.Edge),
+		edgeFuncs:          make(map[string]func(ns tr.NodeStore) []tr.Edge),
 
 		mutex:       sync.Mutex{},
 		purgedNodes: lru.New(CACHE_SIZE),
@@ -140,6 +144,10 @@ func (r *Reconciler) Diff() Diff {
 			ret.DeleteEdges = append(ret.DeleteEdges, oldEdge)
 		}
 	}
+	addEventEdges, deleteEventEdges := r.allEventEdges()  // Get all the Event Edges
+	ret.AddEdges = append(ret.AddEdges, addEventEdges...) // Send to Aggregator addEdge
+
+	ret.DeleteEdges = append(ret.DeleteEdges, deleteEventEdges...) // Send to Aggregator deleteEdge
 
 	// We are now done with the old list of previousEdges, next time this is called we will want the edges we just calculated to be the previous.
 	r.previousEdges = newEdges
@@ -147,7 +155,7 @@ func (r *Reconciler) Diff() Diff {
 	r.resetDiffs()
 
 	ret.TotalNodes = len(r.currentNodes)
-	ret.TotalEdges = r.totalEdges
+	ret.TotalEdges = r.totalEdges + len(addEventEdges)
 	return ret
 }
 
@@ -174,13 +182,16 @@ func (r *Reconciler) Complete() CompleteState {
 		}
 	}
 
+	addEventEdges, _ := r.allEventEdges()           // Get all the Event Edges , there is nothing to delete for complete
+	ret.Edges = append(ret.Edges, addEventEdges...) // Add to regular pool of edges - Aggregator
+
 	// We are now done with the old list of previousEdges, next time this is called we will want the edges we just calculated to be the previous.
 	r.previousEdges = newEdges
 
 	r.resetDiffs()
 
 	ret.TotalNodes = len(r.currentNodes)
-	ret.TotalEdges = r.totalEdges
+	ret.TotalEdges = r.totalEdges + len(addEventEdges)
 	return ret
 }
 
@@ -255,6 +266,15 @@ func (r *Reconciler) reconcileNode() {
 	r.mutex.Lock() // Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit and then blocked, we could end up getting out of order
 	defer r.mutex.Unlock()
 
+	//Kind will not be nil during runtime , but we have tests with nil kind - so a check for it
+	if ne.Node.Properties["kind"] != nil {
+		kind := ne.Node.Properties["kind"].(string)
+		if kind == "Event" {
+			r.reconcileEvent(ne)
+			return
+		}
+	}
+
 	// Check whether we already have this node in our diff/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
 	otherNode, inDiff := r.diffNodes[ne.Node.UID]
 	nodeInterface, inPurged := r.purgedNodes.Get(ne.Node.UID)
@@ -310,4 +330,83 @@ func (r *Reconciler) resetDiffs() {
 	for uid, node := range r.currentNodes {
 		r.previousNodes[uid] = node
 	}
+}
+
+//Method to process Events
+
+func (r *Reconciler) reconcileEvent(ne tr.NodeEvent) {
+	// Check whether we already have this node in our diff/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
+	otherNode, seenBefore := r.k8sEventNodes[ne.Node.UID]
+	nodeInterface, inPurged := r.purgedNodes.Get(ne.Node.UID)
+
+	if seenBefore && otherNode.Time > ne.Time {
+		return
+	}
+	if inPurged {
+		purgedNode, ok := nodeInterface.(tr.NodeEvent)
+		// If the event is already present in purged list , check if the purge time is
+		// equal or greater than the current time. Then we can skip processing the event
+		if ok && purgedNode.Time >= ne.Time {
+			return
+		}
+	}
+	if ne.Operation == tr.Delete {
+		r.purgedNodes.Add(ne.UID, ne) // Add this to the list of node purged resources
+	} else {
+		ne.Operation = tr.Create
+		if seenBefore { // Events normally dont get updates but we can resolve it out
+			ne.Operation = tr.Update
+
+			// skip updates if new event is redundant to our previous state (a property that we don't care about triggered an update)
+			if reflect.DeepEqual(ne.Node.Properties, otherNode.Properties) {
+				return
+			}
+		}
+		r.k8sEventNodes[ne.UID] = ne
+	}
+
+}
+
+func (r *Reconciler) allEventEdges() ([]tr.Edge, []tr.Edge) {
+	var addEventEdges []tr.Edge
+	var deleteEventEdges []tr.Edge
+	for uid, event := range r.k8sEventNodes {
+		_, inPurged := r.purgedNodes.Get(uid)
+		edgeVal, inPrevious := r.previousEventEdges[uid] // Check if already sent to RedisGraph
+		if inPurged && inPrevious {                      // If its already deleted and We have it in  Redis// then we need to send a delete notification to Redis
+			deleteEventEdges = append(deleteEventEdges, edgeVal)
+			delete(r.k8sEventNodes, uid) // Get rid of it from eventNode map
+		} else {
+			if inPrevious || inPurged {
+				continue // If its in Previous edges or Already purged we can ignore processing
+			}
+
+			policyUID, iObjectPresent := event.Node.Properties["InvolvedObject.uid"].(string)
+			resourceUID, muidPresent := event.Node.Properties["message.uid"].(string)
+			if !iObjectPresent || !muidPresent {
+				continue // if there is no useful values skip it
+			}
+			prefixPolicyUID := prefixedUID(policyUID)
+			prefixResourceUID := prefixedUID(resourceUID)
+			//Check if the resources are present in our system before creating Edges
+			_, goodPolicy := r.currentNodes[prefixPolicyUID]
+			_, goodResource := r.currentNodes[prefixResourceUID]
+			if !(goodPolicy && goodResource) {
+				continue // Policy or resource should be in our Node list to make a edge
+			}
+			edgeVal := tr.Edge{
+				EdgeType:  "Violation",
+				SourceUID: prefixPolicyUID,
+				DestUID:   prefixResourceUID,
+			}
+			addEventEdges = append(addEventEdges, edgeVal)
+			r.previousEventEdges[uid] = edgeVal
+		}
+
+	}
+	return addEventEdges, deleteEventEdges
+}
+
+func prefixedUID(uid string) string {
+	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
 }
