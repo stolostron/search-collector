@@ -17,11 +17,9 @@ type PolicyResource struct {
 }
 
 func (p PolicyResource) BuildNode() Node {
-	node := transformCommon(p) // Start off with the common properties
-
+	node := transformCommon(p)         // Start off with the common properties
+	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Policy"
-	node.Properties["apigroup"] = "policy.mcm.ibm.com"
 	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
 	node.Properties["compliant"] = string(p.Status.ComplianceState)
 	node.Properties["valid"] = p.Status.Valid

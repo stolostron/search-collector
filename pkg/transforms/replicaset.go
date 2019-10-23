@@ -17,11 +17,9 @@ type ReplicaSetResource struct {
 }
 
 func (r ReplicaSetResource) BuildNode() Node {
-	node := transformCommon(r) // Start off with the common properties
-
+	node := transformCommon(r)         // Start off with the common properties
+	apiGroupVersion(r.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "ReplicaSet"
-	node.Properties["apigroup"] = "apps"
 	node.Properties["current"] = int64(r.Status.Replicas)
 	node.Properties["desired"] = int64(0)
 	if r.Spec.Replicas != nil {

@@ -46,8 +46,8 @@ func (n NodeResource) BuildNode() Node {
 	// sort in alphabetical order to make the ui consistant
 	sort.Strings(roles)
 
+	apiGroupVersion(n.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Node"
 	node.Properties["architecture"] = n.Status.NodeInfo.Architecture
 	node.Properties["cpu"], _ = n.Status.Capacity.Cpu().AsInt64()
 	node.Properties["osImage"] = n.Status.NodeInfo.OSImage

@@ -19,8 +19,8 @@ type ApplicationRelationshipResource struct {
 func (a ApplicationRelationshipResource) BuildNode() Node {
 	node := transformCommon(a)
 
-	node.Properties["kind"] = "ApplicationRelationship"
-	node.Properties["apigroup"] = "mcm.ibm.com"
+	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
+	// Extract the properties specific to this type
 	node.Properties["destination"] = a.Spec.Destination.Name
 	node.Properties["source"] = a.Spec.Source.Name
 	node.Properties["type"] = string(a.Spec.RelType)

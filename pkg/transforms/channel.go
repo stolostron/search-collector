@@ -18,8 +18,8 @@ type ChannelResource struct {
 
 func (c ChannelResource) BuildNode() Node {
 	node := transformCommon(c)
-
-	node.Properties["kind"] = "Channel"
+	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
+	// Extract the properties specific to this type
 	node.Properties["type"] = string(c.Spec.Type)
 	node.Properties["pathname"] = c.Spec.PathName
 

@@ -20,7 +20,8 @@ type SubscriptionResource struct {
 
 func (s SubscriptionResource) BuildNode() Node {
 	node := transformCommon(s)
-	node.Properties["kind"] = "Subscription"
+	apiGroupVersion(s.TypeMeta, &node) // add kind, apigroup and version
+	// Extract the properties specific to this type
 	if s.Spec.Package != "" {
 		node.Properties["package"] = string(s.Spec.Package)
 	}

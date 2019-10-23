@@ -17,11 +17,9 @@ type DaemonSetResource struct {
 }
 
 func (d DaemonSetResource) BuildNode() Node {
-	node := transformCommon(d) // Start off with the common properties
-
+	node := transformCommon(d)         // Start off with the common properties
+	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "DaemonSet"
-	node.Properties["apigroup"] = "apps"
 	node.Properties["available"] = int64(d.Status.NumberAvailable)
 	node.Properties["current"] = int64(d.Status.CurrentNumberScheduled)
 	node.Properties["desired"] = int64(d.Status.DesiredNumberScheduled)

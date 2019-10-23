@@ -17,11 +17,9 @@ type JobResource struct {
 }
 
 func (j JobResource) BuildNode() Node {
-	node := transformCommon(j) // Start off with the common properties
-
+	node := transformCommon(j)         // Start off with the common properties
+	apiGroupVersion(j.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Job"
-	node.Properties["apigroup"] = "batch"
 	node.Properties["successful"] = int64(j.Status.Succeeded)
 	node.Properties["completions"] = int64(0)
 	if j.Spec.Completions != nil {

@@ -19,8 +19,8 @@ type PersistentVolumeClaimResource struct {
 func (p PersistentVolumeClaimResource) BuildNode() Node {
 	node := transformCommon(p) // Start off with the common properties
 
+	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "PersistentVolumeClaim"
 	node.Properties["status"] = string(p.Status.Phase)
 	node.Properties["volumeName"] = string(p.Spec.VolumeName)
 	if p.Spec.StorageClassName != nil {

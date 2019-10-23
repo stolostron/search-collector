@@ -100,8 +100,8 @@ func (pod PodResource) BuildNode() Node {
 
 	node := transformCommon(pod) // Start off with the common properties
 
+	apiGroupVersion(pod.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Pod"
 	node.Properties["hostIP"] = pod.Status.HostIP
 	node.Properties["podIP"] = pod.Status.PodIP
 	node.Properties["restarts"] = restarts

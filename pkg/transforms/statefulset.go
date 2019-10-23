@@ -17,11 +17,9 @@ type StatefulSetResource struct {
 }
 
 func (s StatefulSetResource) BuildNode() Node {
-	node := transformCommon(s) // Start off with the common properties
-
+	node := transformCommon(s)         // Start off with the common properties
+	apiGroupVersion(s.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "StatefulSet"
-	node.Properties["apigroup"] = "apps"
 	node.Properties["current"] = int64(s.Status.Replicas)
 	node.Properties["desired"] = int64(0)
 	if s.Spec.Replicas != nil {

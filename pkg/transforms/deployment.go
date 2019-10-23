@@ -17,11 +17,9 @@ type DeploymentResource struct {
 }
 
 func (d DeploymentResource) BuildNode() Node {
-	node := transformCommon(d) // Start off with the common properties
-
+	node := transformCommon(d)         // Start off with the common properties
+	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Deployment"
-	node.Properties["apigroup"] = "apps"
 	node.Properties["available"] = int64(d.Status.AvailableReplicas)
 	node.Properties["current"] = int64(d.Status.Replicas)
 	node.Properties["ready"] = int64(d.Status.ReadyReplicas)

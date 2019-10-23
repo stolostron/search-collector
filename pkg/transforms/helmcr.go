@@ -17,11 +17,8 @@ type HelmCRResource struct {
 }
 
 func (h HelmCRResource) BuildNode() Node {
-	node := transformCommon(h) // Start off with the common properties
-
-	// Extract the properties specific to this type
-	node.Properties["kind"] = "HelmRelease"
-	node.Properties["apigroup"] = "app.ibm.com"
+	node := transformCommon(h)         // Start off with the common properties
+	apiGroupVersion(h.TypeMeta, &node) // add kind, apigroup and version
 	//TODO: Add other properties, if any
 	return node
 }

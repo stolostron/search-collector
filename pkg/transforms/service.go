@@ -22,8 +22,8 @@ type ServiceResource struct {
 func (service ServiceResource) BuildNode() Node {
 	node := transformCommon(service) // Start off with the common properties
 	var ports []string
+	apiGroupVersion(service.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Service"
 	node.Properties["type"] = service.Spec.Type
 	node.Properties["clusterIP"] = service.Spec.ClusterIP
 	if len(service.Spec.ExternalIPs) > 0 {

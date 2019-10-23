@@ -18,9 +18,8 @@ type ComplianceResource struct {
 }
 
 func (c ComplianceResource) BuildNode() Node {
-	node := transformCommon(c) // Start off with the common properties
-	node.Properties["kind"] = "Compliance"
-	node.Properties["apigroup"] = "compliance.mcm.ibm.com"
+	node := transformCommon(c)               // Start off with the common properties
+	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
 
 	// On a Compliance object, status.status holds an object with a property for each cluster.
 	// First loop through and check cluster object statuses

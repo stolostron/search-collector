@@ -17,10 +17,9 @@ type NamespaceResource struct {
 }
 
 func (n NamespaceResource) BuildNode() Node {
-	node := transformCommon(n) // Start off with the common properties
-
+	node := transformCommon(n)         // Start off with the common properties
+	apiGroupVersion(n.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Namespace"
 	node.Properties["status"] = string(n.Status.Phase)
 
 	return node

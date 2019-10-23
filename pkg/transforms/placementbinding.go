@@ -19,12 +19,9 @@ type PlacementBindingResource struct {
 }
 
 func (p PlacementBindingResource) BuildNode() Node {
-	node := transformCommon(p) // Start off with the common properties
-
+	node := transformCommon(p)         // Start off with the common properties
+	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "PlacementBinding"
-	node.Properties["apigroup"] = "mcm.ibm.com"
-
 	name := p.PlacementPolicyRef.Name
 	kind := p.PlacementPolicyRef.Kind
 	node.Properties["placementpolicy"] = fmt.Sprintf("%s (%s)", name, kind)

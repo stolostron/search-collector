@@ -17,11 +17,8 @@ type PlacementRuleResource struct {
 }
 
 func (p PlacementRuleResource) BuildNode() Node {
-	node := transformCommon(p) // Start off with the common properties
-
-	// Extract the properties specific to this type
-	node.Properties["kind"] = "PlacementRule"
-	node.Properties["apigroup"] = "app.ibm.com"
+	node := transformCommon(p)         // Start off with the common properties
+	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	//TODO: Add other properties
 	return node
 }

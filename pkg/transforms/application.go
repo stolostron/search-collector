@@ -20,10 +20,8 @@ type ApplicationResource struct {
 
 func (a ApplicationResource) BuildNode() Node {
 	node := transformCommon(a)
-
+	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Application"
-	node.Properties["apigroup"] = "app.k8s.io"
 	node.Properties["dashboard"] = a.GetAnnotations()["app.ibm.com/dashboard"]
 
 	return node

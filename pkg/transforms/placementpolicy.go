@@ -17,12 +17,9 @@ type PlacementPolicyResource struct {
 }
 
 func (p PlacementPolicyResource) BuildNode() Node {
-	node := transformCommon(p) // Start off with the common properties
-
+	node := transformCommon(p)         // Start off with the common properties
+	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "PlacementPolicy"
-	node.Properties["apigroup"] = "mcm.ibm.com"
-
 	node.Properties["replicas"] = int64(0)
 	if p.Spec.ClusterReplicas != nil {
 		node.Properties["replicas"] = int64(*p.Spec.ClusterReplicas)

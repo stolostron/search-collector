@@ -11,6 +11,7 @@ package transforms
 import (
 	"encoding/json"
 	"runtime/debug"
+	"strings"
 	"sync"
 
 	"github.com/golang/glog"
@@ -155,6 +156,7 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 func TransformRoutine(input chan *Event, output chan NodeEvent) {
 	defer handleRoutineExit(input, output)
 	glog.Info("Starting transformer routine")
+
 	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
 		var trans Transform
@@ -165,9 +167,21 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		if err != nil {
 			panic(err) // Will be caught by handleRoutineExit
 		}
-		switch kind := event.Resource.GetKind(); kind {
 
-		case "Application":
+		// Determine apiGroup and version of the resource
+		apiGroup := ""
+
+		if event.Resource.Object["apiVersion"] != nil && event.Resource.Object["apiVersion"] != "" {
+			if apiVersionStr, ok := event.Resource.Object["apiVersion"].(string); ok {
+				if len(strings.Split(apiVersionStr, "/")) == 2 {
+					apiGroup = strings.Split(apiVersionStr, "/")[0]
+				}
+			}
+		}
+		kindApigroup := [2]string{event.Resource.GetKind(), apiGroup}
+		//TODO: Might have to add more transform cases if resources like DaemonSet, StatefulSet etc. have other apigroups
+		switch kindApigroup {
+		case [2]string{"Application", "app.k8s.io"}:
 			typedResource := app.Application{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -175,7 +189,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationResource{&typedResource}
 
-		case "ApplicationRelationship":
+		case [2]string{"ApplicationRelationship", "mcm.ibm.com"}:
 			typedResource := mcm.ApplicationRelationship{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -183,7 +197,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationRelationshipResource{&typedResource}
 
-		case "Channel":
+		case [2]string{"Channel", "app.ibm.com"}:
 			typedResource := mcmapp.Channel{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -191,7 +205,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ChannelResource{&typedResource}
 
-		case "Compliance":
+		case [2]string{"Compliance", "compliance.mcm.ibm.com"}:
 			typedResource := com.Compliance{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -199,7 +213,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ComplianceResource{&typedResource}
 
-		case "CronJob":
+		case [2]string{"CronJob", "batch"}:
 			typedResource := batchBeta.CronJob{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -207,7 +221,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = CronJobResource{&typedResource}
 
-		case "DaemonSet":
+		case [2]string{"DaemonSet", "extensions"}:
 			typedResource := apps.DaemonSet{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -215,24 +229,31 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DaemonSetResource{&typedResource}
 
-		case "Deployable":
-			if event.Resource.GetAPIVersion() == "app.ibm.com/v1alpha1" {
-				typedResource := appDeployable.Deployable{}
-				err = json.Unmarshal(j, &typedResource)
-				if err != nil {
-					panic(err) // Will be caught by handleRoutineExit
-				}
-				trans = AppDeployableResource{&typedResource}
-			} else {
-				typedResource := mcm.Deployable{}
-				err = json.Unmarshal(j, &typedResource)
-				if err != nil {
-					panic(err) // Will be caught by handleRoutineExit
-				}
-				trans = DeployableResource{&typedResource}
+		case [2]string{"DaemonSet", "apps"}:
+			typedResource := apps.DaemonSet{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
 			}
+			trans = DaemonSetResource{&typedResource}
 
-		case "Deployment":
+		case [2]string{"Deployable", "app.ibm.com"}:
+			typedResource := appDeployable.Deployable{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = AppDeployableResource{&typedResource}
+
+		case [2]string{"Deployable", "mcm.ibm.com"}:
+			typedResource := mcm.Deployable{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = DeployableResource{&typedResource}
+
+		case [2]string{"Deployment", "apps"}:
 			typedResource := apps.Deployment{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -240,7 +261,15 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeploymentResource{&typedResource}
 
-		case "Event":
+		case [2]string{"Deployment", "extensions"}:
+			typedResource := apps.Deployment{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = DeploymentResource{&typedResource}
+
+		case [2]string{"Event", ""}:
 			typedResource := core.Event{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -255,8 +284,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				continue
 			}
 
-		//This is the application's HelmCR of kind HelmRelease
-		case "HelmRelease":
+			//This is the application's HelmCR of kind HelmRelease. From 2019 Q4, the apigroup will be app.ibm.com.
+		case [2]string{"HelmRelease", "app.ibm.com"}:
 			typedResource := helmRelease.HelmRelease{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -264,7 +293,16 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = HelmCRResource{&typedResource}
 
-		case "Job":
+		//This is the application's HelmCR of kind HelmRelease
+		case [2]string{"HelmRelease", "helm.bitnami.com"}:
+			typedResource := helmRelease.HelmRelease{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = HelmCRResource{&typedResource}
+
+		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -272,7 +310,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = JobResource{&typedResource}
 
-		case "MutationPolicy":
+		case [2]string{"MutationPolicy", "policies.ibm.com"}:
 			typedResource := mapolicy.MutationPolicy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -280,7 +318,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = MutationPolicyResource{&typedResource}
 
-		case "Namespace":
+		case [2]string{"Namespace", ""}:
 			typedResource := core.Namespace{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -288,7 +326,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = NamespaceResource{&typedResource}
 
-		case "Node":
+		case [2]string{"Node", ""}:
 			typedResource := core.Node{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -296,7 +334,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = NodeResource{&typedResource}
 
-		case "PersistentVolume":
+		case [2]string{"PersistentVolume", ""}:
 			typedResource := core.PersistentVolume{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -304,7 +342,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PersistentVolumeResource{&typedResource}
 
-		case "PersistentVolumeClaim":
+		case [2]string{"PersistentVolumeClaim", ""}:
 			typedResource := core.PersistentVolumeClaim{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -312,7 +350,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PersistentVolumeClaimResource{&typedResource}
 
-		case "PlacementBinding":
+		case [2]string{"PlacementBinding", "mcm.ibm.com"}:
 			typedResource := mcm.PlacementBinding{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -320,7 +358,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementBindingResource{&typedResource}
 
-		case "PlacementPolicy":
+		case [2]string{"PlacementPolicy", "mcm.ibm.com"}:
 			typedResource := mcm.PlacementPolicy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -328,7 +366,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementPolicyResource{&typedResource}
 
-		case "PlacementRule":
+		case [2]string{"PlacementRule", "app.ibm.com"}:
 			typedResource := rule.PlacementRule{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -336,7 +374,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementRuleResource{&typedResource}
 
-		case "Pod":
+		case [2]string{"Pod", ""}:
 			typedResource := core.Pod{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -344,7 +382,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PodResource{&typedResource}
 
-		case "Policy":
+		case [2]string{"Policy", "policy.mcm.ibm.com"}:
 			typedResource := policy.Policy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -352,7 +390,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PolicyResource{&typedResource}
 
-		case "ReplicaSet":
+		case [2]string{"ReplicaSet", "apps"}:
 			typedResource := apps.ReplicaSet{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -360,7 +398,15 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ReplicaSetResource{&typedResource}
 
-		case "Service":
+		case [2]string{"ReplicaSet", "extensions"}:
+			typedResource := apps.ReplicaSet{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = ReplicaSetResource{&typedResource}
+
+		case [2]string{"Service", ""}:
 			typedResource := core.Service{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -368,7 +414,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ServiceResource{&typedResource}
 
-		case "StatefulSet":
+		case [2]string{"StatefulSet", "apps"}:
 			typedResource := apps.StatefulSet{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -376,7 +422,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = StatefulSetResource{&typedResource}
 
-		case "Subscription":
+		case [2]string{"Subscription", "app.ibm.com"}:
 			typedResource := subscription.Subscription{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -384,7 +430,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = SubscriptionResource{&typedResource}
 
-		case "VulnerabilityPolicy":
+		case [2]string{"VulnerabilityPolicy", "policies.ibm.com"}:
 			typedResource := vapolicy.VulnerabilityPolicy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {

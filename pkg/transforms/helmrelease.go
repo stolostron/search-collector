@@ -38,6 +38,7 @@ func (h HelmReleaseResource) BuildNode() Node {
 		Properties: make(map[string]interface{}),
 		Metadata:   make(map[string]string),
 	}
+	// Extract the properties specific to this type
 	node.Properties["kind"] = "Release"
 	node.Properties["name"] = releaseName
 	node.Properties["status"] = releaseLabels["STATUS"]

@@ -15,6 +15,7 @@ import (
 	"github.com/golang/glog"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiTypes "k8s.io/apimachinery/pkg/types"
 )
@@ -83,6 +84,7 @@ func unstructuredProperties(resource UnstructuredResource) map[string]interface{
 	slice := strings.Split(resource.GetAPIVersion(), "/")
 	if len(slice) == 2 {
 		ret["apigroup"] = slice[0]
+		ret["apiversion"] = slice[1]
 	}
 
 	if resource.GetLabels() != nil {
@@ -356,4 +358,15 @@ func SliceDiff(bigSlice, smallSlice []string) []string {
 		}
 	}
 	return diff
+}
+
+func apiGroupVersion(typeMeta v1.TypeMeta, node *Node) {
+	node.Properties["kind"] = typeMeta.Kind
+	apiVersion := strings.Split(typeMeta.APIVersion, "/")
+	if len(apiVersion) == 2 {
+		node.Properties["apigroup"] = apiVersion[0]
+		node.Properties["apiversion"] = apiVersion[1]
+	} else {
+		node.Properties["apiversion"] = apiVersion[0]
+	}
 }

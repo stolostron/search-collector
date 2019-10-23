@@ -19,10 +19,9 @@ type PersistentVolumeResource struct {
 }
 
 func (p PersistentVolumeResource) BuildNode() Node {
-	node := transformCommon(p) // Start off with the common properties
-
+	node := transformCommon(p)         // Start off with the common properties
+	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "PersistentVolume"
 	node.Properties["reclaimPolicy"] = string(p.Spec.PersistentVolumeReclaimPolicy)
 	node.Properties["status"] = string(p.Status.Phase)
 	node.Properties["type"] = getType(&p.Spec)

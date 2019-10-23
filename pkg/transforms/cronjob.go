@@ -21,9 +21,8 @@ type CronJobResource struct {
 func (c CronJobResource) BuildNode() Node {
 	node := transformCommon(c) // Start off with the common properties
 
+	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "CronJob"
-	node.Properties["apigroup"] = "batch"
 	node.Properties["active"] = int64(len(c.Status.Active))
 	node.Properties["schedule"] = c.Spec.Schedule
 	node.Properties["lastSchedule"] = ""

@@ -22,9 +22,9 @@ type MutationPolicyResource struct {
 
 func (m MutationPolicyResource) BuildNode() Node {
 	node := transformCommon(m)
+	apiGroupVersion(m.TypeMeta, &node) // add kind, apigroup and version
 
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "MutationPolicy"
 	node.Properties["compliant"] = string(m.Status.ComplianceState)
 	var totalResources int
 	for _, oval := range m.Status.CompliancyDetails {

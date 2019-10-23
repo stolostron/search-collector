@@ -17,11 +17,9 @@ type AppDeployableResource struct {
 }
 
 func (d AppDeployableResource) BuildNode() Node {
-	node := transformCommon(d) // Start off with the common properties
-
+	node := transformCommon(d)         // Start off with the common properties
+	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["kind"] = "Deployable"
-	node.Properties["apigroup"] = "app.ibm.com"
 	//TODO: Add properties, TEMPLATE-KIND   TEMPLATE-APIVERSION    AGE   STATUS
 	if d.Status.Phase != "" {
 		node.Properties["status"] = d.Status.Phase
