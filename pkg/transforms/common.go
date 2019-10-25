@@ -25,6 +25,7 @@ import (
 type NodeStore struct {
 	ByUID               map[string]Node
 	ByKindNamespaceName map[string]map[string]map[string]Node
+	K8sEventNodes       map[string]NodeEvent
 }
 
 // Extracts the common properties from a default k8s resource of unknown type and returns them in a map ready to be put in an Node
@@ -127,6 +128,10 @@ func (u UnstructuredResource) BuildEdges(ns NodeStore) []Edge {
 
 // Prefixes the given UID with the cluster name from config and a /
 func prefixedUID(uid apiTypes.UID) string {
+	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
+}
+
+func prefixedUIDStr(uid string) string {
 	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
 }
 

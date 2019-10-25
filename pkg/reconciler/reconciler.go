@@ -10,12 +10,10 @@ package reconciler
 
 import (
 	"reflect"
-	"strings"
 	"sync"
 
 	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
 	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 )
 
@@ -144,10 +142,6 @@ func (r *Reconciler) Diff() Diff {
 			ret.DeleteEdges = append(ret.DeleteEdges, oldEdge)
 		}
 	}
-	addEventEdges, deleteEventEdges := r.allEventEdges()  // Get all the Event Edges
-	ret.AddEdges = append(ret.AddEdges, addEventEdges...) // Send to Aggregator addEdge
-
-	ret.DeleteEdges = append(ret.DeleteEdges, deleteEventEdges...) // Send to Aggregator deleteEdge
 
 	// We are now done with the old list of previousEdges, next time this is called we will want the edges we just calculated to be the previous.
 	r.previousEdges = newEdges
@@ -155,7 +149,7 @@ func (r *Reconciler) Diff() Diff {
 	r.resetDiffs()
 
 	ret.TotalNodes = len(r.currentNodes)
-	ret.TotalEdges = r.totalEdges + len(addEventEdges)
+	ret.TotalEdges = r.totalEdges
 	return ret
 }
 
@@ -182,16 +176,13 @@ func (r *Reconciler) Complete() CompleteState {
 		}
 	}
 
-	addEventEdges, _ := r.allEventEdges()           // Get all the Event Edges , there is nothing to delete for complete
-	ret.Edges = append(ret.Edges, addEventEdges...) // Add to regular pool of edges - Aggregator
-
 	// We are now done with the old list of previousEdges, next time this is called we will want the edges we just calculated to be the previous.
 	r.previousEdges = newEdges
 
 	r.resetDiffs()
 
 	ret.TotalNodes = len(r.currentNodes)
-	ret.TotalEdges = r.totalEdges + len(addEventEdges)
+	ret.TotalEdges = r.totalEdges
 	return ret
 }
 
@@ -204,6 +195,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 	ns := tr.NodeStore{
 		ByUID:               r.currentNodes,
 		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
+		K8sEventNodes:       r.k8sEventNodes,
 	}
 
 	//After building the nodestore, get all the application UIDs in appUIDs and others in otherUIDs.
@@ -270,6 +262,11 @@ func (r *Reconciler) reconcileNode() {
 	if ne.Node.Properties["kind"] != nil {
 		kind := ne.Node.Properties["kind"].(string)
 		if kind == "Event" {
+			_, iok := ne.Node.Properties["InvolvedObject.uid"]
+			_, mok := ne.Node.Properties["message.uid"]
+			if !(iok && mok) {
+				return //we Dont want to process if we dont have involved Object and Offentding Resource
+			}
 			r.reconcileEvent(ne)
 			return
 		}
@@ -365,48 +362,4 @@ func (r *Reconciler) reconcileEvent(ne tr.NodeEvent) {
 		r.k8sEventNodes[ne.UID] = ne
 	}
 
-}
-
-func (r *Reconciler) allEventEdges() ([]tr.Edge, []tr.Edge) {
-	var addEventEdges []tr.Edge
-	var deleteEventEdges []tr.Edge
-	for uid, event := range r.k8sEventNodes {
-		_, inPurged := r.purgedNodes.Get(uid)
-		edgeVal, inPrevious := r.previousEventEdges[uid] // Check if already sent to RedisGraph
-		if inPurged && inPrevious {                      // If its already deleted and We have it in  Redis// then we need to send a delete notification to Redis
-			deleteEventEdges = append(deleteEventEdges, edgeVal)
-			delete(r.k8sEventNodes, uid) // Get rid of it from eventNode map
-		} else {
-			if inPrevious || inPurged {
-				continue // If its in Previous edges or Already purged we can ignore processing
-			}
-
-			policyUID, iObjectPresent := event.Node.Properties["InvolvedObject.uid"].(string)
-			resourceUID, muidPresent := event.Node.Properties["message.uid"].(string)
-			if !iObjectPresent || !muidPresent {
-				continue // if there is no useful values skip it
-			}
-			prefixPolicyUID := prefixedUID(policyUID)
-			prefixResourceUID := prefixedUID(resourceUID)
-			//Check if the resources are present in our system before creating Edges
-			_, goodPolicy := r.currentNodes[prefixPolicyUID]
-			_, goodResource := r.currentNodes[prefixResourceUID]
-			if !(goodPolicy && goodResource) {
-				continue // Policy or resource should be in our Node list to make a edge
-			}
-			edgeVal := tr.Edge{
-				EdgeType:  "Violation",
-				SourceUID: prefixPolicyUID,
-				DestUID:   prefixResourceUID,
-			}
-			addEventEdges = append(addEventEdges, edgeVal)
-			r.previousEventEdges[uid] = edgeVal
-		}
-
-	}
-	return addEventEdges, deleteEventEdges
-}
-
-func prefixedUID(uid string) string {
-	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
 }
