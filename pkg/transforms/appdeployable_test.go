@@ -11,7 +11,7 @@ package transforms
 import (
 	"testing"
 
-	app "github.ibm.com/IBMMulticloudPlatform/deployable/pkg/apis/app/v1alpha1"
+	app "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
 )
 
 func TestTransformAppDeployable(t *testing.T) {

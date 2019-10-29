@@ -46,7 +46,7 @@
   branch = "master"
 
 [[constraint]]
-  name = "github.ibm.com/IBMMulticloudPlatform/deployable"
+  name = "github.com/IBM/multicloud-operators-deployable"
   branch = "master"
 
 [[constraint]]
@@ -55,9 +55,13 @@
   branch = "master"
 
 [[constraint]]
-  name = "github.ibm.com/IBMMulticloudPlatform/subscription"
+  name = "github.com/IBM/multicloud-operators-subscription"
   branch = "master"
-  
+
+[[constraint]]
+  name = "github.com/IBM/multicloud-operators-subscription-release"
+  branch = "master"
+
 [[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.12.3"

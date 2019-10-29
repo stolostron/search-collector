@@ -14,13 +14,14 @@ import (
 	"strings"
 	"sync"
 
+	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
+	appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
+	subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 	mcmapp "github.ibm.com/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1"
-	appDeployable "github.ibm.com/IBMMulticloudPlatform/deployable/pkg/apis/app/v1alpha1"
 	helmRelease "github.ibm.com/IBMMulticloudPlatform/helm-crd/pkg/apis/helm.bitnami.com/v1"
 	rule "github.ibm.com/IBMMulticloudPlatform/placementrule/pkg/apis/app/v1alpha1"
-	subscription "github.ibm.com/IBMMulticloudPlatform/subscription/pkg/apis/app/v1alpha1"
 	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
@@ -286,12 +287,12 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 			//This is the application's HelmCR of kind HelmRelease. From 2019 Q4, the apigroup will be app.ibm.com.
 		case [2]string{"HelmRelease", "app.ibm.com"}:
-			typedResource := helmRelease.HelmRelease{}
+			typedResource := appHelmRelease.HelmRelease{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = HelmCRResource{&typedResource}
+			trans = AppHelmCRResource{&typedResource}
 
 		//This is the application's HelmCR of kind HelmRelease
 		case [2]string{"HelmRelease", "helm.bitnami.com"}:

@@ -10,6 +10,46 @@
   version = "v0.3.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:dbf680e8a8cef883f926d0064680c6cddf0578585d467e37c03d5c95067b3a23"
+  name = "github.com/IBM/multicloud-operators-channel"
+  packages = ["pkg/apis/app/v1alpha1"]
+  pruneopts = "UT"
+  revision = "5e25a0517c08c2c1080cf7935e24ba350735fc8f"
+
+[[projects]]
+  branch = "master"
+  digest = "1:3e4382366a1028f0148aad5ce14747467d03585830d46ab714fd0f8587951ca5"
+  name = "github.com/IBM/multicloud-operators-deployable"
+  packages = ["pkg/apis/app/v1alpha1"]
+  pruneopts = "UT"
+  revision = "74523d7b7e21ae89e0344f1a84e964cd282e0c74"
+
+[[projects]]
+  branch = "master"
+  digest = "1:e06fd673003e40ed7dffb247fa070971a9cd7f77c6f5574f2783423ae0a62dc4"
+  name = "github.com/IBM/multicloud-operators-placementrule"
+  packages = ["pkg/apis/app/v1alpha1"]
+  pruneopts = "UT"
+  revision = "8748e1c0e66e1e77dbf5d07213cfc39b0b29d707"
+
+[[projects]]
+  branch = "master"
+  digest = "1:60ffdbced5b2cf85fa3bff59c03abcdb661ba0c81d6dc34440274423b4715d85"
+  name = "github.com/IBM/multicloud-operators-subscription"
+  packages = ["pkg/apis/app/v1alpha1"]
+  pruneopts = "UT"
+  revision = "3ea1326dec3e7e49c87c10c5740246c7118f7949"
+
+[[projects]]
+  branch = "master"
+  digest = "1:7822adf760d913378f8a531fc1f33a1300a38ec965b7f16250de3d11ea090138"
+  name = "github.com/IBM/multicloud-operators-subscription-release"
+  packages = ["pkg/apis/app/v1alpha1"]
+  pruneopts = "UT"
+  revision = "ec85c5d093f7e90293ea032820c68de249253388"
+
+[[projects]]
   digest = "1:3b10c6fd33854dc41de2cf78b7bae105da94c2789b6fa5b9ac9e593ea43484ac"
   name = "github.com/Masterminds/goutils"
   packages = ["."]
@@ -32,6 +72,22 @@
   pruneopts = "UT"
   revision = "9f8fceff796fb9f4e992cd2bece016be0121ab74"
   version = "2.19.0"
+
+[[projects]]
+  digest = "1:a2682518d905d662d984ef9959984ef87cecb777d379bfa9d9fe40e78069b3e4"
+  name = "github.com/PuerkitoBio/purell"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "44968752391892e1b0d0b821ee79e9a85fa13049"
+  version = "v1.1.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:c739832d67eb1e9cc478a19cc1a1ccd78df0397bf8a32978b759152e205f644b"
+  name = "github.com/PuerkitoBio/urlesc"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
   digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
@@ -57,11 +113,54 @@
   revision = "782f4967f2dc4564575ca782fe2d04090b5faca8"
 
 [[projects]]
+  digest = "1:01d38d940d55f5e5fc41b5cfd2f204209222225c989d0f5876036cf869196d25"
+  name = "github.com/emicklei/go-restful"
+  packages = [
+    ".",
+    "log",
+  ]
+  pruneopts = "UT"
+  revision = "5d8b667fa26d374ff451368b5040d3adbb9c7db4"
+  version = "v2.11.0"
+
+[[projects]]
   digest = "1:c45cef8e0074ea2f8176a051df38553ba997a3616f1ec2d35222b1cf9864881e"
   name = "github.com/ghodss/yaml"
   packages = ["."]
   pruneopts = "UT"
   revision = "73d445a93680fa1a78ae23a5839bad48f32ba1ee"
+
+[[projects]]
+  digest = "1:ed15647db08b6d63666bf9755d337725960c302bbfa5e23754b4b915a4797e42"
+  name = "github.com/go-openapi/jsonpointer"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ed123515f087412cd7ef02e49b0b0a5e6a79a360"
+  version = "v0.19.3"
+
+[[projects]]
+  digest = "1:451fe53c19443c6941be5d4295edc973a3eb16baccb940efee94284024be03b0"
+  name = "github.com/go-openapi/jsonreference"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "82f31475a8f7a12bc26962f6e26ceade8ea6f66a"
+  version = "v0.19.3"
+
+[[projects]]
+  digest = "1:55d1c09fc8b3320b6842565249a9e4d0f363bead6f9b8be05c3b47f2c4264eda"
+  name = "github.com/go-openapi/spec"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8557d72e4f077c2dbe1e48df09e596b6fb9b7991"
+  version = "v0.19.4"
+
+[[projects]]
+  digest = "1:43d0f99f53acce97119181dcd592321084690c2d462c57680ccb4472ae084949"
+  name = "github.com/go-openapi/swag"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c3d0f7896d589f3babb99eea24bbc7de98108e72"
+  version = "v0.19.5"
 
 [[projects]]
   digest = "1:9ae31ce33b4bab257668963e844d98765b44160be4ee98cafc44637a213e530d"
@@ -218,6 +317,18 @@
   ]
   pruneopts = "UT"
   revision = "4ead7f1b87048b7717b3e474a21fdc07e6bce636"
+
+[[projects]]
+  digest = "1:927762c6729b4e72957ba3310e485ed09cf8451c5a637a52fd016a9fe09e7936"
+  name = "github.com/mailru/easyjson"
+  packages = [
+    "buffer",
+    "jlexer",
+    "jwriter",
+  ]
+  pruneopts = "UT"
+  revision = "1b2b06f5f209fea48ff5922d8bfb2b9ed5d8f00b"
+  version = "v0.7.0"
 
 [[projects]]
   digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
@@ -428,7 +539,7 @@
   revision = "6c81ef8f67ca3f42fc9cd71dfbd5f35b0c4b5771"
 
 [[projects]]
-  digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
+  digest = "1:0c56024909189aee3364b7f21a95a27459f718aa7c199a5c111c36cfffd9eaef"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -445,6 +556,7 @@
     "unicode/cldr",
     "unicode/norm",
     "unicode/rangetable",
+    "width",
   ]
   pruneopts = "UT"
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
@@ -825,9 +937,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:22abb5d4204ab1a0dcc9cda64906a31c43965ff5159e8b9f766c9d2a162dbed5"
+  digest = "1:4c2cbfb5ec9dc5612f8fb1c32343304efe5388c11367361b95b95c00653843c9"
   name = "k8s.io/kube-openapi"
-  packages = ["pkg/util/proto"]
+  packages = [
+    "pkg/common",
+    "pkg/util/proto",
+  ]
   pruneopts = "UT"
   revision = "5e22f3d471e6f24ca20becfdffdc6206c7cecac8"
 
@@ -843,6 +958,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1",
+    "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1",
+    "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1",
     "github.com/golang/glog",
     "github.com/golang/groupcache/lru",
     "github.com/golang/protobuf/ptypes",

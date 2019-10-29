@@ -11,7 +11,7 @@ package transforms
 import (
 	"strings"
 
-	app "github.ibm.com/IBMMulticloudPlatform/subscription/pkg/apis/app/v1alpha1"
+	app "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 )
 
 type SubscriptionResource struct {

@@ -41,6 +41,15 @@ func initTestReconciler() *Reconciler {
 	}
 }
 
+// This function will help to easily verify if any edge, especially if newly added, is part of the Complete payload, rather than just checking the number of edges. Pass in all the built edges, the source and destination UIDs and the edge type.
+func verifyEdge(edges []tr.Edge, src string, dest string, edgeType string) bool {
+	for _, edge := range edges {
+		if edge.SourceUID == src && edge.DestUID == dest && string(edge.EdgeType) == edgeType {
+			return true
+		}
+	}
+	return false
+}
 func createNodeEvents() []tr.NodeEvent {
 	events := NodeEdge{}
 	nodeEvents := []tr.NodeEvent{}
@@ -378,9 +387,15 @@ func TestReconcilerComplete(t *testing.T) {
 
 	// Compute reconciler Complete() state
 	com := testReconciler.Complete()
-	// Currently we have 29 nodes and 27 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
+	// Check if edge from AppHelmCR to HelmRelease exists
+	if verifyEdge(com.Edges, "local-cluster/fg265feg-d932-22g2-82c2-22345g131h34", "local-cluster/Release/helmrelease-ex", "attachedTo") {
+		t.Log("Reconciler Complete() working as expected - expected edge found")
+	} else {
+		t.Fatal("Error: Reconciler Complete() not working as expected - expected edge local-cluster/fg265feg-d932-22g2-82c2-22345g131h34->'attachedTo'->local-cluster/Release/helmrelease-ex not found")
+	}
+	// Currently we have 28 nodes and 30 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
 	// We dont create Nodes for kind = Event
-	if len(com.Edges) != 29 || com.TotalEdges != 29 || len(com.Nodes) != 27 || com.TotalNodes != 27 {
+	if len(com.Edges) != 30 || com.TotalEdges != 30 || len(com.Nodes) != 28 || com.TotalNodes != 28 {
 		t.Fatal("Error: Reconciler Complete() not working as expected")
 	} else {
 		t.Log("Reconciler Complete() working as expected")

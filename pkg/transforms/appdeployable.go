@@ -9,7 +9,7 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	appDeployable "github.ibm.com/IBMMulticloudPlatform/deployable/pkg/apis/app/v1alpha1"
+	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
 )
 
 type AppDeployableResource struct {
