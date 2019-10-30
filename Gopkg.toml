@@ -64,15 +64,15 @@
 
 [[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.12.3"
+  version = "kubernetes-1.13.12"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.3"
+  version = "kubernetes-1.13.12"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.13.0-alpha.1"
+  version = "kubernetes-1.13.12"
 
 [prune]
   go-tests = true

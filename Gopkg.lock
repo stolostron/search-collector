@@ -90,14 +90,6 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
-  digest = "1:b6d886569181ec96ca83d529f4d6ba0cbf92ace7bb6f633f90c5f34d9bba7aab"
-  name = "github.com/blang/semver"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ba2c2ddd89069b46a7011d4106f6868f17ee1705"
-  version = "v3.6.1"
-
-[[projects]]
   digest = "1:ec66ad050342a3573ed2f5a4337d51b4c6d5d2a717cc6c9ecf86b081235a5759"
   name = "github.com/cyphar/filepath-securejoin"
   packages = ["."]
@@ -347,18 +339,6 @@
   version = "1.0.1"
 
 [[projects]]
-  digest = "1:66c50fc6179aae05bfbde10245a724c8a0fcc56c04e8bb38b064a6f8876f09df"
-  name = "github.com/operator-framework/operator-lifecycle-manager"
-  packages = [
-    "pkg/api/apis/operators",
-    "pkg/api/apis/operators/v1alpha1",
-    "pkg/lib/version",
-  ]
-  pruneopts = "UT"
-  revision = "b8a4faf68e36feb6d99a6aec623b405e587b17b1"
-  version = "0.10.1"
-
-[[projects]]
   branch = "master"
   digest = "1:3bf17a6e6eaa6ad24152148a631d18662f7212e21637c2699bff3369b7f00fa2"
   name = "github.com/petar/GoLLRB"
@@ -408,14 +388,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d8bf0ee81ffc699750af6096bca18c3a73ead8a126d328bb58c9851e13185a17"
-  name = "github.ibm.com/IBMMulticloudPlatform/deployable"
-  packages = ["pkg/apis/app/v1alpha1"]
-  pruneopts = "UT"
-  revision = "7a969898c6ee6e3f7207ea190b8bb08805d75595"
-
-[[projects]]
-  branch = "master"
   digest = "1:27dc3af29e0fc4511f3ed460a45d0e6296fe92a60dd6357af6bda1c2d92ce860"
   name = "github.ibm.com/IBMMulticloudPlatform/helm-crd"
   packages = ["pkg/apis/helm.bitnami.com/v1"]
@@ -430,14 +402,6 @@
   pruneopts = "UT"
   revision = "372256eedb81d04403440271f264629db0df996b"
   source = "git@github.ibm.com:IBMMulticloudPlatform/placementrule.git"
-
-[[projects]]
-  branch = "master"
-  digest = "1:2df0f4d4b652eef99c3a6b8e694ac48ca21adea08d4f189f199fe0d7c999957c"
-  name = "github.ibm.com/IBMMulticloudPlatform/subscription"
-  packages = ["pkg/apis/app/v1alpha1"]
-  pruneopts = "UT"
-  revision = "ac8eeb15abc8942d83a28791bb7851db19b4a023"
 
 [[projects]]
   branch = "master"
@@ -651,7 +615,7 @@
   version = "v2.2.2"
 
 [[projects]]
-  digest = "1:faf52d216e0d651ee48a5ee8fb43f818a6c36bf4246282a5e30b8985da5581ff"
+  digest = "1:86b38004415341a2f678a19f9312213bc851a3620bb42b3dca005c8ad0d3485c"
   name = "k8s.io/api"
   packages = [
     "admissionregistration/v1alpha1",
@@ -659,6 +623,7 @@
     "apps/v1",
     "apps/v1beta1",
     "apps/v1beta2",
+    "auditregistration/v1alpha1",
     "authentication/v1",
     "authentication/v1beta1",
     "authorization/v1",
@@ -687,8 +652,8 @@
     "storage/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "b503174bad5991eb66f18247f52e41c3258f6348"
-  version = "kubernetes-1.12.3"
+  revision = "dacd7df5a50b93833c2a2c2f81348f910be8bfc7"
+  version = "kubernetes-1.13.12"
 
 [[projects]]
   branch = "master"
@@ -710,7 +675,7 @@
   revision = "2af94a2a482fcef53a8c24b7817ecb4ecdc450f8"
 
 [[projects]]
-  digest = "1:1960485a3d1b234ae30e76813a2cef31bf93ad036d9891a0e9b52e70b136a400"
+  digest = "1:70b273d19f2ebc09e6689cf4c4dee6858cc247c24cba2d590ab1c298edfef687"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -741,27 +706,24 @@
     "pkg/util/framer",
     "pkg/util/intstr",
     "pkg/util/json",
-    "pkg/util/mergepatch",
     "pkg/util/naming",
     "pkg/util/net",
     "pkg/util/runtime",
     "pkg/util/sets",
-    "pkg/util/strategicpatch",
     "pkg/util/validation",
     "pkg/util/validation/field",
     "pkg/util/wait",
     "pkg/util/yaml",
     "pkg/version",
     "pkg/watch",
-    "third_party/forked/golang/json",
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "eddba98df674a16931d2d4ba75edc3a389bf633a"
-  version = "kubernetes-1.12.3"
+  revision = "01f8b7d1121a34a7fc9f9c988f4f0b1f00fccb92"
+  version = "kubernetes-1.13.12"
 
 [[projects]]
-  digest = "1:e33c4cefa7a959066dfba21494826d1c793a0ec1f9d34af79e38ce2a773cfcf4"
+  digest = "1:96675f77c0e526658303d9a8b0f18b2abf5cb809a6e224fcba0dc78078972a00"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -776,6 +738,8 @@
     "informers/apps/v1",
     "informers/apps/v1beta1",
     "informers/apps/v1beta2",
+    "informers/auditregistration",
+    "informers/auditregistration/v1alpha1",
     "informers/autoscaling",
     "informers/autoscaling/v1",
     "informers/autoscaling/v2beta1",
@@ -819,6 +783,7 @@
     "kubernetes/typed/apps/v1",
     "kubernetes/typed/apps/v1beta1",
     "kubernetes/typed/apps/v1beta2",
+    "kubernetes/typed/auditregistration/v1alpha1",
     "kubernetes/typed/authentication/v1",
     "kubernetes/typed/authentication/v1beta1",
     "kubernetes/typed/authorization/v1",
@@ -850,6 +815,7 @@
     "listers/apps/v1",
     "listers/apps/v1beta1",
     "listers/apps/v1beta2",
+    "listers/auditregistration/v1alpha1",
     "listers/autoscaling/v1",
     "listers/autoscaling/v2beta1",
     "listers/autoscaling/v2beta2",
@@ -887,7 +853,6 @@
     "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
-    "tools/record",
     "tools/reference",
     "transport",
     "util/buffer",
@@ -899,8 +864,8 @@
     "util/retry",
   ]
   pruneopts = "UT"
-  revision = "5e167e7c1e8a97ce058cc12814418d0fd5b6fd6e"
-  version = "kubernetes-1.13.0-alpha.1"
+  revision = "eb5b9a8cfde7614f750cd515d80a294314e4d70e"
+  version = "kubernetes-1.13.12"
 
 [[projects]]
   branch = "master"
@@ -936,13 +901,18 @@
   version = "v2.13.1"
 
 [[projects]]
+  digest = "1:93e82f25d75aba18436ad1ac042cb49493f096011f2541075721ed6f9e05c044"
+  name = "k8s.io/klog"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2ca9ad30301bf30a8a6e0fa2110db6b8df699a91"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
-  digest = "1:4c2cbfb5ec9dc5612f8fb1c32343304efe5388c11367361b95b95c00653843c9"
+  digest = "1:a25f899659892020bfbc94c5f9395a708fdbb7f9beeede9c286f4cd377bc5753"
   name = "k8s.io/kube-openapi"
-  packages = [
-    "pkg/common",
-    "pkg/util/proto",
-  ]
+  packages = ["pkg/common"]
   pruneopts = "UT"
   revision = "5e22f3d471e6f24ca20becfdffdc6206c7cecac8"
 
@@ -953,6 +923,14 @@
   pruneopts = "UT"
   revision = "f6f0bc9611363b43664d08fb097ab13243ef621d"
   version = "v0.1.9"
+
+[[projects]]
+  digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
+  name = "sigs.k8s.io/yaml"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "fd68e9863619f6ec2fdd8625fe1f02e7c877e480"
+  version = "v1.1.0"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -968,10 +946,8 @@
     "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
     "github.com/tkanos/gonfig",
     "github.ibm.com/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1",
-    "github.ibm.com/IBMMulticloudPlatform/deployable/pkg/apis/app/v1alpha1",
     "github.ibm.com/IBMMulticloudPlatform/helm-crd/pkg/apis/helm.bitnami.com/v1",
     "github.ibm.com/IBMMulticloudPlatform/placementrule/pkg/apis/app/v1alpha1",
-    "github.ibm.com/IBMMulticloudPlatform/subscription/pkg/apis/app/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1",
     "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1",
