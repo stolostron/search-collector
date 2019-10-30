@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
 	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
 	v1 "k8s.io/api/core/v1"
@@ -41,15 +42,6 @@ func initTestReconciler() *Reconciler {
 	}
 }
 
-// This function will help to easily verify if any edge, especially if newly added, is part of the Complete payload, rather than just checking the number of edges. Pass in all the built edges, the source and destination UIDs and the edge type.
-func verifyEdge(edges []tr.Edge, src string, dest string, edgeType string) bool {
-	for _, edge := range edges {
-		if edge.SourceUID == src && edge.DestUID == dest && string(edge.EdgeType) == edgeType {
-			return true
-		}
-	}
-	return false
-}
 func createNodeEvents() []tr.NodeEvent {
 	events := NodeEdge{}
 	nodeEvents := []tr.NodeEvent{}
@@ -387,15 +379,18 @@ func TestReconcilerComplete(t *testing.T) {
 
 	// Compute reconciler Complete() state
 	com := testReconciler.Complete()
-	// Check if edge from AppHelmCR to HelmRelease exists
-	if verifyEdge(com.Edges, "local-cluster/fg265feg-d932-22g2-82c2-22345g131h34", "local-cluster/Release/helmrelease-ex", "attachedTo") {
-		t.Log("Reconciler Complete() working as expected - expected edge found")
-	} else {
-		t.Fatal("Error: Reconciler Complete() not working as expected - expected edge local-cluster/fg265feg-d932-22g2-82c2-22345g131h34->'attachedTo'->local-cluster/Release/helmrelease-ex not found")
-	}
-	// Currently we have 28 nodes and 30 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
+
+	// Currently we have 28 nodes and 31 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
 	// We dont create Nodes for kind = Event
-	if len(com.Edges) != 30 || com.TotalEdges != 30 || len(com.Nodes) != 28 || com.TotalNodes != 28 {
+	if len(com.Edges) != 31 || com.TotalEdges != 31 || len(com.Nodes) != 28 || com.TotalNodes != 28 {
+		ns := tr.NodeStore{
+			ByUID:               testReconciler.currentNodes,
+			ByKindNamespaceName: nodeTripleMap(testReconciler.currentNodes),
+		}
+		glog.Info("len edges:", len(com.Edges))
+		for _, edge := range com.Edges {
+			glog.Info("Src: ", ns.ByUID[edge.SourceUID].Properties["kind"], " Type: ", edge.EdgeType, " Dest: ", ns.ByUID[edge.DestUID].Properties["kind"])
+		}
 		t.Fatal("Error: Reconciler Complete() not working as expected")
 	} else {
 		t.Log("Reconciler Complete() working as expected")

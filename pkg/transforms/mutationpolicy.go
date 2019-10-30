@@ -90,6 +90,16 @@ func (m MutationPolicyResource) BuildEdges(ns NodeStore) []Edge {
 			DestUID:   UID,
 		}
 		ret = append(ret, edgeVal)
+		remoteSubscription := getSubscriptionByUID(vulnerableResourceInEvent, ns)
+		glog.V(4).Infof("Found subscription %s attached to resource in violation ", remoteSubscription)
+		if len(remoteSubscription) > 0 {
+			subEdge := Edge{
+				EdgeType:  "violates",
+				SourceUID: UID,
+				DestUID:   remoteSubscription,
+			}
+			ret = append(ret, subEdge)
+		}
 
 	}
 

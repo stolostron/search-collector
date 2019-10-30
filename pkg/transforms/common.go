@@ -375,3 +375,23 @@ func apiGroupVersion(typeMeta v1.TypeMeta, node *Node) {
 		node.Properties["apiversion"] = apiVersion[0]
 	}
 }
+
+//Given UID returns if there is any subscription attached to iself or its parents
+func getSubscriptionByUID(srcUID string, ns NodeStore) string {
+	subscriptionUID := ""
+	srcNode, ok := ns.ByUID[srcUID]
+	if ok {
+		if subscription, ok := srcNode.Properties["_hostingSubscription"].(string); ok && srcNode.Properties["_hostingSubscription"] != "" {
+			nsSub := strings.Split(subscription, "/")
+			if len(nsSub) == 2 {
+				nameSpace := nsSub[0]
+				name := nsSub[1]
+				subscriptionUID = ns.ByKindNamespaceName["Subscription"][nameSpace][name].UID
+				return subscriptionUID
+			}
+		} else if srcNode.GetMetadata("OwnerUID") != "" {
+			subscriptionUID = getSubscriptionByUID(srcNode.GetMetadata("OwnerUID"), ns)
+		}
+	}
+	return subscriptionUID
+}
