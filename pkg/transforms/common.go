@@ -376,6 +376,37 @@ func apiGroupVersion(typeMeta v1.TypeMeta, node *Node) {
 	}
 }
 
+// Copy hosting Subscription/Deployable properties from the sourceNode to the destination
+func copyhostingSubProperties(srcUID string, destUID string, ns NodeStore) {
+	srcNode, srcFound := ns.ByUID[srcUID]
+	destNode, destFound := ns.ByUID[destUID]
+
+	subscription := ""
+	deployable := ""
+	ok := false
+	// Copy the properties to the destination - this makes it easy to connect them back to the subscription/application
+	if srcFound && destFound {
+		if subscription, ok = srcNode.Properties["_hostingSubscription"].(string); ok && srcNode.Properties["_hostingSubscription"] != "" {
+			if destNode.Properties["_hostingSubscription"] != subscription {
+				destNode.Properties["_hostingSubscription"] = subscription
+			}
+		}
+		if deployable, ok = srcNode.Properties["_hostingDeployable"].(string); ok && srcNode.Properties["_hostingDeployable"] != "" {
+			if destNode.Properties["_hostingDeployable"] != deployable {
+				destNode.Properties["_hostingDeployable"] = deployable
+			}
+		}
+
+		// If both properties are not there on source, check if it is on it's owner - This will be the case if the pod doesn't have the properties but the deployment has
+		if subscription == "" && deployable == "" {
+			if srcNode.GetMetadata("OwnerUID") != "" {
+				node := ns.ByUID[srcNode.GetMetadata("OwnerUID")]
+				copyhostingSubProperties(node.UID, destUID, ns)
+			}
+		}
+	}
+}
+
 //Given UID returns if there is any subscription attached to iself or its parents
 func getSubscriptionByUID(srcUID string, ns NodeStore) string {
 	subscriptionUID := ""

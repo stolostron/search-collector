@@ -133,7 +133,9 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 
 	smr := getSummarizedManifestResources(h)
 
+	UID := GetHelmReleaseUID(h.GetLabels()["NAME"])
 	edges := []Edge{}
+	helmNode := ns.ByUID[UID]
 
 	for _, resource := range smr {
 		namespace := h.GetNamespace()
@@ -155,6 +157,14 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 				resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"]) // update node metadata to include release for upstream edge from resource to Release
 			}
 			if GetHelmReleaseUID(h.GetLabels()["NAME"]) != "" {
+				// Add hosting Subscription/Deployable properties to the resource so that they can tracked
+				if helmNode.Properties["_hostingSubscription"] != "" || helmNode.Properties["_hostingDeployable"] != "" {
+					resourceNode := ns.ByUID[resourceNode.UID]
+					//Copy the properties only if the node doesn't have it yet or if they are not the same
+					if _, ok := resourceNode.Properties["_hostingSubscription"]; !ok && helmNode.Properties["_hostingSubscription"] != resourceNode.Properties["_hostingSubscription"] {
+						copyhostingSubProperties(UID, resourceNode.UID, ns)
+					}
+				}
 				if resourceNode.UID != GetHelmReleaseUID(h.GetLabels()["NAME"]) { //avoid connecting node to itself
 					edges = append(edges, Edge{
 						SourceUID: resourceNode.UID,
@@ -169,6 +179,10 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s", h.GetLabels()["NAME"], kind, resource.Name, namespace)
 		}
 	}
+
+	nodeInfo := NodeInfo{NameSpace: h.GetNamespace(), UID: UID, Kind: h.Kind, Name: h.GetLabels()["NAME"]}
+	//deployer subscriber edges
+	edges = append(edges, edgesByDeployerSubscriber(nodeInfo, ns)...)
 
 	return edges
 }

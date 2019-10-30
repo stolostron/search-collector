@@ -23,11 +23,11 @@ func (a AppHelmCRResource) BuildNode() Node {
 	if a.Spec.Source != nil && a.Spec.Source.SourceType != "" {
 		node.Properties["sourceType"] = a.Spec.Source.SourceType
 		if a.Spec.Source.SourceType == "GitHub" {
-			node.Properties["urls"] = a.Spec.Source.GitHub.Urls
+			node.Properties["url"] = a.Spec.Source.GitHub.Urls
 			node.Properties["chartPath"] = a.Spec.Source.GitHub.ChartPath
 			node.Properties["branch"] = a.Spec.Source.GitHub.Branch
 		} else if a.Spec.Source.SourceType == "HelmRepo" {
-			node.Properties["urls"] = a.Spec.Source.HelmRepo.Urls
+			node.Properties["url"] = a.Spec.Source.HelmRepo.Urls
 		}
 	}
 	return node

@@ -31,9 +31,17 @@ func (h HelmCRResource) BuildEdges(ns NodeStore) []Edge {
 
 	//attachedTo edges
 	releaseMap := make(map[string]struct{})
-
+	// Connect to Helm Release
 	if h.Spec.ReleaseName != "" {
+		destUID := GetHelmReleaseUID(h.Spec.ReleaseName)
 		releaseMap[h.Spec.ReleaseName] = struct{}{}
+		// Propagate hosting Subscription/Deployable properties from the helmCR to helm release so that we can track helm release's deployments and connect them back to the subscription/application
+		releaseNode := ns.ByUID[destUID]
+		crNode := ns.ByUID[UID]
+		//Copy the properties only if the node doesn't have it yet or if they are not the same
+		if _, ok := releaseNode.Properties["_hostingSubscription"]; !ok && crNode.Properties["_hostingSubscription"] != releaseNode.Properties["_hostingSubscription"] {
+			copyhostingSubProperties(UID, destUID, ns)
+		}
 		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
 	}
 	//deployer subscriber edges
