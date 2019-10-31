@@ -21,7 +21,7 @@ func TestTransformMutationPolicy(t *testing.T) {
 
 	// Test only the fields that exist in MutationPolicy - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "MutationPolicy", t)
-	AssertEqual("compliant", node.Properties["compliant"], "Compliant", t)
+	AssertEqual("compliant", node.Properties["compliant"], "NonCompliant", t)
 	AssertEqual("mutatedResources", node.Properties["mutatedResources"], 5, t)
 	AssertEqual("severity", node.Properties["severity"], "", t)
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "inform", t)

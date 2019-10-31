@@ -15,6 +15,16 @@
         },
         "name": "mutation-policy-example",
         "namespace": "kube-system",
+        "ownerReferences": [
+            {
+                "apiVersion": "policy.mcm.ibm.com/v1alpha1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "Policy",
+                "name": "default.policy-vulnerabilitypolicy",
+                "uid": "abceb256-fb48-11e9-aa82-00163e01bcd9"
+            }
+        ],
         "resourceVersion": "5318931",
         "selfLink": "/apis/policies.ibm.com/v1alpha1/namespaces/kube-system/mutationpolicies/mutation-policy-example",
         "uid": "1c403cd6-f10b-11e9-ba0f-0016ac10172d"
@@ -50,6 +60,6 @@
                 ]
             }
         },
-        "compliant": "Compliant"
+        "compliant": "NonCompliant"
     }
 }

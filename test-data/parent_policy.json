@@ -1,0 +1,82 @@
+{
+    "apiVersion": "policy.mcm.ibm.com/v1alpha1",
+    "kind": "Policy",
+    "metadata": {
+        "annotations": {
+            "policy.mcm.ibm.com/categories": "",
+            "policy.mcm.ibm.com/controls": "",
+            "policy.mcm.ibm.com/standards": "",
+            "seed-generation": "6"
+        },
+        "creationTimestamp": "2019-10-30T19:08:35Z",
+        "finalizers": [
+            "policy.finalizer.mcm.ibm.com",
+            "sync.finalizer.mcm.ibm.com"
+        ],
+        "generation": 6,
+        "labels": {
+            "parent-namespace": "default",
+            "parent-policy": "policy-vulnerabilitypolicy"
+        },
+        "name": "default.policy-vulnerabilitypolicy",
+        "namespace": "tiny-remote",
+        "resourceVersion": "5463527",
+        "selfLink": "/apis/policy.mcm.ibm.com/v1alpha1/namespaces/tiny-remote/policies/default.policy-vulnerabilitypolicy",
+        "uid": "abceb256-fb48-11e9-aa82-00163e01bcd9"
+    },
+    "spec": {
+        "complianceType": "musthave",
+        "namespaces": {
+            "exclude": [
+                "kube-*"
+            ],
+            "include": [
+                "default"
+            ]
+        },
+        "policy-templates": [
+            {
+                "objectDefinition": {
+                    "apiVersion": "policies.ibm.com/v1alpha1",
+                    "kind": "VulnerabilityPolicy",
+                    "metadata": {
+                        "label": {
+                            "category": "System-Integrity"
+                        },
+                        "name": "policy-vulnerabilitypolicy-example"
+                    },
+                    "spec": {
+                        "namespaceSelector": {
+                            "exclude": [
+                                "kube-system"
+                            ],
+                            "include": [
+                                "default",
+                                "kube-*"
+                            ]
+                        },
+                        "remediationAction": "inform",
+                        "severity": "medium"
+                    }
+                },
+                "status": {
+                    "Compliant": "NonCompliant",
+                    "Validity": {},
+                    "conditions": [
+                        {
+                            "lastTransitionTime": "2019-10-30T20:38:47Z",
+                            "message": "NonCompliant; 3 Vulnerable pods detected in namespace `default`; 0 Vulnerable pods detected in namespace `kube-public`",
+                            "reason": "policy: tiny-remote/policy-vulnerabilitypolicy-example",
+                            "status": "True",
+                            "type": "completed"
+                        }
+                    ]
+                }
+            }
+        ],
+        "remediationAction": "inform"
+    },
+    "status": {
+        "compliant": "NonCompliant"
+    }
+}
