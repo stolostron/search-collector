@@ -33,6 +33,14 @@ func (p PolicyResource) BuildNode() Node {
 		}
 	}
 	node.Properties["numRules"] = rules
+	pnamespace, ok := p.ObjectMeta.Labels["parent-namespace"]
+	if ok {
+		node.Properties["parent-namespace"] = pnamespace
+	}
+	ppolicy, ok := p.ObjectMeta.Labels["parent-policy"]
+	if ok {
+		node.Properties["parent-policy"] = ppolicy
+	}
 
 	return node
 }

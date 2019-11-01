@@ -11,6 +11,10 @@
             "policy.finalizer.mcm.ibm.com"
         ],
         "generation": 1,
+        "labels": {
+            "parent-namespace": "default",
+            "parent-policy": "policy-vulnerabilitypolicy"
+        },
         "name": "policy03",
         "namespace": "cert-manager",
         "resourceVersion": "3731597",
