@@ -29,7 +29,7 @@ install:
   - make deps
 
 script:
-  - make copyright-check lint test build docker:info docker:build release
+  - make copyright-check lint test build docker:info docker:build release print_vars
 
 after_success:
   - |

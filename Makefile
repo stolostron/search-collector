@@ -20,6 +20,39 @@ else
 	DOCKER_FILE     = Dockerfile.$(ARCH)
 endif
 
+GITHUB_USER := $(shell echo $(GITHUB_USER) | sed 's/@/%40/g')
+
+.PHONY: default
+default:: init;
+
+.PHONY: init
+init::
+	@mkdir -p variables
+ifndef GITHUB_USER
+	$(info GITHUB_USER not defined)
+	exit -1
+endif
+	$(info Using GITHUB_USER=$(GITHUB_USER))
+ifndef GITHUB_TOKEN
+	$(info GITHUB_TOKEN not defined)
+	exit -1
+endif
+
+-include $(shell curl -fso .build-harness -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3.raw" "https://raw.github.ibm.com/ICP-DevOps/build-harness/master/templates/Makefile.build-harness"; echo .build-harness)
+
+# only push to integration on a merge that is not the development branch
+ifneq ($(TRAVIS_EVENT_TYPE), pull_request) 
+ifneq ($(TRAVIS_BRANCH), development)
+	DOCKER_REGISTRY = hyc-cloud-private-integration-docker-local.artifactory.swg-devops.com
+	RELEASE_TAG = $(SEMVERSION)
+endif
+else
+	DOCKER_REGISTRY = hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com
+	RELEASE_TAG = $(GIT_COMMIT)
+endif
+
+DOCKER_BUILD_TAG       = $(RELEASE_TAG)
+
 # Variables for Red Hat required labels
 IMAGE_NAME             = search-collector
 IMAGE_DISPLAY_NAME     = Multicloud Manager Search Collector
@@ -44,26 +77,12 @@ DOCKER_BUILD_OPTS = --build-arg "VCS_REF=$(VCS_REF)" \
 	--build-arg "IMAGE_NAME_ARCH=$(IMAGE_NAME_ARCH)" \
 	--build-arg "IMAGE_DESCRIPTION=$(IMAGE_DESCRIPTION)"
 
-
-GITHUB_USER := $(shell echo $(GITHUB_USER) | sed 's/@/%40/g')
-
-.PHONY: default
-default:: init;
-
-.PHONY: init
-init::
-	@mkdir -p variables
-ifndef GITHUB_USER
-	$(info GITHUB_USER not defined)
-	exit -1
-endif
-	$(info Using GITHUB_USER=$(GITHUB_USER))
-ifndef GITHUB_TOKEN
-	$(info GITHUB_TOKEN not defined)
-	exit -1
-endif
-
--include $(shell curl -fso .build-harness -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3.raw" "https://raw.github.ibm.com/ICP-DevOps/build-harness/master/templates/Makefile.build-harness"; echo .build-harness)
+.PHONY: print_vars
+print_vars:
+	@echo "SEMVERSION = $(SEMVERSION)"
+	@echo "IMAGE_VERSION = $(IMAGE_VERSION)"
+	@echo "RELEASE_TAG = $(RELEASE_TAG)"
+	@echo "DOCKER_REGISTRY = $(DOCKER_REGISTRY)"
 
 .PHONY: deps
 deps:
