@@ -24,6 +24,5 @@ func TestTransformPolicy(t *testing.T) {
 	AssertEqual("compliant", node.Properties["compliant"], "Compliant", t)
 	AssertEqual("valid", node.Properties["valid"], true, t)
 	AssertEqual("numRules", node.Properties["numRules"], int64(1), t)
-	AssertEqual("parent-namespace", node.Properties["parent-namespace"], "default", t)
-	AssertEqual("parent-policy", node.Properties["parent-policy"], "policy-vulnerabilitypolicy", t)
+	AssertEqual("_parentPolicy", node.Properties["_parentPolicy"], "default/policy-vulnerabilitypolicy", t)
 }
