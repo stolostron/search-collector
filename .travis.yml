@@ -33,14 +33,16 @@ script:
 
 after_success:
   - |
-      curl -Lo travis_after_all.py https://raw.github.com/dmakhno/travis_after_all/master/travis_after_all.py
-      python travis_after_all.py https://travis.ibm.com/api
-      export $(cat .to_export_back)
-      if [[ "$BUILD_LEADER" == "YES" ]]; then
-        if [[ "$BUILD_AGGREGATE_STATUS" == "others_succeeded" ]]; then
-          echo "All jobs succeeded! Creating multi arch image..."
-          make docker:manifest-tool docker:multi-arch
-        else
-          echo "Some jobs failed" && exit 1
+      if [[ "$TRAVIS_EVENT_TYPE" != "pull_request" && "$TRAVIS_BRANCH" != "development" ]]; then
+        curl -Lo travis_after_all.py https://raw.github.com/dmakhno/travis_after_all/master/travis_after_all.py
+        python travis_after_all.py https://travis.ibm.com/api
+        export $(cat .to_export_back)
+        if [[ "$BUILD_LEADER" == "YES" ]]; then
+          if [[ "$BUILD_AGGREGATE_STATUS" == "others_succeeded" ]]; then
+            echo "All jobs succeeded! Creating multi arch image..."
+            make docker:manifest-tool docker:multi-arch
+          else
+            echo "Some jobs failed" && exit 1
+          fi
         fi
       fi
