@@ -227,7 +227,7 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 						}
 					} else if destKind == "Subscription" && nodeInfo.Kind != "Application" { //Connect incoming node to all applications in the Subscription node's metadata
 						ret = append(ret, edgesToApplication(nodeInfo, ns, destNode.UID, false)...)
-					} else if nodeInfo.Kind == "Subscription" && (destKind == "Deployable" || destKind == "PlacementRule") { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to deployables
+					} else if nodeInfo.Kind == "Subscription" && (destKind == "Deployable" || destKind == "PlacementRule" || destKind == "Channel") { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to deployables, placementrule and channel
 						subUID := nodeInfo.UID
 						nodeInfoDestApp := NodeInfo{UID: destNode.UID, Name: name, NameSpace: nodeInfo.NameSpace, Kind: destKind, EdgeType: "contains"}
 						ret = append(ret, edgesToApplication(nodeInfoDestApp, ns, subUID, true)...)
