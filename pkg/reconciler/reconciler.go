@@ -195,7 +195,6 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 	ns := tr.NodeStore{
 		ByUID:               r.currentNodes,
 		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
-		K8sEventNodes:       r.k8sEventNodes,
 	}
 
 	//After building the nodestore, get all the application UIDs in appUIDs and others in otherUIDs.

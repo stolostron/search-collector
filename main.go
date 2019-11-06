@@ -247,7 +247,7 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 			// TODO: Use env variable for ignored resource kinds.
 			// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
 			// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
-			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "oauthaccesstokens" {
+			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "oauthaccesstokens" || apiResource.Name == "events" {
 				continue
 			}
 			//add non-namespaced resource to NonNSResourceMap

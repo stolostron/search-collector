@@ -51,12 +51,12 @@
     },
     "status": {
         "compliancyDetails": {
-            "mutation-policy-example": {
+            "ma-policy-release": {
                 "default": [
-                    "2 mutated pods detected in namespace `default`"
+                    "2 mutated pods detected in namespace `default`:[eb790c2e-361f-11e9-85ca-00163e019656,3f4f13f2-f900-11e9-aa82-00163e01bcd9]"
                 ],
                 "kube-public": [
-                    "3 mutated pods detected in namespace `kube-public`"
+                    "0 mutated pods detected in namespace `kube-public`:[]"
                 ]
             }
         },

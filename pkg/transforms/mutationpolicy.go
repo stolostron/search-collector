@@ -27,18 +27,20 @@ func (m MutationPolicyResource) BuildNode() Node {
 	// Extract the properties specific to this type
 	node.Properties["compliant"] = string(m.Status.ComplianceState)
 	var totalResources int
+	var podUIDTexts []string
+	var allPodUids string
 	for _, oval := range m.Status.CompliancyDetails {
 		/*
-			We are parsing a map[string]map[string][]string object m.Status.CompliancyDetails
-			Here is an example
-				"mutation-policy-example": {
-			        "default": [
-			                    "2 mutated pods detected in namespace `default`"
+						We are parsing a map[string]map[string][]string object m.Status.CompliancyDetails
+						Here is an example
+							"mutation-policy-example": {
+						        "default": [
+			                    "2 mutated pods detected in namespace `default`:[98b3c272-fbff-11e9-aa82-00163e01bcd9,3f4f13f2-f900-11e9-aa82-00163e01bcd9]"
 			                ],
-			        "kube-public": [
-			                    "3 mutated pods detected in namespace `kube-public`"
+			                "kube-public": [
+			                    "0 mutated pods detected in namespace `kube-public`:[]"
 			                ]
-			            }
+						            }
 		*/
 		for _, ival := range oval {
 			for _, str := range ival {
@@ -49,13 +51,20 @@ func (m MutationPolicyResource) BuildNode() Node {
 				} else {
 					totalResources = totalResources + podCount
 				}
-
+				cutLeft := strings.SplitAfter(str, "[")        // TrimLeft in Golang has a issue with char [ so using SplitAfter
+				cutRight := strings.TrimRight(cutLeft[1], "]") // Get whats inbetween []
+				if len(cutRight) > 0 {
+					//If there is text
+					podUIDTexts = append(podUIDTexts, cutRight)
+				}
 			}
 		}
 	}
+	allPodUids = strings.Join(podUIDTexts, ",")
 	node.Properties["mutatedResources"] = totalResources
 	node.Properties["remediationAction"] = string(m.Spec.RemediationAction)
 	node.Properties["severity"] = m.Spec.Severity
+	node.Metadata["_mutatedUIDs"] = allPodUids
 	return node
 }
 
@@ -63,44 +72,35 @@ func (m MutationPolicyResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
 	UID := prefixedUID(m.UID)
 	currentMANode := ns.ByUID[UID]
-	if currentMANode.Properties["compliant"] != "NonCompliant" {
-		return ret //We need to build edges only if the MAPolicy is not compliant
+	podUIDs := strings.Split(currentMANode.GetMetadata("_mutatedUIDs"), ",")
+	if currentMANode.Properties["compliant"] != "NonCompliant" || len(podUIDs) == 0 {
+		return ret //We need to build edges only if the MAPolicy is not compliant , Or there is no UIDs in status to connect
 	}
-	for _, event := range ns.K8sEventNodes {
-
-		policyUID, iObjectPresent := event.Node.Properties["InvolvedObject.uid"].(string)
-		resourceUID, muidPresent := event.Node.Properties["message.uid"].(string)
-		if !iObjectPresent || !muidPresent {
-			continue // if there is no useful values in Event skip it
-		}
-		policyInEvent := prefixedUIDStr(policyUID)
-		vulnerableResourceInEvent := prefixedUIDStr(resourceUID)
-		if policyInEvent != UID { // If the event does not speak about current Vulnerability skip it
-			continue
-		} //Else
+	for _, resourceUID := range podUIDs {
+		vulnerableResource := prefixedUIDStr(resourceUID)
 		//Check if the resources are present in our system before creating Edges
-		_, goodResource := ns.ByUID[vulnerableResourceInEvent]
+		_, goodResource := ns.ByUID[vulnerableResource]
 		if !(goodResource) {
-			glog.V(2).Infof("Resource %s not found - No Edge Created", vulnerableResourceInEvent)
+			glog.V(2).Infof("Resource %s not found - No Edge Created", vulnerableResource)
 			continue // Resource should be in our Node list to make a edge
 		}
+
 		edgeVal := Edge{
 			EdgeType:  "violates",
-			SourceUID: vulnerableResourceInEvent,
+			SourceUID: vulnerableResource,
 			DestUID:   UID,
 		}
 		ret = append(ret, edgeVal)
-		remoteSubscription := getSubscriptionByUID(vulnerableResourceInEvent, ns)
+		remoteSubscription := getSubscriptionByUID(vulnerableResource, ns)
 		glog.V(4).Infof("Found subscription %s attached to resource in violation ", remoteSubscription)
 		if len(remoteSubscription) > 0 {
 			subEdge := Edge{
 				EdgeType:  "violates",
-				SourceUID: UID,
-				DestUID:   remoteSubscription,
+				SourceUID: remoteSubscription,
+				DestUID:   UID,
 			}
 			ret = append(ret, subEdge)
 		}
-
 	}
 	nodeInfo := NodeInfo{Name: m.Name, NameSpace: m.Namespace, UID: UID, EdgeType: "ownedBy", Kind: m.Kind}
 	//ownedBy edges

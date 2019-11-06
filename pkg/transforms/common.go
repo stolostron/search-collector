@@ -25,7 +25,6 @@ import (
 type NodeStore struct {
 	ByUID               map[string]Node
 	ByKindNamespaceName map[string]map[string]map[string]Node
-	K8sEventNodes       map[string]NodeEvent
 }
 
 // Extracts the common properties from a default k8s resource of unknown type and returns them in a map ready to be put in an Node
