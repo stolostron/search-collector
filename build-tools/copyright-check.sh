@@ -2,7 +2,7 @@
 
 #IBM Confidential
 #OCO Source Materials
-#5737-E67
+
 #(C) Copyright IBM Corporation 2019 All Rights Reserved
 #The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
 
@@ -12,8 +12,8 @@ YEAR=2019
 CHECK1="IBM Confidential"
 #LINE2="${COMMENT_PREFIX}OCO Source Materials"
 CHECK2="OCO Source Materials"
-#LINE3="${COMMENT_PREFIX}5737-E67"
-CHECK3="5737-E67"
+
+
 #LINE4="${COMMENT_PREFIX}(C) Copyright IBM Corporation 2019 All Rights Reserved"
 CHECK4="(C) Copyright IBM Corporation 2019 All Rights Reserved"
 #LINE5="${COMMENT_PREFIX}The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office."
