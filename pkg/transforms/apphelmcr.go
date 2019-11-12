@@ -59,8 +59,5 @@ func (a AppHelmCRResource) BuildEdges(ns NodeStore) []Edge {
 			ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
 		}
 	}
-
-	//deployer subscriber edges
-	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 	return ret
 }

@@ -44,9 +44,6 @@ func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
 	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
 	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
 
-	//deployer subscriber edges
-	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
-
 	//deploys edges
 	//HelmRepo channel to deployables edges
 	if c.Spec.Type == "HelmRepo" {

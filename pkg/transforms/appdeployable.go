@@ -48,7 +48,5 @@ func (d AppDeployableResource) BuildEdges(ns NodeStore) []Edge {
 		placementRuleMap[d.Spec.Placement.PlacementRef.Name] = struct{}{}
 		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns)...)
 	}
-	//deployer subscriber edges
-	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 	return ret
 }

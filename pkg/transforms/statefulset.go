@@ -29,10 +29,6 @@ func (s StatefulSetResource) BuildNode() Node {
 }
 
 func (s StatefulSetResource) BuildEdges(ns NodeStore) []Edge {
-	ret := []Edge{}
-	UID := prefixedUID(s.UID)
-	//deployer subscriber edges
-	nodeInfo := NodeInfo{NameSpace: s.Namespace, UID: UID, Kind: s.Kind, Name: s.Name}
-	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
-	return ret
+	//no op for now to implement interface
+	return []Edge{}
 }

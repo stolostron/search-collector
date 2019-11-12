@@ -55,7 +55,5 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 		}
 		ret = append(ret, edgesByDestinationName(placementBindingMap, "PlacementBinding", nodeInfo, ns)...)
 	}
-	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
-
 	return ret
 }

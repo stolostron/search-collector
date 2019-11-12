@@ -29,11 +29,6 @@ func (d DaemonSetResource) BuildNode() Node {
 }
 
 func (d DaemonSetResource) BuildEdges(ns NodeStore) []Edge {
-	ret := []Edge{}
-	UID := prefixedUID(d.UID)
-	//deployer subscriber edges
-	nodeInfo := NodeInfo{NameSpace: d.Namespace, UID: UID, Kind: d.Kind, Name: d.Name}
-	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
-	return ret
-
+	//no op for now to implement interface
+	return []Edge{}
 }

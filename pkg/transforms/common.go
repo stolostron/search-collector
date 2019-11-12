@@ -117,8 +117,32 @@ func (u UnstructuredResource) BuildNode() Node {
 }
 
 func (u UnstructuredResource) BuildEdges(ns NodeStore) []Edge {
+	// The deployer subscriber edges will be made through CommonEdges
+	return []Edge{}
+}
+
+func CommonEdges(uid string, ns NodeStore) []Edge {
 	ret := []Edge{}
-	nodeInfo := NodeInfo{NameSpace: u.GetNamespace(), UID: prefixedUID(u.GetUID()), Kind: u.GetKind(), Name: u.GetName()}
+	currNode := ns.ByUID[uid]
+	namespace := ""
+	kind := currNode.Properties["kind"].(string)
+	if currNode.Properties["namespace"] != nil {
+		namespace = currNode.Properties["namespace"].(string)
+	} else if _, ok := NonNSResourceMap[kind]; ok {
+		namespace = "_NONE"
+	}
+
+	nodeInfo := NodeInfo{Name: currNode.Properties["name"].(string), NameSpace: namespace, UID: uid, EdgeType: "ownedBy", Kind: kind}
+
+	//ownedBy edges
+	if currNode.GetMetadata("OwnerUID") != "" {
+		// For now, we are restricting the owner edge creations for resources that are owned by the Helm CR(kind 'HelmRelease'). We can remove this restriction if it is not one too many edges.
+		ownerNode := ns.ByUID[currNode.GetMetadata("OwnerUID")]
+		if ownerNode.Properties["kind"] == "HelmRelease" {
+			ret = append(ret, edgesByOwner(currNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
+		}
+	}
+
 	//deployer subscriber edges
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 	return ret

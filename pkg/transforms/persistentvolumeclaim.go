@@ -54,7 +54,5 @@ func (p PersistentVolumeClaimResource) BuildEdges(ns NodeStore) []Edge {
 			ret = append(ret, edgesByDestinationName(volumeMap, "PersistentVolume", nodeInfo, ns)...)
 		}
 	}
-	//deployer subscriber edges
-	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 	return ret
 }

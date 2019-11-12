@@ -49,7 +49,8 @@ func createNodeEvents() []tr.NodeEvent {
 		Object: map[string]interface{}{
 			"kind": "testowner",
 			"metadata": map[string]interface{}{
-				"uid": "1234",
+				"uid":  "1234",
+				"name": "testownerName",
 			},
 		},
 	}
@@ -62,6 +63,7 @@ func createNodeEvents() []tr.NodeEvent {
 	p := v1.Pod{}
 	p.APIVersion = "v1"
 	p.Name = "testpod"
+	p.Kind = "Pod"
 	p.Namespace = "default"
 	p.SelfLink = "/api/v1/namespaces/default/pods/testpod"
 	p.UID = "5678"

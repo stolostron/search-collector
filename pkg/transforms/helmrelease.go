@@ -178,10 +178,5 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s", h.GetLabels()["NAME"], kind, resource.Name, namespace)
 		}
 	}
-
-	nodeInfo := NodeInfo{NameSpace: h.GetNamespace(), UID: UID, Kind: h.Kind, Name: h.GetLabels()["NAME"]}
-	//deployer subscriber edges
-	edges = append(edges, edgesByDeployerSubscriber(nodeInfo, ns)...)
-
 	return edges
 }
