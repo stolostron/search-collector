@@ -269,21 +269,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeploymentResource{&typedResource}
 
-		case [2]string{"Event", ""}:
-			typedResource := core.Event{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			//We want to process only if the Event is of our interest VA and MA
-			var checkType *core.Event
-			checkType = &typedResource
-			if checkType.InvolvedObject.Kind == "VulnerabilityPolicy" || checkType.InvolvedObject.Kind == "MutationPolicy" {
-				trans = EventResource{&typedResource}
-			} else {
-				continue
-			}
-
 			//This is the application's HelmCR of kind HelmRelease. From 2019 Q4, the apigroup will be app.ibm.com.
 		case [2]string{"HelmRelease", "app.ibm.com"}:
 			typedResource := appHelmRelease.HelmRelease{}

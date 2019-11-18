@@ -257,20 +257,6 @@ func (r *Reconciler) reconcileNode() {
 	r.mutex.Lock() // Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit and then blocked, we could end up getting out of order
 	defer r.mutex.Unlock()
 
-	//Kind will not be nil during runtime , but we have tests with nil kind - so a check for it
-	if ne.Node.Properties["kind"] != nil {
-		kind := ne.Node.Properties["kind"].(string)
-		if kind == "Event" {
-			_, iok := ne.Node.Properties["InvolvedObject.uid"]
-			_, mok := ne.Node.Properties["message.uid"]
-			if !(iok && mok) {
-				return //we Dont want to process if we dont have involved Object and Offentding Resource
-			}
-			r.reconcileEvent(ne)
-			return
-		}
-	}
-
 	// Check whether we already have this node in our diff/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
 	otherNode, inDiff := r.diffNodes[ne.Node.UID]
 	nodeInterface, inPurged := r.purgedNodes.Get(ne.Node.UID)
@@ -326,39 +312,4 @@ func (r *Reconciler) resetDiffs() {
 	for uid, node := range r.currentNodes {
 		r.previousNodes[uid] = node
 	}
-}
-
-//Method to process Events
-
-func (r *Reconciler) reconcileEvent(ne tr.NodeEvent) {
-	// Check whether we already have this node in our diff/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
-	otherNode, seenBefore := r.k8sEventNodes[ne.Node.UID]
-	nodeInterface, inPurged := r.purgedNodes.Get(ne.Node.UID)
-
-	if seenBefore && otherNode.Time > ne.Time {
-		return
-	}
-	if inPurged {
-		purgedNode, ok := nodeInterface.(tr.NodeEvent)
-		// If the event is already present in purged list , check if the purge time is
-		// equal or greater than the current time. Then we can skip processing the event
-		if ok && purgedNode.Time >= ne.Time {
-			return
-		}
-	}
-	if ne.Operation == tr.Delete {
-		r.purgedNodes.Add(ne.UID, ne) // Add this to the list of node purged resources
-	} else {
-		ne.Operation = tr.Create
-		if seenBefore { // Events normally dont get updates but we can resolve it out
-			ne.Operation = tr.Update
-
-			// skip updates if new event is redundant to our previous state (a property that we don't care about triggered an update)
-			if reflect.DeepEqual(ne.Node.Properties, otherNode.Properties) {
-				return
-			}
-		}
-		r.k8sEventNodes[ne.UID] = ne
-	}
-
 }

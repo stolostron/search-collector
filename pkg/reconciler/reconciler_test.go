@@ -368,15 +368,6 @@ func TestReconcilerComplete(t *testing.T) {
 		}()
 		testReconciler.reconcileNode()
 	}
-	_, pass := testReconciler.k8sEventNodes["local-cluster/a1140d22-f04b-11e9-ba0f-0016ac10172d"]
-	if !pass {
-		t.Log(len(testReconciler.k8sEventNodes))
-		for k := range testReconciler.k8sEventNodes {
-			t.Logf("Event UIDs present : %s", k)
-		}
-		t.Fatal("Error: Reconciler Missing EventNode")
-
-	}
 
 	// Compute reconciler Complete() state
 	com := testReconciler.Complete()
