@@ -178,7 +178,7 @@ func main() {
 					stoppers[gvr] = stopper
 					go informer.Run(stopper)
 				}
-				glog.Info("Total informers started: ", len(stoppers))
+				glog.V(2).Info("Total informers running: ", len(stoppers))
 			}
 
 			time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)

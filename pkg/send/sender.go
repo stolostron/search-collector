@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -40,18 +41,12 @@ type Payload struct {
 	AddEdges    []tr.Edge `json:"addEdges,omitempty"`    // List of Edges which must be added
 	DeleteEdges []tr.Edge `json:"deleteEdges,omitempty"` // List of Edges which must be deleted
 	ClearAll    bool      `json:"clearAll,omitempty"`    // Whether or not the aggregator should clear all data it has for the cluster first
-	RequestId   int       `json:"requestId,omitempty"`
+	RequestId   int       `json:"requestId,omitempty"`   // Unique ID to track each request for debug.
+	Version     string    `json:"version,omitempty"`     // Version of this collectors
 }
 
 func (p Payload) empty() bool {
 	return len(p.DeletedResources) == 0 && len(p.AddResources) == 0 && len(p.UpdatedResources) == 0 && len(p.AddEdges) == 0 && len(p.DeleteEdges) == 0
-}
-
-// TODO import this type from the aggregator.
-type GetResponse struct {
-	LastUpdated    string
-	TotalResources int
-	MaxQueueTime   int
 }
 
 // TODO import this type from the aggregator.
@@ -116,6 +111,7 @@ func (s *Sender) diffPayload() (Payload, int, int) {
 	payload := Payload{
 		ClearAll:  false,
 		RequestId: rand.Intn(999999),
+		Version:   config.COLLECTOR_API_VERSION,
 
 		AddResources:     diff.AddNodes,
 		UpdatedResources: diff.UpdateNodes,
@@ -144,6 +140,24 @@ func (s *Sender) completePayload() (Payload, int, int) {
 	return payload, complete.TotalNodes, complete.TotalEdges
 }
 
+// Send will retry after recoverable errors.
+//  - Aggregator busy
+func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
+	retry := 0
+	for {
+		sendError := s.send(payload, expectedTotalResources, expectedTotalEdges)
+
+		if sendError != nil && sendError.Error() == "Aggregator busy" {
+			retry++
+			waitMS := int(math.Min(float64(retry*15*1000), float64(config.Cfg.MaxBackoffMS)))
+			glog.Warningf("Received busy response from Aggregator. Resending in %d ms.", waitMS)
+			time.Sleep(time.Duration(waitMS) * time.Millisecond)
+			continue
+		}
+		return sendError
+	}
+}
+
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
@@ -153,7 +167,6 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	if err != nil {
 		return err
 	}
-	// glog.Warning(string(payloadBytes))
 	payloadBuffer := bytes.NewBuffer(payloadBytes)
 	resp, err := s.httpClient.Post(s.aggregatorURL+s.aggregatorSyncPath, "application/json", payloadBuffer)
 	if resp != nil {
@@ -163,7 +176,9 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		glog.Error("httpClient error: ", err)
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return errors.New("Aggregator busy")
+	} else if resp.StatusCode != http.StatusOK {
 		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s", s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
 		return errors.New(msg)
 	}
@@ -181,10 +196,11 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
 	}
 
-	// compute edges check only if aggregator
+	// Check edges only if aggregator is able to process it.
+	// Edges were introduced in 3.2.1, so here we check the aggregator is at least 3.2.1 before validating edges.
 	aggApi, _ := version.NewVersion(r.Version)
-	localApi, _ := version.NewVersion(config.AGGREGATOR_API_VERSION)
-	if aggApi != nil && localApi != nil && aggApi.GreaterThanOrEqual(localApi) {
+	edgesFeatureVersion, _ := version.NewVersion("3.2.1")
+	if aggApi != nil && aggApi.GreaterThanOrEqual(edgesFeatureVersion) {
 		if r.TotalEdges != (expectedTotalEdges + len(r.DeleteEdgeErrors) - len(r.AddEdgeErrors)) {
 			msg := fmt.Sprintf("Aggregator reported wrong number of total intra edges. Expected %d, got %d", expectedTotalEdges, r.TotalEdges)
 			return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
@@ -200,7 +216,7 @@ func (s *Sender) Sync() error {
 	if s.lastSentTime == -1 { // If we have never sent before, we just send the complete.
 		glog.Info("First time sending or last Sync cycle failed, sending complete payload")
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
-		err := s.send(payload, expectedTotalResources, expectedTotalEdges)
+		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
 			glog.Error("Sync sender error. ", err)
 			return err
@@ -222,12 +238,12 @@ func (s *Sender) Sync() error {
 	} else {
 		glog.V(2).Info("Sending diff payload.")
 	}
-	err := s.send(payload, expectedTotalResources, expectedTotalEdges)
+	err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 	if err != nil { // If something went wrong here, form a new complete payload (only necessary because currentState may have changed since we got it, and we have to keep our diffs synced)
 		glog.Warning("Error on diff payload sending: ", err)
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
 		glog.Warning("Retrying with complete payload")
-		err := s.send(payload, expectedTotalResources, expectedTotalEdges)
+		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
 			glog.Error("Error resending complete payload.")
 			s.lastSentTime = -1 // If this retry fails, we want to start over with a complete payload next time, so we reset as if we've not sent anything before.

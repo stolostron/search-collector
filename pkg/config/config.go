@@ -24,15 +24,15 @@ import (
 
 // Out of box defaults
 const (
-	DEFAULT_RUNTIME_MODE       = "production"
-	DEFAULT_CLUSTER_NAME       = "local-cluster"
+	COLLECTOR_API_VERSION      = "3.3.0"
 	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010"
-	DEFAULT_TILLER_URL         = "tiller-deploy.kube-system:44134"
-	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
+	DEFAULT_CLUSTER_NAME       = "local-cluster"
 	DEFAULT_HEARTBEAT_MS       = 60000  // 1 min
 	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
 	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
-	AGGREGATOR_API_VERSION     = "3.2.1"
+	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
+	DEFAULT_RUNTIME_MODE       = "production"
+	DEFAULT_TILLER_URL         = "tiller-deploy.kube-system:44134"
 )
 
 // Define a config type for gonfig to hold our config properties.
