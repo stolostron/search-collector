@@ -29,15 +29,6 @@ func (r ReplicaSetResource) BuildNode() Node {
 }
 
 func (r ReplicaSetResource) BuildEdges(ns NodeStore) []Edge {
-	ret := []Edge{}
-	UID := prefixedUID(r.ReplicaSet.UID)
-	rsNode := ns.ByUID[UID]
-	nodeInfo := NodeInfo{Name: r.Name, NameSpace: r.Namespace, UID: UID, EdgeType: "ownedBy", Kind: r.Kind}
-
-	//ownedBy edges
-	if rsNode.GetMetadata("OwnerUID") != "" {
-		ret = append(ret, edgesByOwner(rsNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
-	}
-
-	return ret
+	//no op for now to implement interface
+	return []Edge{}
 }

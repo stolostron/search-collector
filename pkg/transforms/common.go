@@ -136,11 +136,7 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 
 	//ownedBy edges
 	if currNode.GetMetadata("OwnerUID") != "" {
-		// For now, we are restricting the owner edge creations for resources that are owned by the Helm CR(kind 'HelmRelease'). We can remove this restriction if it is not one too many edges.
-		ownerNode := ns.ByUID[currNode.GetMetadata("OwnerUID")]
-		if ownerNode.Properties["kind"] == "HelmRelease" {
-			ret = append(ret, edgesByOwner(currNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
-		}
+		ret = append(ret, edgesByOwner(currNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
 	}
 
 	//deployer subscriber edges

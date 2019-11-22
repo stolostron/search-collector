@@ -101,10 +101,5 @@ func (m MutationPolicyResource) BuildEdges(ns NodeStore) []Edge {
 			ret = append(ret, subEdge)
 		}
 	}
-	nodeInfo := NodeInfo{Name: m.Name, NameSpace: m.Namespace, UID: UID, EdgeType: "ownedBy", Kind: m.Kind}
-	//ownedBy edges
-	if currentMANode.GetMetadata("OwnerUID") != "" {
-		ret = append(ret, edgesByOwner(currentMANode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
-	}
 	return ret
 }

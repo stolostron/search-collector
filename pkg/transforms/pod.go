@@ -119,17 +119,10 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	ret := make([]Edge, 0, 8)
 
 	UID := prefixedUID(p.UID)
-	podNode := ns.ByUID[UID]
 
-	nodeInfo := NodeInfo{Name: p.Name, NameSpace: p.Namespace, UID: UID, EdgeType: "ownedBy", Kind: p.Kind}
-	//ownedBy edges
-	if podNode.GetMetadata("OwnerUID") != "" {
-		ret = append(ret, edgesByOwner(podNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
-	}
+	nodeInfo := NodeInfo{Name: p.Name, NameSpace: p.Namespace, UID: UID, EdgeType: "attachedTo", Kind: p.Kind}
 
 	//attachedTo edges
-	nodeInfo.EdgeType = "attachedTo"
-
 	secretMap := make(map[string]struct{})
 	configmapMap := make(map[string]struct{})
 	volumeClaimMap := make(map[string]struct{})
