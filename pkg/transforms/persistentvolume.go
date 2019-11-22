@@ -52,6 +52,12 @@ func (p PersistentVolumeResource) BuildNode() Node {
 		node.Properties["path"] = p.Spec.Local.Path
 	} else if p.Spec.HostPath != nil {
 		node.Properties["path"] = p.Spec.HostPath.Path
+	} else if p.Spec.Glusterfs != nil {
+		node.Properties["path"] = p.Spec.Glusterfs.Path
+	} else if p.Spec.NFS != nil {
+		node.Properties["path"] = p.Spec.NFS.Path
+	} else if p.Spec.VsphereVolume != nil {
+		node.Properties["path"] = p.Spec.VsphereVolume.VolumePath
 	}
 
 	return node

@@ -37,6 +37,12 @@ func (p PersistentVolumeClaimResource) BuildNode() Node {
 	}
 	node.Properties["accessMode"] = accessModes
 
+	if p.Spec.Resources.Requests != nil {
+		request, ok := p.Spec.Resources.Requests["storage"]
+		if ok {
+			node.Properties["request"] = request.String()
+		}
+	}
 	return node
 }
 
