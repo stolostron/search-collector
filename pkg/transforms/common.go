@@ -128,7 +128,7 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 	kind := currNode.Properties["kind"].(string)
 	if currNode.Properties["namespace"] != nil {
 		namespace = currNode.Properties["namespace"].(string)
-	} else if _, ok := NonNSResourceMap[kind]; ok {
+	} else { // If namespace property is not present, nodeTripleMap assigns namespace to be _NONE in reconciler (reconciler.go:47)
 		namespace = "_NONE"
 	}
 
