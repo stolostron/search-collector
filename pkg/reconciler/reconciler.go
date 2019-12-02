@@ -136,9 +136,29 @@ func (r *Reconciler) Diff() Diff {
 	}
 
 	// Now go back through the remains of the previous and coerce to slice of edges to be deleted
-	for _, destMap := range r.previousEdges {
-		for _, oldEdge := range destMap {
-			ret.DeleteEdges = append(ret.DeleteEdges, oldEdge)
+	for srcUID, destMap := range r.previousEdges {
+		srcDeleted := false // flag to check if the sourceNode is in ret.DeleteNodes
+		for destUID, oldEdge := range destMap {
+			destDeleted := false // flag to check if the destNode is in ret.DeleteNodes
+			// Loop through ret.DeleteNodes and check if the source or destination nodes are up for delete.
+			// Since the associated edges gets deleted automatically when the node is deleted, we won't add the edges to ret.DeleteEdges
+			for _, delNode := range ret.DeleteNodes {
+				if srcUID == delNode.UID {
+					delete(r.previousEdges, srcUID) // If the srcUID is in ret.DeleteNodes, delete the whole sourceUID map from previousEdges and break out of the loop
+					srcDeleted = true
+					break
+				} else if destUID == delNode.UID {
+					delete(r.previousEdges[srcUID], destUID) // If the srcUID is in ret.DeleteNodes, delete the edge from previousEdges
+					destDeleted = true
+				}
+			}
+			if srcDeleted {
+				break //break out of the inner for loop since the whole sourceUID map is already deleted
+			}
+			if !srcDeleted && !destDeleted {
+				//Add the edge to be deleted only if the source and destination nodes are not in ret.DeleteNodes
+				ret.DeleteEdges = append(ret.DeleteEdges, oldEdge)
+			}
 		}
 	}
 
