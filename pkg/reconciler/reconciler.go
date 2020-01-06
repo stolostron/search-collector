@@ -317,6 +317,24 @@ func (r *Reconciler) reconcileNode() {
 				return
 			}
 		}
+		// Each configmap for a helm release triggers a releases tranformation . If there are N configmaps we are processing the same
+		//helm release N times. Since the order which the configmap gets this point is not gauranteed , we are setting
+		// helm status which are old . Skipping if the current helm revison is OLDER than one we already have.
+		if ne.Node.ResourceString == "releases" {
+			if inPrevious { // If this node in the previous(sent to redis already), check the previous helm revision is latest - if yes discard current one
+				if previousNode.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
+					glog.V(3).Infof("Skip %d for  release %s - previous is good", ne.Node.Properties["revision"], ne.Node.Properties["name"])
+					return
+				}
+			}
+			if nodeVal, ok := r.currentNodes[ne.UID]; ok { // check if we have this release processed already( ready to send to redis ) and that is latest - if yes discard current one
+				if nodeVal.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
+					glog.V(3).Infof("Skip %d for  release %s - lower revision", ne.Node.Properties["revision"], ne.Node.Properties["name"])
+					return
+				}
+			}
+		}
+
 		r.currentNodes[ne.UID] = ne.Node
 		r.edgeFuncs[ne.UID] = ne.ComputeEdges
 		r.diffNodes[ne.UID] = ne
