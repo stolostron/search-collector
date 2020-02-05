@@ -62,6 +62,10 @@
   name = "github.com/IBM/multicloud-operators-subscription-release"
   branch = "master"
 
+[[constraint]]
+  name = "gopkg.in/yaml.v2"
+  version = "=2.2.8"
+
 [[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.13.12"

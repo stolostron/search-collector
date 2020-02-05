@@ -15,6 +15,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/ptypes"
 	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
+	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/helm/pkg/proto/hapi/release"
 )
@@ -66,8 +67,10 @@ func (h HelmReleaseResource) BuildNode() Node {
 }
 
 type SummarizedManifestResource struct {
-	Name string
-	Kind string
+	Kind     string
+	Metadata struct {
+		Name string
+	}
 }
 
 func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestResource {
@@ -89,39 +92,20 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 	manifest := h.Release.GetManifest()
 
 	// Strings for parsing out important information from manifest resources
-	kindstr := "kind: "
-	namestr := "name: "
-	newline := "\n"
 
 	manifestParts := strings.Split(manifest, "---\n") // Split manifest yaml into multiple resource yamls.
 
 	for _, resource := range manifestParts { //	Per resource yaml ...
 
-		kind := ""
-		if strings.Contains(resource, kindstr) { // ... if resource kind defined...
-			kindstart := strings.Index(resource, kindstr) + len(kindstr)
-			kindstop := strings.Index(resource[kindstart:], newline) + kindstart
-			kind = resource[kindstart:kindstop] // ... pull `KIND` value out of `kind: KIND` line ...
-			if strings.Contains(kind, "'") || strings.Contains(kind, "\r") {
-				kind = strings.TrimRight(strings.TrimLeft(kind, "'\r"), "'\r") // ... remove surrounding single quotes '' or carriage returns \r, if any
-			}
-			kind = strings.TrimSpace(kind)
-		}
-
-		name := ""
-		if strings.Contains(resource, namestr) { // ... and if resource name defined...
-			namestart := strings.Index(resource, namestr) + len(namestr)
-			namestop := strings.Index(resource[namestart:], newline) + namestart
-			name = resource[namestart:namestop]        // ... pull `"NAME"` value out of `name: "NAME"` line...
-			name = strings.Replace(name, "\"", "", -1) // ... and remove surrounding "" from `"NAME"`
-			if strings.Contains(name, "'") || strings.Contains(name, "\r") {
-				name = strings.TrimRight(strings.TrimLeft(name, "'\r"), "'\r") // ... remove surrounding single quotes '' or carriage returns \r, if any
-			}
-			name = strings.TrimSpace(name)
-		}
-
-		if name != "" && kind != "" { // ... and if both resource kind and name defined...
-			smr = append(smr, SummarizedManifestResource{name, kind}) // ... prep `KIND` and `NAME` for BuildEdges
+		tmpsmr := SummarizedManifestResource{}
+		// We unmarshal the struct
+		err := yaml.Unmarshal([]byte(resource), &tmpsmr)
+		if err != nil {
+			glog.Errorf("Unmarshalling Helm Release %s failed: %v", h.GetLabels()["NAME"], err)
+		} else if tmpsmr.Kind != "" && tmpsmr.Metadata.Name != "" { // ... and if both resource kind and name defined...
+			smr = append(smr, tmpsmr) // ... prep `KIND` and `NAME` for BuildEdges
+		} else { // this shouldn't happen
+			glog.Warningf("kind or name not found for resource in Helm Release %s", h.GetLabels()["NAME"])
 		}
 	}
 
@@ -137,8 +121,10 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 	helmNode := ns.ByUID[UID]
 
 	for _, resource := range smr {
+
 		namespace := h.GetNamespace()
 		kind := resource.Kind
+		name := resource.Metadata.Name
 
 		//Obtain Read Lock before checking the map
 		NonNSResMapMutex.RLock()
@@ -151,7 +137,7 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 		}
 
 		// ownedBy edges
-		if resourceNode, ok := ns.ByKindNamespaceName[kind][namespace][resource.Name]; ok {
+		if resourceNode, ok := ns.ByKindNamespaceName[kind][namespace][name]; ok {
 			if resourceNode.Metadata != nil { // Metadata can be nil if no node found
 				resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"]) // update node metadata to include release for upstream edge from resource to Release
 			}
@@ -172,10 +158,10 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 					})
 				}
 			} else {
-				glog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found", kind, resource.Name, h.GetLabels()["NAME"])
+				glog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found", kind, name, h.GetLabels()["NAME"])
 			}
 		} else {
-			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s", h.GetLabels()["NAME"], kind, resource.Name, namespace)
+			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s", h.GetLabels()["NAME"], kind, name, namespace)
 		}
 	}
 	return edges
