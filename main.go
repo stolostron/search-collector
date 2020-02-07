@@ -53,8 +53,6 @@ func main() {
 	// Create Sender, attached to transformer
 	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
 
-	tr.StartHelmClientProvider(transformChannel)
-
 	var clientConfig *rest.Config
 	var clientConfigError error
 
@@ -69,6 +67,8 @@ func main() {
 	if clientConfigError != nil {
 		glog.Fatal("Error Constructing Client From Config: ", clientConfigError)
 	}
+
+	tr.StartHelmClientProvider(transformChannel, clientConfig)
 
 	// Initialize the dynamic client, used for CRUD operations on arbitrary k8s resources
 	dynamicClientset, err := dynamic.NewForConfig(clientConfig)

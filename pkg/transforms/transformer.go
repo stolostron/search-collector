@@ -461,7 +461,9 @@ func IsHelmRelease(resource *unstructured.Unstructured) bool {
 func getReleaseFromHelm(releaseName string) *release.Release {
 	helmClient := GetHelmClient()
 	if !HealthyConnection() {
-		glog.Warning("Helm client not healthy; Cannot fetch helm release:", releaseName)
+		if len(helmReleaseRetry) < 1 {
+			glog.Warning("Helm client not healthy; Cannot fetch helm release:", releaseName)
+		}
 		return nil
 	}
 
