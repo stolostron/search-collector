@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
-	rec "github.ibm.com/IBMPrivateCloud/search-collector/pkg/reconciler"
-	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
+	"github.com/open-cluster-management/search-collector/pkg/config"
+	rec "github.com/open-cluster-management/search-collector/pkg/reconciler"
+	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 
 	"github.com/golang/glog"
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/send"
+	"github.com/open-cluster-management/IBMPrivateCloud/search-collector/pkg/send"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"

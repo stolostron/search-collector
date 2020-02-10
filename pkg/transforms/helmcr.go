@@ -8,7 +8,7 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	app "github.ibm.com/IBMMulticloudPlatform/helm-crd/pkg/apis/helm.bitnami.com/v1"
+	app "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
 )
 
 type HelmCRResource struct {

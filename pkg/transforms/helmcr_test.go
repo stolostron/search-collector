@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	app "github.ibm.com/IBMMulticloudPlatform/helm-crd/pkg/apis/helm.bitnami.com/v1"
+	app "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
 )
 
 func TestTransformHelmCR(t *testing.T) {

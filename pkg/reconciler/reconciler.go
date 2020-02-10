@@ -13,7 +13,7 @@ import (
 
 	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
-	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
+	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 )
 
 // Size of the LRU cache used to find out of order delete/add sequences

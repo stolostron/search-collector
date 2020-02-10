@@ -20,9 +20,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-version"
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/reconciler"
-	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
+	"github.com/open-cluster-management/search-collector/pkg/config"
+	"github.com/open-cluster-management/search-collector/pkg/reconciler"
+	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 )
 
 // A UID of a node to be deleted, and the time at which it was deleted.

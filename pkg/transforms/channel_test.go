@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	app "github.ibm.com/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1"
+	app "github.com/open-cluster-management/IBMMulticloudPlatform/channel/pkg/apis/app/v1alpha1"
 )
 
 func TestTransformChannel(t *testing.T) {

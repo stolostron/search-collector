@@ -13,7 +13,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
+	"github.com/open-cluster-management/search-collector/pkg/config"
 	"k8s.io/client-go/rest"
 
 	"github.com/golang/glog"

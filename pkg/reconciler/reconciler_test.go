@@ -16,7 +16,7 @@ import (
 
 	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
-	tr "github.ibm.com/IBMPrivateCloud/search-collector/pkg/transforms"
+	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/helm/pkg/proto/hapi/release"
