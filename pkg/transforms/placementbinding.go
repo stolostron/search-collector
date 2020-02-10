@@ -10,7 +10,7 @@ package transforms
 import (
 	"fmt"
 
-	mcm "github.ibm.com/IBMPrivateCloud/hcm-api/pkg/apis/mcm/v1alpha1"
+	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
 )
 
 type PlacementBindingResource struct {

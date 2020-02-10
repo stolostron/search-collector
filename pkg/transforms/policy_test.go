@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	mcm "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
+	mcm "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
 )
 
 func TestTransformPolicy(t *testing.T) {

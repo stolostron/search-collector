@@ -8,7 +8,7 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	mcm "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
+	mcm "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
 )
 
 type PolicyResource struct {

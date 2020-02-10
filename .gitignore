@@ -3,5 +3,6 @@ output/
 vendor/
 .build-harness
 build-harness/
+build-harness-extensions/
 search-collector
 

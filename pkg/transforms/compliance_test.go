@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
+	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
 )
 
 func TestTransformCompliance(t *testing.T) {

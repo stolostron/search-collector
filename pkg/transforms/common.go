@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
+	"github.com/open-cluster-management/search-collector/pkg/config"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

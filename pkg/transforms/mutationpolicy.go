@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	v1 "github.ibm.com/IBMPrivateCloud/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
+	v1 "github.com/open-cluster-management/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
 )
 
 type MutationPolicyResource struct {

@@ -8,8 +8,8 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	com "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/compliance/v1alpha1"
-	policy "github.ibm.com/IBMPrivateCloud/hcm-compliance/pkg/apis/policy/v1alpha1"
+	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
+	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
 )
 
 type ComplianceResource struct {
@@ -17,7 +17,7 @@ type ComplianceResource struct {
 }
 
 func (c ComplianceResource) BuildNode() Node {
-	node := transformCommon(c)               // Start off with the common properties
+	node := transformCommon(c)         // Start off with the common properties
 	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
 
 	// On a Compliance object, status.status holds an object with a property for each cluster.

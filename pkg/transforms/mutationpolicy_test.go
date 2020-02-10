@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	mcm "github.ibm.com/IBMPrivateCloud/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
+	mcm "github.com/open-cluster-management/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
 )
 
 func TestTransformMutationPolicy(t *testing.T) {

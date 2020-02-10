@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
+	rule "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
 	appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
 	subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
@@ -24,7 +25,6 @@ import (
 	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
 	helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
 	mapolicy "github.com/open-cluster-management/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
-	rule "github.com/open-cluster-management/placementrule/pkg/apis/app/v1alpha1"
 	vapolicy "github.com/open-cluster-management/va-mcm-controller/pkg/apis/mcm/v1alpha1"
 
 	apps "k8s.io/api/apps/v1"

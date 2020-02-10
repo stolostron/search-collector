@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	app "github.com/open-cluster-management/placementrule/pkg/apis/app/v1alpha1"
+	app "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
 )
 
 func TestTransformPlacementRule(t *testing.T) {

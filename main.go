@@ -20,7 +20,7 @@ import (
 	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 
 	"github.com/golang/glog"
-	"github.com/open-cluster-management/IBMPrivateCloud/search-collector/pkg/send"
+	"github.com/open-cluster-management/search-collector/pkg/send"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"

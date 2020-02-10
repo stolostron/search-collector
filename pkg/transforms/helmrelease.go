@@ -14,7 +14,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/ptypes"
-	"github.ibm.com/IBMPrivateCloud/search-collector/pkg/config"
+	"github.com/open-cluster-management/search-collector/pkg/config"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/helm/pkg/proto/hapi/release"

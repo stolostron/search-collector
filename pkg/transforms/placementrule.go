@@ -8,7 +8,7 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	app "github.com/open-cluster-management/placementrule/pkg/apis/app/v1alpha1"
+	app "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
 )
 
 type PlacementRuleResource struct {

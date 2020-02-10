@@ -30,19 +30,19 @@
   name = "github.com/golang/glog"
 
 [[constraint]]
-  name = "github.com/IBMPrivateCloud/hcm-compliance"
+  name = "github.com/open-cluster-management/hcm-compliance"
   branch = "master"
 
 [[constraint]]
-  name = "github.ibm.com/IBMPrivateCloud/va-mcm-controller"
+  name = "github.com/open-cluster-management/va-mcm-controller"
   branch = "master"
 
 [[constraint]]
-  name = "github.ibm.com/IBMPrivateCloud/ma-mcm-controller"
+  name = "github.com/open-cluster-management/ma-mcm-controller"
   branch = "master"
 
 [[constraint]]
-  name = "github.ibm.com/IBMPrivateCloud/hcm-api"
+  name = "github.com/open-cluster-management/hcm-api"
   branch = "master"
 
 [[constraint]]
@@ -50,8 +50,8 @@
   branch = "master"
 
 [[constraint]]
-  name = "github.ibm.com/IBMMulticloudPlatform/placementrule"
-  source = "git@github.ibm.com:IBMMulticloudPlatform/placementrule.git"
+  name = "github.com/IBM/multicloud-operators-placementrule"
+  source = "github.com/IBM/multicloud-operators-placementrule.git"
   branch = "master"
 
 [[constraint]]
