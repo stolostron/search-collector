@@ -1,48 +1,70 @@
-language: go
-go:
-  - 1.11.x
-
+#
+# Sample .travis.yml using the mvp-helloworld image (a helmoperator)
+#
 os:
   - linux
-  - linux-ppc64le
-  - linux-s390
+
+language: python
+python: "3.7"
+
 services:
   - docker
 
-## Only build on master, stable branches and tag
-# The stable branch and tag should be leading with numbers
-branches:
-  only:
-    - master
-    - development
-    - /^[0-9]+\..*$/
-    - /^v[0-9]+\..*$/
-    - /^release-[0-9]+\..*$/
+env:
+  global:
+    # Required
+    - OS=linux
+    - COMPONENT_TAG_EXTENSION="-${TRAVIS_COMMIT}"
 
-before_install:
-  # https://github.com/golang/dep/blob/master/docs/FAQ.md#how-do-i-get-dep-to-authenticate-via-ssh-to-a-git-repo
-  - git config --global url."git@github.ibm.com:".insteadOf "https://github.ibm.com/"
-  - source travis-env.sh
-  - make init
+    # Component Specific
+    - COMPONENT_DEPLOY_COMMAND=${TRAVIS_BUILD_DIR}/deploy-to-cluster.sh
+    - COMPONENT_INIT_COMMAND=${TRAVIS_BUILD_DIR}/install-dependencies.sh
+    - COMPONENT_BUILD_COMMAND=${TRAVIS_BUILD_DIR}/build.sh
+    - COMPONENT_UNIT_TEST_COMMAND=${TRAVIS_BUILD_DIR}/run-unit-tests.sh
+    - COMPONENT_DEPLOY_COMMAND=${TRAVIS_BUILD_DIR}/deploy-to-cluster.sh
 
-install:
-  - make deps
 
-script:
-  - make copyright-check lint test build docker:info docker:build release print_vars
+stages:
+  - build
+  - unit-test
+  - test-e2e
+  - publish
 
-after_success:
-  - |
-      if [[ "$TRAVIS_EVENT_TYPE" != "pull_request" && "$TRAVIS_BRANCH" != "development" ]]; then
-        curl -Lo travis_after_all.py https://raw.github.com/dmakhno/travis_after_all/master/travis_after_all.py
-        python travis_after_all.py https://travis.ibm.com/api
-        export $(cat .to_export_back)
-        if [[ "$BUILD_LEADER" == "YES" ]]; then
-          if [[ "$BUILD_AGGREGATE_STATUS" == "others_succeeded" ]]; then
-            echo "All jobs succeeded! Creating multi arch image..."
-            make docker:manifest-tool docker:multi-arch
-          else
-            echo "Some jobs failed" && exit 1
-          fi
-        fi
-      fi
+jobs:
+  include:
+    - stage: build
+      name: "Build the image and run unit tests"
+      script:
+        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
+        - |
+          make
+          make component/build
+          make component/push
+    - stage: unit-test
+      name: "Deploy the image to a cluster and run e2e tests"
+      if: type = pull_request
+      script:
+        # Set the image tag differently for PRs
+        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
+        # Bootstrap the build harness, pull test image, and run unit tests.  
+        - | 
+          make 
+          make component/pull 
+          make component/test/unit
+    - stage: test-e2e
+      name: "Deploy the image to a cluster and run e2e tests"
+      if: type = pull_request
+      script:
+        #Check out a clusterpool, set up oc, deploy, run e2e tests, and return clusterpool cluster
+        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
+        - |
+          make 
+          make component/pull 
+          make component/test/e2e
+    - stage: publish
+      name: "Publish the image to quay with an official version/sha tag and publish entry to integration pipeline stage"
+      if: type = push AND branch =~ /^release-[0-9]+\..*$/
+      script:
+        - |
+          make 
+          make pipeline-manifest/update PIPELINE_MANIFEST_COMPONENT_SHA256=${TRAVIS_COMMIT} PIPELINE_MANIFEST_COMPONENT_REPO=${TRAVIS_REPO_SLUG} PIPELINE_MANIFEST_BRANCH=${TRAVIS_BRANCH}
