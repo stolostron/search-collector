@@ -26,7 +26,7 @@ import (
 	helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
 
 	// mapolicy "github.com/open-cluster-management/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
-	vapolicy "github.com/open-cluster-management/va-mcm-controller/pkg/apis/mcm/v1alpha1"
+	// vapolicy "github.com/open-cluster-management/va-mcm-controller/pkg/apis/mcm/v1alpha1"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
