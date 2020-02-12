@@ -34,18 +34,6 @@
   branch = "master"
 
 [[constraint]]
-  name = "github.com/open-cluster-management/va-mcm-controller"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/open-cluster-management/ma-mcm-controller"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/open-cluster-management/hcm-api"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/IBM/multicloud-operators-deployable"
   branch = "master"
 

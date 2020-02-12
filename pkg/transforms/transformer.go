@@ -20,13 +20,11 @@ import (
 	subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
+
 	// mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
 	helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
-
-	// mapolicy "github.com/open-cluster-management/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
-	// vapolicy "github.com/open-cluster-management/va-mcm-controller/pkg/apis/mcm/v1alpha1"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
@@ -296,14 +294,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = JobResource{&typedResource}
 
-		// case [2]string{"MutationPolicy", "policies.ibm.com"}:
-		// 	typedResource := mapolicy.MutationPolicy{}
-		// 	err = json.Unmarshal(j, &typedResource)
-		// 	if err != nil {
-		// 		panic(err) // Will be caught by handleRoutineExit
-		// 	}
-		// 	trans = MutationPolicyResource{&typedResource}
-
 		case [2]string{"Namespace", ""}:
 			typedResource := core.Namespace{}
 			err = json.Unmarshal(j, &typedResource)
@@ -416,17 +406,9 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = SubscriptionResource{&typedResource}
 
-		// case [2]string{"VulnerabilityPolicy", "policies.ibm.com"}:
-		// 	typedResource := vapolicy.VulnerabilityPolicy{}
-		// 	err = json.Unmarshal(j, &typedResource)
-		// 	if err != nil {
-		// 		panic(err) // Will be caught by handleRoutineExit
-		// 	}
-		// 	trans = VulnerabilityPolicyResource{&typedResource}
-
-		// default:
-		// 	trans = UnstructuredResource{event.Resource}
-		// }
+		default:
+			trans = UnstructuredResource{event.Resource}
+		}
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)
 
