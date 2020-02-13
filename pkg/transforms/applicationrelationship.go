@@ -7,27 +7,27 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-import (
-	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
-)
+// import (
+// 	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+// )
 
-type ApplicationRelationshipResource struct {
-	*mcm.ApplicationRelationship
-}
+// type ApplicationRelationshipResource struct {
+// 	*mcm.ApplicationRelationship
+// }
 
-func (a ApplicationRelationshipResource) BuildNode() Node {
-	node := transformCommon(a)
+// func (a ApplicationRelationshipResource) BuildNode() Node {
+// 	node := transformCommon(a)
 
-	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
-	// Extract the properties specific to this type
-	node.Properties["destination"] = a.Spec.Destination.Name
-	node.Properties["source"] = a.Spec.Source.Name
-	node.Properties["type"] = string(a.Spec.RelType)
+// 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
+// 	// Extract the properties specific to this type
+// 	node.Properties["destination"] = a.Spec.Destination.Name
+// 	node.Properties["source"] = a.Spec.Source.Name
+// 	node.Properties["type"] = string(a.Spec.RelType)
 
-	return node
-}
+// 	return node
+// }
 
-func (a ApplicationRelationshipResource) BuildEdges(ns NodeStore) []Edge {
-	//no op for now to implement interface
-	return []Edge{}
-}
+// func (a ApplicationRelationshipResource) BuildEdges(ns NodeStore) []Edge {
+// 	//no op for now to implement interface
+// 	return []Edge{}
+// }

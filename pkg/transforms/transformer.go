@@ -21,9 +21,10 @@ import (
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 
-	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+	// mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
+	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
 
 	// helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
 
@@ -189,13 +190,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationResource{&typedResource}
 
-		case [2]string{"ApplicationRelationship", "mcm.ibm.com"}:
-			typedResource := mcm.ApplicationRelationship{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ApplicationRelationshipResource{&typedResource}
+		// case [2]string{"ApplicationRelationship", "mcm.ibm.com"}:
+		// 	typedResource := mcm.ApplicationRelationship{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = ApplicationRelationshipResource{&typedResource}
 
 		// case [2]string{"Channel", "app.ibm.com"}:
 		// 	typedResource := mcmapp.Channel{}
@@ -245,13 +246,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		// 	}
 		// 	trans = AppDeployableResource{&typedResource}
 
-		case [2]string{"Deployable", "mcm.ibm.com"}:
-			typedResource := mcm.Deployable{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = DeployableResource{&typedResource}
+		// case [2]string{"Deployable", "mcm.ibm.com"}:
+		// 	typedResource := mcm.Deployable{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = DeployableResource{&typedResource}
 
 		case [2]string{"Deployment", "apps"}:
 			typedResource := apps.Deployment{}

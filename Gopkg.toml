@@ -33,9 +33,9 @@
   name = "github.com/open-cluster-management/hcm-compliance"
   branch = "master"
 
-[[constraint]]
-  name = "github.com/open-cluster-management/hcm-api"
-  branch = "master"
+# [[constraint]]
+#   name = "github.com/open-cluster-management/hcm-api"
+#   branch = "master"
 
 # [[constraint]]
 #   name = "github.com/IBM/multicloud-operators-deployable"
