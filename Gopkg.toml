@@ -37,6 +37,10 @@
 #   name = "github.com/open-cluster-management/hcm-api"
 #   branch = "master"
 
+[[constraint]]
+  name = "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
+  branch = "master"
+
 # [[constraint]]
 #   name = "github.com/IBM/multicloud-operators-deployable"
 #   branch = "master"
