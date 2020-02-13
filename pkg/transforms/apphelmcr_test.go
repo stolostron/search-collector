@@ -7,21 +7,21 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-import (
-	"testing"
+// import (
+// 	"testing"
 
-	app "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
-)
+// 	app "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
+// )
 
-//TODO: Might have to update the json for testing once we have a live example
-func TestTransformAppHelmCR(t *testing.T) {
-	var a app.HelmRelease
+// //TODO: Might have to update the json for testing once we have a live example
+// func TestTransformAppHelmCR(t *testing.T) {
+// 	var a app.HelmRelease
 
-	UnmarshalFile("../../test-data/apphelmcr.json", &a, t)
+// 	UnmarshalFile("../../test-data/apphelmcr.json", &a, t)
 
-	node := AppHelmCRResource{&a}.BuildNode()
+// 	node := AppHelmCRResource{&a}.BuildNode()
 
-	// Test only the fields that exist in HelmRelease - the common test will test the other bits
-	AssertEqual("name", node.Properties["name"], "testAppHelmCR", t)
-	AssertEqual("kind", node.Properties["kind"], "HelmRelease", t)
-}
+// 	// Test only the fields that exist in HelmRelease - the common test will test the other bits
+// 	AssertEqual("name", node.Properties["name"], "testAppHelmCR", t)
+// 	AssertEqual("kind", node.Properties["kind"], "HelmRelease", t)
+// }

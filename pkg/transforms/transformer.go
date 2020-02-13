@@ -13,18 +13,19 @@ import (
 	"strings"
 	"sync"
 
-	mcmapp "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
-	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
+	// mcmapp "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
+	// appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
 	rule "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
-	appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
-	subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
+	// appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
+	// subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 
 	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
-	helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
+
+	// helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
@@ -196,13 +197,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationRelationshipResource{&typedResource}
 
-		case [2]string{"Channel", "app.ibm.com"}:
-			typedResource := mcmapp.Channel{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ChannelResource{&typedResource}
+		// case [2]string{"Channel", "app.ibm.com"}:
+		// 	typedResource := mcmapp.Channel{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = ChannelResource{&typedResource}
 
 		case [2]string{"Compliance", "compliance.mcm.ibm.com"}:
 			typedResource := com.Compliance{}
@@ -236,13 +237,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DaemonSetResource{&typedResource}
 
-		case [2]string{"Deployable", "app.ibm.com"}:
-			typedResource := appDeployable.Deployable{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = AppDeployableResource{&typedResource}
+		// case [2]string{"Deployable", "app.ibm.com"}:
+		// 	typedResource := appDeployable.Deployable{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = AppDeployableResource{&typedResource}
 
 		case [2]string{"Deployable", "mcm.ibm.com"}:
 			typedResource := mcm.Deployable{}
@@ -268,14 +269,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeploymentResource{&typedResource}
 
-			//This is the application's HelmCR of kind HelmRelease. From 2019 Q4, the apigroup will be app.ibm.com.
-		case [2]string{"HelmRelease", "app.ibm.com"}:
-			typedResource := appHelmRelease.HelmRelease{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = AppHelmCRResource{&typedResource}
+		// 	//This is the application's HelmCR of kind HelmRelease. From 2019 Q4, the apigroup will be app.ibm.com.
+		// case [2]string{"HelmRelease", "app.ibm.com"}:
+		// 	typedResource := appHelmRelease.HelmRelease{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = AppHelmCRResource{&typedResource}
 
 		//This is the application's HelmCR of kind HelmRelease
 		case [2]string{"HelmRelease", "helm.bitnami.com"}:
@@ -398,13 +399,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = StatefulSetResource{&typedResource}
 
-		case [2]string{"Subscription", "app.ibm.com"}:
-			typedResource := subscription.Subscription{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = SubscriptionResource{&typedResource}
+		// case [2]string{"Subscription", "app.ibm.com"}:
+		// 	typedResource := subscription.Subscription{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = SubscriptionResource{&typedResource}
 
 		default:
 			trans = UnstructuredResource{event.Resource}

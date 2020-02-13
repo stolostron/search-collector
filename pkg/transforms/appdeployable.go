@@ -7,46 +7,46 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-import (
-	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
-)
+// import (
+// 	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
+// )
 
-type AppDeployableResource struct {
-	*appDeployable.Deployable
-}
+// type AppDeployableResource struct {
+// 	*appDeployable.Deployable
+// }
 
-func (d AppDeployableResource) BuildNode() Node {
-	node := transformCommon(d)         // Start off with the common properties
-	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
-	// Extract the properties specific to this type
-	//TODO: Add properties, TEMPLATE-KIND   TEMPLATE-APIVERSION    AGE   STATUS
-	if d.Status.Phase != "" {
-		node.Properties["status"] = d.Status.Phase
-	}
-	return node
-}
+// func (d AppDeployableResource) BuildNode() Node {
+// 	node := transformCommon(d)         // Start off with the common properties
+// 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
+// 	// Extract the properties specific to this type
+// 	//TODO: Add properties, TEMPLATE-KIND   TEMPLATE-APIVERSION    AGE   STATUS
+// 	if d.Status.Phase != "" {
+// 		node.Properties["status"] = d.Status.Phase
+// 	}
+// 	return node
+// }
 
-func (d AppDeployableResource) BuildEdges(ns NodeStore) []Edge {
-	ret := []Edge{}
-	UID := prefixedUID(d.UID)
+// func (d AppDeployableResource) BuildEdges(ns NodeStore) []Edge {
+// 	ret := []Edge{}
+// 	UID := prefixedUID(d.UID)
 
-	nodeInfo := NodeInfo{NameSpace: d.Namespace, UID: UID, EdgeType: "promotedTo", Kind: d.Kind, Name: d.Name}
-	channelMap := make(map[string]struct{})
-	//promotedTo edges
-	if d.Spec.Channels != nil {
-		for _, channel := range d.Spec.Channels {
-			channelMap[channel] = struct{}{}
-		}
-		ret = append(ret, edgesByDestinationName(channelMap, "Channel", nodeInfo, ns)...)
-	}
+// 	nodeInfo := NodeInfo{NameSpace: d.Namespace, UID: UID, EdgeType: "promotedTo", Kind: d.Kind, Name: d.Name}
+// 	channelMap := make(map[string]struct{})
+// 	//promotedTo edges
+// 	if d.Spec.Channels != nil {
+// 		for _, channel := range d.Spec.Channels {
+// 			channelMap[channel] = struct{}{}
+// 		}
+// 		ret = append(ret, edgesByDestinationName(channelMap, "Channel", nodeInfo, ns)...)
+// 	}
 
-	//refersTo edges
-	//Builds edges between deployable and placement rule
-	if d.Spec.Placement != nil && d.Spec.Placement.PlacementRef != nil && d.Spec.Placement.PlacementRef.Name != "" {
-		nodeInfo.EdgeType = "refersTo"
-		placementRuleMap := make(map[string]struct{})
-		placementRuleMap[d.Spec.Placement.PlacementRef.Name] = struct{}{}
-		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns)...)
-	}
-	return ret
-}
+// 	//refersTo edges
+// 	//Builds edges between deployable and placement rule
+// 	if d.Spec.Placement != nil && d.Spec.Placement.PlacementRef != nil && d.Spec.Placement.PlacementRef.Name != "" {
+// 		nodeInfo.EdgeType = "refersTo"
+// 		placementRuleMap := make(map[string]struct{})
+// 		placementRuleMap[d.Spec.Placement.PlacementRef.Name] = struct{}{}
+// 		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns)...)
+// 	}
+// 	return ret
+// }

@@ -7,17 +7,17 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-import (
-	"testing"
+// import (
+// 	"testing"
 
-	app "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
-)
+// 	app "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
+// )
 
-func TestTransformChannel(t *testing.T) {
-	var c app.Channel
-	UnmarshalFile("../../test-data/channel.json", &c, t)
-	node := ChannelResource{&c}.BuildNode()
+// func TestTransformChannel(t *testing.T) {
+// 	var c app.Channel
+// 	UnmarshalFile("../../test-data/channel.json", &c, t)
+// 	node := ChannelResource{&c}.BuildNode()
 
-	// Test only the fields that exist in channel - the common test will test the other bits
-	AssertEqual("kind", node.Properties["kind"], "Channel", t)
-}
+// 	// Test only the fields that exist in channel - the common test will test the other bits
+// 	AssertEqual("kind", node.Properties["kind"], "Channel", t)
+// }

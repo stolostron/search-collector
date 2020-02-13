@@ -7,18 +7,18 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-import (
-	"testing"
+// import (
+// 	"testing"
 
-	app "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
-)
+// 	app "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
+// )
 
-func TestTransformAppDeployable(t *testing.T) {
-	var d app.Deployable
-	UnmarshalFile("../../test-data/appdeployable.json", &d, t)
-	node := AppDeployableResource{&d}.BuildNode()
+// func TestTransformAppDeployable(t *testing.T) {
+// 	var d app.Deployable
+// 	UnmarshalFile("../../test-data/appdeployable.json", &d, t)
+// 	node := AppDeployableResource{&d}.BuildNode()
 
-	// Test only the fields that exist in deployable - the common test will test the other bits
-	AssertEqual("kind", node.Properties["kind"], "Deployable", t)
-	AssertEqual("apigroup", node.Properties["apigroup"], "app.ibm.com", t)
-}
+// 	// Test only the fields that exist in deployable - the common test will test the other bits
+// 	AssertEqual("kind", node.Properties["kind"], "Deployable", t)
+// 	AssertEqual("apigroup", node.Properties["apigroup"], "app.ibm.com", t)
+// }

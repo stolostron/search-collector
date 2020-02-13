@@ -7,20 +7,20 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-import (
-	"testing"
+// import (
+// 	"testing"
 
-	app "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
-)
+// 	app "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
+// )
 
-func TestTransformHelmCR(t *testing.T) {
-	var h app.HelmRelease
+// func TestTransformHelmCR(t *testing.T) {
+// 	var h app.HelmRelease
 
-	UnmarshalFile("../../test-data/helmcr.json", &h, t)
+// 	UnmarshalFile("../../test-data/helmcr.json", &h, t)
 
-	node := HelmCRResource{&h}.BuildNode()
+// 	node := HelmCRResource{&h}.BuildNode()
 
-	// Test only the fields that exist in HelmRelease - the common test will test the other bits
-	AssertEqual("name", node.Properties["name"], "testHelmCR", t)
-	AssertEqual("kind", node.Properties["kind"], "HelmRelease", t)
-}
+// 	// Test only the fields that exist in HelmRelease - the common test will test the other bits
+// 	AssertEqual("name", node.Properties["name"], "testHelmCR", t)
+// 	AssertEqual("kind", node.Properties["kind"], "HelmRelease", t)
+// }

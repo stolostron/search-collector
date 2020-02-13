@@ -37,22 +37,22 @@
   name = "github.com/open-cluster-management/hcm-api"
   branch = "master"
 
-[[constraint]]
-  name = "github.com/IBM/multicloud-operators-deployable"
-  branch = "master"
+# [[constraint]]
+#   name = "github.com/IBM/multicloud-operators-deployable"
+#   branch = "master"
 
-[[constraint]]
-  name = "github.com/IBM/multicloud-operators-placementrule"
-  source = "github.com/IBM/multicloud-operators-placementrule.git"
-  branch = "master"
+# [[constraint]]
+#   name = "github.com/IBM/multicloud-operators-placementrule"
+#   source = "github.com/IBM/multicloud-operators-placementrule.git"
+#   branch = "master"
 
-[[constraint]]
-  name = "github.com/IBM/multicloud-operators-subscription"
-  branch = "master"
+# [[constraint]]
+#   name = "github.com/IBM/multicloud-operators-subscription"
+#   branch = "master"
 
-[[constraint]]
-  name = "github.com/IBM/multicloud-operators-subscription-release"
-  branch = "master"
+# [[constraint]]
+#   name = "github.com/IBM/multicloud-operators-subscription-release"
+#   branch = "master"
 
 [[constraint]]
   name = "gopkg.in/yaml.v2"
