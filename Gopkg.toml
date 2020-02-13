@@ -38,7 +38,7 @@
 #   branch = "master"
 
 [[constraint]]
-  name = "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
+  name = "github.com/open-cluster-management/multicloud-operators-foundation"
   branch = "master"
 
 # [[constraint]]
