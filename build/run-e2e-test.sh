@@ -1,4 +1,4 @@
-# Run e2e tests
 #!/bin/bash
-echo "Dummy e2e test"
+
+echo " > Running run-e2e-test.sh"
 exit 0

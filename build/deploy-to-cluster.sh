@@ -1,3 +1,5 @@
 #!/bin/bash
-# Dummy deploy
-echo "Dummy deploy."
+
+echo " > Running deploy-to-cluster.sh"
+set -e
+exit 0
