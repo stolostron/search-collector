@@ -7,19 +7,19 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-// import (
-// 	"testing"
+import (
+	"testing"
 
-// 	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
-// )
+	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+)
 
-// func TestTransformPlacementBinding(t *testing.T) {
-// 	var p mcm.PlacementBinding
-// 	UnmarshalFile("../../test-data/placementbinding.json", &p, t)
-// 	node := PlacementBindingResource{&p}.BuildNode()
+func TestTransformPlacementBinding(t *testing.T) {
+	var p mcm.PlacementBinding
+	UnmarshalFile("../../test-data/placementbinding.json", &p, t)
+	node := PlacementBindingResource{&p}.BuildNode()
 
-// 	// Test only the fields that exist in placementbinding - the common test will test the other bits
-// 	AssertEqual("kind", node.Properties["kind"], "PlacementBinding", t)
-// 	AssertEqual("placementpolicy", node.Properties["placementpolicy"], "foo-test (PlacementPolicy)", t)
-// 	AssertDeepEqual("subject", node.Properties["subject"], []string{"foo-test (Deployable)"}, t)
-// }
+	// Test only the fields that exist in placementbinding - the common test will test the other bits
+	AssertEqual("kind", node.Properties["kind"], "PlacementBinding", t)
+	AssertEqual("placementpolicy", node.Properties["placementpolicy"], "foo-test (PlacementPolicy)", t)
+	AssertDeepEqual("subject", node.Properties["subject"], []string{"foo-test (Deployable)"}, t)
+}
