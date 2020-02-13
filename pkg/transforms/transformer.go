@@ -15,7 +15,7 @@ import (
 
 	// mcmapp "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
 	// appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
-	rule "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
+	// rule "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
 	// appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
 	// subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
@@ -343,13 +343,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementPolicyResource{&typedResource}
 
-		case [2]string{"PlacementRule", "app.ibm.com"}:
-			typedResource := rule.PlacementRule{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = PlacementRuleResource{&typedResource}
+		// case [2]string{"PlacementRule", "app.ibm.com"}:
+		// 	typedResource := rule.PlacementRule{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = PlacementRuleResource{&typedResource}
 
 		case [2]string{"Pod", ""}:
 			typedResource := core.Pod{}
