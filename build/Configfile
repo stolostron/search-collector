@@ -1,5 +1,5 @@
 VCS_URL ?=$(shell git config --get remote.origin.url)
-IMAGE_NAME =search-collector
+IMAGE_NAME =$(shell cat COMPONENT_NAME)
 IMAGE_DISPLAY_NAME =Search Colector
 ARCH = $(shell uname -m)
 ifeq ($(ARCH), x86_64)
