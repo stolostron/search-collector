@@ -279,14 +279,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		// 	}
 		// 	trans = AppHelmCRResource{&typedResource}
 
-		//This is the application's HelmCR of kind HelmRelease
-		case [2]string{"HelmRelease", "helm.bitnami.com"}:
-			typedResource := helmRelease.HelmRelease{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = HelmCRResource{&typedResource}
+		// //This is the application's HelmCR of kind HelmRelease
+		// case [2]string{"HelmRelease", "helm.bitnami.com"}:
+		// 	typedResource := helmRelease.HelmRelease{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = HelmCRResource{&typedResource}
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}

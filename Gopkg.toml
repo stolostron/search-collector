@@ -63,10 +63,6 @@
   version = "=2.2.8"
 
 [[override]]
-  name = "k8s.io/apiextensions-apiserver"
-  branch = "master"
-
-[[override]]
   name = "k8s.io/api"
   version = "kubernetes-1.13.12"
 
