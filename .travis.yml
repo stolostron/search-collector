@@ -1,6 +1,3 @@
-#
-# Sample .travis.yml using the mvp-helloworld image (a helmoperator)
-#
 os:
   - linux
 
