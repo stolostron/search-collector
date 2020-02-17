@@ -646,7 +646,7 @@
   version = "kubernetes-1.13.12"
 
 [[projects]]
-  digest = "1:bef7b97a9c547219634201918db6a3652dfbbc810b37a55728f3ceb079f93404"
+  digest = "1:a0ac3d2549ab736b793e58f479c4dddf78f0a462ac6d7c40ed47c7f7a901b6b3"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -665,8 +665,7 @@
     "pkg/client/listers/apiextensions/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "ee42d6166f481443ff2894b657bc866d6145d3aa"
-  version = "v0.17.3"
+  revision = "2af94a2a482fcef53a8c24b7817ecb4ecdc450f8"
 
 [[projects]]
   digest = "1:42219cc2c8a4aa113abb598500fbbc66b6b0bf4a4f17ece946745387bacd3ec8"

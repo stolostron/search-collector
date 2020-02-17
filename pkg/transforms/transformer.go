@@ -190,14 +190,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationResource{&typedResource}
 
-		case [2]string{"ApplicationRelationship", "mcm.ibm.com"}:
-			typedResource := mcm.ApplicationRelationship{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ApplicationRelationshipResource{&typedResource}
-
 		case [2]string{"Channel", "app.ibm.com"}:
 			typedResource := mcmapp.Channel{}
 			err = json.Unmarshal(j, &typedResource)
