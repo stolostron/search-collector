@@ -14,11 +14,13 @@ import (
 	"sync"
 
 	mcmapp "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
+	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
 	rule "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
 	appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
 	subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
-	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
+
+	// app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 
 	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"

@@ -39,7 +39,7 @@
 
 [[override]]
   name = "github.com/kubernetes-sigs/controller-runtime"
-  revision = "x.x.x" # overriding wildly: go.mod within opensource operators requires specific controller-runtime 0.3.0, but it breaks our build
+  revision = "x.x.x" # overriding wildly: go.mod within opensource operators requires specific controller-runtime, but it breaks our build
 
 [[constraint]]
   name = "github.com/open-cluster-management/multicloud-operators-foundation"
