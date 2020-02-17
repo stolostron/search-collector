@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+	mcm "github.com/IBM/multicloud-operators-deployable/pkg/apis/mcm/v1alpha1"
 )
 
 func TestTransformApplicationRelationship(t *testing.T) {

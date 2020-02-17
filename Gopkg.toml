@@ -45,9 +45,9 @@
   name = "github.com/open-cluster-management/multicloud-operators-foundation"
   branch = "master"
   
-[[constraint]]
-  name = "github.com/IBM/multicloud-operators-deployable"
-  branch = "master"
+# [[constraint]]
+#   name = "github.com/IBM/multicloud-operators-deployable"
+#   branch = "master"
 
 [[constraint]]
   name = "github.com/IBM/multicloud-operators-placementrule"

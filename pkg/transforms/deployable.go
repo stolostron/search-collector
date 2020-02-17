@@ -8,7 +8,7 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+	mcm "github.com/IBM/multicloud-operators-deployable/pkg/apis/mcm/v1alpha1"
 )
 
 type DeployableResource struct {
