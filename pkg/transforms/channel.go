@@ -7,55 +7,55 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-// import (
-// 	app "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
-// )
+import (
+	app "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
+)
 
-// type ChannelResource struct {
-// 	*app.Channel
-// }
+type ChannelResource struct {
+	*app.Channel
+}
 
-// func (c ChannelResource) BuildNode() Node {
-// 	node := transformCommon(c)
-// 	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
-// 	// Extract the properties specific to this type
-// 	node.Properties["type"] = string(c.Spec.Type)
-// 	node.Properties["pathname"] = c.Spec.PathName
+func (c ChannelResource) BuildNode() Node {
+	node := transformCommon(c)
+	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
+	// Extract the properties specific to this type
+	node.Properties["type"] = string(c.Spec.Type)
+	node.Properties["pathname"] = c.Spec.PathName
 
-// 	return node
-// }
+	return node
+}
 
-// func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
-// 	ret := []Edge{}
-// 	UID := prefixedUID(c.UID)
+func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
+	ret := []Edge{}
+	UID := prefixedUID(c.UID)
 
-// 	nodeInfo := NodeInfo{NameSpace: c.Namespace, UID: UID, EdgeType: "uses", Kind: c.Kind, Name: c.Name}
+	nodeInfo := NodeInfo{NameSpace: c.Namespace, UID: UID, EdgeType: "uses", Kind: c.Kind, Name: c.Name}
 
-// 	//Build uses edges to connect channel to configmaps and secrets
-// 	secretMap := make(map[string]struct{})
-// 	configmapMap := make(map[string]struct{})
-// 	if c.Spec.ConfigMapRef != nil {
-// 		configmapMap[c.Spec.ConfigMapRef.Name] = struct{}{}
-// 	}
-// 	if c.Spec.SecretRef != nil {
-// 		secretMap[c.Spec.SecretRef.Name] = struct{}{}
-// 	}
+	//Build uses edges to connect channel to configmaps and secrets
+	secretMap := make(map[string]struct{})
+	configmapMap := make(map[string]struct{})
+	if c.Spec.ConfigMapRef != nil {
+		configmapMap[c.Spec.ConfigMapRef.Name] = struct{}{}
+	}
+	if c.Spec.SecretRef != nil {
+		secretMap[c.Spec.SecretRef.Name] = struct{}{}
+	}
 
-// 	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
-// 	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
 
-// 	//deploys edges
-// 	//HelmRepo channel to deployables edges
-// 	if c.Spec.Type == "HelmRepo" {
-// 		deployables := ns.ByKindNamespaceName["Deployable"][c.Namespace]
-// 		if len(deployables) > 1 {
-// 			nodeInfo.EdgeType = "deploys"
-// 			deployableMap := make(map[string]struct{}, len(deployables))
-// 			for deployable := range deployables {
-// 				deployableMap[deployable] = struct{}{}
-// 			}
-// 			ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
-// 		}
-// 	}
-// 	return ret
-// }
+	//deploys edges
+	//HelmRepo channel to deployables edges
+	if c.Spec.Type == "HelmRepo" {
+		deployables := ns.ByKindNamespaceName["Deployable"][c.Namespace]
+		if len(deployables) > 1 {
+			nodeInfo.EdgeType = "deploys"
+			deployableMap := make(map[string]struct{}, len(deployables))
+			for deployable := range deployables {
+				deployableMap[deployable] = struct{}{}
+			}
+			ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
+		}
+	}
+	return ret
+}

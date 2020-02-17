@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	// mcmapp "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
+	mcmapp "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
 	// appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
 	// rule "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
 	// appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
@@ -198,13 +198,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		// 	}
 		// 	trans = ApplicationRelationshipResource{&typedResource}
 
-		// case [2]string{"Channel", "app.ibm.com"}:
-		// 	typedResource := mcmapp.Channel{}
-		// 	err = json.Unmarshal(j, &typedResource)
-		// 	if err != nil {
-		// 		panic(err) // Will be caught by handleRoutineExit
-		// 	}
-		// 	trans = ChannelResource{&typedResource}
+		case [2]string{"Channel", "app.ibm.com"}:
+			typedResource := mcmapp.Channel{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = ChannelResource{&typedResource}
 
 		case [2]string{"Compliance", "compliance.mcm.ibm.com"}:
 			typedResource := com.Compliance{}
