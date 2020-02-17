@@ -7,7 +7,11 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-import "strings"
+import (
+	"strings"
+
+	app "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
+)
 
 type SubscriptionResource struct {
 	*app.Subscription
