@@ -22,7 +22,6 @@ import (
 
 	// app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 
-	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
 	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
 	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
