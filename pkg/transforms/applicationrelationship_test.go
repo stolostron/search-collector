@@ -7,20 +7,20 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-// import (
-// 	"testing"
+import (
+	"testing"
 
-// 	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
-// )
+	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+)
 
-// func TestTransformApplicationRelationship(t *testing.T) {
-// 	var aR mcm.ApplicationRelationship
-// 	UnmarshalFile("../../test-data/applicationrelationship.json", &aR, t)
-// 	node := ApplicationRelationshipResource{&aR}.BuildNode()
+func TestTransformApplicationRelationship(t *testing.T) {
+	var aR mcm.ApplicationRelationship
+	UnmarshalFile("../../test-data/applicationrelationship.json", &aR, t)
+	node := ApplicationRelationshipResource{&aR}.BuildNode()
 
-// 	// Test only the fields that exist in applicationrelationship - the common test will test the other bits
-// 	AssertEqual("kind", node.Properties["kind"], "ApplicationRelationship", t)
-// 	AssertEqual("destination", node.Properties["destination"], "test-test-redismaster", t)
-// 	AssertEqual("source", node.Properties["source"], "test-test", t)
-// 	AssertEqual("type", node.Properties["type"], "contains", t)
-// }
+	// Test only the fields that exist in applicationrelationship - the common test will test the other bits
+	AssertEqual("kind", node.Properties["kind"], "ApplicationRelationship", t)
+	AssertEqual("destination", node.Properties["destination"], "test-test-redismaster", t)
+	AssertEqual("source", node.Properties["source"], "test-test", t)
+	AssertEqual("type", node.Properties["type"], "contains", t)
+}

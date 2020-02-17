@@ -7,41 +7,41 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-// import (
-// 	app "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
-// )
+import (
+	app "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
+)
 
-// type HelmCRResource struct {
-// 	*app.HelmRelease
-// }
+type HelmCRResource struct {
+	*app.HelmRelease
+}
 
-// func (h HelmCRResource) BuildNode() Node {
-// 	node := transformCommon(h)         // Start off with the common properties
-// 	apiGroupVersion(h.TypeMeta, &node) // add kind, apigroup and version
-// 	//TODO: Add other properties, if any
-// 	return node
-// }
+func (h HelmCRResource) BuildNode() Node {
+	node := transformCommon(h)         // Start off with the common properties
+	apiGroupVersion(h.TypeMeta, &node) // add kind, apigroup and version
+	//TODO: Add other properties, if any
+	return node
+}
 
-// func (h HelmCRResource) BuildEdges(ns NodeStore) []Edge {
-// 	ret := []Edge{}
-// 	UID := prefixedUID(h.UID)
+func (h HelmCRResource) BuildEdges(ns NodeStore) []Edge {
+	ret := []Edge{}
+	UID := prefixedUID(h.UID)
 
-// 	nodeInfo := NodeInfo{NameSpace: h.Namespace, UID: UID, Kind: h.Kind, Name: h.Name, EdgeType: "attachedTo"}
+	nodeInfo := NodeInfo{NameSpace: h.Namespace, UID: UID, Kind: h.Kind, Name: h.Name, EdgeType: "attachedTo"}
 
-// 	//attachedTo edges
-// 	releaseMap := make(map[string]struct{})
-// 	// Connect to Helm Release
-// 	if h.Spec.ReleaseName != "" {
-// 		destUID := GetHelmReleaseUID(h.Spec.ReleaseName)
-// 		releaseMap[h.Spec.ReleaseName] = struct{}{}
-// 		// Propagate hosting Subscription/Deployable properties from the helmCR to helm release so that we can track helm release's deployments and connect them back to the subscription/application
-// 		releaseNode := ns.ByUID[destUID]
-// 		crNode := ns.ByUID[UID]
-// 		//Copy the properties only if the node doesn't have it yet or if they are not the same
-// 		if _, ok := releaseNode.Properties["_hostingSubscription"]; !ok && crNode.Properties["_hostingSubscription"] != releaseNode.Properties["_hostingSubscription"] {
-// 			copyhostingSubProperties(UID, destUID, ns)
-// 		}
-// 		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
-// 	}
-// 	return ret
-// }
+	//attachedTo edges
+	releaseMap := make(map[string]struct{})
+	// Connect to Helm Release
+	if h.Spec.ReleaseName != "" {
+		destUID := GetHelmReleaseUID(h.Spec.ReleaseName)
+		releaseMap[h.Spec.ReleaseName] = struct{}{}
+		// Propagate hosting Subscription/Deployable properties from the helmCR to helm release so that we can track helm release's deployments and connect them back to the subscription/application
+		releaseNode := ns.ByUID[destUID]
+		crNode := ns.ByUID[UID]
+		//Copy the properties only if the node doesn't have it yet or if they are not the same
+		if _, ok := releaseNode.Properties["_hostingSubscription"]; !ok && crNode.Properties["_hostingSubscription"] != releaseNode.Properties["_hostingSubscription"] {
+			copyhostingSubProperties(UID, destUID, ns)
+		}
+		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
+	}
+	return ret
+}

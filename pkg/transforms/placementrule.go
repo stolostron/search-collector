@@ -7,22 +7,22 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-// import (
-// 	app "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
-// )
+import (
+	app "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
+)
 
-// type PlacementRuleResource struct {
-// 	*app.PlacementRule
-// }
+type PlacementRuleResource struct {
+	*app.PlacementRule
+}
 
-// func (p PlacementRuleResource) BuildNode() Node {
-// 	node := transformCommon(p)         // Start off with the common properties
-// 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
-// 	//TODO: Add other properties
-// 	return node
-// }
+func (p PlacementRuleResource) BuildNode() Node {
+	node := transformCommon(p)         // Start off with the common properties
+	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
+	//TODO: Add other properties
+	return node
+}
 
-// func (p PlacementRuleResource) BuildEdges(ns NodeStore) []Edge {
-// 	//no op for now to implement interface
-// 	return []Edge{}
-// }
+func (p PlacementRuleResource) BuildEdges(ns NodeStore) []Edge {
+	//no op for now to implement interface
+	return []Edge{}
+}

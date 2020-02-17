@@ -7,18 +7,18 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-// import (
-// 	"testing"
+import (
+	"testing"
 
-// 	app "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
-// )
+	app "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
+)
 
-// func TestTransformPlacementRule(t *testing.T) {
-// 	var p app.PlacementRule
-// 	UnmarshalFile("../../test-data/placementrule.json", &p, t)
-// 	node := PlacementRuleResource{&p}.BuildNode()
+func TestTransformPlacementRule(t *testing.T) {
+	var p app.PlacementRule
+	UnmarshalFile("../../test-data/placementrule.json", &p, t)
+	node := PlacementRuleResource{&p}.BuildNode()
 
-// 	// Test only the fields that exist in placementrule - the common test will test the other bits
-// 	AssertEqual("kind", node.Properties["kind"], "PlacementRule", t)
-// 	AssertEqual("apigroup", node.Properties["apigroup"], "app.ibm.com", t)
-// }
+	// Test only the fields that exist in placementrule - the common test will test the other bits
+	AssertEqual("kind", node.Properties["kind"], "PlacementRule", t)
+	AssertEqual("apigroup", node.Properties["apigroup"], "app.ibm.com", t)
+}
