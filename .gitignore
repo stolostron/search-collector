@@ -2,6 +2,7 @@ cover*
 output/
 vendor/
 .build-harness
+.build-harness-bootstrap
 build-harness/
 build-harness-extensions/
 search-collector
