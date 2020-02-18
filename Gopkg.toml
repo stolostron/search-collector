@@ -33,21 +33,13 @@
   name = "github.com/open-cluster-management/hcm-compliance"
   branch = "master"
 
-# [[constraint]]
-#   name = "github.com/open-cluster-management/hcm-api" # this now foundation
-#   branch = "master"
-
-[[override]]
-  name = "github.com/kubernetes-sigs/controller-runtime"
-  revision = "x.x.x" # overriding wildly: go.mod within opensource operators requires specific controller-runtime, but it breaks our build
-
 [[constraint]]
   name = "github.com/open-cluster-management/multicloud-operators-foundation"
   branch = "master"
   
-# [[constraint]]
-#   name = "github.com/IBM/multicloud-operators-deployable"
-#   branch = "master"
+[[constraint]]
+  name = "github.com/IBM/multicloud-operators-deployable"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/IBM/multicloud-operators-placementrule"
@@ -77,6 +69,10 @@
 [[override]]
   name = "k8s.io/client-go"
   version = "kubernetes-1.13.12"
+
+[[override]]
+  name = "sigs.k8s.io/controller-runtime"
+  version = "0.5.0"
 
 [prune]
   go-tests = true

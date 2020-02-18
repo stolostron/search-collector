@@ -40,7 +40,7 @@ jobs:
         - make component/build
         - make component/push
     - stage: unit-test
-      name: "Deploy the image to a cluster and run e2e tests"
+      name: "Run unit tests"
       if: type = pull_request
       script:
         # Set the image tag differently for PRs

@@ -20,7 +20,7 @@ import (
 	subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
 
-	// app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
+	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 
 	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
@@ -239,7 +239,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = AppDeployableResource{&typedResource}
 
 		case [2]string{"Deployable", "mcm.ibm.com"}:
-			typedResource := mcm.Deployable{}
+			typedResource := appDeployable.Deployable{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
