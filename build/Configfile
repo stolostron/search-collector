@@ -10,7 +10,7 @@ endif
 IMAGE_MAINTAINER =jpadilla@redhat.com
 IMAGE_VENDOR =Red Hat
 IMAGE_VERSION :=$(shell git rev-parse --short HEAD)
-IMAGE_DESCRIPTION =Search collector
+IMAGE_DESCRIPTION =Search collector service
 IMAGE_SUMMARY =$(IMAGE_DESCRIPTION)
 IMAGE_OPENSHIFT_TAGS =Search collector
 
