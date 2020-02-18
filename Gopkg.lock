@@ -660,7 +660,7 @@
   version = "kubernetes-1.13.12"
 
 [[projects]]
-  digest = "1:bef7b97a9c547219634201918db6a3652dfbbc810b37a55728f3ceb079f93404"
+  digest = "1:5859a579e02f41ee963e9688e54216459bec39b74ebbfacc8e9f04b47db10947"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
