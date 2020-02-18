@@ -25,7 +25,7 @@ build-linux:
 
 .PHONY: lint
 lint:
-	golangci-lint run
+	golangci-lint run -v --timeout=5ms
 
 .PHONY: test
 test:
