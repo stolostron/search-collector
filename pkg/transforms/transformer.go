@@ -239,7 +239,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = AppDeployableResource{&typedResource}
 
 		case [2]string{"Deployable", "mcm.ibm.com"}:
-			typedResource := mcm.Deployable{}
+			typedResource := appDeployable.Deployable{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit

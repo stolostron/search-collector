@@ -306,6 +306,20 @@
   version = "v1.1.9"
 
 [[projects]]
+  digest = "1:631ecfefc94d1e04af6a4cbb450564d606feb842898b6f51f4b299f5924cf220"
+  name = "github.com/kubernetes-sigs/application"
+  packages = [
+    "pkg/apis/app/v1beta1",
+    "pkg/component",
+    "pkg/customresource",
+    "pkg/finalizer",
+    "pkg/resource",
+  ]
+  pruneopts = "UT"
+  revision = "6100ce945b3b4fdf8c8d491e8d374b0838bc4264"
+  version = "v0.8.1"
+
+[[projects]]
   digest = "1:927762c6729b4e72957ba3310e485ed09cf8451c5a637a52fd016a9fe09e7936"
   name = "github.com/mailru/easyjson"
   packages = [
@@ -646,7 +660,7 @@
   version = "kubernetes-1.13.12"
 
 [[projects]]
-  digest = "1:a0ac3d2549ab736b793e58f479c4dddf78f0a462ac6d7c40ed47c7f7a901b6b3"
+  digest = "1:bef7b97a9c547219634201918db6a3652dfbbc810b37a55728f3ceb079f93404"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -950,6 +964,7 @@
     "github.com/golang/groupcache/lru",
     "github.com/golang/protobuf/ptypes",
     "github.com/hashicorp/go-version",
+    "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
     "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1",
     "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1",
     "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1",
