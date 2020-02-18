@@ -29,7 +29,7 @@ lint:
 
 .PHONY: test
 test:
-	go test ./... -v -coverprofile cover.out
+	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
 
 .PHONY: coverage
 coverage:
