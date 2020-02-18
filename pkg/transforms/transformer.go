@@ -16,7 +16,7 @@ import (
 	mcmapp "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
 	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
 	rule "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
-	appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
+	appHelmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
 	subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
 
