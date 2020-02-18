@@ -7,8 +7,8 @@ ifeq ($(ARCH), x86_64)
 else
 	IMAGE_NAME_ARCH =$(IMAGE_NAME)-$(ARCH)
 endif
-IMAGE_MAINTAINER =jpadilla@us.ibm.com
-IMAGE_VENDOR =IBM
+IMAGE_MAINTAINER =jpadilla@redhat.com
+IMAGE_VENDOR =Red Hat
 IMAGE_VERSION :=$(shell git rev-parse --short HEAD)
 IMAGE_DESCRIPTION =Search collector
 IMAGE_SUMMARY =$(IMAGE_DESCRIPTION)
