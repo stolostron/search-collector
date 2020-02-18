@@ -39,13 +39,12 @@ func (a AppHelmCRResource) BuildEdges(ns NodeStore) []Edge {
 	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, Kind: a.Kind, Name: a.Name, EdgeType: "attachedTo"}
 
 	//attachedTo edges
-	// TODO: MIGRATION eed to add back
-	// releaseMap := make(map[string]struct{})
+	releaseMap := make(map[string]struct{})
 
-	// if a.Spec.ReleaseName != "" {
-	// 	releaseMap[a.Spec.ReleaseName] = struct{}{}
-	// 	ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
-	// }
+	if a.ObjectMeta.Name != "" {
+		releaseMap[a.ObjectMeta.Name] = struct{}{}
+		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
+	}
 	if a.Spec.SecretRef != nil {
 		secretMap := make(map[string]struct{})
 		if a.Spec.SecretRef.Name != "" {
