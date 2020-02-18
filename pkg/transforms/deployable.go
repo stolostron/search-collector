@@ -8,7 +8,7 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+	mcm "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
 )
 
 type DeployableResource struct {
@@ -19,14 +19,9 @@ func (d DeployableResource) BuildNode() Node {
 	node := transformCommon(d)         // Start off with the common properties
 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["deployerKind"] = string(d.Spec.Deployer.DeployerKind)
 
 	node.Properties["chartUrl"] = ""
 	node.Properties["deployerNamespace"] = ""
-	if d.Spec.Deployer.HelmDeployer != nil {
-		node.Properties["chartUrl"] = d.Spec.Deployer.HelmDeployer.ChartURL
-		node.Properties["deployerNamespace"] = d.Spec.Deployer.HelmDeployer.Namespace
-	}
 
 	return node
 }

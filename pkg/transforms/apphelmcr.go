@@ -41,8 +41,8 @@ func (a AppHelmCRResource) BuildEdges(ns NodeStore) []Edge {
 	//attachedTo edges
 	releaseMap := make(map[string]struct{})
 
-	if a.Spec.ReleaseName != "" {
-		releaseMap[a.Spec.ReleaseName] = struct{}{}
+	if a.ObjectMeta.Name != "" {
+		releaseMap[a.ObjectMeta.Name] = struct{}{}
 		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
 	}
 	if a.Spec.SecretRef != nil {

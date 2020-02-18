@@ -34,17 +34,9 @@
   branch = "master"
 
 [[constraint]]
-  name = "github.com/open-cluster-management/va-mcm-controller"
+  name = "github.com/open-cluster-management/multicloud-operators-foundation"
   branch = "master"
-
-[[constraint]]
-  name = "github.com/open-cluster-management/ma-mcm-controller"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/open-cluster-management/hcm-api"
-  branch = "master"
-
+  
 [[constraint]]
   name = "github.com/IBM/multicloud-operators-deployable"
   branch = "master"
@@ -77,6 +69,10 @@
 [[override]]
   name = "k8s.io/client-go"
   version = "kubernetes-1.13.12"
+
+[[override]]
+  name = "sigs.k8s.io/controller-runtime"
+  version = "0.5.0"
 
 [prune]
   go-tests = true

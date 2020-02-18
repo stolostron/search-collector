@@ -8,7 +8,7 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	app "https://github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
+	app "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
 )
 
 type ChannelResource struct {

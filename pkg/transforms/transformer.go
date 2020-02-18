@@ -13,19 +13,20 @@ import (
 	"strings"
 	"sync"
 
+	mcmapp "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
 	appDeployable "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
 	rule "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1"
 	appHelmRelease "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
 	subscription "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
 	"github.com/golang/glog"
+
 	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
-	mcmapp "github.com/open-cluster-management/channel/pkg/apis/app/v1alpha1"
-	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+
 	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
 	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
+	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
+
 	helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
-	mapolicy "github.com/open-cluster-management/ma-mcm-controller/pkg/apis/mcm/v1alpha1"
-	vapolicy "github.com/open-cluster-management/va-mcm-controller/pkg/apis/mcm/v1alpha1"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
@@ -189,14 +190,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationResource{&typedResource}
 
-		case [2]string{"ApplicationRelationship", "mcm.ibm.com"}:
-			typedResource := mcm.ApplicationRelationship{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ApplicationRelationshipResource{&typedResource}
-
 		case [2]string{"Channel", "app.ibm.com"}:
 			typedResource := mcmapp.Channel{}
 			err = json.Unmarshal(j, &typedResource)
@@ -246,7 +239,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = AppDeployableResource{&typedResource}
 
 		case [2]string{"Deployable", "mcm.ibm.com"}:
-			typedResource := mcm.Deployable{}
+			typedResource := appDeployable.Deployable{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
@@ -294,14 +287,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = JobResource{&typedResource}
-
-		case [2]string{"MutationPolicy", "policies.ibm.com"}:
-			typedResource := mapolicy.MutationPolicy{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = MutationPolicyResource{&typedResource}
 
 		case [2]string{"Namespace", ""}:
 			typedResource := core.Namespace{}
@@ -414,14 +399,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = SubscriptionResource{&typedResource}
-
-		case [2]string{"VulnerabilityPolicy", "policies.ibm.com"}:
-			typedResource := vapolicy.VulnerabilityPolicy{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = VulnerabilityPolicyResource{&typedResource}
 
 		default:
 			trans = UnstructuredResource{event.Resource}

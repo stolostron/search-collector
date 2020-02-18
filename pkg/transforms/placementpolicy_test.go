@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	mcm "github.com/open-cluster-management/hcm-api/pkg/apis/mcm/v1alpha1"
+	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
 )
 
 func TestTransformPlacementPolicy(t *testing.T) {
