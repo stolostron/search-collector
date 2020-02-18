@@ -19,16 +19,9 @@ func (d DeployableResource) BuildNode() Node {
 	node := transformCommon(d)         // Start off with the common properties
 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	// TODO: MIGRATION Need to add back
-	// node.Properties["deployerKind"] = string(d.Spec.Deployer.DeployerKind)
 
 	node.Properties["chartUrl"] = ""
 	node.Properties["deployerNamespace"] = ""
-	// TODO: MIGRATION Need to add back
-	// if d.Spec.Deployer.HelmDeployer != nil {
-	// 	node.Properties["chartUrl"] = d.Spec.Deployer.HelmDeployer.ChartURL
-	// 	node.Properties["deployerNamespace"] = d.Spec.Deployer.HelmDeployer.Namespace
-	// }
 
 	return node
 }
