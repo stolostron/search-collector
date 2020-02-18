@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo " > Running run-unit-tests.sh"
-# set -e
+set -e
 
 make deps
 make test

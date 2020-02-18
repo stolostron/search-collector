@@ -372,9 +372,9 @@ func TestReconcilerComplete(t *testing.T) {
 	// Compute reconciler Complete() state
 	com := testReconciler.Complete()
 
-	// Currently we have 29 nodes and 36 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
+	// Currently we have 29 nodes and 31 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
 	// We dont create Nodes for kind = Event
-	if len(com.Edges) != 36 || com.TotalEdges != 36 || len(com.Nodes) != 29 || com.TotalNodes != 29 {
+	if len(com.Edges) != 31 || com.TotalEdges != 31 || len(com.Nodes) != 29 || com.TotalNodes != 29 {
 		ns := tr.NodeStore{
 			ByUID:               testReconciler.currentNodes,
 			ByKindNamespaceName: nodeTripleMap(testReconciler.currentNodes),
