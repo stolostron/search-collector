@@ -149,9 +149,9 @@ func prefixedUID(uid apiTypes.UID) string {
 	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
 }
 
-func prefixedUIDStr(uid string) string {
-	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
-}
+// func prefixedUIDStr(uid string) string {
+// 	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
+// }
 
 // Prefixes the given UID with the cluster name from config and a /
 func ownerRefUID(ownerReferences []machineryV1.OwnerReference) string {
@@ -426,21 +426,21 @@ func copyhostingSubProperties(srcUID string, destUID string, ns NodeStore) {
 }
 
 //Given UID returns if there is any subscription attached to iself or its parents
-func getSubscriptionByUID(srcUID string, ns NodeStore) string {
-	subscriptionUID := ""
-	srcNode, ok := ns.ByUID[srcUID]
-	if ok {
-		if subscription, ok := srcNode.Properties["_hostingSubscription"].(string); ok && srcNode.Properties["_hostingSubscription"] != "" {
-			nsSub := strings.Split(subscription, "/")
-			if len(nsSub) == 2 {
-				nameSpace := nsSub[0]
-				name := nsSub[1]
-				subscriptionUID = ns.ByKindNamespaceName["Subscription"][nameSpace][name].UID
-				return subscriptionUID
-			}
-		} else if srcNode.GetMetadata("OwnerUID") != "" {
-			subscriptionUID = getSubscriptionByUID(srcNode.GetMetadata("OwnerUID"), ns)
-		}
-	}
-	return subscriptionUID
-}
+// func getSubscriptionByUID(srcUID string, ns NodeStore) string {
+// 	subscriptionUID := ""
+// 	srcNode, ok := ns.ByUID[srcUID]
+// 	if ok {
+// 		if subscription, ok := srcNode.Properties["_hostingSubscription"].(string); ok && srcNode.Properties["_hostingSubscription"] != "" {
+// 			nsSub := strings.Split(subscription, "/")
+// 			if len(nsSub) == 2 {
+// 				nameSpace := nsSub[0]
+// 				name := nsSub[1]
+// 				subscriptionUID = ns.ByKindNamespaceName["Subscription"][nameSpace][name].UID
+// 				return subscriptionUID
+// 			}
+// 		} else if srcNode.GetMetadata("OwnerUID") != "" {
+// 			subscriptionUID = getSubscriptionByUID(srcNode.GetMetadata("OwnerUID"), ns)
+// 		}
+// 	}
+// 	return subscriptionUID
+// }
