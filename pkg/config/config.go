@@ -25,7 +25,7 @@ import (
 
 // Out of box defaults
 const (
-	COLLECTOR_API_VERSION      = "3.3.0"
+	COLLECTOR_API_VERSION      = "3.5.0"
 	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
 	DEFAULT_AGGREGATOR_PORT    = "3010"
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
