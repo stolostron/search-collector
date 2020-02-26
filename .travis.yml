@@ -39,6 +39,7 @@ jobs:
         - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
         - make component/build
         - make component/push
+        - make security/scans
     - stage: unit-test
       name: "Run unit tests"
       if: type = pull_request
@@ -48,6 +49,7 @@ jobs:
         # Bootstrap the build harness, pull test image, and run unit tests.  
         - make component/pull 
         - make component/test/unit
+        - make sonar/go
     - stage: test-e2e
       name: "Deploy the image to a cluster and run e2e tests"
       if: type = pull_request
