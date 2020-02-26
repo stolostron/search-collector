@@ -10,6 +10,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -25,14 +26,16 @@ import (
 // Out of box defaults
 const (
 	COLLECTOR_API_VERSION      = "3.3.0"
-	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010"
+	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
+	DEFAULT_AGGREGATOR_PORT    = "3010"
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
 	DEFAULT_HEARTBEAT_MS       = 60000  // 1 min
 	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
 	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
 	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE       = "production"
-	DEFAULT_TILLER_URL         = "tiller-deploy.kube-system:44134"
+	DEFAULT_TILLER_HOST        = "tiller-deploy.kube-system"
+	DEFAULT_TILLER_PORT        = "44134"
 )
 
 // Define a config type for gonfig to hold our config properties.
@@ -84,7 +87,7 @@ func init() {
 	setDefault(&Cfg.RuntimeMode, "RUNTIME_MODE", DEFAULT_RUNTIME_MODE)
 	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
 	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
-	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
+	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", net.JoinHostPort(DEFAULT_AGGREGATOR_HOST, DEFAULT_AGGREGATOR_PORT))
 
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
@@ -98,7 +101,7 @@ func init() {
 	}
 	setDefault(&Cfg.KubeConfig, "KUBECONFIG", defaultKubePath)
 
-	defaultTillerUrl := DEFAULT_TILLER_URL
+	defaultTillerUrl := net.JoinHostPort(DEFAULT_TILLER_HOST, DEFAULT_TILLER_PORT)
 	if Cfg.RuntimeMode == "development" {
 		// find an external ip address to connect to tiller for dev env
 		// warning: this assumes the proxy node has same ip as master
@@ -106,7 +109,7 @@ func init() {
 		client, _ := clientcmd.BuildConfigFromFlags("", Cfg.KubeConfig)
 		if client != nil && client.Host != "" {
 			u, _ := url.Parse(client.Host)
-			defaultTillerUrl = u.Hostname() + ":31514"
+			defaultTillerUrl = net.JoinHostPort(u.Hostname(), "31514")
 		}
 
 		glog.Warning("Using insecure HTTPS connection to tiller.")
