@@ -26,6 +26,7 @@ import (
 // Out of box defaults
 const (
 	COLLECTOR_API_VERSION      = "3.5.0"
+	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010" // this will be deprecated in the future
 	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
 	DEFAULT_AGGREGATOR_PORT    = "3010"
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
@@ -43,6 +44,8 @@ type Config struct {
 	AggregatorConfig     *rest.Config // Config object for hub. Used to get TLS credentials.
 	AggregatorConfigFile string       `env:"HUB_CONFIG"`        // Config file for hub. Will be mounted in a secret.
 	AggregatorURL        string       `env:"AGGREGATOR_URL"`    // URL of the Aggregator, includes port but not any path
+	AggregatorHost       string       `env:"AGGREGATOR_HOST"`   // Host of the Aggregator
+	AggregatorPort       string       `env:"AGGREGATOR_PORT"`   // Port of the Aggregator
 	ClusterName          string       `env:"CLUSTER_NAME"`      // The name of this cluster
 	ClusterNamespace     string       `env:"CLUSTER_NAMESPACE"` // The namespace of this cluster
 	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
@@ -87,7 +90,19 @@ func init() {
 	setDefault(&Cfg.RuntimeMode, "RUNTIME_MODE", DEFAULT_RUNTIME_MODE)
 	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
 	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
-	setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", net.JoinHostPort(DEFAULT_AGGREGATOR_HOST, DEFAULT_AGGREGATOR_PORT))
+
+	setDefault(&Cfg.AggregatorHost, "AGGREGATOR_HOST", DEFAULT_AGGREGATOR_HOST)
+	setDefault(&Cfg.AggregatorPort, "AGGREGATOR_PORT", DEFAULT_AGGREGATOR_PORT)
+	aggHost, aggHostPresent := os.LookupEnv("AGGREGATOR_HOST")
+	aggPort, aggPortPresent := os.LookupEnv("AGGREGATOR_PORT")
+
+	//If environment variables are set for aggregator host and port, use those to set the AggregatorURL
+	if aggHostPresent && aggPortPresent && aggHost != "" && aggPort != "" {
+		Cfg.AggregatorURL = net.JoinHostPort(aggHost, aggPort)
+		setDefault(&Cfg.AggregatorURL, "", net.JoinHostPort(DEFAULT_AGGREGATOR_HOST, DEFAULT_AGGREGATOR_PORT))
+	} else { // Else use the default AggregatorURL
+		setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
+	}
 
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
