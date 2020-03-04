@@ -198,6 +198,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ChannelResource{&typedResource}
 
+		case [2]string{"Channel", "multicloud-apps.io"}:
+			typedResource := mcmapp.Channel{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = ChannelResource{&typedResource}
+
 		case [2]string{"Compliance", "compliance.mcm.ibm.com"}:
 			typedResource := com.Compliance{}
 			err = json.Unmarshal(j, &typedResource)
@@ -246,6 +254,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeployableResource{&typedResource}
 
+		case [2]string{"Deployable", "multicloud-apps.io"}:
+			typedResource := appDeployable.Deployable{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = DeployableResource{&typedResource}
+
 		case [2]string{"Deployment", "apps"}:
 			typedResource := apps.Deployment{}
 			err = json.Unmarshal(j, &typedResource)
@@ -279,6 +295,15 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = HelmCRResource{&typedResource}
+
+			//This is the application's HelmCR of kind HelmRelease. From 2020 Q1, the apigroup will be multicloud-apps.io.
+		case [2]string{"HelmRelease", "multicloud-apps.io"}:
+			typedResource := appHelmRelease.HelmRelease{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = AppHelmCRResource{&typedResource}
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
@@ -393,6 +418,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = StatefulSetResource{&typedResource}
 
 		case [2]string{"Subscription", "app.ibm.com"}:
+			typedResource := subscription.Subscription{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = SubscriptionResource{&typedResource}
+
+		case [2]string{"Subscription", "multicloud-apps.io"}:
 			typedResource := subscription.Subscription{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
