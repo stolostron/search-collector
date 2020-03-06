@@ -48,7 +48,6 @@ jobs:
         # Bootstrap the build harness, pull test image, and run unit tests.  
         - make component/pull 
         - make component/test/unit
-        - make sonar/go
     - stage: test-e2e
       name: "Deploy the image to a cluster and run e2e tests"
       if: type = pull_request
