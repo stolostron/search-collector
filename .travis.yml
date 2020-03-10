@@ -8,6 +8,11 @@ go:
 services:
   - docker
 
+branches:
+  only:
+    - master
+    - /^release-[0-9]+\..*$/
+
 env:
   global:
     # Required
