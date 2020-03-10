@@ -198,7 +198,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ChannelResource{&typedResource}
 
-		case [2]string{"Channel", "multicloud-apps.io"}:
+		case [2]string{"Channel", "apps.open-cluster-management.io"}:
 			typedResource := mcmapp.Channel{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -254,7 +254,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeployableResource{&typedResource}
 
-		case [2]string{"Deployable", "multicloud-apps.io"}:
+		case [2]string{"Deployable", "apps.open-cluster-management.io"}:
 			typedResource := appDeployable.Deployable{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -296,8 +296,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = HelmCRResource{&typedResource}
 
-			//This is the application's HelmCR of kind HelmRelease. From 2020 Q1, the apigroup will be multicloud-apps.io.
-		case [2]string{"HelmRelease", "multicloud-apps.io"}:
+			//This is the application's HelmCR of kind HelmRelease. From 2020 Q1, the apigroup will be apps.open-cluster-management.io.
+		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
 			typedResource := appHelmRelease.HelmRelease{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -425,7 +425,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = SubscriptionResource{&typedResource}
 
-		case [2]string{"Subscription", "multicloud-apps.io"}:
+		case [2]string{"Subscription", "apps.open-cluster-management.io"}:
 			typedResource := subscription.Subscription{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
