@@ -198,7 +198,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ChannelResource{&typedResource}
 
-		case [2]string{"Compliance", "compliance.mcm.ibm.com"}:
+		case [2]string{"Compliance", "compliance.mcm.ibm.com"}, [2]string{"Compliance", "apps.open-cluster-management.io"}:
 			typedResource := com.Compliance{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -321,7 +321,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PersistentVolumeClaimResource{&typedResource}
 
-		case [2]string{"PlacementBinding", "mcm.ibm.com"}:
+		case [2]string{"PlacementBinding", "mcm.ibm.com"}, [2]string{"PlacementBinding", "apps.open-cluster-management.io"}:
 			typedResource := mcm.PlacementBinding{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -329,7 +329,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementBindingResource{&typedResource}
 
-		case [2]string{"PlacementPolicy", "mcm.ibm.com"}:
+		case [2]string{"PlacementPolicy", "mcm.ibm.com"}, [2]string{"PlacementPolicy", "apps.open-cluster-management.io"}:
 			typedResource := mcm.PlacementPolicy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -337,7 +337,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementPolicyResource{&typedResource}
 
-		case [2]string{"PlacementRule", "app.ibm.com"}:
+		case [2]string{"PlacementRule", "app.ibm.com"}, [2]string{"PlacementRule", "apps.open-cluster-management.io"}:
 			typedResource := rule.PlacementRule{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -353,7 +353,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PodResource{&typedResource}
 
-		case [2]string{"Policy", "policy.mcm.ibm.com"}:
+		case [2]string{"Policy", "policy.mcm.ibm.com"}, [2]string{"Policy", "apps.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
