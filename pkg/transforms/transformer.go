@@ -190,7 +190,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationResource{&typedResource}
 
-		case [2]string{"Channel", "app.ibm.com"}:
+		case [2]string{"Channel", "app.ibm.com"}, [2]string{"Channel", "apps.open-cluster-management.io"}:
 			typedResource := mcmapp.Channel{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -198,7 +198,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ChannelResource{&typedResource}
 
-		case [2]string{"Compliance", "compliance.mcm.ibm.com"}:
+		case [2]string{"Compliance", "compliance.mcm.ibm.com"}, [2]string{"Compliance", "apps.open-cluster-management.io"}:
 			typedResource := com.Compliance{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -230,7 +230,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DaemonSetResource{&typedResource}
 
-		case [2]string{"Deployable", "app.ibm.com"}:
+		case [2]string{"Deployable", "app.ibm.com"}, [2]string{"Deployable", "apps.open-cluster-management.io"}:
 			typedResource := appDeployable.Deployable{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -263,7 +263,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = DeploymentResource{&typedResource}
 
 			//This is the application's HelmCR of kind HelmRelease. From 2019 Q4, the apigroup will be app.ibm.com.
-		case [2]string{"HelmRelease", "app.ibm.com"}:
+			//From 2020 Q1, the apigroup will be apps.open-cluster-management.io
+		case [2]string{"HelmRelease", "app.ibm.com"}, [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
 			typedResource := appHelmRelease.HelmRelease{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -320,7 +321,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PersistentVolumeClaimResource{&typedResource}
 
-		case [2]string{"PlacementBinding", "mcm.ibm.com"}:
+		case [2]string{"PlacementBinding", "mcm.ibm.com"}, [2]string{"PlacementBinding", "apps.open-cluster-management.io"}:
 			typedResource := mcm.PlacementBinding{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -328,7 +329,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementBindingResource{&typedResource}
 
-		case [2]string{"PlacementPolicy", "mcm.ibm.com"}:
+		case [2]string{"PlacementPolicy", "mcm.ibm.com"}, [2]string{"PlacementPolicy", "apps.open-cluster-management.io"}:
 			typedResource := mcm.PlacementPolicy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -336,7 +337,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementPolicyResource{&typedResource}
 
-		case [2]string{"PlacementRule", "app.ibm.com"}:
+		case [2]string{"PlacementRule", "app.ibm.com"}, [2]string{"PlacementRule", "apps.open-cluster-management.io"}:
 			typedResource := rule.PlacementRule{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -352,7 +353,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PodResource{&typedResource}
 
-		case [2]string{"Policy", "policy.mcm.ibm.com"}:
+		case [2]string{"Policy", "policy.mcm.ibm.com"}, [2]string{"Policy", "apps.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
@@ -392,7 +393,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = StatefulSetResource{&typedResource}
 
-		case [2]string{"Subscription", "app.ibm.com"}:
+		case [2]string{"Subscription", "app.ibm.com"}, [2]string{"Subscription", "apps.open-cluster-management.io"}:
 			typedResource := subscription.Subscription{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
