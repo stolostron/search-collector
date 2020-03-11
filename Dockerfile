@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi7/ubi-minimal:7.7-238
+FROM registry.access.redhat.com/ubi7/ubi-minimal:7.7-303
 
 ARG VCS_REF
 ARG VCS_URL
@@ -37,8 +37,10 @@ RUN microdnf install ca-certificates vi --nodocs &&\
 
 COPY license.txt /licenses/
 
-ENV VCS_REF="$VCS_REF"
+ENV VCS_REF="$VCS_REF" \
+    USER_UID=1001
 
 ADD output/search-collector /bin
 
+USER ${USER_UID}
 ENTRYPOINT ["bin/search-collector"]
