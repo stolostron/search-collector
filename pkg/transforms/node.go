@@ -33,7 +33,7 @@ func (n NodeResource) BuildNode() Node {
 	}
 
 	for key, value := range labels {
-		if _, found := roleSet[key]; found && value == "true" {
+		if _, found := roleSet[key]; found && value == "" {
 			roles = append(roles, strings.TrimPrefix(key, "node-role.kubernetes.io/"))
 		}
 	}
