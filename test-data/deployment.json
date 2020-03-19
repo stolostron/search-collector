@@ -4,8 +4,8 @@
     "metadata": {
         "annotations": {
             "deployment.kubernetes.io/revision": "1",
-            "apps.open-cluster-management/hosting-deployable": "default/test-app-deployable",
-            "apps.open-cluster-management/hosting-subscription": "default/test-subscription"
+            "apps.open-cluster-management.io/hosting-deployable": "default/test-app-deployable",
+            "apps.open-cluster-management.io/hosting-subscription": "default/test-subscription"
         },
         "creationTimestamp": "2019-02-21T21:30:33Z",
         "generation": 1,

@@ -15,7 +15,7 @@
         "namespace": "default",
         "ownerReferences": [
             {
-                "apiVersion": "apps.open-cluster-management/v1alpha1",
+                "apiVersion": "apps.open-cluster-management.io/v1alpha1",
                 "kind": "Subscription",
                 "name": "testSubscription",
                 "uid": "e10b4cf1-c800-02f1-91z1-12272f121a23"
