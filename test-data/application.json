@@ -3,9 +3,9 @@
     "kind": "Application",
     "metadata": {
         "annotations": {
-            "app.ibm.com/subscriptions": "default/test-subscription",
-            "app.ibm.com/dashboard": "https://0.0.0.0:8443/grafana/dashboard/test",
-            "app.ibm.com/deployables": "foo-gbapp,foo-gbapp-redismaster,foo-gbapp-redisslave"
+            "apps.open-cluster-management/subscriptions": "default/test-subscription",
+            "apps.open-cluster-management/dashboard": "https://0.0.0.0:8443/grafana/dashboard/test",
+            "apps.open-cluster-management/deployables": "foo-gbapp,foo-gbapp-redismaster,foo-gbapp-redisslave"
         },
         "creationTimestamp": "2019-03-19T20:48:20Z",
         "generation": 1,

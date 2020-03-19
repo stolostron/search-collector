@@ -1,10 +1,10 @@
 {
-    "apiVersion": "app.ibm.com/v1",
+    "apiVersion": "apps.open-cluster-management/v1",
     "kind": "HelmRelease",
     "metadata": {
         "creationTimestamp": "2019-08-05T15:01:13Z",
         "finalizers": [
-            "app.ibm.com/helmrelease"
+            "apps.open-cluster-management/helmrelease"
         ],
         "generation": 1,
         "labels": {
@@ -15,14 +15,14 @@
         "namespace": "default",
         "ownerReferences": [
             {
-                "apiVersion": "app.ibm.com/v1alpha1",
+                "apiVersion": "apps.open-cluster-management/v1alpha1",
                 "kind": "Subscription",
                 "name": "testSubscription",
                 "uid": "e10b4cf1-c800-02f1-91z1-12272f121a23"
             }
         ],
         "resourceVersion": "9469478",
-        "selfLink": "/apis/app.ibm.com/v1/namespaces/default/helmreleases/testSubscription-ngnix",
+        "selfLink": "/apis/apps.open-cluster-management/v1/namespaces/default/helmreleases/testSubscription-ngnix",
         "uid": "fg265feg-d932-22g2-82c2-22345g131h34"
     },
     "spec": {
