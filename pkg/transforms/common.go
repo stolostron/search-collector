@@ -45,11 +45,11 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 		ret["namespace"] = resource.GetNamespace()
 	}
 
-	if resource.GetAnnotations()["app.ibm.com/hosting-subscription"] != "" {
-		ret["_hostingSubscription"] = resource.GetAnnotations()["app.ibm.com/hosting-subscription"]
+	if resource.GetAnnotations()["app.open-cluster-management.io/hosting-subscription"] != "" {
+		ret["_hostingSubscription"] = resource.GetAnnotations()["app.open-cluster-management.io/hosting-subscription"]
 	}
-	if resource.GetAnnotations()["app.ibm.com/hosting-deployable"] != "" {
-		ret["_hostingDeployable"] = resource.GetAnnotations()["app.ibm.com/hosting-deployable"]
+	if resource.GetAnnotations()["app.open-cluster-management.io/hosting-deployable"] != "" {
+		ret["_hostingDeployable"] = resource.GetAnnotations()["app.open-cluster-management.io/hosting-deployable"]
 	}
 	return ret
 }
@@ -92,11 +92,11 @@ func unstructuredProperties(resource UnstructuredResource) map[string]interface{
 	if resource.GetNamespace() != "" {
 		ret["namespace"] = resource.GetNamespace()
 	}
-	if resource.GetAnnotations()["app.ibm.com/hosting-subscription"] != "" {
-		ret["_hostingSubscription"] = resource.GetAnnotations()["app.ibm.com/hosting-subscription"]
+	if resource.GetAnnotations()["app.open-cluster-management.io/hosting-subscription"] != "" {
+		ret["_hostingSubscription"] = resource.GetAnnotations()["app.open-cluster-management.io/hosting-subscription"]
 	}
-	if resource.GetAnnotations()["app.ibm.com/hosting-deployable"] != "" {
-		ret["_hostingDeployable"] = resource.GetAnnotations()["app.ibm.com/hosting-deployable"]
+	if resource.GetAnnotations()["app.open-cluster-management.io/hosting-deployable"] != "" {
+		ret["_hostingDeployable"] = resource.GetAnnotations()["app.open-cluster-management.io/hosting-deployable"]
 	}
 	return ret
 
