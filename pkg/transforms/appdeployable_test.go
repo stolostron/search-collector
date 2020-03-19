@@ -20,5 +20,5 @@ func TestTransformAppDeployable(t *testing.T) {
 
 	// Test only the fields that exist in deployable - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Deployable", t)
-	AssertEqual("apigroup", node.Properties["apigroup"], "apps.open-cluster-management.io", t)
+	AssertEqual("apigroup", node.Properties["apigroup"], "app.ibm.com", t)
 }
