@@ -20,5 +20,5 @@ func TestTransformPlacementRule(t *testing.T) {
 
 	// Test only the fields that exist in placementrule - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "PlacementRule", t)
-	AssertEqual("apigroup", node.Properties["apigroup"], "app.open-cluster-management.io", t)
+	AssertEqual("apigroup", node.Properties["apigroup"], "apps.open-cluster-management.io", t)
 }

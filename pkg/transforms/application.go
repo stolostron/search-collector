@@ -21,7 +21,7 @@ func (a ApplicationResource) BuildNode() Node {
 	node := transformCommon(a)
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["dashboard"] = a.GetAnnotations()["app.open-cluster-management.io/dashboard"]
+	node.Properties["dashboard"] = a.GetAnnotations()["apps.open-cluster-management.io/dashboard"]
 
 	return node
 }
@@ -32,25 +32,25 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 
 	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, EdgeType: "contains", Kind: a.Kind, Name: a.Name}
 
-	if len(a.GetAnnotations()["app.open-cluster-management.io/deployables"]) > 0 {
+	if len(a.GetAnnotations()["apps.open-cluster-management.io/deployables"]) > 0 {
 		deployableMap := make(map[string]struct{})
-		for _, deployable := range strings.Split(a.GetAnnotations()["app.open-cluster-management.io/deployables"], ",") {
+		for _, deployable := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/deployables"], ",") {
 			deployableMap[deployable] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
 	}
 
-	if len(a.GetAnnotations()["app.open-cluster-management.io/subscriptions"]) > 0 {
+	if len(a.GetAnnotations()["apps.open-cluster-management.io/subscriptions"]) > 0 {
 		subscriptionMap := make(map[string]struct{})
-		for _, subscription := range strings.Split(a.GetAnnotations()["app.open-cluster-management.io/subscriptions"], ",") {
+		for _, subscription := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/subscriptions"], ",") {
 			subscriptionMap[subscription] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(subscriptionMap, "Subscription", nodeInfo, ns)...)
 	}
 
-	if len(a.GetAnnotations()["app.open-cluster-management.io/placementbindings"]) > 0 {
+	if len(a.GetAnnotations()["apps.open-cluster-management.io/placementbindings"]) > 0 {
 		placementBindingMap := make(map[string]struct{})
-		for _, placementBinding := range strings.Split(a.GetAnnotations()["app.open-cluster-management.io/placementbindings"], ",") {
+		for _, placementBinding := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/placementbindings"], ",") {
 			placementBindingMap[placementBinding] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(placementBindingMap, "PlacementBinding", nodeInfo, ns)...)
