@@ -252,7 +252,7 @@ func TestReconcilerAddEdges(t *testing.T) {
 
 	//Expected edge
 	edgeMap2 := make(map[string]map[string]tr.Edge, 1)
-	edge := tr.Edge{EdgeType: "ownedBy", SourceUID: "local-cluster/5678", DestUID: "local-cluster/1234", SourceKind: "src", DestKind: "dest"}
+	edge := tr.Edge{EdgeType: "ownedBy", SourceUID: "local-cluster/5678", DestUID: "local-cluster/1234", SourceKind: "Pod", DestKind: "testowner"}
 	edgeMap2["local-cluster/5678"] = map[string]tr.Edge{}
 	edgeMap2["local-cluster/5678"]["local-cluster/1234"] = edge
 
