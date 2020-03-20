@@ -179,18 +179,22 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo) []Edge {
 		if dest, ok := ns.ByUID[destUID]; ok {
 			if nodeInfo.UID != destUID { //avoid connecting node to itself
 				ret = append(ret, Edge{
-					SourceUID: nodeInfo.UID,
-					DestUID:   destUID,
-					EdgeType:  nodeInfo.EdgeType,
+					SourceUID:   nodeInfo.UID,
+					DestUID:     destUID,
+					EdgeType:    nodeInfo.EdgeType,
+					SourceLabel: nodeInfo.Kind,
+					DestLabel:   dest.Properties["kind"].(string),
 				})
 
 				if dest.GetMetadata("ReleaseUID") != "" { // If owner included/owned by a release...
 					if _, ok := ns.ByUID[dest.GetMetadata("ReleaseUID")]; ok { // ...make sure the release exists...
 						if nodeInfo.UID != dest.GetMetadata("ReleaseUID") { //avoid connecting node to itself
 							ret = append(ret, Edge{ // ... then add edge from source to release
-								SourceUID: nodeInfo.UID,
-								DestUID:   dest.GetMetadata("ReleaseUID"),
-								EdgeType:  "ownedBy",
+								SourceUID:   nodeInfo.UID,
+								DestUID:     dest.GetMetadata("ReleaseUID"),
+								EdgeType:    "ownedBy",
+								SourceLabel: nodeInfo.Kind,
+								DestLabel:   dest.Properties["kind"].(string),
 							})
 						}
 					}
@@ -230,9 +234,11 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 			if destNode, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
 				if nodeInfo.UID != destNode.UID { //avoid connecting node to itself
 					ret = append(ret, Edge{
-						SourceUID: nodeInfo.UID,
-						DestUID:   destNode.UID,
-						EdgeType:  nodeInfo.EdgeType,
+						SourceUID:   nodeInfo.UID,
+						DestUID:     destNode.UID,
+						EdgeType:    nodeInfo.EdgeType,
+						SourceLabel: nodeInfo.Kind,
+						DestLabel:   destKind,
 					})
 					//Add all the applications connected to a subscription in the Subscription  node's metadata - this metadata will be used to connect other nodes to Application
 					if destKind == "Subscription" && nodeInfo.Kind == "Application" {
@@ -289,9 +295,11 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 			if dest, ok := ns.ByKindNamespaceName[destKind][namespace][name]; ok {
 				if nodeInfo.UID != dest.UID { //avoid connecting node to itself
 					depSubedges = append(depSubedges, Edge{
-						SourceUID: nodeInfo.UID,
-						DestUID:   dest.UID,
-						EdgeType:  nodeInfo.EdgeType,
+						SourceUID:   nodeInfo.UID,
+						DestUID:     dest.UID,
+						EdgeType:    nodeInfo.EdgeType,
+						SourceLabel: nodeInfo.Kind,
+						DestLabel:   dest.Properties["kind"].(string),
 					})
 					//Connect incoming node to all applications in the Subscription node's metadata
 					if destKind == "Subscription" && nodeInfo.Kind != "Application" {

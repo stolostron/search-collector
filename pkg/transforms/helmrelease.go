@@ -152,9 +152,11 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 				}
 				if resourceNode.UID != GetHelmReleaseUID(h.GetLabels()["NAME"]) { //avoid connecting node to itself
 					edges = append(edges, Edge{
-						SourceUID: resourceNode.UID,
-						DestUID:   GetHelmReleaseUID(h.GetLabels()["NAME"]),
-						EdgeType:  "ownedBy",
+						SourceUID:   resourceNode.UID,
+						DestUID:     GetHelmReleaseUID(h.GetLabels()["NAME"]),
+						EdgeType:    "ownedBy",
+						SourceLabel: resourceNode.Properties["kind"].(string),
+						DestLabel:   "Release",
 					})
 				}
 			} else {
