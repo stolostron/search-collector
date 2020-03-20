@@ -1,5 +1,5 @@
 {
-    "apiVersion": "app.ibm.com/v1alpha1",
+    "apiVersion": "apps.open-cluster-management.io/v1alpha1",
     "kind": "PlacementRule",
     "metadata": {
         "annotations": {
@@ -17,7 +17,7 @@
         "name": "test-placementrule",
         "namespace": "default",
         "resourceVersion": "68820",
-        "selfLink": "/apis/app.ibm.com/v1alpha1/namespaces/guestbook/placementrules/test-test",
+        "selfLink": "/apis/apps.open-cluster-management.io/v1alpha1/namespaces/guestbook/placementrules/test-test",
         "uid": "f9179gd1-f8e9-22f1-cdd6-9164514111f0"
     },
     "spec": {
