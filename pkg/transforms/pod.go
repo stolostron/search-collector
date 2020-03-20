@@ -170,11 +170,11 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 		if dest, ok := ns.ByKindNamespaceName["Node"]["_NONE"][nodeName]; ok {
 			if UID != dest.UID { //avoid connecting node to itself
 				ret = append(ret, Edge{
-					SourceUID:   UID,
-					DestUID:     dest.UID,
-					EdgeType:    "runsOn",
-					SourceLabel: srcNode.Properties["kind"].(string),
-					DestLabel:   dest.Properties["kind"].(string),
+					SourceUID:  UID,
+					DestUID:    dest.UID,
+					EdgeType:   "runsOn",
+					SourceKind: srcNode.Properties["kind"].(string),
+					DestKind:   dest.Properties["kind"].(string),
 				})
 			}
 		} else {
