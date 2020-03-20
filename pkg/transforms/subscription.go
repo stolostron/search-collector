@@ -64,10 +64,10 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns)...)
 	}
 	//subscribesTo edges
-	if len(s.GetAnnotations()["app.ibm.com/deployables"]) > 0 {
+	if len(s.GetAnnotations()["apps.open-cluster-management.io/deployables"]) > 0 {
 		nodeInfo.EdgeType = "subscribesTo"
 		deployableMap := make(map[string]struct{})
-		for _, deployable := range strings.Split(s.GetAnnotations()["app.ibm.com/deployables"], ",") {
+		for _, deployable := range strings.Split(s.GetAnnotations()["apps.open-cluster-management.io/deployables"], ",") {
 			deployableMap[deployable] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
