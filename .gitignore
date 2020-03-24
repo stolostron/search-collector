@@ -1,6 +1,6 @@
 cover*
 output/
-vendor/
+# vendor/
 .build-harness
 .build-harness-bootstrap
 build-harness/
