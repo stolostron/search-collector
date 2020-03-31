@@ -13,12 +13,12 @@ ARG IMAGE_RELEASE
 ARG IMAGE_SUMMARY
 ARG IMAGE_OPENSHIFT_TAGS
 
-LABEL org.label-schema.vendor="$IMAGE_VENDOR" \
+LABEL org.label-schema.vendor="Red Hat" \
       org.label-schema.name="$IMAGE_NAME_ARCH" \
       org.label-schema.description="$IMAGE_DESCRIPTION" \
       org.label-schema.vcs-ref=$VCS_REF \
       org.label-schema.vcs-url=$VCS_URL \
-      org.label-schema.license="Licensed Materials - Property of IBM" \
+      org.label-schema.license="Red Hat Advanced Cluster Management for Kubernetes EULA" \
       org.label-schema.schema-version="1.0" \
       name="$IMAGE_NAME" \
       maintainer="$IMAGE_MAINTAINER" \
@@ -34,8 +34,6 @@ LABEL org.label-schema.vendor="$IMAGE_VENDOR" \
 RUN microdnf install ca-certificates vi --nodocs &&\
     mkdir /licenses &&\
     microdnf clean all
-
-COPY license.txt /licenses/
 
 ENV VCS_REF="$VCS_REF" \
     USER_UID=1001
