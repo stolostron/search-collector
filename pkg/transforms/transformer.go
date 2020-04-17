@@ -111,7 +111,8 @@ type EdgeType string
 // Structure to hold Edge, containing the type and UIDs to relationships
 type Edge struct {
 	EdgeType
-	SourceUID, DestUID string
+	SourceUID, DestUID   string
+	SourceKind, DestKind string
 }
 
 // interface for each tranform
