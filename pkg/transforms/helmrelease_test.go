@@ -18,8 +18,8 @@ func TestTransformHelmRelease(t *testing.T) {
 	var c v1.ConfigMap
 	var r release.Release
 
-	UnmarshalFile("../../test-data/helmrelease_configmap.json", &c, t)
-	UnmarshalFile("../../test-data/helmrelease_release.json", &r, t)
+	UnmarshalFile("../../test-data/helmrelease-configmap.json", &c, t)
+	UnmarshalFile("../../test-data/helmrelease-release.json", &r, t)
 
 	node := HelmReleaseResource{&c, &r}.BuildNode()
 

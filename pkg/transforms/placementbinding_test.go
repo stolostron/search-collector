@@ -15,7 +15,7 @@ import (
 
 func TestTransformPlacementBinding(t *testing.T) {
 	var p mcm.PlacementBinding
-	UnmarshalFile("../../test-data/placementbinding.json", &p, t)
+	UnmarshalFile("placementbinding.json", &p, t)
 	node := PlacementBindingResource{&p}.BuildNode()
 
 	// Test only the fields that exist in placementbinding - the common test will test the other bits

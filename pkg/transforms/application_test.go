@@ -15,7 +15,7 @@ import (
 
 func TestTransformApplication(t *testing.T) {
 	var a v1.Application
-	UnmarshalFile("../../test-data/application.json", &a, t)
+	UnmarshalFile("application.json", &a, t)
 	node := ApplicationResource{&a}.BuildNode()
 
 	// Test only the fields that exist in application - the common test will test the other bits

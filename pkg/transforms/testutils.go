@@ -14,12 +14,13 @@ import (
 	"io/ioutil"
 	"reflect"
 	"testing"
+	sanitize "github.com/kennygrant/sanitize"
 )
 
 // UnmarshalFile takes a file path and unmarshals it into the given resource type.
 func UnmarshalFile(filepath string, resourceType interface{}, t *testing.T) {
 	// open given filepath string
-	rawBytes, err := ioutil.ReadFile(filepath)
+	rawBytes, err := ioutil.ReadFile("../../test-data/" + sanitize.Name(filepath))
 	if err != nil {
 		t.Fatal("Unable to read test data", err)
 	}

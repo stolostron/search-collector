@@ -15,7 +15,7 @@ import (
 
 func TestTransformPersistentVolumeClaim(t *testing.T) {
 	var p v1.PersistentVolumeClaim
-	UnmarshalFile("../../test-data/persistentvolumeclaim.json", &p, t)
+	UnmarshalFile("persistentvolumeclaim.json", &p, t)
 	node := PersistentVolumeClaimResource{&p}.BuildNode()
 
 	// Test only the fields that exist in node - the common test will test the other bits

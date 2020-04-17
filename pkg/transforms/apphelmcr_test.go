@@ -17,7 +17,7 @@ import (
 func TestTransformAppHelmCR(t *testing.T) {
 	var a app.HelmRelease
 
-	UnmarshalFile("../../test-data/apphelmcr.json", &a, t)
+	UnmarshalFile("apphelmcr.json", &a, t)
 
 	node := AppHelmCRResource{&a}.BuildNode()
 

@@ -15,7 +15,7 @@ import (
 
 func TestTransformNamespace(t *testing.T) {
 	var n v1.Namespace
-	UnmarshalFile("../../test-data/namespace.json", &n, t)
+	UnmarshalFile("namespace.json", &n, t)
 	node := NamespaceResource{&n}.BuildNode()
 
 	// Test only the fields that exist in namespace - the common test will test the other bits

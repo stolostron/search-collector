@@ -16,7 +16,7 @@ import (
 
 func TestTransformPod(t *testing.T) {
 	var p v1.Pod
-	UnmarshalFile("../../test-data/pod.json", &p, t)
+	UnmarshalFile("pod.json", &p, t)
 	node := PodResource{&p}.BuildNode()
 
 	// Build time struct matching time in test data

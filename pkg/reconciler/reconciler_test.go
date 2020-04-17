@@ -322,7 +322,7 @@ func TestReconcilerComplete(t *testing.T) {
 	//Convert to events
 	for _, file := range files {
 		filePath := dir + "/" + file.Name()
-		if file.Name() != "helmrelease_release.json" {
+		if file.Name() != "helmrelease-release.json" {
 			tr.UnmarshalFile(filePath, &appInput, t)
 			appInputLocal := appInput
 			var in = &tr.Event{
@@ -331,14 +331,14 @@ func TestReconcilerComplete(t *testing.T) {
 				Resource:  &appInputLocal,
 			}
 			// This will process one of the helmrelease files - the helmrelease configmap and store the results
-			if file.Name() == "helmrelease_configmap.json" {
+			if file.Name() == "helmrelease-configmap.json" {
 				tr.UnmarshalFile(filePath, &c, t)
 				rlsFileCount++
 				rlsEvnt = in
 				continue
 			}
 			events = append(events, *in)
-		} else if file.Name() == "helmrelease_release.json" {
+		} else if file.Name() == "helmrelease-release.json" {
 			tr.UnmarshalFile(filePath, &rls, t)
 			rlsFileCount++
 			continue

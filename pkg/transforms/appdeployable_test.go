@@ -15,7 +15,7 @@ import (
 
 func TestTransformAppDeployable(t *testing.T) {
 	var d app.Deployable
-	UnmarshalFile("../../test-data/appdeployable.json", &d, t)
+	UnmarshalFile("appdeployable.json", &d, t)
 	node := AppDeployableResource{&d}.BuildNode()
 
 	// Test only the fields that exist in deployable - the common test will test the other bits
