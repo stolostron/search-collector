@@ -30,6 +30,10 @@
   name = "github.com/golang/glog"
 
 [[constraint]]
+  version = "v1.2.4"
+  name = "github.com/kennygrant/sanitize"
+
+[[constraint]]
   name = "github.com/open-cluster-management/hcm-compliance"
   branch = "master"
 

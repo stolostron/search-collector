@@ -15,7 +15,7 @@ import (
 
 func TestTransformSubscription(t *testing.T) {
 	var s v1.Subscription
-	UnmarshalFile("../../test-data/subscription.json", &s, t)
+	UnmarshalFile("subscription.json", &s, t)
 	node := SubscriptionResource{&s}.BuildNode()
 
 	// Test only the fields that exist in stateful set - the common test will test the other bits

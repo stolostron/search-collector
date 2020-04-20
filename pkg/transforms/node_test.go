@@ -15,7 +15,7 @@ import (
 
 func TestTransformNode(t *testing.T) {
 	var n v1.Node
-	UnmarshalFile("../../test-data/node.json", &n, t)
+	UnmarshalFile("node.json", &n, t)
 	node := NodeResource{&n}.BuildNode()
 
 	// Test only the fields that exist in node - the common test will test the other bits

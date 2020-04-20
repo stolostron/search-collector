@@ -306,6 +306,14 @@
   version = "v1.1.9"
 
 [[projects]]
+  digest = "1:e30ac47ee84d7d354e0a284cf742e3015400667e90aa3d6ae99c7a55da67c645"
+  name = "github.com/kennygrant/sanitize"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "06ec0d0dbcd497d01e5189b16f5263f712e61a8e"
+  version = "v1.2.4"
+
+[[projects]]
   digest = "1:631ecfefc94d1e04af6a4cbb450564d606feb842898b6f51f4b299f5924cf220"
   name = "github.com/kubernetes-sigs/application"
   packages = [
@@ -461,11 +469,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:be7ea8c9ac48b8b0b9e91e32760f59c23de8a5e3de03c918f56e0c08a6e03017"
+  digest = "1:b26aa11de2e3fa670274015d9dcbef33e177e27d3ced25b5915dc76d2fabc063"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
+    "html",
+    "html/atom",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -664,28 +674,23 @@
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
-    "pkg/apis/apiextensions/v1",
     "pkg/apis/apiextensions/v1beta1",
     "pkg/client/clientset/clientset",
     "pkg/client/clientset/clientset/scheme",
-    "pkg/client/clientset/clientset/typed/apiextensions/v1",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
     "pkg/client/informers/externalversions",
     "pkg/client/informers/externalversions/apiextensions",
-    "pkg/client/informers/externalversions/apiextensions/v1",
     "pkg/client/informers/externalversions/apiextensions/v1beta1",
     "pkg/client/informers/externalversions/internalinterfaces",
-    "pkg/client/listers/apiextensions/v1",
     "pkg/client/listers/apiextensions/v1beta1",
   ]
   pruneopts = "UT"
   revision = "2af94a2a482fcef53a8c24b7817ecb4ecdc450f8"
 
 [[projects]]
-  digest = "1:42219cc2c8a4aa113abb598500fbbc66b6b0bf4a4f17ece946745387bacd3ec8"
+  digest = "1:70b273d19f2ebc09e6689cf4c4dee6858cc247c24cba2d590ab1c298edfef687"
   name = "k8s.io/apimachinery"
   packages = [
-    "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
@@ -925,14 +930,6 @@
   revision = "addea2498afe5a6d58f8bdcd9ae51363d12f12ef"
 
 [[projects]]
-  branch = "master"
-  digest = "1:533745b9452e27599b73ffa11c5248d44116e6d92b325fd7f400abab761187b9"
-  name = "k8s.io/utils"
-  packages = ["pointer"]
-  pruneopts = "UT"
-  revision = "861946025e3491219eaccb1bf693e23df70c2fa8"
-
-[[projects]]
   digest = "1:68cd93696d4de06936c94bf0c510802140c2d3c956b557f3d001430d58cf676c"
   name = "sigs.k8s.io/controller-runtime"
   packages = [
@@ -964,6 +961,7 @@
     "github.com/golang/groupcache/lru",
     "github.com/golang/protobuf/ptypes",
     "github.com/hashicorp/go-version",
+    "github.com/kennygrant/sanitize",
     "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1",
     "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1",
     "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1",

@@ -15,7 +15,7 @@ import (
 
 func TestTransformJob(t *testing.T) {
 	var j v1.Job
-	UnmarshalFile("../../test-data/job.json", &j, t)
+	UnmarshalFile("job.json", &j, t)
 	node := JobResource{&j}.BuildNode()
 
 	// Test only the fields that exist in job - the common test will test the other bits

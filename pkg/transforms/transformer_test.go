@@ -23,8 +23,8 @@ func TestTransformRoutine(t *testing.T) {
 	ts := time.Now().Unix()
 	var appTyped v1.Application
 	var appInput unstructured.Unstructured
-	UnmarshalFile("../../test-data/application.json", &appTyped, t)
-	UnmarshalFile("../../test-data/application.json", &appInput, t)
+	UnmarshalFile("application.json", &appTyped, t)
+	UnmarshalFile("application.json", &appInput, t)
 	appNode := ApplicationResource{&appTyped}.BuildNode()
 
 	unstructuredInput := unstructured.Unstructured{

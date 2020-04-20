@@ -15,7 +15,7 @@ import (
 
 func TestTransformChannel(t *testing.T) {
 	var c app.Channel
-	UnmarshalFile("../../test-data/channel.json", &c, t)
+	UnmarshalFile("channel.json", &c, t)
 	node := ChannelResource{&c}.BuildNode()
 
 	// Test only the fields that exist in channel - the common test will test the other bits
