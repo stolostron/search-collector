@@ -16,7 +16,7 @@ import (
 
 func TestTransformCronJob(t *testing.T) {
 	var c v1.CronJob
-	UnmarshalFile("../../test-data/cronjob.json", &c, t)
+	UnmarshalFile("cronjob.json", &c, t)
 	node := CronJobResource{&c}.BuildNode()
 
 	// Build time struct matching time in test data

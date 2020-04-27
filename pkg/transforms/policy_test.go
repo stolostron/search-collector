@@ -15,7 +15,7 @@ import (
 
 func TestTransformPolicy(t *testing.T) {
 	var p mcm.Policy
-	UnmarshalFile("../../test-data/policy.json", &p, t)
+	UnmarshalFile("policy.json", &p, t)
 	node := PolicyResource{&p}.BuildNode()
 
 	// Test only the fields that exist in policy - the common test will test the other bits

@@ -15,7 +15,7 @@ import (
 
 func TestTransformPlacementRule(t *testing.T) {
 	var p app.PlacementRule
-	UnmarshalFile("../../test-data/placementrule.json", &p, t)
+	UnmarshalFile("placementrule.json", &p, t)
 	node := PlacementRuleResource{&p}.BuildNode()
 
 	// Test only the fields that exist in placementrule - the common test will test the other bits
