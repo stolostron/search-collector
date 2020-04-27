@@ -1,7 +1,7 @@
+# Copyright (c) 2020 Red Hat, Inc.
+
 include build/Configfile
 BINDIR ?= output
-
-BEFORE_SCRIPT := $(shell build/before-make.sh)
 
 USE_VENDORIZED_BUILD_HARNESS ?=
 
