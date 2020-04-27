@@ -1,4 +1,9 @@
+ifdef GIT
+IMAGE_VERSION :=$(shell git rev-parse --short HEAD)
 VCS_URL ?=$(shell git config --get remote.origin.url)
+endif
+
+
 IMAGE_NAME =$(shell cat COMPONENT_NAME)
 IMAGE_DISPLAY_NAME =Search Colector
 ARCH = $(shell uname -m)
@@ -9,7 +14,6 @@ else
 endif
 IMAGE_MAINTAINER =jpadilla@redhat.com
 IMAGE_VENDOR =Red Hat
-IMAGE_VERSION :=$(shell git rev-parse --short HEAD)
 IMAGE_DESCRIPTION =Search collector service
 IMAGE_SUMMARY =$(IMAGE_DESCRIPTION)
 IMAGE_OPENSHIFT_TAGS =Search collector

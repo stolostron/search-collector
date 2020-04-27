@@ -1,9 +1,12 @@
 cover*
 output/
-vendor/
+# vendor/
 .build-harness
 .build-harness-bootstrap
 build-harness/
 build-harness-extensions/
 search-collector
 
+!vbh/.build-harness-vendorized
+!vbh/build-harness
+!vbh/build-harness-extensions
