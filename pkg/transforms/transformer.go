@@ -402,6 +402,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = SubscriptionResource{&typedResource}
 
+		case [2]string{"Insight", "open-cluster-management.io"}:
+			// typedResource := apps.StatefulSet{}
+			// err = json.Unmarshal(j, &typedResource)
+			// if err != nil {
+			// 	panic(err) // Will be caught by handleRoutineExit
+			// }
+			trans = InsightResource{event.Resource}
+
 		default:
 			trans = UnstructuredResource{event.Resource}
 		}
