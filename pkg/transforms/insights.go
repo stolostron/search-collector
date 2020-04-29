@@ -22,8 +22,10 @@ func (i InsightResource) BuildNode() Node {
 	// apiGroupVersion(i.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 
-	node.Properties["Description"] = "Problem description here."
-	node.Properties["TopSolution"] = "Problem solution here."
+	node.Properties["description"] = "Problem description here."
+	node.Properties["topsolution"] = "Problem solution here."
+	node.Properties["confidence"] = 80
+	node.Properties["resolution"] = "open"
 
 	return node
 }
