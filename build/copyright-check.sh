@@ -19,8 +19,10 @@ CHECK4="(C) Copyright IBM Corporation 2019 All Rights Reserved"
 #LINE5="${COMMENT_PREFIX}The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office."
 CHECK5="The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office."
 
+CHECK6="Copyright (c) 2020 Red Hat, Inc."
+
 #LIC_ARY to scan for
-LIC_ARY=("$CHECK1" "$CHECK2" "$CHECK3" "$CHECK4" "$CHECK5")
+LIC_ARY=("$CHECK1" "$CHECK2" "$CHECK3" "$CHECK4" "$CHECK5" "$CHECK6")
 LIC_ARY_SIZE=${#LIC_ARY[@]}
 
 #Used to signal an exit
