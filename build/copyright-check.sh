@@ -36,6 +36,8 @@ for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./ss
     continue
   fi
 
+
+
   FILETYPE=$(basename ${f##*.})
   case "${FILETYPE}" in
   	sh | go)
@@ -47,17 +49,27 @@ for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./ss
 
   #Read the first 10 lines, most Copyright headers use the first 6 lines.
   HEADER=`head -10 $f`
-  printf " Scanning $f . . . "
-
+  # printf " Scanning $f . . . "
+  rhcommits=$(git --no-pager log --date=local --after="2020-03-01T16:36" --pretty=format:"%ad" $f) 
+  echo $rhcommits
   #Check for all copyright lines
   for i in `seq 0 $((${LIC_ARY_SIZE}+1))`; do
+  
+
     #Add a status message of OK, if all copyright lines are found
     if [ $i -eq ${LIC_ARY_SIZE} ]; then
       printf "OK\n"
     else
       #Validate the copyright line being checked is present
       if [[ "$HEADER" != *"${LIC_ARY[$i]}"* ]]; then
-        printf "Missing copyright\n  >>Could not find [${LIC_ARY[$i]}] in the file $f\n"
+
+        if [ $i -eq 5 ]; then # this was the RH copyright line
+          if [ -z $rhcommits ]; then
+            continue; # this was the RH copyright line
+          fi
+          # echo "shouldn't get here"
+        fi
+        # printf "Missing copyright\n  >>Could not find [${LIC_ARY[$i]}] in the file $f\n"
         ERROR=1
         break
       fi
