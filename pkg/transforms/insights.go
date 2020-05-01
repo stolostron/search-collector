@@ -19,19 +19,16 @@ func (i InsightResource) BuildNode() Node {
 	node.Properties["apigroup"] = gvk.Group
 
 	// Extract the properties specific to this type
-	spec, _, _ := unstructured.NestedMap(i.UnstructuredContent(), "spec")
-	problem, _, _ := unstructured.NestedMap(spec, "problem")
-	description, _, _ := unstructured.NestedString(problem, "description")
-	
-	solutions, _, _ := unstructured.NestedSlice(spec, "solutions")
-	topSolution := solutions[0].(map[string]interface{})
 
-	resolution,_,_ := unstructured.NestedString(spec, "resolution")
-	
-
+	description, _, _ := unstructured.NestedString(i.UnstructuredContent(), "spec", "problem", "description")
 	node.Properties["description"] = description
+
+	solutions, _, _ := unstructured.NestedSlice(i.UnstructuredContent(), "spec", "solutions")
+	topSolution := solutions[0].(map[string]interface{})
 	node.Properties["topsolution"] = topSolution["description"]
 	node.Properties["confidence"] = topSolution["confidence"]
+
+	resolution,_,_ := unstructured.NestedString(i.UnstructuredContent(), "spec", "resolution")
 	node.Properties["resolution"] = resolution
 
 	return node
