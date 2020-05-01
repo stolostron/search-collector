@@ -2,7 +2,6 @@
 package transforms
 
 import (
-	"strings"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -14,15 +13,10 @@ type InsightResource struct {
 func (i InsightResource) BuildNode() Node {
 	node := transformCommon(i)         // Start off with the common properties
 
-	// apiGroupVersion(i.TypeMeta, &node) // add kind, apigroup and version
-	node.Properties["kind"] = i.UnstructuredContent()["kind"]
-	apiVersion := strings.Split(i.UnstructuredContent()["apiVersion"].(string), "/")
-	if len(apiVersion) == 2 {
-		node.Properties["apigroup"] = apiVersion[0]
-		node.Properties["apiversion"] = apiVersion[1]
-	} else {
-		node.Properties["apiversion"] = apiVersion[0]
-	}
+	gvk := i.GroupVersionKind()
+	node.Properties["kind"] = gvk.Kind
+	node.Properties["apiversion"] = gvk.Version
+	node.Properties["apigroup"] = gvk.Group
 
 	// Extract the properties specific to this type
 	spec, _, _ := unstructured.NestedMap(i.UnstructuredContent(), "spec")
