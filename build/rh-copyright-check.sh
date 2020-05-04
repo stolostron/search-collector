@@ -48,9 +48,14 @@ for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./ss
     else
       #Validate the copyright line being checked is present
       if [[ "$HEADER" != *"${LIC_ARY[$i]}"* ]]; then
-        printf "Missing copyright\n  >>Could not find [${LIC_ARY[$i]}] in the file $f\n"
-        ERROR=1
-        break
+          rhcommits=$(git --no-pager log --date=local --after="2020-03-01T16:36" --pretty=format:"%ad" $f) 
+          if ! [ -z "$rhcommits" ]; # if there are new commits, then we need the rh copyright
+          then
+            printf "Missing copyright\n  >>Could not find [${LIC_ARY[$i]}] in the file $f\n"
+            ERROR=1
+            break
+          fi 
+
       fi
     fi
   done
