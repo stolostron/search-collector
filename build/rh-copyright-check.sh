@@ -38,7 +38,7 @@ for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./ss
 
   #Read the first 10 lines, most Copyright headers use the first 6 lines.
   HEADER=`head -10 $f`
-  printf " Scanning $f . . . "
+  # printf " Scanning $f . . . "
 
   #Check for all copyright lines
   for i in `seq 0 $((${LIC_ARY_SIZE}+1))`; do
@@ -48,13 +48,14 @@ for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./ss
     else
       #Validate the copyright line being checked is present
       if [[ "$HEADER" != *"${LIC_ARY[$i]}"* ]]; then
-          rhcommits=$(git --no-pager log --date=local --after="2020-03-01T16:36" --pretty=format:"%ad" $f) 
-          if ! [ -z "$rhcommits" ]; # if there are new commits, then we need the rh copyright
-          then
-            printf "Missing copyright\n  >>Could not find [${LIC_ARY[$i]}] in the file $f\n"
-            ERROR=1
-            break
-          fi 
+          printf "missing copyright line: [${LIC_ARY[$i]}]"
+          lastcommit=$(git --no-pager log -n -1 --date=local --after="2020-03-01T16:36" --pretty=format:"%ad" $f) 
+          if ! [ -z "$lastcommit" ]; # if there are new commits, then we need the rh copyright
+            then
+              printf "Last changed: \t $lastcommit in the file \n"
+              ERROR=1
+              break
+            fi 
 
       fi
     fi
