@@ -44,12 +44,14 @@ for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./ss
   for i in `seq 0 $((${LIC_ARY_SIZE}+1))`; do
     #Add a status message of OK, if all copyright lines are found
     lastcommit=$(git --no-pager log -n -1 --date=local --after="2020-03-01T16:36" --pretty=format:"%ad" $f) 
-    printf "Last changed: $lastcommit \n"
     if [ $i -eq ${LIC_ARY_SIZE} ]; then
-      printf "OK\n"
+      printf "Last changed: $lastcommit $f OK \n"
+
+      # printf "OK\n"
     else
       #Validate the copyright line being checked is present
       if [[ "$HEADER" != *"${LIC_ARY[$i]}"* ]]; then
+          printf "Last changed: $lastcommit $f BAD \n"
           # printf "missing copyright line: [${LIC_ARY[$i]}]"
           if ! [ -z "$lastcommit" ]; # if there are new commits, then we need the rh copyright
             then
