@@ -7,6 +7,7 @@
 #The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
 
 # Check for redhat copyright and only for redhat copyright
+# defensive check - if this passess AND the old copyright-check passes then we are good for sure
 
 YEAR=2019
 
@@ -36,29 +37,28 @@ for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./ss
       continue
   esac
 
-  #Read the first 10 lines, most Copyright headers use the first 6 lines.
+  # Read the first 10 lines, most Copyright headers use the first 6 lines.
   HEADER=`head -10 $f`
   # printf " Scanning $f . . . "
-
+  # lastcommit=$(git --no-pager log -n -1 --date=local --after="2020-03-01T16:36" --pretty=format:"%ad" $f) # the last commit of this file
+  printf "Last changed: `git --no-pager log -n -1 --pretty=format:"%ad"` $f \n"
+  # git diff --name-only HEAD...$TRAVIS_BRANCH
   #Check for all copyright lines
   for i in `seq 0 $((${LIC_ARY_SIZE}+1))`; do
     #Add a status message of OK, if all copyright lines are found
-    lastcommit=$(git --no-pager log -n -1 --date=local --after="2020-03-01T16:36" --pretty=format:"%ad" $f) 
     if [ $i -eq ${LIC_ARY_SIZE} ]; then
-      printf "Last changed: $lastcommit $f OK \n"
-
-      # printf "OK\n"
+      # printf "Last changed: $lastcommit $f OK \n"
+      printf "  "
     else
       #Validate the copyright line being checked is present
       if [[ "$HEADER" != *"${LIC_ARY[$i]}"* ]]; then
-          printf "Last changed: $lastcommit $f BAD \n"
+          # printf "Last changed: $lastcommit $f BAD \n"
           # printf "missing copyright line: [${LIC_ARY[$i]}]"
           if ! [ -z "$lastcommit" ]; # if there are new commits, then we need the rh copyright
             then
               ERROR=1
               break
             fi 
-
       fi
     fi
   done
