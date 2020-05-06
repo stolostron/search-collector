@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#IBM Confidential
-#OCO Source Materials
+# IBM Confidential
+# OCO Source Materials
 
-#(C) Copyright IBM Corporation 2019 All Rights Reserved
-#The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
+# (C) Copyright IBM Corporation 2019 All Rights Reserved
+# The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
 
 # Check for redhat copyright and only for redhat copyright
 # defensive check - if this passess AND the old copyright-check passes then we are good for sure
