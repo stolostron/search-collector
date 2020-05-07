@@ -51,7 +51,10 @@ coverage:
 
 .PHONY: copyright-check
 copyright-check:
+    echo "old Copyright check"
 	./build/copyright-check.sh
+	echo "new copyright check"
+	./build/rh-copyright-check.sh
 
 .PHONY: clean
 clean::
