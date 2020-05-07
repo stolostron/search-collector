@@ -41,7 +41,7 @@ for f in `find . -type f -iname "*.go" ! -path "./build-harness/*" ! -path "./ss
   HEADER=`head -10 $f`
   # printf " Scanning $f . . . "
   # lastcommit=$(git --no-pager log -n -1 --date=local --after="2020-03-01T16:36" --pretty=format:"%ad" $f) # the last commit of this file
-  printf "Last changed: `git --no-pager log -n -1 --pretty=format:"%ad"` $f \n"
+  printf "Last changed: `git --no-pager log -n 1 --pretty=format:"%ad"` $f \n"
   # git diff --name-only HEAD...$TRAVIS_BRANCH
   #Check for all copyright lines
   for i in `seq 0 $((${LIC_ARY_SIZE}+1))`; do
