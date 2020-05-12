@@ -8,6 +8,8 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
+	"strings"
+
 	app "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
 )
 
@@ -22,15 +24,16 @@ func (a AppHelmCRResource) BuildNode() Node {
 	// Add other properties
 	if a.Repo.Source != nil && a.Repo.Source.SourceType != "" {
 		node.Properties["sourceType"] = a.Repo.Source.SourceType
-		if a.Repo.Source.SourceType == "github" {
+		sourceType := string(a.Repo.Source.SourceType)
+		if strings.EqualFold(sourceType, "github") {
 			node.Properties["url"] = a.Repo.Source.GitHub.Urls
 			node.Properties["chartPath"] = a.Repo.Source.GitHub.ChartPath
 			node.Properties["branch"] = a.Repo.Source.GitHub.Branch
-		} else if a.Repo.Source.SourceType == "git" {
+		} else if strings.EqualFold(sourceType, "git") {
 			node.Properties["url"] = a.Repo.Source.Git.Urls
 			node.Properties["chartPath"] = a.Repo.Source.Git.ChartPath
 			node.Properties["branch"] = a.Repo.Source.Git.Branch
-		} else if a.Repo.Source.SourceType == "HelmRepo" {
+		} else if strings.EqualFold(sourceType, "HelmRepo") {
 			node.Properties["url"] = a.Repo.Source.HelmRepo.Urls
 		}
 	}
