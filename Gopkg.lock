@@ -358,12 +358,12 @@
   version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
 
 [[projects]]
-  digest = "1:f2aa20f337471e74c2ba11f748b3b3f48be0381994e2e028d2c0841a7bc5765e"
+  branch = "master"
+  digest = "1:ab7c724dcb5b3ff64f126b4e3e2579e6321f4ba5658e0bd9ef7d109610f47bfe"
   name = "github.com/open-cluster-management/multicloud-operators-deployable"
   packages = ["pkg/apis/apps/v1"]
   pruneopts = "UT"
-  revision = "99e6d24dba9653de885a8c5ea6474dd3734556d8"
-  version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
+  revision = "1e78c3fec15c5b38d8338a72143188461a52b3b7"
 
 [[projects]]
   branch = "master"
@@ -377,22 +377,23 @@
   revision = "0b442005ec4f0664fd1e18d271a97814ab2fc2c6"
 
 [[projects]]
-  digest = "1:2dd0e6d6ced7d7af29f079396aa474be8cba5ed78f03fc0f53f06fd1269c27d2"
+  branch = "master"
+  digest = "1:74145b1932e1618ab70674d2f489905b9904bb297b536e212179d672ef859129"
   name = "github.com/open-cluster-management/multicloud-operators-placementrule"
   packages = ["pkg/apis/apps/v1"]
   pruneopts = "UT"
-  revision = "e52bfdcb25bbc678b093f9126fa85723f7fe0dbd"
-  version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
+  revision = "21bfb6373fc4b3b58d958c10da215c8a68f90986"
 
 [[projects]]
-  digest = "1:1be379453d86786d7ffe22108db16436f52e156f1cd92ff1dca1732fc9aa863a"
+  branch = "master"
+  digest = "1:36b7f41eca979a911b2530e800fb811534c1378c6b480a4feed58b8d16776ddc"
   name = "github.com/open-cluster-management/multicloud-operators-subscription"
   packages = ["pkg/apis/apps/v1"]
   pruneopts = "UT"
-  revision = "2ae5b7a4101b8eb5b1f8c097be135adb69c0a99c"
-  version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
+  revision = "8b379e80f7cb72aa5210c8b331667d5b4671da28"
 
 [[projects]]
+  branch = "master"
   digest = "1:85f1636ce81400f4742addda9b190cbd86ddf8bdc06c34cbff98fcda7a5f874e"
   name = "github.com/open-cluster-management/multicloud-operators-subscription-release"
   packages = ["pkg/apis/apps/v1"]

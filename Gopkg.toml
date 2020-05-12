@@ -41,22 +41,22 @@
   name = "github.com/open-cluster-management/multicloud-operators-foundation"
   branch = "master"
   
-# [[constraint]]
-#   name = "github.com/open-cluster-management/multicloud-operators-deployable"
-#   branch = "master"
+[[constraint]]
+  name = "github.com/open-cluster-management/multicloud-operators-deployable"
+  branch = "master"
 
-# [[constraint]]
-#   name = "github.com/open-cluster-management/multicloud-operators-placementrule"
+[[constraint]]
+  name = "github.com/open-cluster-management/multicloud-operators-placementrule"
+  branch = "master"
 #   source = "github.com/open-cluster-management/multicloud-operators-placementrule.git"
-#   branch = "master"
 
-# [[constraint]]
-#   name = "github.com/open-cluster-management/multicloud-operators-subscription"
-#   branch = "master"
+[[constraint]]
+  name = "github.com/open-cluster-management/multicloud-operators-subscription"
+  branch = "master"
 
-# [[override]]
-#   name = "github.com/open-cluster-management/multicloud-operators-subscription-release"
-#   branch = "master"
+[[constraint]]
+  name = "github.com/open-cluster-management/multicloud-operators-subscription-release"
+  branch = "master"
 
 [[constraint]]
   name = "gopkg.in/yaml.v2"
