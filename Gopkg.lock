@@ -350,12 +350,12 @@
   revision = "fae5770269dee71ea29bcb63467bb523dd50c60d"
 
 [[projects]]
-  digest = "1:158aefad1eb3d2fef766154eaa71c81ae92f8d26cfc83867c73793f840683426"
+  branch = "master"
+  digest = "1:617b0606da22cc6213ecc11c7457f23559b1c886bf3aa5cbdd0be3c24fbed35c"
   name = "github.com/open-cluster-management/multicloud-operators-channel"
   packages = ["pkg/apis/apps/v1"]
   pruneopts = "UT"
-  revision = "cc76bc5019c1085466ed1c94a9529f2d4be55a23"
-  version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
+  revision = "1cf12e102ba6f5e4aec675335381ab070f3566ee"
 
 [[projects]]
   branch = "master"

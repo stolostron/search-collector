@@ -25,6 +25,10 @@ var (
 	KeyChannelSource = SchemeGroupVersion.Group + "/hosting-deployable"
 	// KeyChannel is namespacedname tells the source of the channel
 	KeyChannel = SchemeGroupVersion.Group + "/channel"
+	// KeyChannelType is the type of the source of the channel
+	KeyChannelType = SchemeGroupVersion.Group + "/channel-type"
+	// KeyChannelPath is the filter reference path of GitHub type channel
+	KeyChannelPath = SchemeGroupVersion.Group + "/channel-path"
 	// ServingChannel tells the channel that the secrect or configMap refers to
 	ServingChannel = SchemeGroupVersion.Group + "/serving-channel"
 )
@@ -41,6 +45,8 @@ const (
 	ChannelTypeObjectBucket = "objectbucket"
 	// ChannelTypeGitHub defines type name of GitHub repository
 	ChannelTypeGitHub = "github"
+	// ChannelTypeGit defines type name of Git repository
+	ChannelTypeGit = "git"
 )
 
 // ChannelGate defines criteria for promote to channel
@@ -54,7 +60,7 @@ type ChannelGate struct {
 type ChannelSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	// +kubebuilder:validation:Enum={Namespace,HelmRepo,ObjectBucket,GitHub,namespace,helmrepo,objectbucket,github}
+	// +kubebuilder:validation:Enum={Namespace,HelmRepo,ObjectBucket,GitHubGit,namespace,helmrepo,objectbucket,github,git}
 	Type         ChannelType             `json:"type"`
 	Pathname     string                  `json:"pathname"`
 	SecretRef    *corev1.ObjectReference `json:"secretRef,omitempty"`
