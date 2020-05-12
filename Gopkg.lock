@@ -10,47 +10,6 @@
   version = "v0.3.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:17edac5a7b7de898d2715e19b072ee35270aac42475495313b4fc369aea82068"
-  name = "github.com/IBM/multicloud-operators-channel"
-  packages = ["pkg/apis/app/v1alpha1"]
-  pruneopts = "UT"
-  revision = "a2f214df83fc689b29e9754a5eedf6e8c6c066df"
-
-[[projects]]
-  branch = "master"
-  digest = "1:376e971db2b76f4139b7ff33e2700e58472396321c15c7d06a72e33a5811e4d2"
-  name = "github.com/IBM/multicloud-operators-deployable"
-  packages = ["pkg/apis/app/v1alpha1"]
-  pruneopts = "UT"
-  revision = "a429faaac3b4f41434b9ac37aa75dde152a94e2a"
-
-[[projects]]
-  branch = "master"
-  digest = "1:1c357d88de71be0a85848718ebba59194e904c4547693d450035cbd58a1aef3f"
-  name = "github.com/IBM/multicloud-operators-placementrule"
-  packages = ["pkg/apis/app/v1alpha1"]
-  pruneopts = "UT"
-  revision = "80eeda99597f326b937de0a7bbe79177d6aa2914"
-  source = "github.com/IBM/multicloud-operators-placementrule.git"
-
-[[projects]]
-  branch = "master"
-  digest = "1:62cc848b0d0c3b3248e8130e1bc86918f557c2363ef23f3b650a560cacf4ad56"
-  name = "github.com/IBM/multicloud-operators-subscription"
-  packages = ["pkg/apis/app/v1alpha1"]
-  pruneopts = "UT"
-  revision = "6543602ecfce117a4c4ff8a0edad2882af0ce0ed"
-
-[[projects]]
-  branch = "master"
-  digest = "1:3cf9c40970d5cf0c1e7aea820dabfad5e59b38aab81fb0086e694caf7ea4a4e8"
-  name = "github.com/IBM/multicloud-operators-subscription-release"
-  packages = ["pkg/apis/app/v1alpha1"]
-  pruneopts = "UT"
-  revision = "d79fb0fd582bc5d8984f181a19c19f54e146fa68"
-
-[[projects]]
   digest = "1:3b10c6fd33854dc41de2cf78b7bae105da94c2789b6fa5b9ac9e593ea43484ac"
   name = "github.com/Masterminds/goutils"
   packages = ["."]
@@ -391,6 +350,22 @@
   revision = "fae5770269dee71ea29bcb63467bb523dd50c60d"
 
 [[projects]]
+  digest = "1:158aefad1eb3d2fef766154eaa71c81ae92f8d26cfc83867c73793f840683426"
+  name = "github.com/open-cluster-management/multicloud-operators-channel"
+  packages = ["pkg/apis/apps/v1"]
+  pruneopts = "UT"
+  revision = "cc76bc5019c1085466ed1c94a9529f2d4be55a23"
+  version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
+
+[[projects]]
+  digest = "1:f2aa20f337471e74c2ba11f748b3b3f48be0381994e2e028d2c0841a7bc5765e"
+  name = "github.com/open-cluster-management/multicloud-operators-deployable"
+  packages = ["pkg/apis/apps/v1"]
+  pruneopts = "UT"
+  revision = "99e6d24dba9653de885a8c5ea6474dd3734556d8"
+  version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
+
+[[projects]]
   branch = "master"
   digest = "1:13154ef01f01c6ece8021ac93f7a97ab65937e7b6e6fa90c459eb4000c1c8f53"
   name = "github.com/open-cluster-management/multicloud-operators-foundation"
@@ -400,6 +375,29 @@
   ]
   pruneopts = "UT"
   revision = "0b442005ec4f0664fd1e18d271a97814ab2fc2c6"
+
+[[projects]]
+  digest = "1:2dd0e6d6ced7d7af29f079396aa474be8cba5ed78f03fc0f53f06fd1269c27d2"
+  name = "github.com/open-cluster-management/multicloud-operators-placementrule"
+  packages = ["pkg/apis/apps/v1"]
+  pruneopts = "UT"
+  revision = "e52bfdcb25bbc678b093f9126fa85723f7fe0dbd"
+  version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
+
+[[projects]]
+  digest = "1:1be379453d86786d7ffe22108db16436f52e156f1cd92ff1dca1732fc9aa863a"
+  name = "github.com/open-cluster-management/multicloud-operators-subscription"
+  packages = ["pkg/apis/apps/v1"]
+  pruneopts = "UT"
+  revision = "2ae5b7a4101b8eb5b1f8c097be135adb69c0a99c"
+  version = "3.5.0-SNAPSHOT-2020-03-12-20-43-45"
+
+[[projects]]
+  digest = "1:85f1636ce81400f4742addda9b190cbd86ddf8bdc06c34cbff98fcda7a5f874e"
+  name = "github.com/open-cluster-management/multicloud-operators-subscription-release"
+  packages = ["pkg/apis/apps/v1"]
+  pruneopts = "UT"
+  revision = "66060e9e1ccfd8b9ff00194bcbf635705cb823ec"
 
 [[projects]]
   branch = "0.6.1"
@@ -952,11 +950,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1",
-    "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1",
-    "github.com/IBM/multicloud-operators-placementrule/pkg/apis/app/v1alpha1",
-    "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1",
-    "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1",
     "github.com/golang/glog",
     "github.com/golang/groupcache/lru",
     "github.com/golang/protobuf/ptypes",
@@ -966,7 +959,12 @@
     "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1",
     "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1",
     "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1",
+    "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1",
+    "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1",
     "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1",
+    "github.com/open-cluster-management/multicloud-operators-placementrule/pkg/apis/apps/v1",
+    "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1",
+    "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1",
     "github.com/tkanos/gonfig",
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1",

@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	app "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
+	app "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
 )
 
 //TODO: Might have to update the json for testing once we have a live example
