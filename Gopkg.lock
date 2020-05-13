@@ -350,7 +350,7 @@
   revision = "fae5770269dee71ea29bcb63467bb523dd50c60d"
 
 [[projects]]
-  branch = "master"
+  branch = "release-1.0.0"
   digest = "1:617b0606da22cc6213ecc11c7457f23559b1c886bf3aa5cbdd0be3c24fbed35c"
   name = "github.com/open-cluster-management/multicloud-operators-channel"
   packages = ["pkg/apis/apps/v1"]
@@ -358,7 +358,7 @@
   revision = "1cf12e102ba6f5e4aec675335381ab070f3566ee"
 
 [[projects]]
-  branch = "master"
+  branch = "release-1.0.0"
   digest = "1:ab7c724dcb5b3ff64f126b4e3e2579e6321f4ba5658e0bd9ef7d109610f47bfe"
   name = "github.com/open-cluster-management/multicloud-operators-deployable"
   packages = ["pkg/apis/apps/v1"]
@@ -366,7 +366,7 @@
   revision = "1e78c3fec15c5b38d8338a72143188461a52b3b7"
 
 [[projects]]
-  branch = "master"
+  branch = "release-1.0.0"
   digest = "1:13154ef01f01c6ece8021ac93f7a97ab65937e7b6e6fa90c459eb4000c1c8f53"
   name = "github.com/open-cluster-management/multicloud-operators-foundation"
   packages = [
@@ -377,7 +377,7 @@
   revision = "0b442005ec4f0664fd1e18d271a97814ab2fc2c6"
 
 [[projects]]
-  branch = "master"
+  branch = "release-1.0.0"
   digest = "1:74145b1932e1618ab70674d2f489905b9904bb297b536e212179d672ef859129"
   name = "github.com/open-cluster-management/multicloud-operators-placementrule"
   packages = ["pkg/apis/apps/v1"]
@@ -385,7 +385,7 @@
   revision = "21bfb6373fc4b3b58d958c10da215c8a68f90986"
 
 [[projects]]
-  branch = "master"
+  branch = "release-1.0.0"
   digest = "1:36b7f41eca979a911b2530e800fb811534c1378c6b480a4feed58b8d16776ddc"
   name = "github.com/open-cluster-management/multicloud-operators-subscription"
   packages = ["pkg/apis/apps/v1"]
@@ -393,7 +393,7 @@
   revision = "8b379e80f7cb72aa5210c8b331667d5b4671da28"
 
 [[projects]]
-  branch = "master"
+  branch = "master" #TODO: Change to release branch once release2.0 branch is in place
   digest = "1:85f1636ce81400f4742addda9b190cbd86ddf8bdc06c34cbff98fcda7a5f874e"
   name = "github.com/open-cluster-management/multicloud-operators-subscription-release"
   packages = ["pkg/apis/apps/v1"]
