@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	app "github.com/IBM/multicloud-operators-deployable/pkg/apis/app/v1alpha1"
+	app "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1"
 )
 
 func TestTransformAppDeployable(t *testing.T) {

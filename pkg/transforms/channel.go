@@ -8,7 +8,7 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	app "github.com/IBM/multicloud-operators-channel/pkg/apis/app/v1alpha1"
+	app "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
 )
 
 type ChannelResource struct {
@@ -20,7 +20,7 @@ func (c ChannelResource) BuildNode() Node {
 	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 	node.Properties["type"] = string(c.Spec.Type)
-	node.Properties["pathname"] = c.Spec.PathName
+	node.Properties["pathname"] = c.Spec.Pathname
 
 	return node
 }

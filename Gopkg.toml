@@ -39,24 +39,23 @@
 
 [[constraint]]
   name = "github.com/open-cluster-management/multicloud-operators-foundation"
-  branch = "master"
+  branch = "release-1.0.0"
   
 [[constraint]]
-  name = "github.com/IBM/multicloud-operators-deployable"
-  branch = "master"
+  name = "github.com/open-cluster-management/multicloud-operators-deployable"
+  branch = "release-1.0.0"
 
 [[constraint]]
-  name = "github.com/IBM/multicloud-operators-placementrule"
-  source = "github.com/IBM/multicloud-operators-placementrule.git"
-  branch = "master"
+  name = "github.com/open-cluster-management/multicloud-operators-placementrule"
+  branch = "release-1.0.0"
 
 [[constraint]]
-  name = "github.com/IBM/multicloud-operators-subscription"
-  branch = "master"
+  name = "github.com/open-cluster-management/multicloud-operators-subscription"
+  branch = "release-1.0.0"
 
 [[constraint]]
-  name = "github.com/IBM/multicloud-operators-subscription-release"
-  branch = "master"
+  name = "github.com/open-cluster-management/multicloud-operators-subscription-release"
+  branch = "master" #TODO: Change to release branch once release2.0 branch is in place
 
 [[constraint]]
   name = "gopkg.in/yaml.v2"

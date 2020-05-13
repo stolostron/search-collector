@@ -10,7 +10,7 @@ package transforms
 import (
 	"testing"
 
-	v1 "github.com/IBM/multicloud-operators-subscription/pkg/apis/app/v1alpha1"
+	v1 "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1"
 )
 
 func TestTransformSubscription(t *testing.T) {

@@ -8,7 +8,9 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	app "github.com/IBM/multicloud-operators-subscription-release/pkg/apis/app/v1alpha1"
+	"strings"
+
+	app "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
 )
 
 type AppHelmCRResource struct {
@@ -18,15 +20,21 @@ type AppHelmCRResource struct {
 func (a AppHelmCRResource) BuildNode() Node {
 	node := transformCommon(a)         // Start off with the common properties
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
+
 	// Add other properties
-	if a.Spec.Source != nil && a.Spec.Source.SourceType != "" {
-		node.Properties["sourceType"] = a.Spec.Source.SourceType
-		if a.Spec.Source.SourceType == "GitHub" {
-			node.Properties["url"] = a.Spec.Source.GitHub.Urls
-			node.Properties["chartPath"] = a.Spec.Source.GitHub.ChartPath
-			node.Properties["branch"] = a.Spec.Source.GitHub.Branch
-		} else if a.Spec.Source.SourceType == "HelmRepo" {
-			node.Properties["url"] = a.Spec.Source.HelmRepo.Urls
+	if a.Repo.Source != nil && a.Repo.Source.SourceType != "" {
+		node.Properties["sourceType"] = a.Repo.Source.SourceType
+		sourceType := string(a.Repo.Source.SourceType)
+		if strings.EqualFold(sourceType, "github") {
+			node.Properties["url"] = a.Repo.Source.GitHub.Urls
+			node.Properties["chartPath"] = a.Repo.Source.GitHub.ChartPath
+			node.Properties["branch"] = a.Repo.Source.GitHub.Branch
+		} else if strings.EqualFold(sourceType, "git") {
+			node.Properties["url"] = a.Repo.Source.Git.Urls
+			node.Properties["chartPath"] = a.Repo.Source.Git.ChartPath
+			node.Properties["branch"] = a.Repo.Source.Git.Branch
+		} else if strings.EqualFold(sourceType, "HelmRepo") {
+			node.Properties["url"] = a.Repo.Source.HelmRepo.Urls
 		}
 	}
 	return node
@@ -45,17 +53,17 @@ func (a AppHelmCRResource) BuildEdges(ns NodeStore) []Edge {
 		releaseMap[a.ObjectMeta.Name] = struct{}{}
 		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
 	}
-	if a.Spec.SecretRef != nil {
+	if a.Repo.SecretRef != nil {
 		secretMap := make(map[string]struct{})
-		if a.Spec.SecretRef.Name != "" {
-			secretMap[a.Spec.SecretRef.Name] = struct{}{}
+		if a.Repo.SecretRef.Name != "" {
+			secretMap[a.Repo.SecretRef.Name] = struct{}{}
 			ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
 		}
 	}
-	if a.Spec.ConfigMapRef != nil {
+	if a.Repo.ConfigMapRef != nil {
 		configmapMap := make(map[string]struct{})
-		if a.Spec.ConfigMapRef.Name != "" {
-			configmapMap[a.Spec.ConfigMapRef.Name] = struct{}{}
+		if a.Repo.ConfigMapRef.Name != "" {
+			configmapMap[a.Repo.ConfigMapRef.Name] = struct{}{}
 			ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
 		}
 	}
