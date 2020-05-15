@@ -56,12 +56,17 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 
 // Transforms a resource of unknown type by simply pulling out the common properties.
 func transformCommon(resource machineryV1.Object) Node {
+	ownerKind := ""
 	n := Node{
 		UID:        prefixedUID(resource.GetUID()),
 		Properties: commonProperties(resource),
 		Metadata:   make(map[string]string),
 	}
-	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
+	n.Metadata["OwnerUID"], ownerKind = ownerRefUID(resource.GetOwnerReferences())
+	if n.Metadata["OwnerUID"] != "" {
+		n.Properties["_ownerUID"] = n.Metadata["OwnerUID"]
+		n.Properties["_ownerKind"] = ownerKind
+	}
 	return n
 }
 
@@ -107,12 +112,17 @@ type UnstructuredResource struct {
 }
 
 func (u UnstructuredResource) BuildNode() Node {
+	ownerKind := ""
 	n := Node{
 		UID:        prefixedUID(u.GetUID()),
 		Properties: unstructuredProperties(u),
 		Metadata:   make(map[string]string),
 	}
-	n.Metadata["OwnerUID"] = ownerRefUID(u.GetOwnerReferences())
+	n.Metadata["OwnerUID"], ownerKind = ownerRefUID(u.GetOwnerReferences())
+	if n.Metadata["OwnerUID"] != "" {
+		n.Properties["_ownerUID"] = n.Metadata["OwnerUID"]
+		n.Properties["_ownerKind"] = ownerKind
+	}
 	return n
 }
 
@@ -154,15 +164,17 @@ func prefixedUID(uid apiTypes.UID) string {
 // }
 
 // Prefixes the given UID with the cluster name from config and a /
-func ownerRefUID(ownerReferences []machineryV1.OwnerReference) string {
+func ownerRefUID(ownerReferences []machineryV1.OwnerReference) (string, string) {
 	ownerUID := ""
+	ownerKind := ""
 	for _, ref := range ownerReferences {
 		if ref.Controller != nil && *ref.Controller {
 			ownerUID = prefixedUID(ref.UID)
-			continue
+			ownerKind = ref.Kind
+			break
 		}
 	}
-	return ownerUID
+	return ownerUID, ownerKind
 }
 
 type NodeInfo struct {
