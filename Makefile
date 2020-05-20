@@ -19,7 +19,6 @@ deps:
 	GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.24.0
 	GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
 	dep ensure -v
-	# go install ./vendor/github.com/golangci/golangci-lint/cmd/golangci-lint
 
 .PHONY: search-collector
 search-collector:
