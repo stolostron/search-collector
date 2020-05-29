@@ -23,7 +23,7 @@ func (i InsightResource) BuildNode() Node {
 	description, _, _ := unstructured.NestedString(i.UnstructuredContent(), "spec", "problem", "description")
 	node.Properties["description"] = description
 	
-	confidence, _, _ := unstructured.NestedString(i.UnstructuredContent(), "spec", "problem", "confidence")
+	confidence, _, _ := unstructured.NestedInt(i.UnstructuredContent(), "spec", "problem", "confidence")
 	node.Properties["confidence"] = confidence
 
 	solutions, _, _ := unstructured.NestedSlice(i.UnstructuredContent(), "spec", "solutions")
