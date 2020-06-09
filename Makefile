@@ -16,9 +16,8 @@ default::
 
 .PHONY: deps
 deps:
+	GO111MODULE=on go mod tidy
 	GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.24.0
-	GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
-	dep ensure -v
 
 .PHONY: search-collector
 search-collector:
