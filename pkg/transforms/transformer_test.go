@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
+	// v1 "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -21,11 +21,11 @@ func TestTransformRoutine(t *testing.T) {
 
 	// generate input and output test nodes
 	ts := time.Now().Unix()
-	var appTyped v1.Application
+	// var appTyped v1.Application
 	var appInput unstructured.Unstructured
-	UnmarshalFile("application.json", &appTyped, t)
+	// UnmarshalFile("application.json", &appTyped, t)
 	UnmarshalFile("application.json", &appInput, t)
-	appNode := ApplicationResource{&appTyped}.BuildNode()
+	// appNode := ApplicationResource{&appTyped}.BuildNode()
 
 	unstructuredInput := unstructured.Unstructured{
 		Object: map[string]interface{}{

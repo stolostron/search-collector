@@ -8,11 +8,11 @@ The source code for this program is not published or otherwise divested of its t
 package transforms
 
 import (
-	mcm "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
+	p "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policies/v1"
 )
 
 type PolicyResource struct {
-	*mcm.Policy
+	*p.Policy
 }
 
 func (p PolicyResource) BuildNode() Node {
@@ -21,16 +21,18 @@ func (p PolicyResource) BuildNode() Node {
 	// Extract the properties specific to this type
 	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
 	node.Properties["compliant"] = string(p.Status.ComplianceState)
-	node.Properties["valid"] = p.Status.Valid
+	// FIXME! DONT MERGE WITH THIS
+	// node.Properties["valid"] = p.Status.Valid
 
 	rules := int64(0)
-	if p.Spec.RoleTemplates != nil {
-		for _, role := range p.Spec.RoleTemplates {
-			if role != nil {
-				rules += int64(len(role.Rules))
-			}
-		}
-	}
+	// FIXME! DONT MERGE WITH THIS
+	// if p.Spec.RoleTemplates != nil {
+	// 	for _, role := range p.Spec.RoleTemplates {
+	// 		if role != nil {
+	// 			rules += int64(len(role.Rules))
+	// 		}
+	// 	}
+	// }
 	node.Properties["numRules"] = rules
 	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"]
 	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]

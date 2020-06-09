@@ -10,11 +10,11 @@ package transforms
 import (
 	"testing"
 
-	mcm "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
+	policy "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policies/v1"
 )
 
 func TestTransformPolicy(t *testing.T) {
-	var p mcm.Policy
+	var p policy.Policy
 	UnmarshalFile("policy.json", &p, t)
 	node := PolicyResource{&p}.BuildNode()
 

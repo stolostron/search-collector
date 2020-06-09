@@ -20,13 +20,10 @@ import (
 	appHelmRelease "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
 	subscription "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1"
 
-	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
+	// app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 
-	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
-	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
+	policy "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policies/v1"
 	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
-
-	helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
@@ -183,13 +180,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		kindApigroup := [2]string{event.Resource.GetKind(), apiGroup}
 		//TODO: Might have to add more transform cases if resources like DaemonSet, StatefulSet etc. have other apigroups
 		switch kindApigroup {
-		case [2]string{"Application", "app.k8s.io"}:
-			typedResource := app.Application{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ApplicationResource{&typedResource}
+		// case [2]string{"Application", "app.k8s.io"}:
+		// 	typedResource := app.Application{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = ApplicationResource{&typedResource}
 
 		case [2]string{"Channel", "app.ibm.com"}, [2]string{"Channel", "apps.open-cluster-management.io"}:
 			typedResource := mcmapp.Channel{}
@@ -199,13 +196,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ChannelResource{&typedResource}
 
-		case [2]string{"Compliance", "compliance.mcm.ibm.com"}, [2]string{"Compliance", "apps.open-cluster-management.io"}:
-			typedResource := com.Compliance{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ComplianceResource{&typedResource}
+		// case [2]string{"Compliance", "compliance.mcm.ibm.com"}, [2]string{"Compliance", "apps.open-cluster-management.io"}:
+		// 	typedResource := com.Compliance{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = ComplianceResource{&typedResource}
 
 		case [2]string{"CronJob", "batch"}:
 			typedResource := batchBeta.CronJob{}
@@ -274,13 +271,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = AppHelmCRResource{&typedResource}
 
 		//This is the application's HelmCR of kind HelmRelease
-		case [2]string{"HelmRelease", "helm.bitnami.com"}:
-			typedResource := helmRelease.HelmRelease{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = HelmCRResource{&typedResource}
+		// case [2]string{"HelmRelease", "helm.bitnami.com"}:
+		// 	typedResource := helmRelease.HelmRelease{}
+		// 	err = json.Unmarshal(j, &typedResource)
+		// 	if err != nil {
+		// 		panic(err) // Will be caught by handleRoutineExit
+		// 	}
+		// 	trans = HelmCRResource{&typedResource}
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
