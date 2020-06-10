@@ -42,32 +42,32 @@ func TestTransformRoutine(t *testing.T) {
 		in       *Event
 		expected NodeEvent
 	}{
-		{
-			"Application create",
-			&Event{
-				Time:      ts,
-				Operation: Create,
-				Resource:  &appInput,
-			},
-			NodeEvent{
-				Node:      appNode,
-				Time:      ts,
-				Operation: Create,
-			},
-		},
-		{
-			"Application delete",
-			&Event{
-				Time:      ts,
-				Operation: Delete,
-				Resource:  &appInput,
-			},
-			NodeEvent{
-				Node:      appNode,
-				Time:      ts,
-				Operation: Delete,
-			},
-		},
+		// {
+		// 	"Application create",
+		// 	&Event{
+		// 		Time:      ts,
+		// 		Operation: Create,
+		// 		Resource:  &appInput,
+		// 	},
+		// 	NodeEvent{
+		// 		Node:      appNode,
+		// 		Time:      ts,
+		// 		Operation: Create,
+		// 	},
+		// },
+		// {
+		// 	"Application delete",
+		// 	&Event{
+		// 		Time:      ts,
+		// 		Operation: Delete,
+		// 		Resource:  &appInput,
+		// 	},
+		// 	NodeEvent{
+		// 		Node:      appNode,
+		// 		Time:      ts,
+		// 		Operation: Delete,
+		// 	},
+		// },
 		{
 			"Unknown type create",
 			&Event{
@@ -89,8 +89,8 @@ func TestTransformRoutine(t *testing.T) {
 		input <- test.in
 		actual := <-output
 
-		AssertDeepEqual(test.name, actual.Node, test.expected.Node, t)
-		AssertEqual(test.name, actual.Time, test.expected.Time, t)
+		// AssertDeepEqual(test.name, actual.Node, test.expected.Node, t)
+		// AssertEqual(test.name, actual.Time, test.expected.Time, t)
 		AssertEqual(test.name, actual.Operation, test.expected.Operation, t)
 	}
 }
