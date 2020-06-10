@@ -21,7 +21,7 @@ deps:
 
 .PHONY: search-collector
 search-collector:
-	CGO_ENABLED=0 go build -a -v -i -installsuffix cgo -ldflags '-s -w' -o $(BINDIR)/search-collector ./
+	GO111MODULE=on CGO_ENABLED=0 go build -a -v -i -installsuffix cgo -ldflags '-s -w' -o $(BINDIR)/search-collector ./
 
 .PHONY: build
 build: search-collector
@@ -32,7 +32,7 @@ build-linux:
 
 .PHONY: lint
 lint:
-	golangci-lint run --timeout=2m
+	GO111MODULE=on golangci-lint run --timeout=2m
 
 .PHONY: test
 test:
