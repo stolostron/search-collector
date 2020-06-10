@@ -17,7 +17,6 @@ default::
 .PHONY: deps
 deps:
 	GO111MODULE=on go mod tidy
-	GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.24.0
 
 .PHONY: search-collector
 search-collector:
@@ -32,7 +31,9 @@ build-linux:
 
 .PHONY: lint
 lint:
-	echo "Lint disabled..."
+	# FIXME: WORKAROUND to get good build. Don't merge with this.
+	echo "!!!!!  Lint disabled...  !!!!"
+	# GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.24.0
 	# GO111MODULE=on golangci-lint run --timeout=2m
 
 .PHONY: test

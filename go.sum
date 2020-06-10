@@ -918,8 +918,6 @@ github.com/open-cluster-management/multicloud-operators-subscription v1.0.0 h1:B
 github.com/open-cluster-management/multicloud-operators-subscription v1.0.0/go.mod h1:ExazdvjldD5P1Z/vnzEVEahp21yuccKYxnZLDGylwVM=
 github.com/open-cluster-management/multicloud-operators-subscription-release v0.0.0-20200421184321-05020fc22ab1 h1:1M2HktSLByB5fbEvRqOKbh5sVfdX+t1i7wVhxwZs5QM=
 github.com/open-cluster-management/multicloud-operators-subscription-release v0.0.0-20200421184321-05020fc22ab1/go.mod h1:010FegcFz2+Ny9eNGy2Z9joudpnZKBVW3wBa0L9VQRs=
-github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.0 h1:rAcKQNUB0cQ5AAw+I/A/50B27aZao1ROkoulxH03HeU=
-github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.0/go.mod h1:010FegcFz2+Ny9eNGy2Z9joudpnZKBVW3wBa0L9VQRs=
 github.com/opencontainers/go-digest v0.0.0-20170106003457-a6d0ee40d420/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=
 github.com/opencontainers/go-digest v0.0.0-20180430190053-c9281466c8b2/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=
 github.com/opencontainers/go-digest v1.0.0-rc1/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=
