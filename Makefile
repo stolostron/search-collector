@@ -37,11 +37,11 @@ lint:
 
 .PHONY: test
 test:
-	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
+	GO111MODULE=on DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
 
 .PHONY: coverage
 coverage:
-	go tool cover -html=cover.out -o=cover.html
+	GO111MODULE=on go tool cover -html=cover.out -o=cover.html
 
 .PHONY: copyright-check
 copyright-check:
