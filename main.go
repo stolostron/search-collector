@@ -34,9 +34,10 @@ import (
 
 func main() {
 
+	// determine number of CPUs available.
 	// We make that many goroutines for transformation and reconciliation, so that we take maximum advantage of
 	// whatever hardware we're on
-	numThreads := runtime.NumCPU() // determine number of CPUs available.
+	numThreads := runtime.NumCPU()
 
 	glog.Info("Starting Data Collector")
 	if commit, ok := os.LookupEnv("VCS_REF"); ok {
@@ -253,8 +254,8 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 	// Filter down to only resources which support WATCH operations.
 	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
-		watchList := machineryV1.APIResourceList{}
 		// This is a copy of apiList but we only insert resources for which GET is supported.
+		watchList := machineryV1.APIResourceList{}
 		watchList.GroupVersion = apiList.GroupVersion
 		watchResources := []machineryV1.APIResource{}      // All the resources for which GET works.
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
