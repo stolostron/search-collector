@@ -35,6 +35,12 @@ env:
     - DEPLOYED_IN_HUB=true # For sonar
     - GO111MODULE=on
 
+cache:
+  directories:
+    - "/home/travis/gopath/pkg/mod"
+# before_cache:
+#   - rm -f "/home/travis/gopath/src/github.com/open-cluster-management/search-collector"
+
 
 stages:
   - build
@@ -42,12 +48,6 @@ stages:
   - test-e2e
   - release-ff
   - publish
-
-cache:
-  directories:
-    - "/home/travis/gopath/pkg/mod"
-# before_cache:
-#   - rm -f "/home/travis/gopath/src/github.com/open-cluster-management/search-collector"
 
 before_script:
   # Bootstrap the build harness.
@@ -62,27 +62,25 @@ jobs:
     - stage: build
       name: "Build the image and run unit tests"
       script:
-        # - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
         - make component/build
         - make component/push
     - stage: unit-test
       name: "Run unit tests"
       script:
-        # Pull test image, and run unit tests.
+        # Run unit tests, upload coverage to sonar, and run security scans.
         - make copyright-check
-        - make component/pull 
+        # - make component/pull 
         - make component/test/unit
         - make sonar/go 
+        - make security/scans
     - stage: test-e2e
       name: "Deploy the image to a cluster and run e2e tests"
       if: type = pull_request
       script:
-        #Check out a clusterpool, set up oc, deploy, run e2e tests, and return clusterpool cluster
-        # - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
-        - make deps
-        - make component/pull 
+        # Run e2e tests and security scans.
+        # - make deps
+        # - make component/pull 
         - make component/test/e2e
-        - make security/scans
 
     - stage: release-ff
       name: "Push commits to current release branch"
