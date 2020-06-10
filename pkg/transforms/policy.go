@@ -21,19 +21,17 @@ func (p PolicyResource) BuildNode() Node {
 	// Extract the properties specific to this type
 	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
 	node.Properties["compliant"] = string(p.Status.ComplianceState)
+	
 	// FIXME! DONT MERGE WITH THIS
-	// node.Properties["valid"] = p.Status.Valid
-
-	rules := int64(0)
-	// FIXME! DONT MERGE WITH THIS
-	// if p.Spec.RoleTemplates != nil {
-	// 	for _, role := range p.Spec.RoleTemplates {
-	// 		if role != nil {
-	// 			rules += int64(len(role.Rules))
+	// rules := int64(0)
+	// if p.Status.Details != nil {
+	// 	for _, rule := range p.Status.Details {
+	// 		if rule != nil {
+	// 			rules += int64(len(rule.))
 	// 		}
 	// 	}
 	// }
-	node.Properties["numRules"] = rules
+	node.Properties["numRules"] = len(p.Status.Details)
 	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"]
 	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]
 	if okns && okpp {
