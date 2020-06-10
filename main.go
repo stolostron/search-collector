@@ -34,7 +34,10 @@ import (
 
 func main() {
 
-	numThreads := runtime.NumCPU() // determine number of CPUs available. We make that many goroutines for transformation and reconciliation, so that we take maximum advantage of whatever hardware we're on
+	numThreads := runtime.NumCPU() // determine number of CPUs available.
+	/* We make that many goroutines for transformation and reconciliation, so that we take maximum advantage of
+	whatever hardware we're on */
+
 	glog.Info("Starting Data Collector")
 	if commit, ok := os.LookupEnv("VCS_REF"); ok {
 		glog.Info("Built from git commit: ", commit)
@@ -77,7 +80,8 @@ func main() {
 	}
 
 	// Create informer factories
-	dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClientset, 0) // factory for building dynamic informer objects used with CRDs and arbitrary k8s objects
+	/* factory for building dynamic informer objects used with CRDs and arbitrary k8s objects */
+	dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClientset, 0)
 
 	// Create special type of client used for discovering resource types
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(clientConfig)
@@ -136,7 +140,9 @@ func main() {
 		}
 	}
 
-	stoppers := make(map[schema.GroupVersionResource]chan struct{}) // We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
+	// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
+	stoppers := make(map[schema.GroupVersionResource]chan struct{})
+
 	// Start a routine to keep our informers up to date.
 	go func() {
 		for {
@@ -148,8 +154,10 @@ func main() {
 			// Sometimes a partial list will be returned even if there is an error.
 			// This could happen during install when a CRD hasn't fully initialized.
 			if gvrList != nil {
-				// Loop through the previous list of resources. If we find the entry in the new list we delete it so that we don't end up with 2 informers.
-				// If we don't find it, we stop the informer that's currently running because the resource no longer exists (or no longer supports watch).
+				/* Loop through the previous list of resources. If we find the entry in the new list we delete it so
+				that we don't end up with 2 informers. If we don't find it, we stop the informer that's currently
+				running because the resource no longer exists (or no longer supports watch).
+				*/
 				for gvr, stopper := range stoppers {
 					// If this still exists in the new list, delete it from there as we don't want to recreate an informer
 					if _, ok := gvrList[gvr]; ok {
@@ -161,7 +169,9 @@ func main() {
 						delete(stoppers, gvr)
 					}
 				}
-				// Now, loop through the new list, which after the above deletions, contains only stuff that needs to have a new informer created for it.
+				/* Now, loop through the new list, which after the above deletions, contains only stuff that needs to
+				have a new informer created for it.
+				*/
 				for gvr := range gvrList {
 					// In this case we need to create a dynamic informer, since there is no built in informer for this type.
 					dynamicInformer := dynamicFactory.ForResource(gvr)
@@ -186,7 +196,9 @@ func main() {
 	}()
 
 	// Start a routine to send data every interval.
-	backoffFactor := float64(0) // Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
+	backoffFactor := float64(0)
+	/* Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
+	 */
 	go func() {
 		// First time send after 15 seconds, then send every ReportRateMS milliseconds.
 		time.Sleep(15 * time.Second)
@@ -196,7 +208,10 @@ func main() {
 			if err != nil {
 				glog.Error("SENDING ERROR: ", err)
 				if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
-					backoffFactor++ // Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max wait time (an hour) so that we don't overflow int.
+					backoffFactor++
+					/* Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max
+					wait time (an hour) so that we don't overflow int.
+					*/
 				}
 			} else {
 				glog.V(2).Info("Send Cycle Completed Successfully")
@@ -206,11 +221,14 @@ func main() {
 			if backoffFactor > 0 {
 				glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
 			}
-			time.Sleep(timeToSleep) // Sleep either for the current backed off interval, or the maximum time defined in the config
+			time.Sleep(timeToSleep)
+			/* Sleep either for the current backed off interval, or the maximum time defined in the config */
 		}
 	}()
 
-	// We don't actually use this to wait on anything, since the transformer routines don't ever end unless something goes wrong. We just use this to wait forever in main once we start things up.
+	/* We don't actually use this to wait on anything, since the transformer routines don't ever end unless something
+	goes wrong. We just use this to wait forever in main once we start things up.
+	*/
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait() // This will never end (until we kill the process)
@@ -239,14 +257,17 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 	// Filter down to only resources which support WATCH operations.
 	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
-		watchList := machineryV1.APIResourceList{} // This is a copy of apiList but we only insert resources for which GET is supported.
+		watchList := machineryV1.APIResourceList{}
+		// This is a copy of apiList but we only insert resources for which GET is supported.
 		watchList.GroupVersion = apiList.GroupVersion
 		watchResources := []machineryV1.APIResource{}      // All the resources for which GET works.
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
-			// TODO: Use env variable for ignored resource kinds.
-			// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
-			// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
-			// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share the same uid.
+			/* TODO: Use env variable for ignored resource kinds.
+			Ignore clusters and clusterstatus resources because these are handled by the aggregator.
+			Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
+			Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
+			the same uid.
+			*/
 			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "oauthaccesstokens" || apiResource.Name == "events" || apiResource.Name == "projects" {
 				continue
 			}
@@ -266,7 +287,8 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 			}
 		}
 		watchList.APIResources = watchResources
-		supportedResources = append(supportedResources, &watchList) // Add the list to our list of lists that holds GET enabled resources.
+		// Add the list to our list of lists that holds GET enabled resources.
+		supportedResources = append(supportedResources, &watchList)
 	}
 
 	// Use handy converter function to convert into GroupVersionResource objects, which we need in order to make informers
