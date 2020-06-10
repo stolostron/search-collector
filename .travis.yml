@@ -42,6 +42,12 @@ stages:
   - release-ff
   - publish
 
+cache:
+  apt: true
+  directories:
+    - "$TRAVIS_CACHE_DIR"
+    - "/home/travis/gopath"
+
 before_script:
   - make init
   - git config --global url."git@github.com:".insteadOf "https://github.com/"
