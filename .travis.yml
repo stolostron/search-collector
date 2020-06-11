@@ -38,9 +38,6 @@ env:
 cache:
   directories:
     - "/home/travis/gopath/pkg/mod"
-# before_cache:
-#   - rm -f "/home/travis/gopath/src/github.com/open-cluster-management/search-collector"
-
 
 stages:
   - build
@@ -60,27 +57,25 @@ before_script:
 jobs:
   include:
     - stage: build
-      name: "Build the image and run unit tests"
+      name: "Build the image and push to repo"
       script:
         - make component/build
         - make component/push
+
     - stage: unit-test
-      name: "Run unit tests"
+      name: "Run lint, unit tests, sonar, and security scans"
       script:
-        # Run unit tests, upload coverage to sonar, and run security scans.
-        - make copyright-check
-        # - make component/pull 
+        # Run lint and unit tests.
         - make component/test/unit
         - make sonar/go 
         - make security/scans
-    - stage: test-e2e
-      name: "Deploy the image to a cluster and run e2e tests"
-      if: type = pull_request
-      script:
-        # Run e2e tests and security scans.
-        # - make deps
-        # - make component/pull 
-        - make component/test/e2e
+
+    # - stage: test-e2e
+    #   name: "Run e2e tests"
+    #   if: type = pull_request
+    #   script:
+    #     # Run e2e tests.
+    #     - make component/test/e2e
 
     - stage: release-ff
       name: "Push commits to current release branch"
