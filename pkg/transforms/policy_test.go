@@ -21,7 +21,6 @@ func TestTransformPolicy(t *testing.T) {
 	// Test only the fields that exist in policy - the common test will test the other bits
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "enforce", t)
 	AssertEqual("compliant", node.Properties["compliant"], "Compliant", t)
-	// AssertEqual("valid", node.Properties["valid"], true, t)
 	// AssertEqual("numRules", node.Properties["numRules"], int64(1), t)
 	AssertEqual("_parentPolicy", node.Properties["_parentPolicy"], "default/policy-vulnerabilitypolicy", t)
 }

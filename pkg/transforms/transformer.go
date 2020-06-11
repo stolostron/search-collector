@@ -196,14 +196,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ChannelResource{&typedResource}
 
-		// case [2]string{"Compliance", "compliance.mcm.ibm.com"}, [2]string{"Compliance", "apps.open-cluster-management.io"}:
-		// 	typedResource := com.Compliance{}
-		// 	err = json.Unmarshal(j, &typedResource)
-		// 	if err != nil {
-		// 		panic(err) // Will be caught by handleRoutineExit
-		// 	}
-		// 	trans = ComplianceResource{&typedResource}
-
 		case [2]string{"CronJob", "batch"}:
 			typedResource := batchBeta.CronJob{}
 			err = json.Unmarshal(j, &typedResource)
@@ -260,24 +252,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeploymentResource{&typedResource}
 
-			//This is the application's HelmCR of kind HelmRelease. From 2019 Q4, the apigroup will be app.ibm.com.
-			//From 2020 Q1, the apigroup will be apps.open-cluster-management.io
-		case [2]string{"HelmRelease", "app.ibm.com"}, [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
+			//This is the application's HelmCR of kind HelmRelease.
+		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
 			typedResource := appHelmRelease.HelmRelease{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = AppHelmCRResource{&typedResource}
-
-		//This is the application's HelmCR of kind HelmRelease
-		// case [2]string{"HelmRelease", "helm.bitnami.com"}:
-		// 	typedResource := helmRelease.HelmRelease{}
-		// 	err = json.Unmarshal(j, &typedResource)
-		// 	if err != nil {
-		// 		panic(err) // Will be caught by handleRoutineExit
-		// 	}
-		// 	trans = HelmCRResource{&typedResource}
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
@@ -351,7 +333,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PodResource{&typedResource}
 
-		case [2]string{"Policy", "policy.mcm.ibm.com"}, [2]string{"Policy", "apps.open-cluster-management.io"}:
+		case [2]string{"Policy", "apps.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
