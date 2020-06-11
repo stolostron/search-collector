@@ -20,13 +20,8 @@ func (p PolicyResource) BuildNode() Node {
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
-	node.Properties["compliant"] = string(p.Status.ComplianceState)
-	node.Properties["numRules"] = len(p.Status.Details)
-	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"]
-	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]
-	if okns && okpp {
-		node.Properties["_parentPolicy"] = pnamespace + "/" + ppolicy
-	}
+	node.Properties["disabled"] = p.Spec.Disabled
+	node.Properties["numRules"] = len(p.Spec.PolicyTemplates)
 
 	return node
 }
