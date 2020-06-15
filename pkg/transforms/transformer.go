@@ -14,18 +14,18 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
-	mcmapp "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
+	acmapp "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
 	appDeployable "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1"
 	rule "github.com/open-cluster-management/multicloud-operators-placementrule/pkg/apis/apps/v1"
 	appHelmRelease "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
 	subscription "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1"
-
-	// app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
+	application "sigs.k8s.io/application/api/v1beta1"
 
 	policy "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policies/v1"
 	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
 
 	apps "k8s.io/api/apps/v1"
+
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
@@ -180,16 +180,16 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		kindApigroup := [2]string{event.Resource.GetKind(), apiGroup}
 		//TODO: Might have to add more transform cases if resources like DaemonSet, StatefulSet etc. have other apigroups
 		switch kindApigroup {
-		// case [2]string{"Application", "app.k8s.io"}:
-		// 	typedResource := app.Application{}
-		// 	err = json.Unmarshal(j, &typedResource)
-		// 	if err != nil {
-		// 		panic(err) // Will be caught by handleRoutineExit
-		// 	}
-		// 	trans = ApplicationResource{&typedResource}
+		case [2]string{"Application", "app.k8s.io"}:
+			typedResource := application.Application{}
+			err = json.Unmarshal(j, &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = ApplicationResource{&typedResource}
 
 		case [2]string{"Channel", "app.ibm.com"}, [2]string{"Channel", "apps.open-cluster-management.io"}:
-			typedResource := mcmapp.Channel{}
+			typedResource := acmapp.Channel{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit

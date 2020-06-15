@@ -7,55 +7,55 @@ The source code for this program is not published or otherwise divested of its t
 
 package transforms
 
-// FIXME: WORKAROUND to get good build. Don't merge with this.
+import (
+	"strings"
 
-// import (
-// 	"strings"
+	// apps "k8s.io/api"
+	apps "sigs.k8s.io/application/api/v1beta1"
+	// apps "github.com/kubernetes-sigs/application/api/v1beta1"
+)
 
-// 	v1 "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
-// )
+type ApplicationResource struct {
+	*apps.Application
+}
 
-// type ApplicationResource struct {
-// 	*v1.Application
-// }
+func (a ApplicationResource) BuildNode() Node {
+	node := transformCommon(a)
+	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
+	// Extract the properties specific to this type
+	node.Properties["dashboard"] = a.GetAnnotations()["apps.open-cluster-management.io/dashboard"]
 
-// func (a ApplicationResource) BuildNode() Node {
-// 	node := transformCommon(a)
-// 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
-// 	// Extract the properties specific to this type
-// 	node.Properties["dashboard"] = a.GetAnnotations()["apps.open-cluster-management.io/dashboard"]
+	return node
+}
 
-// 	return node
-// }
+func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
+	ret := []Edge{}
+	UID := prefixedUID(a.UID)
 
-// func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
-// 	ret := []Edge{}
-// 	UID := prefixedUID(a.UID)
+	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, EdgeType: "contains", Kind: a.Kind, Name: a.Name}
 
-// 	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, EdgeType: "contains", Kind: a.Kind, Name: a.Name}
+	if len(a.GetAnnotations()["apps.open-cluster-management.io/deployables"]) > 0 {
+		deployableMap := make(map[string]struct{})
+		for _, deployable := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/deployables"], ",") {
+			deployableMap[deployable] = struct{}{}
+		}
+		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
+	}
 
-// 	if len(a.GetAnnotations()["apps.open-cluster-management.io/deployables"]) > 0 {
-// 		deployableMap := make(map[string]struct{})
-// 		for _, deployable := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/deployables"], ",") {
-// 			deployableMap[deployable] = struct{}{}
-// 		}
-// 		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
-// 	}
+	if len(a.GetAnnotations()["apps.open-cluster-management.io/subscriptions"]) > 0 {
+		subscriptionMap := make(map[string]struct{})
+		for _, subscription := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/subscriptions"], ",") {
+			subscriptionMap[subscription] = struct{}{}
+		}
+		ret = append(ret, edgesByDestinationName(subscriptionMap, "Subscription", nodeInfo, ns)...)
+	}
 
-// 	if len(a.GetAnnotations()["apps.open-cluster-management.io/subscriptions"]) > 0 {
-// 		subscriptionMap := make(map[string]struct{})
-// 		for _, subscription := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/subscriptions"], ",") {
-// 			subscriptionMap[subscription] = struct{}{}
-// 		}
-// 		ret = append(ret, edgesByDestinationName(subscriptionMap, "Subscription", nodeInfo, ns)...)
-// 	}
-
-// 	if len(a.GetAnnotations()["apps.open-cluster-management.io/placementbindings"]) > 0 {
-// 		placementBindingMap := make(map[string]struct{})
-// 		for _, placementBinding := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/placementbindings"], ",") {
-// 			placementBindingMap[placementBinding] = struct{}{}
-// 		}
-// 		ret = append(ret, edgesByDestinationName(placementBindingMap, "PlacementBinding", nodeInfo, ns)...)
-// 	}
-// 	return ret
-// }
+	if len(a.GetAnnotations()["apps.open-cluster-management.io/placementbindings"]) > 0 {
+		placementBindingMap := make(map[string]struct{})
+		for _, placementBinding := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/placementbindings"], ",") {
+			placementBindingMap[placementBinding] = struct{}{}
+		}
+		ret = append(ret, edgesByDestinationName(placementBindingMap, "PlacementBinding", nodeInfo, ns)...)
+	}
+	return ret
+}

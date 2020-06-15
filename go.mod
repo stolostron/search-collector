@@ -23,11 +23,11 @@ require (
 	k8s.io/apimachinery v0.17.4
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.16.7+incompatible
+	sigs.k8s.io/application v0.8.3
 )
 
 replace (
 	github.com/docker/docker => github.com/docker/docker v1.13.1
-	// github.com/kubernetes-sigs/application => github.com/kubernetes-sigs/application v0.8.1
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
@@ -49,5 +49,4 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.17.4
 	k8s.io/metrics => k8s.io/metrics v0.17.4
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.17.4
-// sigs.k8s.io/application => sigs.k8s.io/application v0.4.0
 )
