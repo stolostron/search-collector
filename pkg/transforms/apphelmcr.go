@@ -29,11 +29,10 @@ func (a AppHelmCRResource) BuildNode() Node {
 			node.Properties["url"] = a.Repo.Source.GitHub.Urls
 			node.Properties["chartPath"] = a.Repo.Source.GitHub.ChartPath
 			node.Properties["branch"] = a.Repo.Source.GitHub.Branch
-		// FIXME!!! Don't merge this.
-		// } else if strings.EqualFold(sourceType, "git") {
-		// 	node.Properties["url"] = a.Repo.Source.Git.Urls
-		// 	node.Properties["chartPath"] = a.Repo.Source.Git.ChartPath
-		// 	node.Properties["branch"] = a.Repo.Source.Git.Branch
+		} else if strings.EqualFold(sourceType, "git") {
+			node.Properties["url"] = a.Repo.Source.Git.Urls
+			node.Properties["chartPath"] = a.Repo.Source.Git.ChartPath
+			node.Properties["branch"] = a.Repo.Source.Git.Branch
 		} else if strings.EqualFold(sourceType, "HelmRepo") {
 			node.Properties["url"] = a.Repo.Source.HelmRepo.Urls
 		}

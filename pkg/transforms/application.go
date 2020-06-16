@@ -12,9 +12,7 @@ package transforms
 import (
 	"strings"
 
-	// apps "k8s.io/api"
 	apps "sigs.k8s.io/application/api/v1beta1"
-	// apps "github.com/kubernetes-sigs/application/api/v1beta1"
 )
 
 type ApplicationResource struct {
