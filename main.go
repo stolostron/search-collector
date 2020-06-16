@@ -207,8 +207,8 @@ func main() {
 			err = sender.Sync()
 			if err != nil {
 				glog.Error("SENDING ERROR: ", err)
-				if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond 
-					< time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
+				if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond <
+					time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
 					// Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max
 					// wait time (an hour) so that we don't overflow int.
 					backoffFactor++
@@ -217,7 +217,7 @@ func main() {
 				glog.V(2).Info("Send Cycle Completed Successfully")
 				backoffFactor = float64(0)
 			}
-			nextSleepInterval := config.Cfg.ReportRateMS*int(math.Exp2(backoffFactor))
+			nextSleepInterval := config.Cfg.ReportRateMS * int(math.Exp2(backoffFactor))
 			timeToSleep := time.Duration(min(nextSleepInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
 			if backoffFactor > 0 {
 				glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
@@ -267,11 +267,11 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 			// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
 			// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
 			// the same uid.
-			if apiResource.Name == "clusters"
-				|| apiResource.Name == "clusterstatuses"
-				|| apiResource.Name == "oauthaccesstokens"
-				|| apiResource.Name == "events"
-				|| apiResource.Name == "projects" {
+			if apiResource.Name == "clusters" ||
+				apiResource.Name == "clusterstatuses" ||
+				apiResource.Name == "oauthaccesstokens" ||
+				apiResource.Name == "events" ||
+				apiResource.Name == "projects" {
 				continue
 			}
 			// add non-namespaced resource to NonNSResourceMap
