@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	// v1 "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	app "sigs.k8s.io/application/api/v1beta1"
 )
 
 func TestTransformRoutine(t *testing.T) {
@@ -21,11 +21,11 @@ func TestTransformRoutine(t *testing.T) {
 
 	// generate input and output test nodes
 	ts := time.Now().Unix()
-	// var appTyped v1.Application
+	var appTyped app.Application
 	var appInput unstructured.Unstructured
-	// UnmarshalFile("application.json", &appTyped, t)
+	UnmarshalFile("application.json", &appTyped, t)
 	UnmarshalFile("application.json", &appInput, t)
-	// appNode := ApplicationResource{&appTyped}.BuildNode()
+	appNode := ApplicationResource{&appTyped}.BuildNode()
 
 	unstructuredInput := unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -42,32 +42,32 @@ func TestTransformRoutine(t *testing.T) {
 		in       *Event
 		expected NodeEvent
 	}{
-		// {
-		// 	"Application create",
-		// 	&Event{
-		// 		Time:      ts,
-		// 		Operation: Create,
-		// 		Resource:  &appInput,
-		// 	},
-		// 	NodeEvent{
-		// 		Node:      appNode,
-		// 		Time:      ts,
-		// 		Operation: Create,
-		// 	},
-		// },
-		// {
-		// 	"Application delete",
-		// 	&Event{
-		// 		Time:      ts,
-		// 		Operation: Delete,
-		// 		Resource:  &appInput,
-		// 	},
-		// 	NodeEvent{
-		// 		Node:      appNode,
-		// 		Time:      ts,
-		// 		Operation: Delete,
-		// 	},
-		// },
+		{
+			"Application create",
+			&Event{
+				Time:      ts,
+				Operation: Create,
+				Resource:  &appInput,
+			},
+			NodeEvent{
+				Node:      appNode,
+				Time:      ts,
+				Operation: Create,
+			},
+		},
+		{
+			"Application delete",
+			&Event{
+				Time:      ts,
+				Operation: Delete,
+				Resource:  &appInput,
+			},
+			NodeEvent{
+				Node:      appNode,
+				Time:      ts,
+				Operation: Delete,
+			},
+		},
 		{
 			"Unknown type create",
 			&Event{
@@ -89,8 +89,8 @@ func TestTransformRoutine(t *testing.T) {
 		input <- test.in
 		actual := <-output
 
-		// AssertDeepEqual(test.name, actual.Node, test.expected.Node, t)
-		// AssertEqual(test.name, actual.Time, test.expected.Time, t)
+		AssertDeepEqual(test.name, actual.Node, test.expected.Node, t)
+		AssertEqual(test.name, actual.Time, test.expected.Time, t)
 		AssertEqual(test.name, actual.Operation, test.expected.Operation, t)
 	}
 }
