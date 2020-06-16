@@ -9,7 +9,8 @@ This process runs on remotely managed clusters and collects data about the resou
 
 ### Running Locally
 1. Fetch Dependencies: `make deps`
-    > **TIP:** You may need to configure git to use SSH with this command. 
+    > **TIP 1:** You may need to install mercurial. `brew install mercurial`
+    > **TIP 2:** You may need to configure git to use SSH. Use the following command: 
     >
     > `git config --global --add url."git@github.com:".insteadOf "https://github.com/"`
 2. Build Binary: `make build`
