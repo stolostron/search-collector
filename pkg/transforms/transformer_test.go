@@ -2,7 +2,9 @@
 IBM Confidential
 OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
-The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
+The source code for this program is not published or otherwise divested of its trade secrets,
+irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -11,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	app "sigs.k8s.io/application/api/v1beta1"
 )
 
 func TestTransformRoutine(t *testing.T) {
@@ -21,7 +23,7 @@ func TestTransformRoutine(t *testing.T) {
 
 	// generate input and output test nodes
 	ts := time.Now().Unix()
-	var appTyped v1.Application
+	var appTyped app.Application
 	var appInput unstructured.Unstructured
 	UnmarshalFile("application.json", &appTyped, t)
 	UnmarshalFile("application.json", &appInput, t)

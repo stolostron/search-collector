@@ -1,3 +1,5 @@
+# Copyright (c) 2020 Red Hat, Inc.
+
 os:
   - linux
 
@@ -33,7 +35,11 @@ env:
     - COMPONENT_E2E_TEST_COMMAND=${TRAVIS_BUILD_DIR}/build/run-e2e-tests.sh
 
     - DEPLOYED_IN_HUB=true # For sonar
+    - GO111MODULE=on
 
+cache:
+  directories:
+    - "/home/travis/gopath/pkg/mod"
 
 stages:
   - build
@@ -43,43 +49,40 @@ stages:
   - publish
 
 before_script:
-  - make init
+  # Bootstrap the build harness.
+  - make
+  # Set the image tag differently for PRs.
+  - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
+  # Use ssh to pull from private repos.
+  - git config --global url."git@github.com:".insteadOf "https://github.com/"
 
 jobs:
   include:
     - stage: build
-      name: "Build the image and run unit tests"
+      name: "Build the image and push to repo"
       script:
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
-        - make copyright-check
         - make component/build
         - make component/push
+
     - stage: unit-test
-      name: "Run unit tests"
+      name: "Run lint, unit tests, sonar, and security scans"
       script:
-        # Set the image tag differently for PRs
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
-        # Bootstrap the build harness, pull test image, and run unit tests.  
-        - make
-        - make component/pull 
+        # Run lint and unit tests.
         - make component/test/unit
         - make sonar/go 
-    - stage: test-e2e
-      name: "Deploy the image to a cluster and run e2e tests"
-      if: type = pull_request
-      script:
-        #Check out a clusterpool, set up oc, deploy, run e2e tests, and return clusterpool cluster
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
-        - make deps
-        - make component/pull 
-        - make component/test/e2e
         - make security/scans
+
+    # - stage: test-e2e
+    #   name: "Run e2e tests"
+    #   if: type = pull_request
+    #   script:
+    #     # Run e2e tests.
+    #     - make component/test/e2e
 
     - stage: release-ff
       name: "Push commits to current release branch"
       if: type = push AND branch =~ /^master$/
       script:
-        - make
         - make release-ff
 
     - stage: publish

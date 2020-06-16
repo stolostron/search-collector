@@ -2,17 +2,19 @@
 IBM Confidential
 OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
-The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
+The source code for this program is not published or otherwise divested of its trade secrets,
+irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
 
 import (
-	mcm "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
+	p "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policies/v1"
 )
 
 type PolicyResource struct {
-	*mcm.Policy
+	*p.Policy
 }
 
 func (p PolicyResource) BuildNode() Node {
@@ -20,23 +22,8 @@ func (p PolicyResource) BuildNode() Node {
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
-	node.Properties["compliant"] = string(p.Status.ComplianceState)
-	node.Properties["valid"] = p.Status.Valid
-
-	rules := int64(0)
-	if p.Spec.RoleTemplates != nil {
-		for _, role := range p.Spec.RoleTemplates {
-			if role != nil {
-				rules += int64(len(role.Rules))
-			}
-		}
-	}
-	node.Properties["numRules"] = rules
-	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"]
-	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]
-	if okns && okpp {
-		node.Properties["_parentPolicy"] = pnamespace + "/" + ppolicy
-	}
+	node.Properties["disabled"] = p.Spec.Disabled
+	node.Properties["numRules"] = len(p.Spec.PolicyTemplates)
 
 	return node
 }

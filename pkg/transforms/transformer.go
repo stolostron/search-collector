@@ -2,7 +2,9 @@
 IBM Confidential
 OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
-The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
+The source code for this program is not published or otherwise divested of its trade secrets,
+irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -14,21 +16,18 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
-	mcmapp "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
+	acmapp "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
 	appDeployable "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1"
 	rule "github.com/open-cluster-management/multicloud-operators-placementrule/pkg/apis/apps/v1"
 	appHelmRelease "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
 	subscription "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1"
+	application "sigs.k8s.io/application/api/v1beta1"
 
-	app "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
-
-	com "github.com/open-cluster-management/hcm-compliance/pkg/apis/compliance/v1alpha1"
-	policy "github.com/open-cluster-management/hcm-compliance/pkg/apis/policy/v1alpha1"
+	policy "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policies/v1"
 	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
 
-	helmRelease "github.com/open-cluster-management/helm-crd/pkg/apis/helm.bitnami.com/v1"
-
 	apps "k8s.io/api/apps/v1"
+
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
@@ -184,7 +183,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		//TODO: Might have to add more transform cases if resources like DaemonSet, StatefulSet etc. have other apigroups
 		switch kindApigroup {
 		case [2]string{"Application", "app.k8s.io"}:
-			typedResource := app.Application{}
+			typedResource := application.Application{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
@@ -192,20 +191,12 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = ApplicationResource{&typedResource}
 
 		case [2]string{"Channel", "app.ibm.com"}, [2]string{"Channel", "apps.open-cluster-management.io"}:
-			typedResource := mcmapp.Channel{}
+			typedResource := acmapp.Channel{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = ChannelResource{&typedResource}
-
-		case [2]string{"Compliance", "compliance.mcm.ibm.com"}, [2]string{"Compliance", "apps.open-cluster-management.io"}:
-			typedResource := com.Compliance{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ComplianceResource{&typedResource}
 
 		case [2]string{"CronJob", "batch"}:
 			typedResource := batchBeta.CronJob{}
@@ -263,24 +254,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeploymentResource{&typedResource}
 
-			//This is the application's HelmCR of kind HelmRelease. From 2019 Q4, the apigroup will be app.ibm.com.
-			//From 2020 Q1, the apigroup will be apps.open-cluster-management.io
-		case [2]string{"HelmRelease", "app.ibm.com"}, [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
+			//This is the application's HelmCR of kind HelmRelease.
+		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
 			typedResource := appHelmRelease.HelmRelease{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = AppHelmCRResource{&typedResource}
-
-		//This is the application's HelmCR of kind HelmRelease
-		case [2]string{"HelmRelease", "helm.bitnami.com"}:
-			typedResource := helmRelease.HelmRelease{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = HelmCRResource{&typedResource}
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
@@ -354,7 +335,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PodResource{&typedResource}
 
-		case [2]string{"Policy", "policy.mcm.ibm.com"}, [2]string{"Policy", "apps.open-cluster-management.io"}:
+		case [2]string{"Policy", "policies.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
 			err = json.Unmarshal(j, &typedResource)
 			if err != nil {

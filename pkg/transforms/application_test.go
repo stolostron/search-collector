@@ -2,7 +2,9 @@
 IBM Confidential
 OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
-The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
+The source code for this program is not published or otherwise divested of its trade secrets,
+irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -10,11 +12,11 @@ package transforms
 import (
 	"testing"
 
-	v1 "github.com/kubernetes-sigs/application/pkg/apis/app/v1beta1"
+	app "sigs.k8s.io/application/api/v1beta1"
 )
 
 func TestTransformApplication(t *testing.T) {
-	var a v1.Application
+	var a app.Application
 	UnmarshalFile("application.json", &a, t)
 	node := ApplicationResource{&a}.BuildNode()
 
