@@ -12,11 +12,11 @@ package transforms
 import (
 	"strings"
 
-	apps "sigs.k8s.io/application/api/v1beta1"
+	app "sigs.k8s.io/application/api/v1beta1"
 )
 
 type ApplicationResource struct {
-	*apps.Application
+	*app.Application
 }
 
 func (a ApplicationResource) BuildNode() Node {
