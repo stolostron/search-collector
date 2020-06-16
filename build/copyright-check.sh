@@ -16,7 +16,7 @@ back_up_year=2019
 current_year=$(date +"%Y")
 
 TRAVIS_BRANCH=$1
-cd ..
+echo ">>>> Directory:  $(pwd)"
 
 ADDED_SINCE_1_MAR_2020=$(git log --name-status --pretty=oneline --since "1 Mar 2020" | egrep "^A\t" | awk '{print $2}' | sort | uniq |  grep -v -f <(sed 's/\([.|]\)/\\\1/g; s/\?/./g ; s/\*/.*/g'))
 MODIFIED_SINCE_1_MAR_2020=$(diff --new-line-format="" --unchanged-line-format="" <(git log --name-status --pretty=oneline --since "1 Mar 2020" | egrep "^A\t|^M\t" | awk '{print $2}' | sort | uniq | grep -v -f <(sed 's/\([.|]\)/\\\1/g; s/\?/./g ; s/\*/.*/g' )) <(git log --name-status --pretty=oneline --since "1 Mar 2020" | egrep "^A\t" | awk '{print $2}' | sort | uniq | grep -v -f <(sed 's/\([.|]\)/\\\1/g; s/\?/./g ; s/\*/.*/g')))
@@ -27,6 +27,8 @@ if [[ "x${TRAVIS_BRANCH}" != "x" ]]; then
 else
   FILES_TO_SCAN=$(find . -type f | grep -Ev '(\.git)' | grep -v -f <(sed 's/\([.|]\)/\\\1/g; s/\?/./g ; s/\*/.*/g'))
 fi
+
+echo ">>>>>> FILES_TO_SCAN:  $FILES_TO_SCAN"
 
 if [ -z "$current_year" ] || [ $current_year -lt $origin_year ]; then
   echo "Can't get correct system time\n  >>Use back_up_year=$back_up_year as current_year to check copyright in the file $f\n"
