@@ -7,13 +7,28 @@
             "policy.open-cluster-management.io/controls": "PR.PT-3 Least Functionality",
             "policy.open-cluster-management.io/standards": "NIST-CSF"
         },
-        "creationTimestamp": "2020-06-11T02:23:55Z",
+        "creationTimestamp": "2020-06-11T02:23:56Z",
         "generation": 1,
-        "name": "policy-01",
-        "namespace": "default",
-        "resourceVersion": "169635",
-        "selfLink": "/apis/policy.open-cluster-management.io/v1/namespaces/default/policies/policy-01",
-        "uid": "82825211-afff-48d8-8522-ba1bf1cd1d04"
+        "labels": {
+            "policy.open-cluster-management.io/cluster-name": "dev1-managed1",
+            "policy.open-cluster-management.io/cluster-namespace": "dev1-managed1-ns",
+            "policy.open-cluster-management.io/root-policy": "default.policy-01"
+        },
+        "name": "default.policy-01",
+        "namespace": "dev1-managed1-ns",
+        "ownerReferences": [
+            {
+                "apiVersion": "policy.open-cluster-management.io/v1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "Policy",
+                "name": "policy-01",
+                "uid": "82825211-afff-48d8-8522-ba1bf1cd1d04"
+            }
+        ],
+        "resourceVersion": "169634",
+        "selfLink": "/apis/policy.open-cluster-management.io/v1/namespaces/dev1-managed1-ns/policies/default.policy-01",
+        "uid": "d77c533e-42bc-40f1-8fbf-2bdcd4b65a6e"
     },
     "spec": {
         "disabled": false,
@@ -66,19 +81,5 @@
             }
         ],
         "remediationAction": "enforce"
-    },
-    "status": {
-        "placement": [
-            {
-                "placementBinding": "binding-policy-01",
-                "placementRule": "placement-policy-01"
-            }
-        ],
-        "status": [
-            {
-                "clustername": "dev1-managed1",
-                "clusternamespace": "dev1-managed1-ns"
-            }
-        ]
     }
 }
