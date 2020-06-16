@@ -9,8 +9,11 @@ This process runs on remotely managed clusters and collects data about the resou
 
 ### Running Locally
 1. Fetch Dependencies: `make deps`
+    > **TIP:** You may need to configure git to use SSH with this command. 
+    >
+    > `git config --global --add url."git@github.com:".insteadOf "https://github.com/"`
 2. Build Binary: `make build`
-3. Configure `~/.kube/config` to point to a cluster. Or, set the `KUBECONFIG` environment variable to some other kubernetes config file.
+3. Configure `~/.kube/config` to point to a cluster with `oc login ...`. Or, set the `KUBECONFIG` environment variable to some other kubernetes config file.
 
 ### Running on a cluster (by pushing to scratch repo)
 1. Export your github username (w3id) and personal access token as `GITHUB_USER` and `GITHUB_TOKEN`
