@@ -1,6 +1,6 @@
 # search-collector
 
-This process runs on remotely managed clusters and collects data about the resources which exist there and how those resources relate to each other, then sends that data back to the hub cluster. In conjunction with the [aggregator](https://github.com/open-cluster-management/search-aggregator), provides backend functionality supporting the [search features of OCM](https://github.com/open-cluster-management/search/blob/master/feature-spec/search.md).
+This process runs on managed clusters and collects data about the resources which exist there and how those resources relate to each other, then sends that data back to the hub cluster. In conjunction with the [aggregator](https://github.com/open-cluster-management/search-aggregator), provides backend functionality supporting the [search features of OCM](https://github.com/open-cluster-management/search/blob/master/feature-spec/search.md).
 
 
 ## Config and Usage
@@ -8,19 +8,23 @@ This process runs on remotely managed clusters and collects data about the resou
 - The application can take any flags for [glog](https://github.com/golang/glog), it will pass them straight into glog. The glog flag `--logtostderr` is set to true by default.
 
 ### Running Locally
+> **Pre-requisite:** Go v1.12.17
 1. Fetch Dependencies: `make deps`
-    > **TIP:** You may need to configure git to use SSH with this command. 
+    > **TIP 1:** You may need to install mercurial. `brew install mercurial`
+    >
+    > **TIP 2:** You may need to configure git to use SSH. Use the following command: 
     >
     > `git config --global --add url."git@github.com:".insteadOf "https://github.com/"`
-2. Build Binary: `make build`
-3. Configure `~/.kube/config` to point to a cluster with `oc login ...`. Or, set the `KUBECONFIG` environment variable to some other kubernetes config file.
+2. Log into your development cluster with `oc login ...`.
+    > **Alternative:** set the `KUBECONFIG` environment variable to some other kubernetes config file.
+3. Run the program with `make run` or
+    ```
+    GO111MODULE=go run main.go
+    ```
 
-### Running on a cluster (by pushing to scratch repo)
-1. Export your github username (w3id) and personal access token as `GITHUB_USER` and `GITHUB_TOKEN`
-2. Fetch build harness: `make init`
-3. Build and tag image: `make build-linux docker:build docker:tag-arch`
-4. Export your `DOCKER_USER` and `DOCKER_TOKEN`
-5. Push to scratch repo in Artifactory `make docker:login docker:push-arch`
+### Running on a cluster
+- Pull image from quay.io and deploy to your cluster.
+- To test code changes, create a PR in this repo, the build process will push the PR image to quiay.io. From there you can pull it into your cluster.
 
 ### Config File
 A default config file for local development is provided in this repo. The file assumes the [aggregator](https://github.com/open-cluster-management/search-aggregator) to be running at `http://localhost:3010`. 
