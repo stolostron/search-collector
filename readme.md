@@ -16,8 +16,8 @@ This process runs on managed clusters and collects data about the resources whic
     >
     > `git config --global --add url."git@github.com:".insteadOf "https://github.com/"`
 2. Log into your development cluster with `oc login ...`.
-    > Alternative: set the `KUBECONFIG` environment variable to some other kubernetes config file.
-3. Run the program with `make run` or:
+    > **Alternative:** set the `KUBECONFIG` environment variable to some other kubernetes config file.
+3. Run the program with `make run` or
     ```
     GO111MODULE=go run main.go
     ```
