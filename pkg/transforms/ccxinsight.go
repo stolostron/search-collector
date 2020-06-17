@@ -2,7 +2,6 @@ package transforms
 
 import (
 	// "strings"
-	"github.com/golang/glog"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -24,25 +23,9 @@ func (i CCXInsightResource) BuildNode() Node {
 	ruleViolationCount, _, _ := unstructured.NestedInt64(i.UnstructuredContent(), "spec", "report", "meta", "count")
 	node.Properties["ruleViolationCount"] = ruleViolationCount
 
-	ruleData, _, _ := unstructured.NestedSlice(i.UnstructuredContent(), "spec", "report", "data")
-	node.Properties["ruleData"] = ruleData
+	// ruleData, _, _ := unstructured.NestedSlice(i.UnstructuredContent(), "spec", "report", "data")
+	// node.Properties["ruleData"] = ruleData
 
-	// description, _, _ := unstructured.NestedString(i.UnstructuredContent(), "spec", "problem", "description")
-	// node.Properties["description"] = description
-
-	// confidence, _, _ := unstructured.NestedInt64(i.UnstructuredContent(), "spec", "problem", "confidence")
-	// node.Properties["confidence"] = confidence
-
-	// solutions, _, _ := unstructured.NestedSlice(i.UnstructuredContent(), "spec", "solutions")
-	// topSolution := solutions[0].(map[string]interface{})
-	// node.Properties["topsolution"] = topSolution["description"]
-
-	// resolution, _, _ := unstructured.NestedString(i.UnstructuredContent(), "spec", "resolution")
-	// node.Properties["resolution"] = resolution
-
-	glog.Info("-----------ccx transform node start---------")
-	glog.Info(node)
-	glog.Info("-----------ccx transform node end---------")
 	return node
 }
 
