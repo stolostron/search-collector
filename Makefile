@@ -35,6 +35,9 @@ lint:
 	# Flag GOGC=100 needed to avoid out of memory issue.
 	GO111MODULE=on GOGC=100 golangci-lint run --timeout=2m
 
+run:
+	GO111MODULE=on go run main.go
+
 .PHONY: test
 test:
 	GO111MODULE=on DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out

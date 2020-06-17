@@ -15,8 +15,12 @@ This process runs on managed clusters and collects data about the resources whic
     > **TIP 2:** You may need to configure git to use SSH. Use the following command: 
     >
     > `git config --global --add url."git@github.com:".insteadOf "https://github.com/"`
-2. Build Binary: `make build`
-3. Configure `~/.kube/config` to point to a cluster with `oc login ...`. Or, set the `KUBECONFIG` environment variable to some other kubernetes config file.
+2. Log into your development cluster with `oc login ...`.
+    > Alternative: set the `KUBECONFIG` environment variable to some other kubernetes config file.
+3. Run the program with `make run` or:
+    ```
+    GO111MODULE=go run main.go
+    ```
 
 ### Running on a cluster
 - Pull image from quay.io and deploy to your cluster.
