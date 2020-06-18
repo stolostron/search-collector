@@ -172,7 +172,7 @@ func init() {
 			glog.Error("Error building K8s client from config file [", Cfg.AggregatorConfigFile, "].  Original error: ", err)
 		}
 
-		Cfg.AggregatorURL = hubConfig.Host + "/apis/mcm.ibm.com/v1beta1/namespaces/" + Cfg.ClusterNamespace + "/clusterstatuses"
+		Cfg.AggregatorURL = hubConfig.Host + "/apis/porxy.open-cluster-management.io/v1beta1/namespaces/" + Cfg.ClusterNamespace + "/clusterstatuses"
 		Cfg.AggregatorConfig = hubConfig
 
 		glog.Info("Running inside klusterlet.  Aggregator URL: ", Cfg.AggregatorURL)
