@@ -16,6 +16,7 @@ import (
 	"net/http"
 
 	"github.com/open-cluster-management/search-collector/pkg/config"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured/unstructuredscheme"
 	"k8s.io/client-go/rest"
 
 	"github.com/golang/glog"
@@ -25,6 +26,7 @@ func getHTTPSClient() (client http.Client) {
 
 	// Klusterlet deployment: Get httpClient using the mounted kubeconfig.
 	if !config.Cfg.DeployedInHub {
+		config.Cfg.AggregatorConfig.NegotiatedSerializer = unstructuredscheme.NewUnstructuredNegotiatedSerializer()
 		aggregatorRESTClient, err := rest.UnversionedRESTClientFor(config.Cfg.AggregatorConfig)
 		if err != nil {
 			// Exit because this is an unrecoverable configuration problem.
