@@ -23,18 +23,14 @@ import (
 
 func getHTTPSClient() (client http.Client) {
 
-	// Klusterlet deployment: Get TLS config using the mounted kubeconfig.
+	// Klusterlet deployment: Get httpClient using the mounted kubeconfig.
 	if !config.Cfg.DeployedInHub {
-		aggregatorTLSConfig, err := rest.TLSConfigFor(config.Cfg.AggregatorConfig)
+		aggregatorRESTClient, err := rest.UnversionedRESTClientFor(config.Cfg.AggregatorConfig)
 		if err != nil {
 			// Exit because this is an unrecoverable configuration problem.
-			glog.Fatal("Error getting TLS config from kubeconfig. Original error: ", err)
+			glog.Fatal("Error getting httpClient from kubeconfig. Original error: ", err)
 		}
-		tr := &http.Transport{
-			TLSClientConfig: aggregatorTLSConfig,
-		}
-		client = http.Client{Transport: tr}
-		glog.Info("Using TLS config from mounted kubeconfig.")
+		client = *(aggregatorRESTClient.Client)
 		return client
 	} else {
 		// Hub deployment: Generate TLS config using the mounted certificates.
