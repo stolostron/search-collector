@@ -2,7 +2,8 @@
 IBM Confidential
 OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
-The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
+The source code for this program is not published or otherwise divested of its trade secrets,
+irrespective of what has been deposited with the U.S. Copyright Office.
 */
 
 package config
@@ -63,16 +64,6 @@ var Cfg = Config{}
 var FilePath = flag.String("c", "./config.json", "Collector configuration file") // -c example.json, config.json is the default
 
 func init() {
-	// parse flags
-	flag.Parse()
-	err := flag.Lookup("logtostderr").Value.Set("true") // Glog is weird in that by default it logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).
-	if err != nil {
-		fmt.Println("Error setting default flag:", err) // Uses fmt.Println in case something is wrong with glog args
-		os.Exit(1)
-		glog.Fatal("Error setting default flag: ", err)
-	}
-	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
-
 	// Load default config from ./config.json.
 	// These can be overridden in the next step if environment variables are set.
 	if _, err := os.Stat(filepath.Join(".", "config.json")); !os.IsNotExist(err) {
@@ -171,7 +162,7 @@ func init() {
 			glog.Error("Error building K8s client from config file [", Cfg.AggregatorConfigFile, "].  Original error: ", err)
 		}
 
-		Cfg.AggregatorURL = hubConfig.Host + "/apis/mcm.ibm.com/v1beta1/namespaces/" + Cfg.ClusterNamespace + "/clusterstatuses"
+		Cfg.AggregatorURL = hubConfig.Host + "/apis/proxy.open-cluster-management.io/v1beta1/namespaces/" + Cfg.ClusterNamespace + "/clusterstatuses"
 		Cfg.AggregatorConfig = hubConfig
 
 		glog.Info("Running inside klusterlet.  Aggregator URL: ", Cfg.AggregatorURL)

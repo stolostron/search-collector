@@ -2,12 +2,15 @@
 IBM Confidential
 OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
-The source code for this program is not published or otherwise divested of its trade secrets, irrespective of what has been deposited with the U.S. Copyright Office.
+The source code for this program is not published or otherwise divested of its trade secrets,
+irrespective of what has been deposited with the U.S. Copyright Office.
 */
 
 package main
 
 import (
+	"flag"
+	"fmt"
 	"math"
 	"os"
 	"runtime"
@@ -33,10 +36,19 @@ import (
 )
 
 func main() {
+	// init logs
+	flag.Parse()
+	err := flag.Lookup("logtostderr").Value.Set("true") // Glog is weird in that by default it logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).
+	if err != nil {
+		fmt.Println("Error setting default flag:", err) // Uses fmt.Println in case something is wrong with glog args
+		os.Exit(1)
+		glog.Fatal("Error setting default flag: ", err)
+	}
+	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
 
 	// determine number of CPUs available.
-	// We make that many goroutines for transformation and reconciliation, so that we take maximum advantage of
-	// whatever hardware we're on
+	// We make that many goroutines for transformation and reconciliation,
+	// so that we take maximum advantage of whatever hardware we're on
 	numThreads := runtime.NumCPU()
 
 	glog.Info("Starting Data Collector")
@@ -206,7 +218,8 @@ func main() {
 			err = sender.Sync()
 			if err != nil {
 				glog.Error("SENDING ERROR: ", err)
-				if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
+				if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond <
+					time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
 					// Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max
 					// wait time (an hour) so that we don't overflow int.
 					backoffFactor++
@@ -215,7 +228,8 @@ func main() {
 				glog.V(2).Info("Send Cycle Completed Successfully")
 				backoffFactor = float64(0)
 			}
-			timeToSleep := time.Duration(min(config.Cfg.ReportRateMS*int(math.Exp2(backoffFactor)), config.Cfg.MaxBackoffMS)) * time.Millisecond
+			nextSleepInterval := config.Cfg.ReportRateMS * int(math.Exp2(backoffFactor))
+			timeToSleep := time.Duration(min(nextSleepInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
 			if backoffFactor > 0 {
 				glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
 			}
@@ -264,7 +278,11 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 			// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
 			// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
 			// the same uid.
-			if apiResource.Name == "clusters" || apiResource.Name == "clusterstatuses" || apiResource.Name == "oauthaccesstokens" || apiResource.Name == "events" || apiResource.Name == "projects" {
+			if apiResource.Name == "clusters" ||
+				apiResource.Name == "clusterstatuses" ||
+				apiResource.Name == "oauthaccesstokens" ||
+				apiResource.Name == "events" ||
+				apiResource.Name == "projects" {
 				continue
 			}
 			// add non-namespaced resource to NonNSResourceMap
