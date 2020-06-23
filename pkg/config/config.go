@@ -64,16 +64,6 @@ var Cfg = Config{}
 var FilePath = flag.String("c", "./config.json", "Collector configuration file") // -c example.json, config.json is the default
 
 func init() {
-	// parse flags
-	flag.Parse()
-	err := flag.Lookup("logtostderr").Value.Set("true") // Glog is weird in that by default it logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).
-	if err != nil {
-		fmt.Println("Error setting default flag:", err) // Uses fmt.Println in case something is wrong with glog args
-		os.Exit(1)
-		glog.Fatal("Error setting default flag: ", err)
-	}
-	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
-
 	// Load default config from ./config.json.
 	// These can be overridden in the next step if environment variables are set.
 	if _, err := os.Stat(filepath.Join(".", "config.json")); !os.IsNotExist(err) {
