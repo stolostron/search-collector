@@ -9,6 +9,8 @@ irrespective of what has been deposited with the U.S. Copyright Office.
 package main
 
 import (
+	"flag"
+	"fmt"
 	"math"
 	"os"
 	"runtime"
@@ -34,6 +36,15 @@ import (
 )
 
 func main() {
+	// init logs
+	flag.Parse()
+	err := flag.Lookup("logtostderr").Value.Set("true") // Glog is weird in that by default it logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).
+	if err != nil {
+		fmt.Println("Error setting default flag:", err) // Uses fmt.Println in case something is wrong with glog args
+		os.Exit(1)
+		glog.Fatal("Error setting default flag: ", err)
+	}
+	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
 
 	// determine number of CPUs available.
 	// We make that many goroutines for transformation and reconciliation,
