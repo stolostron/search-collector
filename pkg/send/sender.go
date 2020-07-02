@@ -98,7 +98,7 @@ func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *S
 	}
 
 	if !config.Cfg.DeployedInHub {
-		s.aggregatorSyncPath = strings.Join([]string{"/", clusterName, "/aggregator/sync"}, "")
+		s.aggregatorSyncPath = strings.Join([]string{"/", clusterName, "/aggregator/syncrg1"}, "")
 	}
 
 	return s
