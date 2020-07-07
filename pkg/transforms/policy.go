@@ -24,7 +24,16 @@ func (p PolicyResource) BuildNode() Node {
 	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
 	node.Properties["disabled"] = p.Spec.Disabled
 	node.Properties["numRules"] = len(p.Spec.PolicyTemplates)
-
+	// For the root policy (on hub, in non cluster ns), it doesn’t have an overall status. it has status per cluster.
+	// On managed cluster, compliance is reported by status.compliant
+	if p.Status.ComplianceState != "" {
+		node.Properties["compliant"] = string(p.Status.ComplianceState)
+	}
+	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"]
+	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]
+	if okns && okpp {
+		node.Properties["_parentPolicy"] = pnamespace + "/" + ppolicy
+	}
 	return node
 }
 
