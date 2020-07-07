@@ -335,14 +335,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PodResource{&typedResource}
 
-		case [2]string{"Policy", "policies.open-cluster-management.io"}:
-			typedResource := policy.Policy{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = PolicyResource{&typedResource}
-
 		case [2]string{"Policy", "policy.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
 			err = json.Unmarshal(j, &typedResource)
