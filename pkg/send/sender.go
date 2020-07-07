@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/hashicorp/go-version"
 	"github.com/open-cluster-management/search-collector/pkg/config"
 	"github.com/open-cluster-management/search-collector/pkg/reconciler"
 	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
@@ -43,7 +42,7 @@ type Payload struct {
 	DeleteEdges []tr.Edge `json:"deleteEdges,omitempty"` // List of Edges which must be deleted
 	ClearAll    bool      `json:"clearAll,omitempty"`    // Whether or not the aggregator should clear all data it has for the cluster first
 	RequestId   int       `json:"requestId,omitempty"`   // Unique ID to track each request for debug.
-	Version     string    `json:"version,omitempty"`     // Version of this collectors
+	Version     string    `json:"version,omitempty"`     // Version of this collector
 }
 
 func (p Payload) empty() bool {
@@ -197,15 +196,9 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
 	}
 
-	// Check edges only if aggregator is able to process it.
-	// Edges were introduced in 3.2.1, so here we check the aggregator is at least 3.2.1 before validating edges.
-	aggApi, _ := version.NewVersion(r.Version)
-	edgesFeatureVersion, _ := version.NewVersion("3.2.1")
-	if aggApi != nil && aggApi.GreaterThanOrEqual(edgesFeatureVersion) {
-		if r.TotalEdges != (expectedTotalEdges + len(r.DeleteEdgeErrors) - len(r.AddEdgeErrors)) {
-			msg := fmt.Sprintf("Aggregator reported wrong number of total intra edges. Expected %d, got %d", expectedTotalEdges, r.TotalEdges)
-			return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
-		}
+	if r.TotalEdges != (expectedTotalEdges + len(r.DeleteEdgeErrors) - len(r.AddEdgeErrors)) {
+		msg := fmt.Sprintf("Aggregator reported wrong number of total intra edges. Expected %d, got %d", expectedTotalEdges, r.TotalEdges)
+		return errors.New(msg) //TODO This maybe should be declared at the package level and then just returned
 	}
 
 	// Check the total

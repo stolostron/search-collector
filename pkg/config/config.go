@@ -26,7 +26,7 @@ import (
 
 // Out of box defaults
 const (
-	COLLECTOR_API_VERSION      = "3.5.0"
+	COLLECTOR_API_VERSION      = "2.0.0"
 	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010" // this will be deprecated in the future
 	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
 	DEFAULT_AGGREGATOR_PORT    = "3010"
@@ -36,8 +36,8 @@ const (
 	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
 	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE       = "production"
-	DEFAULT_TILLER_HOST        = "tiller-deploy.kube-system"
-	DEFAULT_TILLER_PORT        = "44134"
+	DEFAULT_TILLER_HOST        = "tiller-deploy.kube-system" // this will be deprecated.
+	DEFAULT_TILLER_PORT        = "44134"                     // this will be deprecated.
 )
 
 // Define a config type for gonfig to hold our config properties.
