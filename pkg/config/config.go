@@ -31,10 +31,10 @@ const (
 	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
 	DEFAULT_AGGREGATOR_PORT    = "3010"
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
-	DEFAULT_HEARTBEAT_MS       = 60000 // 1 min
-	DEFAULT_MAX_BACKOFF_MS     = 30000 // 10 min
-	DEFAULT_REDISCOVER_RATE_MS = 60000 // 1 min
-	DEFAULT_REPORT_RATE_MS     = 5000  // 5 seconds
+	DEFAULT_HEARTBEAT_MS       = 60000  // 1 min
+	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
+	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
+	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE       = "production"
 	DEFAULT_TILLER_HOST        = "tiller-deploy.kube-system" // this will be deprecated.
 	DEFAULT_TILLER_PORT        = "44134"                     // this will be deprecated.
