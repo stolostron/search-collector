@@ -140,9 +140,9 @@ func main() {
 					// Set up handler to pass this informer's resources into transformer
 					informer := dynamicInformer.Informer()
 					informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-						AddFunc:    createInformerAddHandler(gvr.Resource),
-						UpdateFunc: createInformerUpdateHandler(gvr.Resource),
-						DeleteFunc: informerDeleteHandler,
+						AddFunc:    createInformerAddHandler(gvr.Resource, upsertTransformer),
+						UpdateFunc: createInformerUpdateHandler(gvr.Resource, upsertTransformer),
+						DeleteFunc: informerDeleteHandler(reconciler),
 					})
 
 					stopper := make(chan struct{})
@@ -197,7 +197,7 @@ func main() {
 
 
 	// These functions return handler functions, which are then used in creation of the informers.
-func createInformerAddHandler(resourceName string) func(interface{}) {
+func createInformerAddHandler(resourceName string, upsertTransformer tr.Transformer) func(interface{}) {
 	return func(obj interface{}) {
 		resource := obj.(*unstructured.Unstructured)
 		upsert := tr.Event{
@@ -210,7 +210,7 @@ func createInformerAddHandler(resourceName string) func(interface{}) {
 	}
 }
 
-func createInformerUpdateHandler(resourceName string) func(interface{}, interface{}) {
+func createInformerUpdateHandler(resourceName string, upsertTransformer tr.Transformer) func(interface{}, interface{}) {
 	return func(oldObj, newObj interface{}) {
 		resource := newObj.(*unstructured.Unstructured)
 		upsert := tr.Event{
@@ -223,27 +223,29 @@ func createInformerUpdateHandler(resourceName string) func(interface{}, interfac
 	}
 }
 
-func informerDeleteHandler(obj interface{}) {
-	resource := obj.(*unstructured.Unstructured)
-	// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
-	ne := tr.NodeEvent{
-		Time:      time.Now().Unix(),
-		Operation: tr.Delete,
-		Node: tr.Node{
-			UID: strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
-		},
-	}
-	reconciler.Input <- ne
-
-	if tr.IsHelmRelease(resource) {
-		releaseNE := tr.NodeEvent{
+func informerDeleteHandler(reconciler *rec.Reconciler) func(obj interface{}) {
+	return func(obj interface{}) {
+		resource := obj.(*unstructured.Unstructured)
+		// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
+		ne := tr.NodeEvent{
 			Time:      time.Now().Unix(),
 			Operation: tr.Delete,
 			Node: tr.Node{
-				UID: tr.GetHelmReleaseUID(resource.GetLabels()["NAME"]),
+				UID: strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
 			},
 		}
-		reconciler.Input <- releaseNE
+		reconciler.Input <- ne
+
+		if tr.IsHelmRelease(resource) {
+			releaseNE := tr.NodeEvent{
+				Time:      time.Now().Unix(),
+				Operation: tr.Delete,
+				Node: tr.Node{
+					UID: tr.GetHelmReleaseUID(resource.GetLabels()["NAME"]),
+				},
+			}
+			reconciler.Input <- releaseNE
+		}
 	}
 }
 
