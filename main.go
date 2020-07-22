@@ -102,56 +102,6 @@ func main() {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 
-	// These functions return handler functions, which are then used in creation of the informers.
-	createInformerAddHandler := func(resourceName string) func(interface{}) {
-		return func(obj interface{}) {
-			resource := obj.(*unstructured.Unstructured)
-			upsert := tr.Event{
-				Time:           time.Now().Unix(),
-				Operation:      tr.Create,
-				Resource:       resource,
-				ResourceString: resourceName,
-			}
-			upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
-		}
-	}
-
-	createInformerUpdateHandler := func(resourceName string) func(interface{}, interface{}) {
-		return func(oldObj, newObj interface{}) {
-			resource := newObj.(*unstructured.Unstructured)
-			upsert := tr.Event{
-				Time:           time.Now().Unix(),
-				Operation:      tr.Update,
-				Resource:       resource,
-				ResourceString: resourceName,
-			}
-			upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
-		}
-	}
-
-	informerDeleteHandler := func(obj interface{}) {
-		resource := obj.(*unstructured.Unstructured)
-		// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
-		ne := tr.NodeEvent{
-			Time:      time.Now().Unix(),
-			Operation: tr.Delete,
-			Node: tr.Node{
-				UID: strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
-			},
-		}
-		reconciler.Input <- ne
-
-		if tr.IsHelmRelease(resource) {
-			releaseNE := tr.NodeEvent{
-				Time:      time.Now().Unix(),
-				Operation: tr.Delete,
-				Node: tr.Node{
-					UID: tr.GetHelmReleaseUID(resource.GetLabels()["NAME"]),
-				},
-			}
-			reconciler.Input <- releaseNE
-		}
-	}
 
 	// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
 	stoppers := make(map[schema.GroupVersionResource]chan struct{})
@@ -243,6 +193,58 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait() // This will never end (until we kill the process)
+}
+
+
+	// These functions return handler functions, which are then used in creation of the informers.
+func createInformerAddHandler(resourceName string) func(interface{}) {
+	return func(obj interface{}) {
+		resource := obj.(*unstructured.Unstructured)
+		upsert := tr.Event{
+			Time:           time.Now().Unix(),
+			Operation:      tr.Create,
+			Resource:       resource,
+			ResourceString: resourceName,
+		}
+		upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
+	}
+}
+
+func createInformerUpdateHandler(resourceName string) func(interface{}, interface{}) {
+	return func(oldObj, newObj interface{}) {
+		resource := newObj.(*unstructured.Unstructured)
+		upsert := tr.Event{
+			Time:           time.Now().Unix(),
+			Operation:      tr.Update,
+			Resource:       resource,
+			ResourceString: resourceName,
+		}
+		upsertTransformer.Input <- &upsert // Send resource into the transformer input channel
+	}
+}
+
+func informerDeleteHandler(obj interface{}) {
+	resource := obj.(*unstructured.Unstructured)
+	// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
+	ne := tr.NodeEvent{
+		Time:      time.Now().Unix(),
+		Operation: tr.Delete,
+		Node: tr.Node{
+			UID: strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
+		},
+	}
+	reconciler.Input <- ne
+
+	if tr.IsHelmRelease(resource) {
+		releaseNE := tr.NodeEvent{
+			Time:      time.Now().Unix(),
+			Operation: tr.Delete,
+			Node: tr.Node{
+				UID: tr.GetHelmReleaseUID(resource.GetLabels()["NAME"]),
+			},
+		}
+		reconciler.Input <- releaseNE
+	}
 }
 
 // Returns the smaller of two ints
