@@ -42,4 +42,4 @@ ENV VCS_REF="$VCS_REF" \
 ADD output/search-collector /bin
 
 USER ${USER_UID}
-ENTRYPOINT ["bin/search-collector"]
+ENTRYPOINT ["bin/search-collector -v 9"]

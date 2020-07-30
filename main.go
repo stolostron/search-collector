@@ -21,6 +21,7 @@ import (
 	"github.com/open-cluster-management/search-collector/pkg/config"
 	rec "github.com/open-cluster-management/search-collector/pkg/reconciler"
 	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
+	"github.com/quipo/goprofiler/profiler"
 
 	"github.com/golang/glog"
 	"github.com/open-cluster-management/search-collector/pkg/send"
@@ -36,6 +37,22 @@ import (
 )
 
 func main() {
+
+	pprofConf := profiler.Config{
+		Prefix:            "/tmp/collector.",
+		CPU:               true,
+		Memory:            true,
+		Block:             false,
+		Goroutine:         false,
+		Mutex:             false,
+		Interval:          "15s", // one snapshot every 15 seconds,
+		CPUProfileRate:    100,   // collect 100 CPU profiling samples per second
+		MemoryProfileRate: 1,     // collect information about all allocations
+		// MutexProfileRate:  1,     // collect information about all blocking events
+	}
+	prof := profiler.NewProfiler(pprofConf)
+	go prof.Run()
+
 	// init logs
 	flag.Parse()
 	err := flag.Lookup("logtostderr").Value.Set("true") // Glog is weird in that by default it logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).

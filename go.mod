@@ -17,6 +17,7 @@ require (
 	github.com/open-cluster-management/multicloud-operators-placementrule v1.0.0
 	github.com/open-cluster-management/multicloud-operators-subscription v1.0.0
 	github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.1-0.20200603160156-4d66bd136ba3 //Use 2.0 when available
+	github.com/quipo/goprofiler v0.0.0-20180501205818-e1e793403970
 	github.com/tkanos/gonfig v0.0.0-20181112185242-896f3d81fadf
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.2
