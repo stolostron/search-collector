@@ -46,7 +46,7 @@ func main() {
 		Goroutine:         false,
 		Mutex:             false,
 		Interval:          "15s", // one snapshot every 15 seconds,
-		CPUProfileRate:    100,   // collect 100 CPU profiling samples per second
+		CPUProfileRate:    20,    // collect 20 CPU profiling samples per second
 		MemoryProfileRate: 1,     // collect information about all allocations
 		// MutexProfileRate:  1,     // collect information about all blocking events
 	}
