@@ -27,6 +27,7 @@ func (d AppDeployableResource) BuildNode() Node {
 	return node
 }
 
+// See documentation at pkg/transforms/README.md
 func (d AppDeployableResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
 	UID := prefixedUID(d.UID)
