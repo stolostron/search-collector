@@ -42,6 +42,7 @@ func (s SubscriptionResource) BuildNode() Node {
 	return node
 }
 
+// See documentation at pkg/transforms/README.md
 func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
 	UID := prefixedUID(s.UID)
