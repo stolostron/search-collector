@@ -6,7 +6,7 @@ Here we document the properties collected for the kubernetes resources and the r
 
 - Properties that start with underscore `_` are only for internal use and won't be available for users to search.
 - Common properties that we collect for any resource:
-    - `kind (string), name (string), namespace (string), created (?), apigroup (string), apiversion (string), label (array)`
+    - `kind (string), name (string), namespace (string), created (string), apigroup (string), apiversion (string), label (array)`
     - **Deprecated:** `selfLink`. It can be built from the properties above. We don't expect users to search for this.
 - Each transform file had a BuildNode() function where we define which properties we want to extract an index for the resource.
 - Our goal is to match the properties displayed from `oc get <resource> -o wide`, but we don't have a generic way to do this yet.
