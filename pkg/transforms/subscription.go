@@ -35,6 +35,20 @@ func (s SubscriptionResource) BuildNode() Node {
 	if s.Status.Phase != "" {
 		node.Properties["status"] = s.Status.Phase
 	}
+	// Add hidden property for timewindow
+	if s.Spec.TimeWindow != nil && s.Spec.TimeWindow.WindowType != "" {
+		node.Properties["_timewindow"] = s.Spec.TimeWindow.WindowType
+	}
+	// Add hidden properties for app annotations
+	const appAnnotationPrefix string = "apps.open-cluster-management.io/"
+	annotations := s.GetAnnotations()
+	for _, annotation := range []string{"git-branch", "git-path", "git-commit"} {
+		annotationValue := annotations[appAnnotationPrefix + annotation]
+		if annotationValue != "" {
+			node.Properties["_" + strings.ReplaceAll(annotation, "-", "")] = annotationValue
+		}
+	}
+	// Add metadata specific to this type
 	if len(s.Spec.Channel) > 0 {
 		node.Metadata["_channels"] = s.Spec.Channel
 	}
