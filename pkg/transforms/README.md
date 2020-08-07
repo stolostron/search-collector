@@ -16,10 +16,16 @@ Here we document the properties collected for the kubernetes resources and the r
 Each transform has a BuildEdges() function where we find other resources related to each resource.
 
 ### Common
-Applies to any kubernetes resource.
+Edges for any kubernetes resource.
 
-  - **(\*)-[OWNED_BY]->(\*)**
+- **(\*)-[OWNED_BY]->(\*)**
     - Extract owner references from the object's metadata.
+- **(\*)-[DEFINED_BY]->(Deployable)**
+    - Logic explained on [Deployable (AppDeployable) section](#deployable-appdeployable).
+- **(\*)-[OWNED_BY]->(Release)**
+    - Logic explained on [Helm Release section](#helm-release-apphelmcr).
+- **(\*)-[DEPLOYED_BY]->(Subscription)**
+    - Logic explained on [Subscription section](#subscription).
 
 ### Application
 
@@ -47,12 +53,14 @@ Applies to any kubernetes resource.
 - **(Deployable)-[REFERS_TO]-(PlacementRule)**
   - Extract from `Spec.Placement.PlacementRef.Name`
 
-- **(*)-[DEFINED_BY]->(Deployable)**
-    - Use the annotation `_hostingDeployable` on any resource to link to the deployable that created the resource.
+- **(\*)-[DEFINED_BY]->(Deployable)**
+    > The logic to build this edge is on the common transform.
+    - Use the annotation `apps.open-cluster-management.io/hosting-deployable` on any resource to link to the deployable that created the resource.
     - This is built as part of commonEdges(). The annotation `apps.open-cluster-management.io/hosting-deployable` is saved on each node as `_hostingDeployable`
+    - If a node doesn't have the `apps.open-cluster-management.io/hosting-deployable` annotation, we will check recursively if its owner Node has the annotation and create the edge. For example, `(Pod)-[OwnedBy]->(ReplicaSet)` and `(ReplicaSet)-[OwnedBy]->(Deployment)` and the Deployment has `apps.open-cluster-management.io/hosting-deployable` or `apps.open-cluster-management.io/hosting-subscription` annotation, the pod and the replicaset will also have an edge to the deployable or subscription
 
 
-### HelmRelease (appHelmCR)
+### Helm Release (appHelmCR)
 - **(HelmRelease)-[ATTACHED_TO]->(ConfigMap)**
   - Extract from `Repo.ConfigMapRef.Name`
 - **(HelmRelease)-[ATTACHED_TO]->(Release)**
