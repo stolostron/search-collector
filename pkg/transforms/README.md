@@ -1,6 +1,6 @@
 # Data Model Documentation
 
-Here we document the properties collected for resources and the relationships between resources.
+Here we document the properties collected for the kubernetes resources and the relationships between those resources. This only covers the edges computed on the collector (intra-cluster).  Inter-cluster edges are computed in the aggregator.
 
 ## Resource Properties
 
