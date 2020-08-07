@@ -1,6 +1,12 @@
-# search-collector
+# Open Cluster Management - Search Collector
 
-This process runs on managed clusters and collects data about the resources which exist there and how those resources relate to each other, then sends that data back to the hub cluster. In conjunction with the [aggregator](https://github.com/open-cluster-management/search-aggregator), provides backend functionality supporting the [search features of OCM](https://github.com/open-cluster-management/search/blob/master/feature-spec/search.md).
+The `search collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/open-cluster-management/search/blob/master/feature-spec/search.md) has an overview of all the search components.
+
+This process targets any kubernetes cluster to collect data about its configuration resources and computes relationships between those resources. Then this data is sent to the [search-aggregator](https://github.com/open-cluster-management/search-aggregator), where it gets indexed in graph format.
+
+
+## Data Model
+The data model is documented at ./pkg/transforms/README.md
 
 
 ## Config and Usage
@@ -8,7 +14,7 @@ This process runs on managed clusters and collects data about the resources whic
 - The application can take any flags for [glog](https://github.com/golang/glog), it will pass them straight into glog. The glog flag `--logtostderr` is set to true by default.
 
 ### Running Locally
-> **Pre-requisite:** Go v1.12.17
+> **Pre-requisite:** Go v1.13
 1. Fetch Dependencies: `make deps`
     > **TIP 1:** You may need to install mercurial. `brew install mercurial`
     >
