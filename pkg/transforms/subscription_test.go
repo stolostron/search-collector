@@ -26,7 +26,7 @@ func TestTransformSubscription(t *testing.T) {
 	AssertEqual("channel", node.Properties["channel"], "testNs/test-channel", t)
 }
 
-func TestTransformSubscription2(t *testing.T) {
+func TestTransformSubscriptionWithTimeWindow(t *testing.T) {
 	var s v1.Subscription
 	UnmarshalFile("subscription2.json", &s, t)
 	node := SubscriptionResource{&s}.BuildNode()
