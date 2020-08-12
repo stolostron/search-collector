@@ -32,7 +32,7 @@ func TestTransformSubscription2(t *testing.T) {
 	node := SubscriptionResource{&s}.BuildNode()
 
 	// Test optional fields that exist in subscription - the common test will test the other bits
-	AssertEqual("_timewindow", node.Properties["_timewindow"], "active", t)
+	AssertEqual("timeWindow", node.Properties["timeWindow"], "active", t)
 	AssertEqual("_gitbranch", node.Properties["_gitbranch"], "master", t)
 	AssertEqual("_gitpath", node.Properties["_gitpath"], "helloworld", t)
 	AssertEqual("_gitcommit", node.Properties["_gitcommit"], "d67d8e10dcfa41dddcac14952e9872e1dfece06f", t)

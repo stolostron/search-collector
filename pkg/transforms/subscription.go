@@ -35,9 +35,9 @@ func (s SubscriptionResource) BuildNode() Node {
 	if s.Status.Phase != "" {
 		node.Properties["status"] = s.Status.Phase
 	}
-	// Add hidden property for timewindow
+	// Add timeWindow property
 	if s.Spec.TimeWindow != nil && s.Spec.TimeWindow.WindowType != "" {
-		node.Properties["_timewindow"] = s.Spec.TimeWindow.WindowType
+		node.Properties["timeWindow"] = s.Spec.TimeWindow.WindowType
 	}
 	// Add hidden properties for app annotations
 	const appAnnotationPrefix string = "apps.open-cluster-management.io/"
