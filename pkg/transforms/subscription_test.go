@@ -19,9 +19,21 @@ func TestTransformSubscription(t *testing.T) {
 	UnmarshalFile("subscription.json", &s, t)
 	node := SubscriptionResource{&s}.BuildNode()
 
-	// Test only the fields that exist in stateful set - the common test will test the other bits
+	// Test only the fields that exist in subscription - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Subscription", t)
 	AssertEqual("packageFilterVersion", node.Properties["packageFilterVersion"], "1.x", t)
 	AssertEqual("package", node.Properties["package"], "test-package", t)
 	AssertEqual("channel", node.Properties["channel"], "testNs/test-channel", t)
+}
+
+func TestTransformSubscriptionWithTimeWindow(t *testing.T) {
+	var s v1.Subscription
+	UnmarshalFile("subscription2.json", &s, t)
+	node := SubscriptionResource{&s}.BuildNode()
+
+	// Test optional fields that exist in subscription - the common test will test the other bits
+	AssertEqual("timeWindow", node.Properties["timeWindow"], "active", t)
+	AssertEqual("_gitbranch", node.Properties["_gitbranch"], "master", t)
+	AssertEqual("_gitpath", node.Properties["_gitpath"], "helloworld", t)
+	AssertEqual("_gitcommit", node.Properties["_gitcommit"], "d67d8e10dcfa41dddcac14952e9872e1dfece06f", t)
 }
