@@ -34,21 +34,24 @@ func (i GenericInformer) AddEventHandler(h cache.ResourceEventHandlerFuncs) {
 
 func (i GenericInformer) Run(stopper chan struct{}) {
 	glog.Info("Starting informer ", i.gvr.String())
-	glog.Info("TODO: Add informer logic here...")
 
-	// Call resource lister.
-	// 		For each resource invoke AddFunc()
-	// 		Record and track the UID and current ResourceVersion.
+	// 1. List all resources for a given GVR (GroupVersionResource)
 	client := config.GetDynamicClient()
-	resources, listError := client.Resource(i.gvr).Namespace("open-cluster-management").List(metav1.ListOptions{})
+	resources, listError := client.Resource(i.gvr).List(metav1.ListOptions{})
 
+	if listError != nil {
+		glog.Warningf("Error listing resources for %s.  Error: %s", i.gvr.String(), listError)
+	}
+	// TODO: For each resource invoke AddFunc()
+	// TODO: Record and track the UID and current ResourceVersion.
 	glog.Info("Resources:  ", resources)
-	glog.Info(" listError: ", listError)
 
-	// Start a watcher starting from resourceVersion.
+	// 2. Start a watcher starting from resourceVersion.
+	watch, watchError := client.Resource(i.gvr).Watch(metav1.ListOptions{})
+
+	glog.Info("Watch:", watch, watchError)
 	//   	Call Add/Update/Delete functions.
 	// 		Keep track of UID and current ResourceVersion.
 	//		Continuously monitor the status of the watch, if it times out or connection drops, restart the watcher.
 
-	// return client.Resource(gvr).Namespace(namespace).Watch(context.TODO(), options)
 }
