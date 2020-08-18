@@ -18,8 +18,8 @@ require (
 	github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.1-0.20200603160156-4d66bd136ba3 //Use 2.0 when available
 	github.com/tkanos/gonfig v0.0.0-20181112185242-896f3d81fadf
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
+	k8s.io/api v0.18.8
+	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.16.7+incompatible
 	sigs.k8s.io/application v0.8.3
