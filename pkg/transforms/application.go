@@ -28,6 +28,7 @@ func (a ApplicationResource) BuildNode() Node {
 	return node
 }
 
+// See documentation at pkg/transforms/README.md
 func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
 	UID := prefixedUID(a.UID)

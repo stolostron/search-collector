@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi7/ubi-minimal:7.8-237
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.2
 
 ARG VCS_REF
 ARG VCS_URL
@@ -31,7 +31,8 @@ LABEL org.label-schema.vendor="Red Hat" \
       io.k8s.description="$IMAGE_DESCRIPTION" \
       io.openshift.tags="$IMAGE_OPENSHIFT_TAGS"
 
-RUN microdnf install ca-certificates vi --nodocs &&\
+RUN microdnf update &&\
+    microdnf install ca-certificates vi --nodocs &&\
     mkdir /licenses &&\
     microdnf clean all
 
