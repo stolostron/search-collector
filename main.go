@@ -4,6 +4,8 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package main
@@ -29,9 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 func main() {
@@ -68,35 +68,14 @@ func main() {
 	// Create Sender, attached to transformer
 	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
 
-	var clientConfig *rest.Config
-	var clientConfigError error
-
-	if config.Cfg.KubeConfig != "" {
-		glog.Infof("Creating k8s client using path: %s", config.Cfg.KubeConfig)
-		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", config.Cfg.KubeConfig)
-	} else {
-		glog.Info("Creating k8s client using InClusterlientConfig()")
-		clientConfig, clientConfigError = rest.InClusterConfig()
-	}
-
-	if clientConfigError != nil {
-		glog.Fatal("Error Constructing Client From Config: ", clientConfigError)
-	}
-
-	tr.StartHelmClientProvider(transformChannel, clientConfig)
-
-	// Initialize the dynamic client, used for CRUD operations on arbitrary k8s resources
-	// dynamicClientset, err := dynamic.NewForConfig(clientConfig)
-	// if err != nil {
-	// 	glog.Fatal("Cannot Construct Dynamic Client From Config: ", err)
-	// }
+	tr.StartHelmClientProvider(transformChannel, config.GetKubeConfig())
 
 	// Create informer factories
 	// factory for building dynamic informer objects used with CRDs and arbitrary k8s objects
 	// dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClientset, 0)
 
 	// Create special type of client used for discovering resource types
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(clientConfig)
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config.GetKubeConfig())
 	if err != nil {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
@@ -184,12 +163,10 @@ func main() {
 				// have a new informer created for it.
 				for gvr := range gvrList {
 					glog.Infof("Found new resource %s, creating informer\n", gvr.String())
+					// Using our custom informer.
 					informer, _ := inform.InformerForResource(gvr)
-					// In this case we need to create a dynamic informer, since there is no built in informer for this type.
-					// dynamicInformer := dynamicFactory.ForResource(gvr)
-					// glog.Infof("Found new resource %s, creating informer\n", gvr.String())
+
 					// Set up handler to pass this informer's resources into transformer
-					// informer := dynamicInformer.Informer()
 					informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 						AddFunc:    createInformerAddHandler(gvr.Resource),
 						UpdateFunc: createInformerUpdateHandler(gvr.Resource),
