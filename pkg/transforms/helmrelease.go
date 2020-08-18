@@ -31,8 +31,10 @@ func GetHelmReleaseUID(releaseName string) string {
 }
 
 func (h HelmReleaseResource) BuildNode() Node {
+
 	releaseLabels := h.GetLabels()
 	releaseName := releaseLabels["NAME"]
+	glog.Info("****In HelmReleaseResource BuildNode**** kind: Release, name: ", releaseLabels["NAME"])
 
 	node := Node{
 		UID:        GetHelmReleaseUID(releaseName),
@@ -120,6 +122,7 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 	UID := GetHelmReleaseUID(h.GetLabels()["NAME"])
 	edges := []Edge{}
 	helmNode := ns.ByUID[UID]
+	glog.Info("****In HelmReleaseResource BuildEdges**** kind: Release, UID: ", UID)
 
 	for _, resource := range smr {
 
