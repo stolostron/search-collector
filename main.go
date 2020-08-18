@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/open-cluster-management/search-collector/pkg/config"
+	inform "github.com/open-cluster-management/search-collector/pkg/informer"
 	rec "github.com/open-cluster-management/search-collector/pkg/reconciler"
 	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 
@@ -28,8 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -87,14 +86,14 @@ func main() {
 	tr.StartHelmClientProvider(transformChannel, clientConfig)
 
 	// Initialize the dynamic client, used for CRUD operations on arbitrary k8s resources
-	dynamicClientset, err := dynamic.NewForConfig(clientConfig)
-	if err != nil {
-		glog.Fatal("Cannot Construct Dynamic Client From Config: ", err)
-	}
+	// dynamicClientset, err := dynamic.NewForConfig(clientConfig)
+	// if err != nil {
+	// 	glog.Fatal("Cannot Construct Dynamic Client From Config: ", err)
+	// }
 
 	// Create informer factories
 	// factory for building dynamic informer objects used with CRDs and arbitrary k8s objects
-	dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClientset, 0)
+	// dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClientset, 0)
 
 	// Create special type of client used for discovering resource types
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(clientConfig)
@@ -184,11 +183,13 @@ func main() {
 				// Now, loop through the new list, which after the above deletions, contains only stuff that needs to
 				// have a new informer created for it.
 				for gvr := range gvrList {
-					// In this case we need to create a dynamic informer, since there is no built in informer for this type.
-					dynamicInformer := dynamicFactory.ForResource(gvr)
 					glog.Infof("Found new resource %s, creating informer\n", gvr.String())
+					informer, _ := inform.InformerForResource(gvr)
+					// In this case we need to create a dynamic informer, since there is no built in informer for this type.
+					// dynamicInformer := dynamicFactory.ForResource(gvr)
+					// glog.Infof("Found new resource %s, creating informer\n", gvr.String())
 					// Set up handler to pass this informer's resources into transformer
-					informer := dynamicInformer.Informer()
+					// informer := dynamicInformer.Informer()
 					informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 						AddFunc:    createInformerAddHandler(gvr.Resource),
 						UpdateFunc: createInformerUpdateHandler(gvr.Resource),
