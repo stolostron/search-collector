@@ -26,6 +26,7 @@ func (c ChannelResource) BuildNode() Node {
 	return node
 }
 
+// See documentation at pkg/transforms/README.md
 func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
 	UID := prefixedUID(c.UID)
