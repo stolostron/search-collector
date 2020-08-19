@@ -72,14 +72,16 @@ func (i GenericInformer) Run(stopper chan struct{}) {
 				glog.Warning("Error converting event.Object to unstructured.", error)
 			}
 			i.AddFunc(&unstructured.Unstructured{u})
-		} else if event.Type == "MODIFIED" {
-			glog.Info("Received MODIFY event.")
 
+		} else if event.Type == "MODIFIED" {
 			u, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
 				glog.Warning("Error converting event.Object to unstructured.", error)
 			}
-			i.UpdateFunc(nil, &unstructured.Unstructured{u})
+			un := &unstructured.Unstructured{u}
+			glog.Infof("Received MODIFY event.  Kind: %s \tName: %s", un.GetKind(), un.GetName())
+
+			i.UpdateFunc(nil, un)
 		} else if event.Type == "DELETED" {
 			glog.Info("Received DELETE event.", event.Object)
 		} else {
