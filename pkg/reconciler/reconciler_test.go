@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"log"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -374,9 +375,12 @@ func TestReconcilerComplete(t *testing.T) {
 	// Compute reconciler Complete() state
 	com := testReconciler.Complete()
 
-	// Currently we have 27 nodes and 29 edges. If we change the transform test json's to add more, update the testcase accordingly. This will also help us in testing when we add more nodes/edges
-	// We dont create Nodes for kind = Event
-	if len(com.Edges) != 29 || com.TotalEdges != 29 || len(com.Nodes) != 27 || com.TotalNodes != 27 {
+	// Checks the count of nodes and edges based on the JSON files in pkg/test-data
+	// Update counts when the test data is changed
+	// We don't create Nodes for kind = Event
+	const Nodes = 29
+	const Edges = 34
+	if len(com.Edges) != Edges || com.TotalEdges != Edges || len(com.Nodes) != Nodes || com.TotalNodes != Nodes {
 		ns := tr.NodeStore{
 			ByUID:               testReconciler.currentNodes,
 			ByKindNamespaceName: nodeTripleMap(testReconciler.currentNodes),
@@ -386,8 +390,8 @@ func TestReconcilerComplete(t *testing.T) {
 			glog.Info("Src: ", ns.ByUID[edge.SourceUID].Properties["kind"], " Type: ", edge.EdgeType, " Dest: ", ns.ByUID[edge.DestUID].Properties["kind"])
 		}
 
-		t.Log("Expected 27 nodes, but found ", len(com.Nodes))
-		t.Log("Expected 29 edges, but found ", len(com.Edges))
+		t.Log("Expected " + strconv.Itoa(Nodes) + " nodes, but found ", len(com.Nodes))
+		t.Log("Expected " + strconv.Itoa(Edges) + " edges, but found ", len(com.Edges))
 		t.Fatalf("Error: Reconciler Complete() not working as expected.")
 	} else {
 		t.Log("Reconciler Complete() working as expected")

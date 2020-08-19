@@ -11,11 +11,11 @@
         },
         "creationTimestamp": "2019-07-16T20:58:03Z",
         "generation": 3,
-        "name": "test-subscription",
+        "name": "test-subscription-2",
         "namespace": "default",
         "resourceVersion": "11715766",
-        "selfLink": "/apis/apps.open-cluster-management.io/v1alpha1/namespaces/default/subscriptions/test-subscription",
-        "uid": "57fd017f-b91d-20d1-803z-1f61f731b8bb"
+        "selfLink": "/apis/apps.open-cluster-management.io/v1alpha1/namespaces/default/subscriptions/test-subscription-2",
+        "uid": "17fd017f-b91d-20d1-803z-1f31f731b8bb"
     },
     "spec": {
         "channel": "testNs/test-channel",

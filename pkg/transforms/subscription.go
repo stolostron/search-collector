@@ -10,6 +10,7 @@ package transforms
 
 import (
 	"strings"
+	"strconv"
 
 	app "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1"
 )
@@ -38,6 +39,10 @@ func (s SubscriptionResource) BuildNode() Node {
 	// Add timeWindow property
 	if s.Spec.TimeWindow != nil && s.Spec.TimeWindow.WindowType != "" {
 		node.Properties["timeWindow"] = s.Spec.TimeWindow.WindowType
+	}
+	// Add localPlacement property
+	if s.Spec.Placement != nil && s.Spec.Placement.Local != nil {
+		node.Properties["localPlacement"] = strings.Title(strconv.FormatBool(*s.Spec.Placement.Local))
 	}
 	// Add hidden properties for app annotations
 	const appAnnotationPrefix string = "apps.open-cluster-management.io/"
