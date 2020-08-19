@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/tools/cache"
 )
 
 func main() {
@@ -167,11 +166,9 @@ func main() {
 					informer, _ := inform.InformerForResource(gvr)
 
 					// Set up handler to pass this informer's resources into transformer
-					informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-						AddFunc:    createInformerAddHandler(gvr.Resource),
-						UpdateFunc: createInformerUpdateHandler(gvr.Resource),
-						DeleteFunc: informerDeleteHandler,
-					})
+					informer.AddFunc = createInformerAddHandler(gvr.Resource)
+					informer.UpdateFunc = createInformerUpdateHandler(gvr.Resource)
+					informer.DeleteFunc = informerDeleteHandler
 
 					stopper := make(chan struct{})
 					stoppers[gvr] = stopper
