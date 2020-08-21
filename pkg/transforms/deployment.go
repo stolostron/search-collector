@@ -13,10 +13,10 @@ import (
 )
 
 type DeploymentResource struct {
-	*v1.Deployment
+	node Node
 }
 
-func (d DeploymentResource) BuildNode() Node {
+func DeploymentResourceBuilder(d *v1.Deployment) *DeploymentResource {
 	node := transformCommon(d)         // Start off with the common properties
 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -28,7 +28,11 @@ func (d DeploymentResource) BuildNode() Node {
 		node.Properties["desired"] = int64(*d.Spec.Replicas)
 	}
 
-	return node
+	return &DeploymentResource{node: node}
+}
+
+func (d DeploymentResource) BuildNode() Node {
+	return d.node
 }
 
 func (d DeploymentResource) BuildEdges(ns NodeStore) []Edge {

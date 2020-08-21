@@ -244,7 +244,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DeploymentResource{&typedResource}
+			trans = DeploymentResourceBuilder(&typedResource)
 
 		case [2]string{"Deployment", "extensions"}:
 			typedResource := apps.Deployment{}
