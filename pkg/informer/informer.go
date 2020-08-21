@@ -65,7 +65,7 @@ func (i GenericInformer) Run(stopper chan struct{}) {
 
 		//  Process Add/Update/Delete events.
 		if event.Type == "ADDED" {
-			glog.Info("Received ADDED event.")
+			// glog.Info("Received ADDED event.")
 
 			u, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
@@ -79,7 +79,7 @@ func (i GenericInformer) Run(stopper chan struct{}) {
 				glog.Warning("Error converting event.Object to unstructured.", error)
 			}
 			un := &unstructured.Unstructured{u}
-			glog.Infof("Received MODIFY event.  Kind: %s \tName: %s", un.GetKind(), un.GetName())
+			// glog.Infof("Received MODIFY event.  Kind: %s \tName: %s", un.GetKind(), un.GetName())
 
 			i.UpdateFunc(nil, un)
 		} else if event.Type == "DELETED" {

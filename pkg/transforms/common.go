@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -16,7 +17,6 @@ import (
 	"github.com/open-cluster-management/search-collector/pkg/config"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apiTypes "k8s.io/apimachinery/pkg/types"
 )
 
@@ -64,62 +64,6 @@ func transformCommon(resource machineryV1.Object) Node {
 	}
 	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
 	return n
-}
-
-// Extracts the properties from a non-default k8s resource and returns them in a map ready to be put in an Node
-func unstructuredProperties(resource UnstructuredResource) map[string]interface{} {
-	ret := make(map[string]interface{})
-
-	ret["kind"] = resource.GetKind()
-	ret["name"] = resource.GetName()
-	ret["selfLink"] = resource.GetSelfLink()
-	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
-	ret["_clusterNamespace"] = config.Cfg.ClusterNamespace
-	if config.Cfg.DeployedInHub {
-		ret["_hubClusterResource"] = true
-	}
-
-	// valid api group with have format of "apigroup/version"
-	// unnamed api groups will have format of "/version"
-	slice := strings.Split(resource.GetAPIVersion(), "/")
-	if len(slice) == 2 {
-		ret["apigroup"] = slice[0]
-		ret["apiversion"] = slice[1]
-	}
-
-	if resource.GetLabels() != nil {
-		ret["label"] = resource.GetLabels()
-	}
-	if resource.GetNamespace() != "" {
-		ret["namespace"] = resource.GetNamespace()
-	}
-	if resource.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"] != "" {
-		ret["_hostingSubscription"] = resource.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"]
-	}
-	if resource.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"] != "" {
-		ret["_hostingDeployable"] = resource.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"]
-	}
-	return ret
-
-}
-
-type UnstructuredResource struct {
-	*unstructured.Unstructured
-}
-
-func (u UnstructuredResource) BuildNode() Node {
-	n := Node{
-		UID:        prefixedUID(u.GetUID()),
-		Properties: unstructuredProperties(u),
-		Metadata:   make(map[string]string),
-	}
-	n.Metadata["OwnerUID"] = ownerRefUID(u.GetOwnerReferences())
-	return n
-}
-
-func (u UnstructuredResource) BuildEdges(ns NodeStore) []Edge {
-	// The deployer subscriber edges will be made through CommonEdges
-	return []Edge{}
 }
 
 func CommonEdges(uid string, ns NodeStore) []Edge {

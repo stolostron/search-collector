@@ -384,7 +384,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = SubscriptionResource{&typedResource}
 
 		default:
-			trans = UnstructuredResource{event.Resource}
+			trans = GenericNodeBuilder(event.Resource)
 		}
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)
