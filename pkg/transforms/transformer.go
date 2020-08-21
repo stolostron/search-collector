@@ -252,7 +252,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DeploymentResource{&typedResource}
+			trans = DeploymentResourceBuilder(&typedResource)
 
 			//This is the application's HelmCR of kind HelmRelease.
 		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
@@ -384,7 +384,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = SubscriptionResource{&typedResource}
 
 		default:
-			trans = GenericNodeBuilder(event.Resource)
+			trans = GenericResourceBuilder(event.Resource)
 		}
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)
