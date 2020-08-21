@@ -44,5 +44,5 @@ func TestTransformSubscriptionWithLocalPlacement(t *testing.T) {
 	node := SubscriptionResource{&s}.BuildNode()
 
 	// Test optional fields that exist in subscription - the common test will test the other bits
-	AssertEqual("localPlacement", node.Properties["localPlacement"], "True", t)
+	AssertEqual("localPlacement", node.Properties["localPlacement"], true, t)
 }
