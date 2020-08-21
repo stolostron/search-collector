@@ -35,6 +35,7 @@ import (
 	"k8s.io/helm/pkg/proto/hapi/release"
 )
 
+// Operation is the event operation
 type Operation int
 
 const (
@@ -204,7 +205,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = CronJobResource{&typedResource}
+			trans = CronJobResourceBuilder(&typedResource)
 
 		case [2]string{"DaemonSet", "extensions"}:
 			typedResource := apps.DaemonSet{}
@@ -212,7 +213,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DaemonSetResource{&typedResource}
+			trans = DaemonSetResourceBuilder(&typedResource)
 
 		case [2]string{"DaemonSet", "apps"}:
 			typedResource := apps.DaemonSet{}
@@ -220,7 +221,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DaemonSetResource{&typedResource}
+			trans = DaemonSetResourceBuilder(&typedResource)
 
 		case [2]string{"Deployable", "app.ibm.com"}, [2]string{"Deployable", "apps.open-cluster-management.io"}:
 			typedResource := appDeployable.Deployable{}
@@ -236,7 +237,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DeployableResource{&typedResource}
+			trans = DeployableResourceBuilder(&typedResource)
 
 		case [2]string{"Deployment", "apps"}:
 			typedResource := apps.Deployment{}
@@ -252,7 +253,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DeploymentResource{&typedResource}
+			trans = DeploymentResourceBuilder(&typedResource)
 
 			//This is the application's HelmCR of kind HelmRelease.
 		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
@@ -269,7 +270,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = JobResource{&typedResource}
+			trans = JobResourceBuilder(&typedResource)
 
 		case [2]string{"Namespace", ""}:
 			typedResource := core.Namespace{}
@@ -277,7 +278,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = NamespaceResource{&typedResource}
+			trans = NamespaceResourceBuilder(&typedResource)
 
 		case [2]string{"Node", ""}:
 			typedResource := core.Node{}
@@ -285,7 +286,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = NodeResource{&typedResource}
+			trans = NodeResourceBuilder(&typedResource)
 
 		case [2]string{"PersistentVolume", ""}:
 			typedResource := core.PersistentVolume{}
@@ -293,7 +294,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PersistentVolumeResource{&typedResource}
+			trans = PersistentVolumeResourceBuilder(&typedResource)
 
 		case [2]string{"PersistentVolumeClaim", ""}:
 			typedResource := core.PersistentVolumeClaim{}
@@ -317,7 +318,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PlacementPolicyResource{&typedResource}
+			trans = PlacementPolicyResourceBuilder(&typedResource)
 
 		case [2]string{"PlacementRule", "app.ibm.com"}, [2]string{"PlacementRule", "apps.open-cluster-management.io"}:
 			typedResource := rule.PlacementRule{}
@@ -341,7 +342,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PolicyResource{&typedResource}
+			trans = PolicyResourceBuilder(&typedResource)
 
 		case [2]string{"ReplicaSet", "apps"}:
 			typedResource := apps.ReplicaSet{}
@@ -349,7 +350,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ReplicaSetResource{&typedResource}
+			trans = ReplicaSetResourceBuilder(&typedResource)
 
 		case [2]string{"ReplicaSet", "extensions"}:
 			typedResource := apps.ReplicaSet{}
@@ -357,7 +358,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ReplicaSetResource{&typedResource}
+			trans = ReplicaSetResourceBuilder(&typedResource)
 
 		case [2]string{"Service", ""}:
 			typedResource := core.Service{}
@@ -373,7 +374,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = StatefulSetResource{&typedResource}
+			trans = StatefulSetResourceBuilder(&typedResource)
 
 		case [2]string{"Subscription", "app.ibm.com"}, [2]string{"Subscription", "apps.open-cluster-management.io"}:
 			typedResource := subscription.Subscription{}
@@ -384,7 +385,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = SubscriptionResource{&typedResource}
 
 		default:
-			trans = GenericNodeBuilder(event.Resource)
+			trans = GenericResourceBuilder(event.Resource)
 		}
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)

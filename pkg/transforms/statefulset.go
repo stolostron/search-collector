@@ -13,10 +13,10 @@ import (
 )
 
 type StatefulSetResource struct {
-	*v1.StatefulSet
+	node Node
 }
 
-func (s StatefulSetResource) BuildNode() Node {
+func StatefulSetResourceBuilder(s *v1.StatefulSet) *StatefulSetResource {
 	node := transformCommon(s)         // Start off with the common properties
 	apiGroupVersion(s.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -26,7 +26,11 @@ func (s StatefulSetResource) BuildNode() Node {
 		node.Properties["desired"] = int64(*s.Spec.Replicas)
 	}
 
-	return node
+	return &StatefulSetResource{node: node}
+}
+
+func (s StatefulSetResource) BuildNode() Node {
+	return s.node
 }
 
 func (s StatefulSetResource) BuildEdges(ns NodeStore) []Edge {

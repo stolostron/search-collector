@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -12,11 +13,13 @@ import (
 	v1 "k8s.io/api/apps/v1"
 )
 
+// ReplicaSetResource ...
 type ReplicaSetResource struct {
-	*v1.ReplicaSet
+	node Node
 }
 
-func (r ReplicaSetResource) BuildNode() Node {
+// ReplicaSetResourceBuilder ...
+func ReplicaSetResourceBuilder(r *v1.ReplicaSet) *ReplicaSetResource {
 	node := transformCommon(r)         // Start off with the common properties
 	apiGroupVersion(r.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -26,9 +29,15 @@ func (r ReplicaSetResource) BuildNode() Node {
 		node.Properties["desired"] = int64(*r.Spec.Replicas)
 	}
 
-	return node
+	return &ReplicaSetResource{node: node}
 }
 
+// BuildNode construct the node for ReplicaSet Resources
+func (r ReplicaSetResource) BuildNode() Node {
+	return r.node
+}
+
+// BuildEdges construct the edges for ReplicaSet Resources
 func (r ReplicaSetResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}

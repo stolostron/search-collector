@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -15,11 +16,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// NodeResource ...
 type NodeResource struct {
-	*v1.Node
+	node Node
 }
 
-func (n NodeResource) BuildNode() Node {
+// NodeResourceBuilder ...
+func NodeResourceBuilder(n *v1.Node) *NodeResource {
 	node := transformCommon(n) // Start off with the common properties
 
 	var roles []string
@@ -53,9 +56,15 @@ func (n NodeResource) BuildNode() Node {
 	node.Properties["osImage"] = n.Status.NodeInfo.OSImage
 	node.Properties["role"] = roles
 
-	return node
+	return &NodeResource{node: node}
 }
 
+// BuildNode construct the node for the Node Resources
+func (n NodeResource) BuildNode() Node {
+	return n.node
+}
+
+// BuildEdges construct the edges for the Node Resources
 func (n NodeResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}
