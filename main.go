@@ -31,6 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -212,6 +215,9 @@ func main() {
 			time.Sleep(timeToSleep)
 		}
 	}()
+
+	time.Sleep(90 * time.Second)
+	http.ListenAndServe(":8080", nil)
 
 	// We don't actually use this to wait on anything, since the transformer routines don't ever end unless something
 	// goes wrong. We just use this to wait forever in main once we start things up.
