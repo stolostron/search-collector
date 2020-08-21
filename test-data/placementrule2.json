@@ -14,11 +14,11 @@
             "heritage": "Tiller",
             "release": "test"
         },
-        "name": "test-placementrule",
+        "name": "test-placementrule-2",
         "namespace": "default",
         "resourceVersion": "68820",
-        "selfLink": "/apis/apps.open-cluster-management.io/v1alpha1/namespaces/guestbook/placementrules/test-test",
-        "uid": "f9179gd1-f8e9-22f1-cdd6-9164514111f0"
+        "selfLink": "/apis/apps.open-cluster-management.io/v1/namespaces/default/placementrules/test-placementrule-2",
+        "uid": "a9170gd1-f8e9-22f1-ced6-9164314111f0"
     },
     "spec": {
         "clusterLabels": {
@@ -26,7 +26,8 @@
                 "environment": "Dev",
                 "name": "test-1"
             }
-        }
+        },
+        "clusterReplicas": 5
     },
     "status": {
         "decisions": [
