@@ -326,7 +326,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PlacementRuleResource{&typedResource}
+			trans = PlacementRuleResourceBuilder(&typedResource)
 
 		case [2]string{"Pod", ""}:
 			typedResource := core.Pod{}
