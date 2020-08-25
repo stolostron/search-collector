@@ -50,7 +50,8 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 		inform.AddFunc(&resources.Items[i])
 		// glog.Infof("Called AddFunc() for [ Kind: %s  Name: %s ]", r.GetKind(), r.GetName())
 	}
-	glog.V(3).Infof("Listed   [Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s", inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
+	glog.V(3).Infof("Listed   [Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
+		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
 	// 2. Start a watcher starting from resourceVersion.
 	watch, watchError := client.Resource(inform.gvr).Watch(metav1.ListOptions{})
@@ -62,6 +63,11 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 	watchEvents := watch.ResultChan()
 
 	for {
+		// TODO: Implement stopper.
+		// stop := <-stopper
+		// if stop != nil {
+		// glog.Info("!!! Informer stopped???", stop)
+		// }
 		event := <-watchEvents // Read from the input channel
 
 		//  Process Add/Update/Delete events.
@@ -69,7 +75,8 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 			glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s", inform.gvr.Resource, error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s",
+					inform.gvr.Resource, error)
 			}
 			inform.AddFunc(&unstructured.Unstructured{Object: obj})
 
@@ -77,7 +84,8 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 			glog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s", inform.gvr.Resource, error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s",
+					inform.gvr.Resource, error)
 			}
 			un := &unstructured.Unstructured{Object: obj}
 
@@ -86,14 +94,18 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 			glog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s", inform.gvr.Resource, error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s",
+					inform.gvr.Resource, error)
 			}
 			inform.DeleteFunc(&unstructured.Unstructured{Object: obj})
 		} else {
-			glog.Error("ERROR: Received unexpected event. Should restart the watcher.", inform.gvr.Group, inform.gvr.Resource, event)
+			glog.Error("ERROR: Received unexpected event. Should restart the watcher.",
+				inform.gvr.Group, inform.gvr.Resource, event)
+			// TODO: Restart the warcher.
 		}
 	}
 
-	// 	TODO: Keep track of UID and current ResourceVersion.
-	//	TODO: Continuously monitor the status of the watch, if it times out or connection drops, restart the watcher.
+	// 	TODO:
+	//    - [Maybe don't need this] Keep track of UID and current ResourceVersion.
+	//	  - Continuously monitor the status of the watch, if it times out or connection drops, restart the watcher.
 }

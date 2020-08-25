@@ -195,7 +195,8 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 				})
 			}
 		} else {
-			glog.V(2).Infof("Pod %s runsOn edge not created: Node %s not found", p.node.Properties["namespace"].(string)+"/"+p.node.Properties["name"].(string), "_NONE/"+nodeName)
+			glog.V(2).Infof("Pod %s runsOn edge not created: Node %s not found",
+				p.node.Properties["namespace"].(string)+"/"+p.node.Properties["name"].(string), "_NONE/"+nodeName)
 		}
 	}
 	return ret
