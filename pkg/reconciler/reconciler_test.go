@@ -57,8 +57,8 @@ func createNodeEvents() []tr.NodeEvent {
 			},
 		},
 	}
-	unstructuredNode := tr.UnstructuredResource{Unstructured: &unstructuredInput}.BuildNode()
-	bEdges := tr.UnstructuredResource{Unstructured: &unstructuredInput}.BuildEdges
+	unstructuredNode := unstructured.UnstructuredResource{Unstructured: &unstructuredInput}.BuildNode()
+	bEdges := unstructured.UnstructuredResource{Unstructured: &unstructuredInput}.BuildEdges
 	events.BuildNode = append(events.BuildNode, unstructuredNode)
 	events.BuildEdges = append(events.BuildEdges, bEdges)
 
@@ -390,8 +390,8 @@ func TestReconcilerComplete(t *testing.T) {
 			glog.Info("Src: ", ns.ByUID[edge.SourceUID].Properties["kind"], " Type: ", edge.EdgeType, " Dest: ", ns.ByUID[edge.DestUID].Properties["kind"])
 		}
 
-		t.Log("Expected " + strconv.Itoa(Nodes) + " nodes, but found ", len(com.Nodes))
-		t.Log("Expected " + strconv.Itoa(Edges) + " edges, but found ", len(com.Edges))
+		t.Log("Expected "+strconv.Itoa(Nodes)+" nodes, but found ", len(com.Nodes))
+		t.Log("Expected "+strconv.Itoa(Edges)+" edges, but found ", len(com.Edges))
 		t.Fatalf("Error: Reconciler Complete() not working as expected.")
 	} else {
 		t.Log("Reconciler Complete() working as expected")
