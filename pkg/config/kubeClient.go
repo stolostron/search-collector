@@ -10,12 +10,12 @@ import (
 )
 
 func GetDynamicClient() dynamic.Interface {
-	clientset, err := dynamic.NewForConfig(GetKubeConfig())
+	dynamicClient, err := dynamic.NewForConfig(GetKubeConfig())
 	if err != nil {
 		glog.Fatal("Cannot Construct Dynamic Client ", err)
 	}
 
-	return clientset
+	return dynamicClient
 }
 
 func GetKubeConfig() *rest.Config {
