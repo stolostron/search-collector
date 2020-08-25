@@ -35,30 +35,29 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 	return i, nil
 }
 
-func (i GenericInformer) Run(stopper chan struct{}) {
-	glog.Info("Starting informer ", i.gvr.String())
+func (inform GenericInformer) Run(stopper chan struct{}) {
+	glog.Info("Starting informer ", inform.gvr.String())
 
 	// 1. List all resources for a given GVR (GroupVersionResource)
 	client := config.GetDynamicClient()
-	resources, listError := client.Resource(i.gvr).List(metav1.ListOptions{})
+	resources, listError := client.Resource(inform.gvr).List(metav1.ListOptions{})
 
 	if listError != nil {
-		glog.Warningf("Error listing resources for %s.  Error: %s", i.gvr.String(), listError)
+		glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
 	}
 	// For each resource invoke AddFunc()
-	for _, r := range resources.Items {
-		i.AddFunc(&r)
+	for i := range resources.Items {
+		inform.AddFunc(&resources.Items[i])
 		// glog.Infof("Called AddFunc() for [ Kind: %s  Name: %s ]", r.GetKind(), r.GetName())
 	}
-
-	glog.Infof("Listed   [Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s", i.gvr.Group, i.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
+	glog.V(3).Infof("Listed   [Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s", inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
 	// 2. Start a watcher starting from resourceVersion.
-	watch, watchError := client.Resource(i.gvr).Watch(metav1.ListOptions{})
+	watch, watchError := client.Resource(inform.gvr).Watch(metav1.ListOptions{})
 	if watchError != nil {
-		glog.Warningf("Error watching resources for %s.  Error: %s", i.gvr.String(), watchError)
+		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
 	}
-	glog.Infof("Watching [Group: %s \tKind: %s]  ===>  Watch: %s", i.gvr.Group, i.gvr.Resource, watch)
+	glog.V(3).Infof("Watching [Group: %s \tKind: %s]  ===>  Watch: %s", inform.gvr.Group, inform.gvr.Resource, watch)
 
 	watchEvents := watch.ResultChan()
 
@@ -67,31 +66,31 @@ func (i GenericInformer) Run(stopper chan struct{}) {
 
 		//  Process Add/Update/Delete events.
 		if event.Type == "ADDED" {
-			glog.Infof("Received ADDED event. Kind: %s ", i.gvr.Resource)
+			glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s", i.gvr.Resource, error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s", inform.gvr.Resource, error)
 			}
-			i.AddFunc(&unstructured.Unstructured{Object: obj})
+			inform.AddFunc(&unstructured.Unstructured{Object: obj})
 
 		} else if event.Type == "MODIFIED" {
-			// glog.Infof("Received MODIFY event. Kind: %s ", i.gvr.Resource)
+			glog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s", i.gvr.Resource, error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s", inform.gvr.Resource, error)
 			}
 			un := &unstructured.Unstructured{Object: obj}
 
-			i.UpdateFunc(nil, un)
+			inform.UpdateFunc(nil, un)
 		} else if event.Type == "DELETED" {
-			glog.Infof("Received DELETED event. Kind: %s ", i.gvr.Resource)
+			glog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s", i.gvr.Resource, error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s", inform.gvr.Resource, error)
 			}
-			i.DeleteFunc(&unstructured.Unstructured{Object: obj})
+			inform.DeleteFunc(&unstructured.Unstructured{Object: obj})
 		} else {
-			glog.Error("ERROR: Received unexpected event. Should restart the watcher.", i.gvr.Group, i.gvr.Resource, event)
+			glog.Error("ERROR: Received unexpected event. Should restart the watcher.", inform.gvr.Group, inform.gvr.Resource, event)
 		}
 	}
 
