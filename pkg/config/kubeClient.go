@@ -3,17 +3,28 @@
 package config
 
 import (
+	"sync"
+
 	"github.com/golang/glog"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var mutex sync.Mutex
+var dynamicClient dynamic.Interface
+
 func GetDynamicClient() dynamic.Interface {
-	dynamicClient, err := dynamic.NewForConfig(GetKubeConfig())
+	mutex.Lock()
+	defer mutex.Unlock()
+	if dynamicClient != nil {
+		return dynamicClient
+	}
+	newDynamicClient, err := dynamic.NewForConfig(GetKubeConfig())
 	if err != nil {
 		glog.Fatal("Cannot Construct Dynamic Client ", err)
 	}
+	dynamicClient = newDynamicClient
 
 	return dynamicClient
 }
