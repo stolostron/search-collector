@@ -189,7 +189,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ApplicationResource{&typedResource}
+			trans = ApplicationResourceBuilder(&typedResource)
 
 		case [2]string{"Channel", "app.ibm.com"}, [2]string{"Channel", "apps.open-cluster-management.io"}:
 			typedResource := acmapp.Channel{}
@@ -197,7 +197,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ChannelResource{&typedResource}
+			trans = ChannelResourceBuilder(&typedResource)
 
 		case [2]string{"CronJob", "batch"}:
 			typedResource := batchBeta.CronJob{}
@@ -229,7 +229,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = AppDeployableResource{&typedResource}
+			trans = AppDeployableResourceBuilder(&typedResource)
 
 		case [2]string{"Deployable", "mcm.ibm.com"}:
 			typedResource := appDeployable.Deployable{}
@@ -262,7 +262,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = AppHelmCRResource{&typedResource}
+			trans = AppHelmCRResourceBuilder(&typedResource)
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
@@ -302,7 +302,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PersistentVolumeClaimResource{&typedResource}
+			trans = PersistentVolumeClaimResourceBuilder(&typedResource)
 
 		case [2]string{"PlacementBinding", "mcm.ibm.com"}, [2]string{"PlacementBinding", "apps.open-cluster-management.io"}:
 			typedResource := mcm.PlacementBinding{}
@@ -310,7 +310,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PlacementBindingResource{&typedResource}
+			trans = PlacementBindingResourceBuilder(&typedResource)
 
 		case [2]string{"PlacementPolicy", "mcm.ibm.com"}, [2]string{"PlacementPolicy", "apps.open-cluster-management.io"}:
 			typedResource := mcm.PlacementPolicy{}
@@ -334,7 +334,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PodResource{&typedResource}
+			trans = PodResourceBuilder(&typedResource)
 
 		case [2]string{"Policy", "policy.open-cluster-management.io"}, [2]string{"Policy", "policies.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
@@ -366,7 +366,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ServiceResource{&typedResource}
+			trans = ServiceResourceBuilder(&typedResource)
 
 		case [2]string{"StatefulSet", "apps"}:
 			typedResource := apps.StatefulSet{}
@@ -382,7 +382,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = SubscriptionResource{&typedResource}
+			trans = SubscriptionResourceBuilder(&typedResource)
 
 		default:
 			trans = GenericResourceBuilder(event.Resource)
