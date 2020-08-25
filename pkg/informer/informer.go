@@ -28,6 +28,9 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 		UpdateFunc: (func(interface{}, interface{}) {
 			glog.Info("Update function not initialized.")
 		}),
+		DeleteFunc: (func(interface{}) {
+			glog.Info("Delete function not initialized.")
+		}),
 	}
 	return i, nil
 }
@@ -64,30 +67,29 @@ func (i GenericInformer) Run(stopper chan struct{}) {
 
 		//  Process Add/Update/Delete events.
 		if event.Type == "ADDED" {
-			// glog.Info("Received ADDED event.")
-
-			u, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+			glog.Infof("Received ADDED event. Kind: %s ", i.gvr.Resource)
+			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warning("Error converting event.Object to unstructured.", error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s", i.gvr.Resource, error)
 			}
-			i.AddFunc(&unstructured.Unstructured{u})
+			i.AddFunc(&unstructured.Unstructured{Object: obj})
 
 		} else if event.Type == "MODIFIED" {
-			u, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+			// glog.Infof("Received MODIFY event. Kind: %s ", i.gvr.Resource)
+			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warning("Error converting event.Object to unstructured.", error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s", i.gvr.Resource, error)
 			}
-			un := &unstructured.Unstructured{u}
-			// glog.Infof("Received MODIFY event. Kind: %s \tName: %s", un.GetKind(), un.GetName())
+			un := &unstructured.Unstructured{Object: obj}
 
 			i.UpdateFunc(nil, un)
 		} else if event.Type == "DELETED" {
-			glog.Info("Received DELETE event.", event.Object)
-			u, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+			glog.Infof("Received DELETED event. Kind: %s ", i.gvr.Resource)
+			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
-				glog.Warning("Error converting event.Object to unstructured.", error)
+				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s", i.gvr.Resource, error)
 			}
-			i.DeleteFunc(&unstructured.Unstructured{u})
+			i.DeleteFunc(&unstructured.Unstructured{Object: obj})
 		} else {
 			glog.Error("ERROR: Received unexpected event. Should restart the watcher.", i.gvr.Group, i.gvr.Resource, event)
 		}
@@ -95,5 +97,4 @@ func (i GenericInformer) Run(stopper chan struct{}) {
 
 	// 	TODO: Keep track of UID and current ResourceVersion.
 	//	TODO: Continuously monitor the status of the watch, if it times out or connection drops, restart the watcher.
-
 }
