@@ -57,9 +57,9 @@ func createNodeEvents() []tr.NodeEvent {
 			},
 		},
 	}
-	unstructuredNode := unstructured.UnstructuredResource{Unstructured: &unstructuredInput}.BuildNode()
-	bEdges := unstructured.UnstructuredResource{Unstructured: &unstructuredInput}.BuildEdges
-	events.BuildNode = append(events.BuildNode, unstructuredNode)
+	unstructuredNode := tr.GenericResourceBuilder(&unstructuredInput)
+	bEdges := tr.GenericResourceBuilder(&unstructuredInput).BuildEdges
+	events.BuildNode = append(events.BuildNode, unstructuredNode.BuildNode())
 	events.BuildEdges = append(events.BuildEdges, bEdges)
 
 	// Second Node
@@ -70,9 +70,9 @@ func createNodeEvents() []tr.NodeEvent {
 	p.Namespace = "default"
 	p.SelfLink = "/api/v1/namespaces/default/pods/testpod"
 	p.UID = "5678"
-	podNode := tr.PodResource{Pod: &p}.BuildNode()
+	podNode := tr.PodResourceBuilder(&p).BuildNode()
 	podNode.Metadata["OwnerUID"] = "local-cluster/1234"
-	podEdges := tr.PodResource{Pod: &p}.BuildEdges
+	podEdges := tr.PodResourceBuilder(&p).BuildEdges
 
 	events.BuildNode = append(events.BuildNode, podNode)
 	events.BuildEdges = append(events.BuildEdges, podEdges)

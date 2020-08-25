@@ -16,7 +16,7 @@ import (
 func TestTransformService(t *testing.T) {
 	var s v1.Service
 	UnmarshalFile("service.json", &s, t)
-	node := ServiceResource{&s}.BuildNode()
+	node := ServiceResourceBuilder(&s).BuildNode()
 
 	AssertEqual("kind", node.Properties["kind"], "Service", t)
 }

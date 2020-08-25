@@ -17,7 +17,7 @@ import (
 func TestTransformDeployment(t *testing.T) {
 	var d v1.Deployment
 	UnmarshalFile("deployment.json", &d, t)
-	node := DeploymentResource{&d}.BuildNode()
+	node := DeploymentResourceBuilder(&d).BuildNode()
 
 	// Test only the fields that exist in deployment - the common test will test the other bits
 	AssertEqual("available", node.Properties["available"], int64(1), t)

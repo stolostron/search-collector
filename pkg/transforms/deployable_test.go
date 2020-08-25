@@ -17,7 +17,7 @@ import (
 func TestTransformDeployable(t *testing.T) {
 	var d mcm.Deployable
 	UnmarshalFile("deployable.json", &d, t)
-	node := DeployableResource{&d}.BuildNode()
+	node := DeployableResourceBuilder(&d).BuildNode()
 
 	// Test only the fields that exist in deployable - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Deployable", t)

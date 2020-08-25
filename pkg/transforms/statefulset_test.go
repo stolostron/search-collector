@@ -17,7 +17,7 @@ import (
 func TestTransformStatefulSet(t *testing.T) {
 	var s v1.StatefulSet
 	UnmarshalFile("statefulset.json", &s, t)
-	node := StatefulSetResource{&s}.BuildNode()
+	node := StatefulSetResourceBuilder(&s).BuildNode()
 
 	// Test only the fields that exist in stateful set - the common test will test the other bits
 	AssertEqual("current", node.Properties["current"], int64(1), t)

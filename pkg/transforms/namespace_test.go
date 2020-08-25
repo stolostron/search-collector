@@ -17,7 +17,7 @@ import (
 func TestTransformNamespace(t *testing.T) {
 	var n v1.Namespace
 	UnmarshalFile("namespace.json", &n, t)
-	node := NamespaceResource{&n}.BuildNode()
+	node := NamespaceResourceBuilder(&n).BuildNode()
 
 	// Test only the fields that exist in namespace - the common test will test the other bits
 	AssertEqual("status", node.Properties["status"], "Active", t)

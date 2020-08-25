@@ -17,7 +17,7 @@ import (
 func TestTransformAppDeployable(t *testing.T) {
 	var d app.Deployable
 	UnmarshalFile("appdeployable.json", &d, t)
-	node := AppDeployableResource{&d}.BuildNode()
+	node := AppDeployableResourceBuilder(&d).BuildNode()
 
 	// Test only the fields that exist in deployable - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Deployable", t)

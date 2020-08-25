@@ -17,7 +17,7 @@ import (
 func TestTransformNode(t *testing.T) {
 	var n v1.Node
 	UnmarshalFile("node.json", &n, t)
-	node := NodeResource{&n}.BuildNode()
+	node := NodeResourceBuilder(&n).BuildNode()
 
 	// Test only the fields that exist in node - the common test will test the other bits
 	AssertEqual("architecture", node.Properties["architecture"], "amd64", t)

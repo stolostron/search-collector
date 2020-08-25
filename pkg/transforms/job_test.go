@@ -17,7 +17,7 @@ import (
 func TestTransformJob(t *testing.T) {
 	var j v1.Job
 	UnmarshalFile("job.json", &j, t)
-	node := JobResource{&j}.BuildNode()
+	node := JobResourceBuilder(&j).BuildNode()
 
 	// Test only the fields that exist in job - the common test will test the other bits
 	AssertEqual("successful", node.Properties["successful"], int64(1), t)

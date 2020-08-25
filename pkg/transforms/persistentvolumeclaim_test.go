@@ -17,7 +17,7 @@ import (
 func TestTransformPersistentVolumeClaim(t *testing.T) {
 	var p v1.PersistentVolumeClaim
 	UnmarshalFile("persistentvolumeclaim.json", &p, t)
-	node := PersistentVolumeClaimResource{&p}.BuildNode()
+	node := PersistentVolumeClaimResourceBuilder(&p).BuildNode()
 
 	// Test only the fields that exist in node - the common test will test the other bits
 	AssertEqual("volumeName", node.Properties["volumeName"], "test-pv", t)
