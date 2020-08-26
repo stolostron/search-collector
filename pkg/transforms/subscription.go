@@ -39,6 +39,10 @@ func (s SubscriptionResource) BuildNode() Node {
 	if s.Spec.TimeWindow != nil && s.Spec.TimeWindow.WindowType != "" {
 		node.Properties["timeWindow"] = s.Spec.TimeWindow.WindowType
 	}
+	// Add localPlacement property
+	if s.Spec.Placement != nil && s.Spec.Placement.Local != nil {
+		node.Properties["localPlacement"] = *s.Spec.Placement.Local
+	}
 	// Add hidden properties for app annotations
 	const appAnnotationPrefix string = "apps.open-cluster-management.io/"
 	annotations := s.GetAnnotations()

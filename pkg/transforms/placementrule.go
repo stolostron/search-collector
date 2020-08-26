@@ -19,7 +19,11 @@ type PlacementRuleResource struct {
 func (p PlacementRuleResource) BuildNode() Node {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
-	//TODO: Add other properties
+	// Add replicas property
+	if p.Spec.ClusterReplicas != nil {
+		node.Properties["replicas"] = int32(*p.Spec.ClusterReplicas)
+	}
+
 	return node
 }
 

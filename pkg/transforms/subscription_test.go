@@ -37,3 +37,12 @@ func TestTransformSubscriptionWithTimeWindow(t *testing.T) {
 	AssertEqual("_gitpath", node.Properties["_gitpath"], "helloworld", t)
 	AssertEqual("_gitcommit", node.Properties["_gitcommit"], "d67d8e10dcfa41dddcac14952e9872e1dfece06f", t)
 }
+
+func TestTransformSubscriptionWithLocalPlacement(t *testing.T) {
+	var s v1.Subscription
+	UnmarshalFile("subscription3.json", &s, t)
+	node := SubscriptionResource{&s}.BuildNode()
+
+	// Test optional fields that exist in subscription - the common test will test the other bits
+	AssertEqual("localPlacement", node.Properties["localPlacement"], true, t)
+}
