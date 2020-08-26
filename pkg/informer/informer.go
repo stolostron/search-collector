@@ -101,7 +101,8 @@ func listAndWatch(inform GenericInformer) {
 		event := <-watchEvents // Read events from the watch channel.
 
 		//  Process ADDED, MODIFIED, DELETED, and ERROR events.
-		if event.Type == "ADDED" {
+		switch event.Type {
+		case "ADDED":
 			glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
@@ -110,7 +111,7 @@ func listAndWatch(inform GenericInformer) {
 			}
 			inform.AddFunc(&unstructured.Unstructured{Object: obj})
 
-		} else if event.Type == "MODIFIED" {
+		case "MODIFIED":
 			glog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
@@ -119,7 +120,7 @@ func listAndWatch(inform GenericInformer) {
 			}
 			inform.UpdateFunc(nil, &unstructured.Unstructured{Object: obj})
 
-		} else if event.Type == "DELETED" {
+		case "DELETED":
 			glog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
@@ -128,12 +129,16 @@ func listAndWatch(inform GenericInformer) {
 			}
 			inform.DeleteFunc(&unstructured.Unstructured{Object: obj})
 
-		} else {
-			glog.Error("ERROR: Received unexpected event. Should restart the watcher. ",
-				inform.gvr.Group, inform.gvr.Resource, event)
+		case "ERROR":
+			glog.Warningf("Received ERROR event. Ending listAndWatch() for %s ", inform.gvr.Resource)
+			glog.Warning("  >>> Event: ", event)
 			watch.Stop()
-			break
+			return
+		default:
+			glog.Warningf("Received UNEXPECTED event. Ending listAndWatch() for %s ", inform.gvr.Resource)
+			glog.Warning("  >>> Event:  ", event)
+			watch.Stop()
+			return
 		}
 	}
-	glog.Info("Ending listAndWatch for ", inform.gvr.Resource)
 }
