@@ -36,9 +36,24 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 }
 
 func (inform GenericInformer) Run(stopper chan struct{}) {
-	glog.Info("Starting informer ", inform.gvr.String())
 
-	// 1. List all resources for a given GVR (GroupVersionResource)
+	for {
+		glog.Info("Starting informer ", inform.gvr.String())
+		listAndWatch(inform)
+	}
+
+	// TODO: Implement stopper.
+	// stop := <-stopper
+	// if stop != nil {
+	// glog.Info("!!! Informer stopped???", stop)
+	// }
+
+	// 	TODO:
+	//    - [Maybe don't need this] Keep track of UID and current ResourceVersion.
+	//	  - Continuously monitor the status of the watch, if it times out or connection drops, restart the watcher.
+}
+
+func listAndWatch(inform GenericInformer) {
 	client := config.GetDynamicClient()
 	resources, listError := client.Resource(inform.gvr).List(metav1.ListOptions{})
 
@@ -48,7 +63,6 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 	// For each resource invoke AddFunc()
 	for i := range resources.Items {
 		inform.AddFunc(&resources.Items[i])
-		// glog.Infof("Called AddFunc() for [ Kind: %s  Name: %s ]", r.GetKind(), r.GetName())
 	}
 	glog.V(3).Infof("Listed   [Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
@@ -68,6 +82,7 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 		// if stop != nil {
 		// glog.Info("!!! Informer stopped???", stop)
 		// }
+
 		event := <-watchEvents // Read from the input channel
 
 		//  Process Add/Update/Delete events.
@@ -99,13 +114,11 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 			}
 			inform.DeleteFunc(&unstructured.Unstructured{Object: obj})
 		} else {
-			glog.Error("ERROR: Received unexpected event. Should restart the watcher.",
+			glog.Error("ERROR: Received unexpected event. Should restart the watcher. ",
 				inform.gvr.Group, inform.gvr.Resource, event)
-			// TODO: Restart the warcher.
+			watch.Stop()
+			break
 		}
 	}
-
-	// 	TODO:
-	//    - [Maybe don't need this] Keep track of UID and current ResourceVersion.
-	//	  - Continuously monitor the status of the watch, if it times out or connection drops, restart the watcher.
+	glog.Info("Ended for loop. Need to restart watcher. ", inform.gvr.Resource)
 }
