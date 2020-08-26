@@ -3,6 +3,8 @@
 package informer
 
 import (
+	"time"
+
 	"github.com/golang/glog"
 	"github.com/open-cluster-management/search-collector/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,8 +16,9 @@ import (
 type GenericInformer struct {
 	gvr        schema.GroupVersionResource
 	AddFunc    func(interface{})
-	UpdateFunc func(interface{}, interface{})
 	DeleteFunc func(interface{})
+	UpdateFunc func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
+	retries    int64                                    // Counts times we have retried without establishing a successful watch.
 }
 
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
@@ -31,6 +34,7 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 		DeleteFunc: (func(interface{}) {
 			glog.Info("Delete function not initialized.")
 		}),
+		retries: 0,
 	}
 	return i, nil
 }
@@ -38,6 +42,12 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 func (inform GenericInformer) Run(stopper chan struct{}) {
 
 	for {
+		if inform.retries > 0 {
+			// TODO: Need exponential backoff and max wait.
+			wait := time.Duration(inform.retries) * time.Second
+			glog.Infof("Waiting %s before retrying listAndWatch for %s", wait, inform.gvr.String())
+			time.Sleep(wait)
+		}
 		glog.Info("Starting informer ", inform.gvr.String())
 		listAndWatch(inform)
 	}
@@ -55,12 +65,14 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 
 func listAndWatch(inform GenericInformer) {
 	client := config.GetDynamicClient()
-	resources, listError := client.Resource(inform.gvr).List(metav1.ListOptions{})
 
+	// 1. List and add existing resources.
+	resources, listError := client.Resource(inform.gvr).List(metav1.ListOptions{})
 	if listError != nil {
 		glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
+		inform.retries++
+		return
 	}
-	// For each resource invoke AddFunc()
 	for i := range resources.Items {
 		inform.AddFunc(&resources.Items[i])
 	}
@@ -71,21 +83,24 @@ func listAndWatch(inform GenericInformer) {
 	watch, watchError := client.Resource(inform.gvr).Watch(metav1.ListOptions{})
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
+		inform.retries++
+		return
 	}
 	glog.V(3).Infof("Watching [Group: %s \tKind: %s]  ===>  Watch: %s", inform.gvr.Group, inform.gvr.Resource, watch)
 
 	watchEvents := watch.ResultChan()
-
+	inform.retries = 0 // Reset retries because we have a successful list and a watch.
 	for {
+
 		// TODO: Implement stopper.
 		// stop := <-stopper
 		// if stop != nil {
 		// glog.Info("!!! Informer stopped???", stop)
 		// }
 
-		event := <-watchEvents // Read from the input channel
+		event := <-watchEvents // Read events from the watch channel.
 
-		//  Process Add/Update/Delete events.
+		//  Process ADDED, MODIFIED, DELETED, and ERROR events.
 		if event.Type == "ADDED" {
 			glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
@@ -102,9 +117,8 @@ func listAndWatch(inform GenericInformer) {
 				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s",
 					inform.gvr.Resource, error)
 			}
-			un := &unstructured.Unstructured{Object: obj}
+			inform.UpdateFunc(nil, &unstructured.Unstructured{Object: obj})
 
-			inform.UpdateFunc(nil, un)
 		} else if event.Type == "DELETED" {
 			glog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
 			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
@@ -113,6 +127,7 @@ func listAndWatch(inform GenericInformer) {
 					inform.gvr.Resource, error)
 			}
 			inform.DeleteFunc(&unstructured.Unstructured{Object: obj})
+
 		} else {
 			glog.Error("ERROR: Received unexpected event. Should restart the watcher. ",
 				inform.gvr.Group, inform.gvr.Resource, event)
@@ -120,5 +135,5 @@ func listAndWatch(inform GenericInformer) {
 			break
 		}
 	}
-	glog.Info("Ended for loop. Need to restart watcher. ", inform.gvr.Resource)
+	glog.Info("Ending listAndWatch for ", inform.gvr.Resource)
 }
