@@ -30,6 +30,7 @@ replace (
 	github.com/docker/docker => github.com/docker/docker v1.13.1
 	github.com/influxdata/influxdb => github.com/influxdata/influxdb v1.8.2
 	github.com/mholt/caddy => github.com/mholt/caddy v0.11.5
+	github.com/openshift/origin => github.com/openshift/origin v1.2.0
 	k8s.io/api => k8s.io/api v0.17.11
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.11
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.11
@@ -48,6 +49,7 @@ replace (
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.17.11
 	k8s.io/kubectl => k8s.io/kubectl v0.17.11
 	k8s.io/kubelet => k8s.io/kubelet v0.17.11
+	k8s.io/kubernetes => k8s.io/kubernetes v1.17.11
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.17.11
 	k8s.io/metrics => k8s.io/metrics v0.17.11
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.17.11
