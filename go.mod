@@ -29,6 +29,7 @@ replace (
 	github.com/coreos/etcd => github.com/coreos/etcd v3.3.24+incompatible
 	github.com/docker/docker => github.com/docker/docker v1.13.1
 	github.com/influxdata/influxdb => github.com/influxdata/influxdb v1.8.2
+	github.com/mholt/caddy => github.com/mholt/caddy v0.11.5
 	k8s.io/api => k8s.io/api v0.17.11
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.11
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.11
