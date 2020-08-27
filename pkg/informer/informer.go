@@ -21,6 +21,7 @@ type GenericInformer struct {
 	prevResourceIndex map[string]string
 	resourceIndex     map[string]string // Keeps an index of resources. key=UUID  value=resourceVersion
 	retries           int64             // Counts times we have retried without establishing a successful watch.
+	stopped           bool
 }
 
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
@@ -42,7 +43,7 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 	return i, nil
 }
 
-func (inform GenericInformer) Run(stopper chan struct{}) {
+func (inform *GenericInformer) Run(stopper chan struct{}) {
 
 	for {
 		if inform.retries > 0 {
@@ -52,19 +53,19 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 			time.Sleep(wait)
 		}
 		glog.Info("Starting informer ", inform.gvr.String())
-		glog.Info("  Existing Resources: ", inform.resourceIndex)
-		listAndWatch(inform)
-	}
+		// glog.Info("  Existing Resources: ", inform.resourceIndex)
+		listAndWatch(inform, stopper)
 
-	// TODO: Implement stopper.
-	// stop := <-stopper
-	// if stop != nil {
-	// glog.Info("!!! Informer stopped???", stop)
-	// }
+		if inform.stopped {
+			glog.Info("Informer was stopped. ", inform.gvr.String())
+			return
+		}
+
+	}
 
 }
 
-func listAndWatch(inform GenericInformer) {
+func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 	client := config.GetDynamicClient()
 
 	if len(inform.resourceIndex) > 0 {
@@ -106,61 +107,60 @@ func listAndWatch(inform GenericInformer) {
 	inform.retries = 0 // Reset retries because we have a successful list and a watch.
 	for {
 
-		// TODO: Implement stopper.
-		// stop := <-stopper
-		// if stop != nil {
-		// glog.Info("!!! Informer stopped???", stop)
-		// }
-
-		event := <-watchEvents // Read events from the watch channel.
-
-		//  Process ADDED, MODIFIED, DELETED, and ERROR events.
-		switch event.Type {
-		case "ADDED":
-			glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
-			o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
-			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s",
-					inform.gvr.Resource, error)
-			}
-			obj := &unstructured.Unstructured{Object: o}
-			inform.AddFunc(obj)
-			inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
-
-		case "MODIFIED":
-			glog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
-			o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
-			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s",
-					inform.gvr.Resource, error)
-			}
-			obj := &unstructured.Unstructured{Object: o}
-
-			inform.UpdateFunc(nil, obj)
-			inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
-
-		case "DELETED":
-			glog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
-			o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
-			if error != nil {
-				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s",
-					inform.gvr.Resource, error)
-			}
-			obj := &unstructured.Unstructured{Object: o}
-
-			inform.DeleteFunc(obj)
-			delete(inform.resourceIndex, string(obj.GetUID()))
-
-		case "ERROR":
-			glog.Warningf("Received ERROR event. Ending listAndWatch() for %s ", inform.gvr.String())
-			glog.Warning("  Event: ", event)
-			watch.Stop()
+		select {
+		case <-stopper:
+			inform.stopped = true
 			return
 
-		default:
-			glog.Warningf("Received unexpected event. Ending listAndWatch() for %s ", inform.gvr.String())
-			watch.Stop()
-			return
+		case event := <-watchEvents: // Read events from the watch channel.
+			//  Process ADDED, MODIFIED, DELETED, and ERROR events.
+			switch event.Type {
+			case "ADDED":
+				glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
+				o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+				if error != nil {
+					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s",
+						inform.gvr.Resource, error)
+				}
+				obj := &unstructured.Unstructured{Object: o}
+				inform.AddFunc(obj)
+				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
+
+			case "MODIFIED":
+				glog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
+				o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+				if error != nil {
+					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s",
+						inform.gvr.Resource, error)
+				}
+				obj := &unstructured.Unstructured{Object: o}
+
+				inform.UpdateFunc(nil, obj)
+				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
+
+			case "DELETED":
+				glog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
+				o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+				if error != nil {
+					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s",
+						inform.gvr.Resource, error)
+				}
+				obj := &unstructured.Unstructured{Object: o}
+
+				inform.DeleteFunc(obj)
+				delete(inform.resourceIndex, string(obj.GetUID()))
+
+			case "ERROR":
+				glog.Warningf("Received ERROR event. Ending listAndWatch() for %s ", inform.gvr.String())
+				glog.Warning("  Event: ", event)
+				watch.Stop()
+				return
+
+			default:
+				glog.Warningf("Received unexpected event. Ending listAndWatch() for %s ", inform.gvr.String())
+				watch.Stop()
+				return
+			}
 		}
 	}
 }
