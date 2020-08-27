@@ -14,11 +14,13 @@ import (
 )
 
 type GenericInformer struct {
-	gvr        schema.GroupVersionResource
-	AddFunc    func(interface{})
-	DeleteFunc func(interface{})
-	UpdateFunc func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
-	retries    int64                                    // Counts times we have retried without establishing a successful watch.
+	gvr               schema.GroupVersionResource
+	AddFunc           func(interface{})
+	DeleteFunc        func(interface{})
+	UpdateFunc        func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
+	prevResourceIndex map[string]string
+	resourceIndex     map[string]string // Keeps an index of resources. key=UUID  value=resourceVersion
+	retries           int64             // Counts times we have retried without establishing a successful watch.
 }
 
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
@@ -34,7 +36,8 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 		DeleteFunc: (func(interface{}) {
 			glog.Info("Delete function not initialized.")
 		}),
-		retries: 0,
+		retries:       0,
+		resourceIndex: make(map[string]string),
 	}
 	return i, nil
 }
@@ -49,6 +52,7 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 			time.Sleep(wait)
 		}
 		glog.Info("Starting informer ", inform.gvr.String())
+		glog.Info("  Existing Resources: ", inform.resourceIndex)
 		listAndWatch(inform)
 	}
 
@@ -58,13 +62,15 @@ func (inform GenericInformer) Run(stopper chan struct{}) {
 	// glog.Info("!!! Informer stopped???", stop)
 	// }
 
-	// 	TODO:
-	//    - [Maybe don't need this] Keep track of UID and current ResourceVersion.
-	//	  - Continuously monitor the status of the watch, if it times out or connection drops, restart the watcher.
 }
 
 func listAndWatch(inform GenericInformer) {
 	client := config.GetDynamicClient()
+
+	if len(inform.resourceIndex) > 0 {
+		inform.prevResourceIndex = inform.resourceIndex
+		inform.resourceIndex = make(map[string]string)
+	}
 
 	// 1. List and add existing resources.
 	resources, listError := client.Resource(inform.gvr).List(metav1.ListOptions{})
@@ -74,10 +80,18 @@ func listAndWatch(inform GenericInformer) {
 		return
 	}
 	for i := range resources.Items {
+		glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s", inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 		inform.AddFunc(&resources.Items[i])
+		inform.resourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
 	}
 	glog.V(3).Infof("Listed   [Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
+
+	for key := range inform.prevResourceIndex {
+		if _, exist := inform.resourceIndex[key]; !exist {
+			glog.Infof("!!! TODO: Need to delete resource %s with UID: %s", inform.gvr.Resource, key)
+		}
+	}
 
 	// 2. Start a watcher starting from resourceVersion.
 	watch, watchError := client.Resource(inform.gvr).Watch(metav1.ListOptions{})
@@ -104,39 +118,47 @@ func listAndWatch(inform GenericInformer) {
 		switch event.Type {
 		case "ADDED":
 			glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
-			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+			o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
 				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s",
 					inform.gvr.Resource, error)
 			}
+			obj := &unstructured.Unstructured{Object: o}
 			inform.AddFunc(&unstructured.Unstructured{Object: obj})
+			inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
 		case "MODIFIED":
 			glog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
-			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+			o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
 				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s",
 					inform.gvr.Resource, error)
 			}
+			obj := &unstructured.Unstructured{Object: o}
+
 			inform.UpdateFunc(nil, &unstructured.Unstructured{Object: obj})
+			inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
 		case "DELETED":
 			glog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
-			obj, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
+			o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
 				glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s",
 					inform.gvr.Resource, error)
 			}
+			obj := &unstructured.Unstructured{Object: o}
+
 			inform.DeleteFunc(&unstructured.Unstructured{Object: obj})
+			delete(inform.resourceIndex, string(obj.GetUID()))
 
 		case "ERROR":
-			glog.Warningf("Received ERROR event. Ending listAndWatch() for %s ", inform.gvr.Resource)
-			glog.Warning("  >>> Event: ", event)
+			glog.Warningf("Received ERROR event. Ending listAndWatch() for %s ", inform.gvr.String())
+			glog.Warning("  Event: ", event)
 			watch.Stop()
 			return
+
 		default:
-			glog.Warningf("Received UNEXPECTED event. Ending listAndWatch() for %s ", inform.gvr.Resource)
-			glog.Warning("  >>> Event:  ", event)
+			glog.Warningf("Received unexpected event. Ending listAndWatch() for %s ", inform.gvr.String())
 			watch.Stop()
 			return
 		}
