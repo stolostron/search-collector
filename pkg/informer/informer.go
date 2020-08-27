@@ -117,7 +117,6 @@ func listAndWatch(inform GenericInformer) {
 		//  Process ADDED, MODIFIED, DELETED, and ERROR events.
 		switch event.Type {
 		case "ADDED":
-			glog.Info("event", event)
 			glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
 			o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
