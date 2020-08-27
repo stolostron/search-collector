@@ -117,6 +117,7 @@ func listAndWatch(inform GenericInformer) {
 		//  Process ADDED, MODIFIED, DELETED, and ERROR events.
 		switch event.Type {
 		case "ADDED":
+			glog.Info("event", event)
 			glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
 			o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 			if error != nil {
@@ -124,7 +125,7 @@ func listAndWatch(inform GenericInformer) {
 					inform.gvr.Resource, error)
 			}
 			obj := &unstructured.Unstructured{Object: o}
-			inform.AddFunc(&unstructured.Unstructured{Object: obj})
+			inform.AddFunc(obj)
 			inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
 		case "MODIFIED":
@@ -136,7 +137,7 @@ func listAndWatch(inform GenericInformer) {
 			}
 			obj := &unstructured.Unstructured{Object: o}
 
-			inform.UpdateFunc(nil, &unstructured.Unstructured{Object: obj})
+			inform.UpdateFunc(nil, obj)
 			inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
 		case "DELETED":
@@ -148,7 +149,7 @@ func listAndWatch(inform GenericInformer) {
 			}
 			obj := &unstructured.Unstructured{Object: o}
 
-			inform.DeleteFunc(&unstructured.Unstructured{Object: obj})
+			inform.DeleteFunc(obj)
 			delete(inform.resourceIndex, string(obj.GetUID()))
 
 		case "ERROR":
