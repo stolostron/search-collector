@@ -94,16 +94,18 @@ func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 	listAndResync(inform, client)
 
 	watch(inform, client, stopper)
-
 }
 
+// List current resources and fires ADDED events. Then sync the current state with the previous
+// state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func listAndResync(inform *GenericInformer, client dynamic.Interface) {
+	// Save the previous state.
 	if len(inform.resourceIndex) > 0 {
 		inform.prevResourceIndex = inform.resourceIndex
 		inform.resourceIndex = make(map[string]string)
 	}
 
-	// 1. List and add existing resources.
+	// List resources.
 	resources, listError := client.Resource(inform.gvr).List(metav1.ListOptions{})
 	if listError != nil {
 		glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
@@ -111,15 +113,16 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 		return
 	}
 
+	// Add all resources.
 	for i := range resources.Items {
 		glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s", inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 		inform.AddFunc(&resources.Items[i])
 		inform.resourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
 	}
-
 	glog.V(3).Infof("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
+	// Delete resources from previous state that lo longer exist in the current state.
 	for key := range inform.prevResourceIndex {
 		if _, exist := inform.resourceIndex[key]; !exist {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
@@ -134,9 +137,9 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 	}
 }
 
+// Watch resources and process events.
 func watch(inform *GenericInformer, client dynamic.Interface, stopper chan struct{}) {
 
-	// 2. Start a watcher starting from resourceVersion.
 	watch, watchError := client.Resource(inform.gvr).Watch(metav1.ListOptions{})
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
