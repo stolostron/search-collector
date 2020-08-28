@@ -65,6 +65,17 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 
 }
 
+func newUnstructured(kind, uid string) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"kind": kind,
+			"metadata": map[string]interface{}{
+				"uid": uid,
+			},
+		},
+	}
+}
+
 func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 	client := config.GetDynamicClient()
 
@@ -80,17 +91,21 @@ func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 		inform.retries++
 		return
 	}
+
 	for i := range resources.Items {
 		glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s", inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 		inform.AddFunc(&resources.Items[i])
 		inform.resourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
 	}
+
 	glog.V(3).Infof("Listed   [Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
 	for key := range inform.prevResourceIndex {
 		if _, exist := inform.resourceIndex[key]; !exist {
-			glog.Infof("!!! TODO: Need to delete resource %s with UID: %s", inform.gvr.Resource, key)
+			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
+			obj := newUnstructured(inform.gvr.Resource, key)
+			inform.DeleteFunc(obj)
 		}
 	}
 
