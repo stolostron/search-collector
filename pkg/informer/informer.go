@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 )
 
 type GenericInformer struct {
@@ -44,27 +45,32 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 }
 
 func (inform *GenericInformer) Run(stopper chan struct{}) {
-
 	for {
 		if inform.retries > 0 {
-			// TODO: Need exponential backoff and max wait.
-			wait := time.Duration(inform.retries) * time.Second
-			glog.Infof("Waiting %s before retrying listAndWatch for %s", wait, inform.gvr.String())
+			// Backoff strategy: Adds 2 seconds each retry, up to 2 mins.
+			wait := time.Duration(min(inform.retries*2, 120)) * time.Second
+			glog.V(3).Infof("Waiting %s before retrying listAndWatch for %s", wait, inform.gvr.String())
 			time.Sleep(wait)
 		}
-		glog.Info("Starting informer ", inform.gvr.String())
-		// glog.Info("  Existing Resources: ", inform.resourceIndex)
+		glog.V(2).Info("(Re)starting informer: ", inform.gvr.String())
 		listAndWatch(inform, stopper)
 
 		if inform.stopped {
-			glog.Info("Informer was stopped. ", inform.gvr.String())
-			return
+			break
 		}
-
 	}
-
+	glog.V(3).Info("Informer was stopped. ", inform.gvr.String())
 }
 
+// Helper function that returns the smaller of two integers.
+func min(a, b int64) int64 {
+	if a > b {
+		return b
+	}
+	return a
+}
+
+// Helper function that creates a new unstructured resource with given Kind and UID.
 func newUnstructured(kind, uid string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -76,9 +82,19 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 	}
 }
 
+// 1. List existing resources and fires ADDED events.
+// 2. Start a watch on the resource and fire ADDED/MODIFIED/DELETED events.
+// 3. When the watch gets restarted, it resyncs state by doing a list and comparing with existing state.
 func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 	client := config.GetDynamicClient()
 
+	listAndResync(inform, client)
+
+	watch(inform, client, stopper)
+
+}
+
+func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 	if len(inform.resourceIndex) > 0 {
 		inform.prevResourceIndex = inform.resourceIndex
 		inform.resourceIndex = make(map[string]string)
@@ -98,7 +114,7 @@ func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 		inform.resourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
 	}
 
-	glog.V(3).Infof("Listed   [Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
+	glog.V(3).Infof("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
 	for key := range inform.prevResourceIndex {
@@ -108,6 +124,9 @@ func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 			inform.DeleteFunc(obj)
 		}
 	}
+}
+
+func watch(inform *GenericInformer, client dynamic.Interface, stopper chan struct{}) {
 
 	// 2. Start a watcher starting from resourceVersion.
 	watch, watchError := client.Resource(inform.gvr).Watch(metav1.ListOptions{})
@@ -116,7 +135,7 @@ func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 		inform.retries++
 		return
 	}
-	glog.V(3).Infof("Watching [Group: %s \tKind: %s]  ===>  Watch: %s", inform.gvr.Group, inform.gvr.Resource, watch)
+	glog.V(3).Infof("Watching\t[Group: %s \tKind: %s]  ===>  Watch: %s", inform.gvr.Group, inform.gvr.Resource, watch)
 
 	watchEvents := watch.ResultChan()
 	inform.retries = 0 // Reset retries because we have a successful list and a watch.
