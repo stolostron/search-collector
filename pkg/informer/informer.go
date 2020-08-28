@@ -65,12 +65,15 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 
 }
 
-func newUnstructured(kind, uid string) *unstructured.Unstructured {
+func newUnstructured(obj *unstructured.Unstructured, uid string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"kind": kind,
+			"apiVersion": obj.GetAPIVersion(),
+			"kind":       obj.GetKind(),
 			"metadata": map[string]interface{}{
-				"uid": uid,
+				"name":      obj.GetName(),
+				"namespace": obj.GetNamespace(),
+				"uid":       uid,
 			},
 		},
 	}
@@ -104,8 +107,13 @@ func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 	for key := range inform.prevResourceIndex {
 		if _, exist := inform.resourceIndex[key]; !exist {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
-			obj := newUnstructured(inform.gvr.Resource, key)
-			inform.DeleteFunc(obj)
+			for i := range resources.Items { // We need to extract that resource data. Go doesn't have a filter func, so we have to loop through the resources.
+				if string(resources.Items[i].GetUID()) == key {
+					obj := newUnstructured(&resources.Items[i], key)
+					inform.DeleteFunc(obj)
+					break
+				}
+			}
 		}
 	}
 
