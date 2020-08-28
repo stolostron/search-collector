@@ -20,12 +20,12 @@ type GenericInformer struct {
 	DeleteFunc    func(interface{})
 	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
 	resourceIndex map[string]string                        // Keeps an index of resources. key=UUID  value=resourceVersion
+	prevResource  unstructured.UnstructuredList            // We use the prevResource to determine if any resources were deleted while the informer was down.
 	retries       int64                                    // Counts times we have retried without establishing a successful watch.
 	stopped       bool                                     // Tracks when the informer is stopped, to exit cleanly.
 }
 
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
-
 	i := GenericInformer{
 		gvr: resource,
 		AddFunc: (func(interface{}) {
@@ -84,7 +84,7 @@ func newUnstructured(obj *unstructured.Unstructured, uid string) *unstructured.U
 	}
 }
 
-// List resources and start a watch. When restarting, it syncs resourcces with the previous state.
+// List resources and start a watch. When restarting, it syncs resources with the previous state.
 func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 	client := config.GetDynamicClient()
 
@@ -120,19 +120,22 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 	glog.V(3).Infof("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
-	// Delete resources from previous state that lo longer exist in the current state.
+	// Delete resources from previous state that no longer exist in the current state.
 	for key := range prevResourceIndex {
 		if _, exist := inform.resourceIndex[key]; !exist {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
-			for i := range resources.Items { // We need to extract that resource data. Go doesn't have a filter func, so we have to loop through the resources.
-				if string(resources.Items[i].GetUID()) == key {
-					obj := newUnstructured(&resources.Items[i], key)
+			for i := range inform.prevResource.Items { // We need to extract that resource data. Go doesn't have a filter func, so we have to loop through the resources.
+				if string(inform.prevResource.Items[i].GetUID()) == key {
+					obj := newUnstructured(&inform.prevResource.Items[i], key)
 					inform.DeleteFunc(obj)
 					break
 				}
 			}
 		}
 	}
+
+	// Resync previous resources to new resource list
+	inform.prevResource = *resources
 }
 
 // Watch resources and process events.
