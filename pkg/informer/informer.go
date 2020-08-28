@@ -15,14 +15,13 @@ import (
 )
 
 type GenericInformer struct {
-	gvr               schema.GroupVersionResource
-	AddFunc           func(interface{})
-	DeleteFunc        func(interface{})
-	UpdateFunc        func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
-	prevResourceIndex map[string]string
-	resourceIndex     map[string]string // Keeps an index of resources. key=UUID  value=resourceVersion
-	retries           int64             // Counts times we have retried without establishing a successful watch.
-	stopped           bool
+	gvr           schema.GroupVersionResource
+	AddFunc       func(interface{})
+	DeleteFunc    func(interface{})
+	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
+	resourceIndex map[string]string                        // Keeps an index of resources. key=UUID  value=resourceVersion
+	retries       int64                                    // Counts times we have retried without establishing a successful watch.
+	stopped       bool                                     // Tracks when the informer is stopped, to exit cleanly.
 }
 
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
@@ -85,9 +84,7 @@ func newUnstructured(obj *unstructured.Unstructured, uid string) *unstructured.U
 	}
 }
 
-// 1. List existing resources and fires ADDED events.
-// 2. Start a watch on the resource and fire ADDED/MODIFIED/DELETED events.
-// 3. When the watch gets restarted, it resyncs state by doing a list and comparing with existing state.
+// List resources and start a watch. When restarting, it syncs resourcces with the previous state.
 func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 	client := config.GetDynamicClient()
 
@@ -100,8 +97,9 @@ func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 	// Save the previous state.
+	var prevResourceIndex map[string]string
 	if len(inform.resourceIndex) > 0 {
-		inform.prevResourceIndex = inform.resourceIndex
+		prevResourceIndex = inform.resourceIndex
 		inform.resourceIndex = make(map[string]string)
 	}
 
@@ -123,7 +121,7 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
 	// Delete resources from previous state that lo longer exist in the current state.
-	for key := range inform.prevResourceIndex {
+	for key := range prevResourceIndex {
 		if _, exist := inform.resourceIndex[key]; !exist {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
 			for i := range resources.Items { // We need to extract that resource data. Go doesn't have a filter func, so we have to loop through the resources.
@@ -150,8 +148,8 @@ func watch(inform *GenericInformer, client dynamic.Interface, stopper chan struc
 
 	watchEvents := watch.ResultChan()
 	inform.retries = 0 // Reset retries because we have a successful list and a watch.
-	for {
 
+	for {
 		select {
 		case <-stopper:
 			inform.stopped = true
