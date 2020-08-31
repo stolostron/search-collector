@@ -20,7 +20,7 @@ deps:
 
 .PHONY: search-collector
 search-collector:
-	GO111MODULE=on CGO_ENABLED=0 GOGC=50 go build -a -v -i -installsuffix cgo -ldflags '-s -w' -o $(BINDIR)/search-collector ./
+	GO111MODULE=on CGO_ENABLED=0 GOGC=25 go build -a -v -i -installsuffix cgo -ldflags '-s -w' -o $(BINDIR)/search-collector ./
 
 .PHONY: build
 build: search-collector
@@ -32,11 +32,11 @@ build-linux:
 .PHONY: lint
 lint:
 	GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
-	# Flag GOGC=75 needed to avoid out of memory issue.
-	GO111MODULE=on GOGC=75 golangci-lint run --timeout=2m
+	# Flag GOGC=25 needed to run garbage collection more often and avoid out of memory issue.
+	GO111MODULE=on GOGC=25 golangci-lint run --timeout=2m
 
 run:
-	GO111MODULE=on GOGC=50 go run main.go
+	GO111MODULE=on GOGC=25 go run main.go
 
 .PHONY: test
 test:
