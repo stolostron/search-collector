@@ -67,7 +67,7 @@ func main() {
 	// Create Sender, attached to transformer
 	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
 
-	// Helm client has been deprecated. Will remove later.
+	// Disabeling Helm client because it's no longer needed for Helm v3. Will remove once we confirm nothing is broken.
 	// tr.StartHelmClientProvider(transformChannel, config.GetKubeConfig())
 
 	// Get kubernetes client for discovering resource types
