@@ -21,9 +21,10 @@ type GenericInformer struct {
 	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
 	resourceIndex map[string]string                        // Keeps an index of resources. key=UUID  value=resourceVersion
 	retries       int64                                    // Counts times we have retried without establishing a successful watch.
-	stopped       bool                                     // Tracks when the informer is stopped, to exit cleanly.
+	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly.
 }
 
+// Initialize a Generic Informer for a resource (GVR).
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	i := GenericInformer{
 		gvr: resource,
@@ -42,6 +43,7 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 	return i, nil
 }
 
+// Runs the informer.
 func (inform *GenericInformer) Run(stopper chan struct{}) {
 	for {
 		if inform.retries > 0 {
@@ -51,7 +53,9 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 			time.Sleep(wait)
 		}
 		glog.V(2).Info("(Re)starting informer: ", inform.gvr.String())
-		listAndWatch(inform, stopper)
+		client := config.GetDynamicClient()
+		listAndResync(inform, client)
+		watch(inform, client, stopper)
 
 		if inform.stopped {
 			break
@@ -78,15 +82,6 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 			},
 		},
 	}
-}
-
-// List resources and start a watch. When restarting, it syncs resources with the previous state.
-func listAndWatch(inform *GenericInformer, stopper chan struct{}) {
-	client := config.GetDynamicClient()
-
-	listAndResync(inform, client)
-
-	watch(inform, client, stopper)
 }
 
 // List current resources and fires ADDED events. Then sync the current state with the previous

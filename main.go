@@ -31,8 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
-	// "net/http"
-	// _ "net/http/pprof"
 )
 
 func main() {
@@ -69,17 +67,11 @@ func main() {
 	// Create Sender, attached to transformer
 	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
 
-	tr.StartHelmClientProvider(transformChannel, config.GetKubeConfig())
+	// Helm client has been deprecated. Will remove later.
+	// tr.StartHelmClientProvider(transformChannel, config.GetKubeConfig())
 
-	// Create informer factories
-	// factory for building dynamic informer objects used with CRDs and arbitrary k8s objects
-	// dynamicFactory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicClientset, 0)
-
-	// Create special type of client used for discovering resource types
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config.GetKubeConfig())
-	if err != nil {
-		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
-	}
+	// Get kubernetes client for discovering resource types
+	discoveryClient := config.GetDiscoveryClient()
 
 	// These functions return handler functions, which are then used in creation of the informers.
 	createInformerAddHandler := func(resourceName string) func(interface{}) {
@@ -214,9 +206,6 @@ func main() {
 			time.Sleep(timeToSleep)
 		}
 	}()
-
-	// time.Sleep(90 * time.Second)
-	// http.ListenAndServe(":8080", nil)
 
 	// We don't actually use this to wait on anything, since the transformer routines don't ever end unless something
 	// goes wrong. We just use this to wait forever in main once we start things up.
