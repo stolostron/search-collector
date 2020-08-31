@@ -20,7 +20,6 @@ type GenericInformer struct {
 	DeleteFunc    func(interface{})
 	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
 	resourceIndex map[string]string                        // Keeps an index of resources. key=UUID  value=resourceVersion
-	prevResource  unstructured.UnstructuredList            // We use the prevResource to determine if any resources were deleted while the informer was down.
 	retries       int64                                    // Counts times we have retried without establishing a successful watch.
 	stopped       bool                                     // Tracks when the informer is stopped, to exit cleanly.
 }
@@ -70,15 +69,12 @@ func min(a, b int64) int64 {
 }
 
 // Helper function that creates a new unstructured resource with given Kind and UID.
-func newUnstructured(obj *unstructured.Unstructured, uid string) *unstructured.Unstructured {
+func newUnstructured(kind, uid string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": obj.GetAPIVersion(),
-			"kind":       obj.GetKind(),
+			"kind": kind,
 			"metadata": map[string]interface{}{
-				"name":      obj.GetName(),
-				"namespace": obj.GetNamespace(),
-				"uid":       uid,
+				"uid": uid,
 			},
 		},
 	}
@@ -124,18 +120,11 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 	for key := range prevResourceIndex {
 		if _, exist := inform.resourceIndex[key]; !exist {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
-			for i := range inform.prevResource.Items { // We need to extract that resource data. Go doesn't have a filter func, so we have to loop through the resources.
-				if string(inform.prevResource.Items[i].GetUID()) == key {
-					obj := newUnstructured(&inform.prevResource.Items[i], key)
-					inform.DeleteFunc(obj)
-					break
-				}
-			}
+			obj := newUnstructured(inform.gvr.Resource, key)
+			inform.DeleteFunc(obj)
+			break
 		}
 	}
-
-	// Resync previous resources to new resource list
-	inform.prevResource = *resources
 }
 
 // Watch resources and process events.
