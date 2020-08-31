@@ -84,7 +84,8 @@ func main() {
 		glog.Fatal("Error Constructing Client From Config: ", clientConfigError)
 	}
 
-	tr.StartHelmClientProvider(transformChannel, clientConfig)
+	// Disabeling Helm client because it's no longer needed for Helm v3. Will remove once we confirm nothing is broken.
+	// tr.StartHelmClientProvider(transformChannel, config.GetKubeConfig())
 
 	// Initialize the dynamic client, used for CRUD operations on arbitrary k8s resources
 	dynamicClientset, err := dynamic.NewForConfig(clientConfig)

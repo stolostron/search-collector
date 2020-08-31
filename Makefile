@@ -32,8 +32,8 @@ build-linux:
 .PHONY: lint
 lint:
 	GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
-	# Flag GOGC=100 needed to avoid out of memory issue.
-	GO111MODULE=on GOGC=100 golangci-lint run --timeout=2m
+	# Flag GOGC=25 needed to run garbage collection more often and avoid out of memory issue.
+	GO111MODULE=on GOGC=50 golangci-lint run --timeout=3m
 
 run:
 	GO111MODULE=on go run main.go
