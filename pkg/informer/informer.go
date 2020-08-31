@@ -20,7 +20,7 @@ type GenericInformer struct {
 	DeleteFunc    func(interface{})
 	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
 	resourceIndex map[string]string                        // Keeps an index of resources. key=UUID  value=resourceVersion
-	retries       int64                                    // Counts times we have retried without establishing a successful watch.
+	retries       int64                                    // Counts times we have tried without establishing a watch.
 	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly.
 }
 
@@ -104,7 +104,8 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 
 	// Add all resources.
 	for i := range resources.Items {
-		glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s", inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
+		glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
+			inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 		inform.AddFunc(&resources.Items[i])
 		inform.resourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
 	}

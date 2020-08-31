@@ -67,8 +67,8 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 
 	if len(a.annotations["apps.open-cluster-management.io/placementbindings"]) > 0 {
 		placementBindingMap := make(map[string]struct{})
-		for _, placementBinding := range strings.Split(a.annotations["apps.open-cluster-management.io/placementbindings"], ",") {
-			placementBindingMap[placementBinding] = struct{}{}
+		for _, pBinding := range strings.Split(a.annotations["apps.open-cluster-management.io/placementbindings"], ",") {
+			placementBindingMap[pBinding] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(placementBindingMap, "PlacementBinding", nodeInfo, ns)...)
 	}
