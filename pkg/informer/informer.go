@@ -182,13 +182,12 @@ func watch(inform *GenericInformer, client dynamic.Interface, stopper chan struc
 				delete(inform.resourceIndex, string(obj.GetUID()))
 
 			case "ERROR":
-				glog.Warningf("Received ERROR event. Ending listAndWatch() for %s ", inform.gvr.String())
-				glog.Warning("  Event: ", event)
+				glog.V(2).Infof("Received ERROR event. Ending listAndWatch() for %s ", inform.gvr.String())
 				watch.Stop()
 				return
 
 			default:
-				glog.Warningf("Received unexpected event. Ending listAndWatch() for %s ", inform.gvr.String())
+				glog.V(2).Infof("Received unexpected event. Ending listAndWatch() for %s ", inform.gvr.String())
 				watch.Stop()
 				return
 			}
