@@ -110,7 +110,7 @@ func (s *Sender) diffPayload() (Payload, int, int) {
 
 	payload := Payload{
 		ClearAll:  false,
-		RequestId: rand.Intn(999999),
+		RequestId: rand.Intn(999999), // #nosec - gosec:G404 - Not used in a security context.
 		Version:   config.COLLECTOR_API_VERSION,
 
 		AddResources:     diff.AddNodes,
@@ -132,7 +132,7 @@ func (s *Sender) completePayload() (Payload, int, int) {
 	// Delete and Update aren't needed when we're sending all the data. Just fill out the adds.
 	payload := Payload{
 		ClearAll:     true,
-		RequestId:    rand.Intn(999999),
+		RequestId:    rand.Intn(999999), // #nosec - gosec:G404 - Not used in a security context.
 		AddResources: complete.Nodes,
 
 		AddEdges: complete.Edges,
