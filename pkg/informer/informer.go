@@ -88,12 +88,6 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 // List current resources and fires ADDED events. Then sync the current state with the previous
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func listAndResync(inform *GenericInformer, client dynamic.Interface) {
-	// Save the previous state.
-	var prevResourceIndex map[string]string
-	if len(inform.resourceIndex) > 0 {
-		prevResourceIndex = inform.resourceIndex
-		inform.resourceIndex = make(map[string]string)
-	}
 
 	// List resources.
 	resources, listError := client.Resource(inform.gvr).List(metav1.ListOptions{})
@@ -101,6 +95,14 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 		glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
 		inform.retries++
 		return
+	}
+
+	// Save the previous state.
+	// IMPORTANT: Keep this after we have successfully listed the resources, otherwise we'll lose the previous state.
+	var prevResourceIndex map[string]string
+	if len(inform.resourceIndex) > 0 {
+		prevResourceIndex = inform.resourceIndex
+		inform.resourceIndex = make(map[string]string)
 	}
 
 	// Add all resources.
