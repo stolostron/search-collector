@@ -118,7 +118,6 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
 			obj := newUnstructured(inform.gvr.Resource, key)
 			inform.DeleteFunc(obj)
-			break
 		}
 	}
 }
