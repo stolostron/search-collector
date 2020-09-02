@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
+// GenericInformer ...
 type GenericInformer struct {
 	gvr           schema.GroupVersionResource
 	AddFunc       func(interface{})
@@ -24,7 +25,7 @@ type GenericInformer struct {
 	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly.
 }
 
-// Initialize a Generic Informer for a resource (GVR).
+// InformerForResource initialize a Generic Informer for a resource (GVR).
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	i := GenericInformer{
 		gvr: resource,
@@ -43,7 +44,7 @@ func InformerForResource(resource schema.GroupVersionResource) (GenericInformer,
 	return i, nil
 }
 
-// Runs the informer.
+// Run runs the informer.
 func (inform *GenericInformer) Run(stopper chan struct{}) {
 	for {
 		if inform.retries > 0 {
@@ -118,7 +119,6 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
 			obj := newUnstructured(inform.gvr.Resource, key)
 			inform.DeleteFunc(obj)
-			break
 		}
 	}
 }
