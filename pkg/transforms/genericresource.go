@@ -10,10 +10,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+// GenericResource ...
 type GenericResource struct {
 	node Node
 }
 
+// GenericResourceBuilder ...
 // Builds a GenericResource node. Extract the useful properties from unstructured resource.
 func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 	n := Node{
@@ -26,12 +28,14 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 	return &GenericResource{node: n}
 }
 
+// BuildNode construct the node for Generic Resources
 // Need to keep this for compatibility. Node is now computed on the "constructor" GenericResourceBuilder()
 func (r GenericResource) BuildNode() Node {
 	return r.node
 }
 
-func (u GenericResource) BuildEdges(ns NodeStore) []Edge {
+// BuildEdges construct the edges for Generic Resources
+func (r GenericResource) BuildEdges(ns NodeStore) []Edge {
 	return []Edge{}
 }
 
