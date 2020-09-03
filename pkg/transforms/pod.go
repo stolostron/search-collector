@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -16,29 +17,32 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// PodResource ...
 type PodResource struct {
-	*v1.Pod
+	node Node
+	Spec v1.PodSpec
 }
 
-func (pod PodResource) BuildNode() Node {
+// PodResourceBuilder ...
+func PodResourceBuilder(p *v1.Pod) *PodResource {
 	// Loop over spec to get the container and image names
 	var containers []string
 	var images []string
-	for _, container := range pod.Spec.Containers {
+	for _, container := range p.Spec.Containers {
 		containers = append(containers, container.Name)
 		images = append(images, container.Image)
 	}
 
 	// Loop over init container status or container status to get restarts and build status message
-	reason := string(pod.Status.Phase)
-	if pod.Status.Reason != "" {
-		reason = pod.Status.Reason
+	reason := string(p.Status.Phase)
+	if p.Status.Reason != "" {
+		reason = p.Status.Reason
 	}
 
 	initializing := false
 	restarts := int64(0)
-	for i := range pod.Status.InitContainerStatuses {
-		container := pod.Status.InitContainerStatuses[i]
+	for i := range p.Status.InitContainerStatuses {
+		container := p.Status.InitContainerStatuses[i]
 		restarts += int64(container.RestartCount)
 		switch {
 		case container.State.Terminated != nil && container.State.Terminated.ExitCode == 0:
@@ -59,7 +63,7 @@ func (pod PodResource) BuildNode() Node {
 			reason = "Init:" + container.State.Waiting.Reason
 			initializing = true
 		default:
-			reason = fmt.Sprintf("Init:%d/%d", i, len(pod.Spec.InitContainers))
+			reason = fmt.Sprintf("Init:%d/%d", i, len(p.Spec.InitContainers))
 			initializing = true
 		}
 		break
@@ -67,8 +71,8 @@ func (pod PodResource) BuildNode() Node {
 	if !initializing {
 		restarts = int64(0)
 		hasRunning := false
-		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
-			container := pod.Status.ContainerStatuses[i]
+		for i := len(p.Status.ContainerStatuses) - 1; i >= 0; i-- {
+			container := p.Status.ContainerStatuses[i]
 
 			restarts += int64(container.RestartCount)
 			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
@@ -92,36 +96,47 @@ func (pod PodResource) BuildNode() Node {
 		}
 	}
 
-	if pod.DeletionTimestamp != nil && pod.Status.Reason == "NodeLost" {
+	if p.DeletionTimestamp != nil && p.Status.Reason == "NodeLost" {
 		reason = "Unknown"
-	} else if pod.DeletionTimestamp != nil {
+	} else if p.DeletionTimestamp != nil {
 		reason = "Terminating"
 	}
 
-	node := transformCommon(pod) // Start off with the common properties
+	node := transformCommon(p) // Start off with the common properties
 
-	apiGroupVersion(pod.TypeMeta, &node) // add kind, apigroup and version
+	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["hostIP"] = pod.Status.HostIP
-	node.Properties["podIP"] = pod.Status.PodIP
+	node.Properties["hostIP"] = p.Status.HostIP
+	node.Properties["podIP"] = p.Status.PodIP
 	node.Properties["restarts"] = restarts
 	node.Properties["status"] = reason
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
 	node.Properties["startedAt"] = ""
-	if pod.Status.StartTime != nil {
-		node.Properties["startedAt"] = pod.Status.StartTime.UTC().Format(time.RFC3339)
+	if p.Status.StartTime != nil {
+		node.Properties["startedAt"] = p.Status.StartTime.UTC().Format(time.RFC3339)
 	}
 
-	return node
+	return &PodResource{node: node, Spec: p.Spec}
 }
 
+// BuildNode construct the node for the Pod Resources
+func (p PodResource) BuildNode() Node {
+	return p.node
+}
+
+// BuildEdges construct the edges for the Pod Resources
 func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	ret := make([]Edge, 0, 8)
 
-	UID := prefixedUID(p.UID)
+	UID := p.node.UID
 
-	nodeInfo := NodeInfo{Name: p.Name, NameSpace: p.Namespace, UID: UID, EdgeType: "attachedTo", Kind: p.Kind}
+	nodeInfo := NodeInfo{
+		Name:      p.node.Properties["name"].(string),
+		NameSpace: p.node.Properties["namespace"].(string),
+		UID:       UID,
+		EdgeType:  "attachedTo",
+		Kind:      p.node.Properties["kind"].(string)}
 
 	//attachedTo edges
 	secretMap := make(map[string]struct{})
@@ -130,7 +145,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	volumeMap := make(map[string]struct{})
 
 	// Parse the pod's spec to create a list of all the secrets, configmaps and volumes it is attached to
-	for _, container := range p.Pod.Spec.Containers {
+	for _, container := range p.Spec.Containers {
 		for _, envVal := range container.Env {
 			if envVal.ValueFrom != nil {
 				if envVal.ValueFrom.SecretKeyRef != nil {
@@ -141,7 +156,8 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 			}
 		}
 	}
-	for _, volume := range p.Pod.Spec.Volumes {
+
+	for _, volume := range p.Spec.Volumes {
 		if volume.Secret != nil {
 			secretMap[volume.Secret.SecretName] = struct{}{}
 		} else if volume.ConfigMap != nil {
@@ -179,7 +195,8 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 				})
 			}
 		} else {
-			glog.V(2).Infof("Pod %s runsOn edge not created: Node %s not found", p.GetNamespace()+"/"+p.GetName(), "_NONE/"+nodeName)
+			glog.V(2).Infof("Pod %s runsOn edge not created: Node %s not found",
+				p.node.Properties["namespace"].(string)+"/"+p.node.Properties["name"].(string), "_NONE/"+nodeName)
 		}
 	}
 	return ret

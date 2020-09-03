@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -17,7 +18,7 @@ import (
 func TestTransformPersistentVolumeClaim(t *testing.T) {
 	var p v1.PersistentVolumeClaim
 	UnmarshalFile("persistentvolumeclaim.json", &p, t)
-	node := PersistentVolumeClaimResource{&p}.BuildNode()
+	node := PersistentVolumeClaimResourceBuilder(&p).BuildNode()
 
 	// Test only the fields that exist in node - the common test will test the other bits
 	AssertEqual("volumeName", node.Properties["volumeName"], "test-pv", t)

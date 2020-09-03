@@ -27,7 +27,7 @@ func TestTransformRoutine(t *testing.T) {
 	var appInput unstructured.Unstructured
 	UnmarshalFile("application.json", &appTyped, t)
 	UnmarshalFile("application.json", &appInput, t)
-	appNode := ApplicationResource{&appTyped}.BuildNode()
+	appNode := ApplicationResourceBuilder(&appTyped).BuildNode()
 
 	unstructuredInput := unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -37,7 +37,7 @@ func TestTransformRoutine(t *testing.T) {
 			},
 		},
 	}
-	unstructuredNode := UnstructuredResource{&unstructuredInput}.BuildNode()
+	unstructuredNode := GenericResourceBuilder(&unstructuredInput).BuildNode()
 
 	var tests = []struct {
 		name     string

@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -14,11 +15,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// PersistentVolumeResource ...
 type PersistentVolumeResource struct {
-	*v1.PersistentVolume
+	node Node
 }
 
-func (p PersistentVolumeResource) BuildNode() Node {
+// PersistentVolumeResourceBuilder ...
+func PersistentVolumeResourceBuilder(p *v1.PersistentVolume) *PersistentVolumeResource {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -61,9 +64,10 @@ func (p PersistentVolumeResource) BuildNode() Node {
 		node.Properties["path"] = p.Spec.VsphereVolume.VolumePath
 	}
 
-	return node
+	return &PersistentVolumeResource{node: node}
 }
 
+// Get the type of PersistentVolumeSpec
 func getType(spec *v1.PersistentVolumeSpec) string {
 	if spec.HostPath != nil {
 		return "Hostpath"
@@ -96,6 +100,12 @@ func getType(spec *v1.PersistentVolumeSpec) string {
 	return ""
 }
 
+// BuildNode construct the nodes for the PersistentVolume Resources
+func (p PersistentVolumeResource) BuildNode() Node {
+	return p.node
+}
+
+// BuildEdges construct the edges for the PersistentVolume Resources
 func (p PersistentVolumeResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}

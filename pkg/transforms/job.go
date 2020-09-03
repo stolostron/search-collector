@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -12,11 +13,13 @@ import (
 	v1 "k8s.io/api/batch/v1"
 )
 
+// JobResource ...
 type JobResource struct {
-	*v1.Job
+	node Node
 }
 
-func (j JobResource) BuildNode() Node {
+// JobResourceBuilder ...
+func JobResourceBuilder(j *v1.Job) *JobResource {
 	node := transformCommon(j)         // Start off with the common properties
 	apiGroupVersion(j.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -30,9 +33,15 @@ func (j JobResource) BuildNode() Node {
 		node.Properties["parallelism"] = int64(*j.Spec.Parallelism)
 	}
 
-	return node
+	return &JobResource{node: node}
 }
 
+// BuildNode construct node for Job resources
+func (j JobResource) BuildNode() Node {
+	return j.node
+}
+
+// BuildEdges construct edges for Job resources
 func (j JobResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}

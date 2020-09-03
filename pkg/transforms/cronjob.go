@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -14,11 +15,13 @@ import (
 	v1 "k8s.io/api/batch/v1beta1"
 )
 
+// CronJobResource ...
 type CronJobResource struct {
-	*v1.CronJob
+	node Node
 }
 
-func (c CronJobResource) BuildNode() Node {
+// CronJobResourceBuilder ...
+func CronJobResourceBuilder(c *v1.CronJob) *CronJobResource {
 	node := transformCommon(c) // Start off with the common properties
 
 	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
@@ -34,9 +37,15 @@ func (c CronJobResource) BuildNode() Node {
 		node.Properties["suspend"] = *c.Spec.Suspend
 	}
 
-	return node
+	return &CronJobResource{node: node}
 }
 
+// BuildNode construct the node for the Cronjob Resources
+func (c CronJobResource) BuildNode() Node {
+	return c.node
+}
+
+// BuildEdges construct the edges for the Cronjob Resources
 func (c CronJobResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}

@@ -17,7 +17,7 @@ import (
 func TestTransformPlacementRule(t *testing.T) {
 	var p app.PlacementRule
 	UnmarshalFile("placementrule.json", &p, t)
-	node := PlacementRuleResource{&p}.BuildNode()
+	node := PlacementRuleResourceBuilder(&p).BuildNode()
 
 	// Test only the fields that exist in placementrule - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "PlacementRule", t)
@@ -27,7 +27,7 @@ func TestTransformPlacementRule(t *testing.T) {
 func TestTransformPlacementRuleWithClusterReplicas(t *testing.T) {
 	var p app.PlacementRule
 	UnmarshalFile("placementrule2.json", &p, t)
-	node := PlacementRuleResource{&p}.BuildNode()
+	node := PlacementRuleResourceBuilder(&p).BuildNode()
 
 	// Test only the fields that exist in placementrule - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "PlacementRule", t)

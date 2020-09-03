@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -17,7 +18,7 @@ import (
 func TestTransformDaemonSet(t *testing.T) {
 	var d v1.DaemonSet
 	UnmarshalFile("daemonset.json", &d, t)
-	node := DaemonSetResource{&d}.BuildNode()
+	node := DaemonSetResourceBuilder(&d).BuildNode()
 
 	// Test only the fields that exist in daemonset - the common test will test the other bits
 	AssertEqual("available", node.Properties["available"], int64(1), t)

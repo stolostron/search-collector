@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -12,11 +13,13 @@ import (
 	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
 )
 
+// PlacementPolicyResource ...
 type PlacementPolicyResource struct {
-	*mcm.PlacementPolicy
+	node Node
 }
 
-func (p PlacementPolicyResource) BuildNode() Node {
+// PlacementPolicyResourceBuilder ...
+func PlacementPolicyResourceBuilder(p *mcm.PlacementPolicy) *PlacementPolicyResource {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -32,9 +35,15 @@ func (p PlacementPolicyResource) BuildNode() Node {
 	}
 	node.Properties["decisions"] = decisions
 
-	return node
+	return &PlacementPolicyResource{node: node}
 }
 
+// BuildNode construct the node for the PlacementPolicy Resources
+func (p PlacementPolicyResource) BuildNode() Node {
+	return p.node
+}
+
+// BuildEdges construct the edges for the PlacementPolicy Resources
 func (p PlacementPolicyResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}

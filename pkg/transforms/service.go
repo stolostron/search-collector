@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -15,22 +16,25 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// ServiceResource ...
 type ServiceResource struct {
-	*v1.Service
+	node Node
+	Spec v1.ServiceSpec
 }
 
-func (service ServiceResource) BuildNode() Node {
-	node := transformCommon(service) // Start off with the common properties
+// ServiceResourceBuilder ...
+func ServiceResourceBuilder(s *v1.Service) *ServiceResource {
+	node := transformCommon(s) // Start off with the common properties
 	var ports []string
-	apiGroupVersion(service.TypeMeta, &node) // add kind, apigroup and version
+	apiGroupVersion(s.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["type"] = service.Spec.Type
-	node.Properties["clusterIP"] = service.Spec.ClusterIP
-	if len(service.Spec.ExternalIPs) > 0 {
-		node.Properties["externalIPs"] = strings.Join(service.Spec.ExternalIPs, ",")
+	node.Properties["type"] = s.Spec.Type
+	node.Properties["clusterIP"] = s.Spec.ClusterIP
+	if len(s.Spec.ExternalIPs) > 0 {
+		node.Properties["externalIPs"] = strings.Join(s.Spec.ExternalIPs, ",")
 	}
-	if len(service.Spec.Ports) > 0 {
-		for _, p := range service.Spec.Ports {
+	if len(s.Spec.Ports) > 0 {
+		for _, p := range s.Spec.Ports {
 			if p.NodePort != 0 {
 				ports = append(ports, strings.Join([]string{strconv.Itoa(int(p.Port)), ":", strconv.Itoa(int(p.NodePort)), "/", string(p.Protocol)}, ""))
 			} else {
@@ -39,20 +43,32 @@ func (service ServiceResource) BuildNode() Node {
 		}
 		node.Properties["port"] = ports
 	}
-	return node
+	return &ServiceResource{node: node, Spec: s.Spec}
 }
 
+// BuildNode construct the node for the Service Resources
+func (s ServiceResource) BuildNode() Node {
+	return s.node
+}
+
+// BuildEdges construct the edges for the Service Resources
 func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
 	serviceSelector := s.Spec.Selector
 
 	if serviceSelector == nil {
 		return []Edge{}
 	}
-	// TODO future: Match a pod in another namespace , but config will be different in those cases.
-	pods := ns.ByKindNamespaceName["Pod"][s.Namespace]
-	nodeInfo := NodeInfo{Name: s.Name, NameSpace: s.Namespace, UID: prefixedUID(s.UID), EdgeType: "usedBy", Kind: s.Kind}
 
-	//Inner function to match the service and pod labels
+	// TODO future: Match a pod in another namespace , but config will be different in those cases.
+	pods := ns.ByKindNamespaceName["Pod"][s.node.Properties["namespace"].(string)]
+	nodeInfo := NodeInfo{
+		Name:      s.node.Properties["name"].(string),
+		NameSpace: s.node.Properties["namespace"].(string),
+		UID:       s.node.UID,
+		EdgeType:  "usedBy",
+		Kind:      s.node.Properties["kind"].(string)}
+
+	// Inner function to match the service and pod labels
 	match := func(podLabels, serviceSelector map[string]string) bool {
 		for selKey, selVal := range serviceSelector {
 			if podVal, ok := podLabels[selKey]; podVal != selVal || !ok {
@@ -62,7 +78,7 @@ func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
 		return true
 	}
 
-	//usedBy edges
+	// usedBy edges
 	ret := []Edge{}
 	for _, p := range pods {
 		if podLabels, ok := p.Properties["label"].(map[string]string); ok {

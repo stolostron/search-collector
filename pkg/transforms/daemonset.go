@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -12,11 +13,13 @@ import (
 	v1 "k8s.io/api/apps/v1"
 )
 
+// DaemonSetResource ...
 type DaemonSetResource struct {
-	*v1.DaemonSet
+	node Node
 }
 
-func (d DaemonSetResource) BuildNode() Node {
+// DaemonSetResourceBuilder ...
+func DaemonSetResourceBuilder(d *v1.DaemonSet) *DaemonSetResource {
 	node := transformCommon(d)         // Start off with the common properties
 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -26,9 +29,15 @@ func (d DaemonSetResource) BuildNode() Node {
 	node.Properties["ready"] = int64(d.Status.NumberReady)
 	node.Properties["updated"] = int64(d.Status.UpdatedNumberScheduled)
 
-	return node
+	return &DaemonSetResource{node: node}
 }
 
+// BuildNode construct the node for the Daemonset Resources
+func (d DaemonSetResource) BuildNode() Node {
+	return d.node
+}
+
+// BuildEdges construct the edges for the Daemonset Resources
 func (d DaemonSetResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}

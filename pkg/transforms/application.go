@@ -15,46 +15,60 @@ import (
 	app "sigs.k8s.io/application/api/v1beta1"
 )
 
+// ApplicationResource ...
 type ApplicationResource struct {
-	*app.Application
+	node        Node
+	annotations map[string]string
 }
 
-func (a ApplicationResource) BuildNode() Node {
+// ApplicationResourceBuilder ...
+func ApplicationResourceBuilder(a *app.Application) *ApplicationResource {
 	node := transformCommon(a)
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 	node.Properties["dashboard"] = a.GetAnnotations()["apps.open-cluster-management.io/dashboard"]
 
-	return node
+	return &ApplicationResource{node: node, annotations: a.GetAnnotations()}
 }
 
+// BuildNode construct the node for the Application Resources
+func (a ApplicationResource) BuildNode() Node {
+	return a.node
+}
+
+// BuildEdges construct the edges for the Application Resources
 // See documentation at pkg/transforms/README.md
 func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
-	UID := prefixedUID(a.UID)
+	UID := a.node.UID
 
-	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, EdgeType: "contains", Kind: a.Kind, Name: a.Name}
+	nodeInfo := NodeInfo{
+		NameSpace: a.node.Properties["namespace"].(string),
+		UID:       UID,
+		EdgeType:  "contains",
+		Kind:      a.node.Properties["kind"].(string),
+		Name:      a.node.Properties["name"].(string)}
 
-	if len(a.GetAnnotations()["apps.open-cluster-management.io/deployables"]) > 0 {
+	if len(a.annotations["apps.open-cluster-management.io/deployables"]) > 0 {
 		deployableMap := make(map[string]struct{})
-		for _, deployable := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/deployables"], ",") {
+		for _, deployable := range strings.Split(a.annotations["apps.open-cluster-management.io/deployables"], ",") {
 			deployableMap[deployable] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
 	}
 
-	if len(a.GetAnnotations()["apps.open-cluster-management.io/subscriptions"]) > 0 {
+	if len(a.annotations["apps.open-cluster-management.io/subscriptions"]) > 0 {
 		subscriptionMap := make(map[string]struct{})
-		for _, subscription := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/subscriptions"], ",") {
+		for _, subscription := range strings.Split(a.annotations["apps.open-cluster-management.io/subscriptions"], ",") {
 			subscriptionMap[subscription] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(subscriptionMap, "Subscription", nodeInfo, ns)...)
 	}
 
-	if len(a.GetAnnotations()["apps.open-cluster-management.io/placementbindings"]) > 0 {
+	if len(a.annotations["apps.open-cluster-management.io/placementbindings"]) > 0 {
 		placementBindingMap := make(map[string]struct{})
-		for _, placementBinding := range strings.Split(a.GetAnnotations()["apps.open-cluster-management.io/placementbindings"], ",") {
-			placementBindingMap[placementBinding] = struct{}{}
+		for _, pBinding := range strings.Split(a.annotations["apps.open-cluster-management.io/placementbindings"], ",") {
+			placementBindingMap[pBinding] = struct{}{}
 		}
 		ret = append(ret, edgesByDestinationName(placementBindingMap, "PlacementBinding", nodeInfo, ns)...)
 	}
