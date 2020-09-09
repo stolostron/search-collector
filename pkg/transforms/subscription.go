@@ -50,11 +50,17 @@ func SubscriptionResourceBuilder(s *app.Subscription) *SubscriptionResource {
 	}
 	// Add hidden properties for app annotations
 	const appAnnotationPrefix string = "apps.open-cluster-management.io/"
+	const gitType = "git"
+	const oldGitType = "github"
 	annotations := s.GetAnnotations()
-	for _, annotation := range []string{"git-branch", "git-path", "git-commit"} {
-		annotationValue := annotations[appAnnotationPrefix+annotation]
+	for _, annotation := range []string{"branch", "path", "commit"} {
+		annotationValue := annotations[appAnnotationPrefix + gitType + "-" + annotation]
+		if annotationValue == "" {
+			// Try old version of the annotation
+			annotationValue = annotations[appAnnotationPrefix + oldGitType + "-" + annotation]
+		}
 		if annotationValue != "" {
-			node.Properties["_"+strings.ReplaceAll(annotation, "-", "")] = annotationValue
+			node.Properties["_" + gitType + strings.ReplaceAll(annotation, "-", "")] = annotationValue
 		}
 	}
 	// Add metadata specific to this type
