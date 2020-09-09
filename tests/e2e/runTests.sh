@@ -1,2 +1,2 @@
 
-sh tests/e2e/resourceBudgetTest.sh
+sh tests/e2e/resourceBudgetTest.sh $1

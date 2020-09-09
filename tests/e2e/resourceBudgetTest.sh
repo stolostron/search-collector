@@ -2,7 +2,8 @@ echo "=== TEST: Memory and CPU budget ===\n"
 
 CPU_BUDGET=5.00
 MEM_BUDGET=14.00
-SEARCH_COLLECTOR_IMAGE=quay.io/open-cluster-management/search-collector:2.1.0-SNAPSHOT-2020-09-08-19-53-33
+SEARCH_COLLECTOR_IMAGE=$1
+# SEARCH_COLLECTOR_IMAGE=quay.io/open-cluster-management/search-collector:2.1.0-SNAPSHOT-2020-09-08-19-53-33
 # SEARCH_COLLECTOR_IMAGE=search-collector
 
 create_kind_cluster() { 
