@@ -56,7 +56,7 @@ func SubscriptionResourceBuilder(s *app.Subscription) *SubscriptionResource {
 	for _, annotation := range []string{"branch", "path", "commit"} {
 		annotationValue := annotations[appAnnotationPrefix + gitType + "-" + annotation]
 		if annotationValue == "" {
-			// Try old version of the annotation
+			// Try old version of the annotation - to be removed if/when these annotations are no longer supported
 			annotationValue = annotations[appAnnotationPrefix + oldGitType + "-" + annotation]
 		}
 		if annotationValue != "" {
