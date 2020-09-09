@@ -51,40 +51,21 @@ func initAPIResources(t *testing.T) {
 
 		t.Logf("Located file for %s resource", kind)
 
-		// newResource := v1.APIResource{}
-		// newResource.Name = data.GetName()
-		// newResource.Kind = kind
-
-		apiVersion := str.Split(data.GetAPIVersion(), "/")
-
 		// Set GVR resource to current data resource.
 		var gvr schema.GroupVersionResource
 		gvr.Resource = str.Join([]string{str.ToLower(kind), "s"}, "")
 
 		// Set the GVR Group and Version
-		if len(apiVersion) == 2 {
-			// newResource.Group = apiVersion[0]
-			// newResource.Version = apiVersion[1]
+		apiVersion := str.Split(data.GetAPIVersion(), "/")
 
+		if len(apiVersion) == 2 {
 			gvr.Group = apiVersion[0]
 			gvr.Version = apiVersion[1]
 		} else {
-			// newResource.Version = apiVersion[0]
 			gvr.Version = apiVersion[0]
 		}
 
 		gvrList = append(gvrList, gvr)
-
-		// Not all resources will be namespaced, so we need to check for that value.
-		// if data.GetNamespace() != "" {
-		// 	newResource.Namespaced = true
-		// }
-
-		// Set the verbs for resources.
-		// newResource.Verbs = []string{"create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"}
-
-		// t.Logf("[newResource]\t ===> %+v\n\n", newResource)
-		// apiResourceList = append(apiResourceList, newResource)
 
 		// We need to create resources for the dynamic client.
 		_, err := dynamicClient.Resource(gvr).Create(data, v1.CreateOptions{})
@@ -92,7 +73,7 @@ func initAPIResources(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error creating resource %s ::: failed with Error: %s", data.GetKind(), err)
 		} else {
-			// TODO
+			// TODO: Find a more efficient way to handle resource creation for the fake client.
 			dynamicClient.Invokes(te.NewCreateAction(gvr, data.GetNamespace(), data), data)
 			resources = append(resources, data)
 		}
