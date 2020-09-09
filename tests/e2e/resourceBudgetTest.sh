@@ -1,3 +1,7 @@
+#!/bin/bash
+
+# Copyright (c) 2020 Red Hat, Inc.
+
 echo "=== TEST: Memory and CPU budget ===\n"
 
 CPU_BUDGET=5.00
