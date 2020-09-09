@@ -7,7 +7,7 @@
             "apps.open-cluster-management.io/managed-cluster": "/",
             "apps.open-cluster-management.io/git-branch": "master",
             "apps.open-cluster-management.io/git-commit": "d67d8e10dcfa41dddcac14952e9872e1dfece06f",
-            "apps.open-cluster-management.io/git-path": "helloworld"
+            "apps.open-cluster-management.io/github-path": "helloworld"
         },
         "creationTimestamp": "2019-07-16T20:58:03Z",
         "generation": 3,
