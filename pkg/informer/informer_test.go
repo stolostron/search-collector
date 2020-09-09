@@ -16,9 +16,12 @@ import (
 	"k8s.io/client-go/dynamic/fake"
 )
 
-var dynamicClient fake.FakeDynamicClient
-var apiResourceList []v1.APIResource
-var gvrList []schema.GroupVersionResource
+var dynamicClient = fake.FakeDynamicClient{}
+var gvrList = []schema.GroupVersionResource{}
+
+// The API Resource List is retreived through the discovery client
+// so since we're skipping the discovery client and just using the GVR List, we can bypass using the API List
+// var apiResourceList = []v1.APIResource{}
 
 func initAPIResources(t *testing.T) {
 	dir := "../../test-data"
@@ -26,10 +29,6 @@ func initAPIResources(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	dynamicClient = fake.FakeDynamicClient{}
-	apiResourceList = []v1.APIResource{}
-	gvrList = []schema.GroupVersionResource{}
 
 	var filePath string
 	//Convert to events
@@ -56,9 +55,8 @@ func initAPIResources(t *testing.T) {
 
 		apiVersion := str.Split(data.GetAPIVersion(), "/")
 
-		var gvr schema.GroupVersionResource
-
 		// Set GVR resource to current data resource.
+		var gvr schema.GroupVersionResource
 		gvr.Resource = str.Join([]string{str.ToLower(kind), "s"}, "")
 
 		// Set the GVR Group and Version
@@ -80,8 +78,11 @@ func initAPIResources(t *testing.T) {
 			newResource.Namespaced = true
 		}
 
-		t.Logf("[newResource]\t ===> %+v\n\n", newResource)
-		apiResourceList = append(apiResourceList, newResource)
+		// Set the verbs for resources.
+		newResource.Verbs = []string{"create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"}
+
+		// t.Logf("[newResource]\t ===> %+v\n\n", newResource)
+		// apiResourceList = append(apiResourceList, newResource)
 
 		// We need to create resources for the dynamic client.
 		_, err := dynamicClient.Resource(gvr).Create(data, v1.CreateOptions{})
@@ -92,134 +93,30 @@ func initAPIResources(t *testing.T) {
 	}
 }
 
+// FakeRun runs the informer with the fake dynamic client
+// func run(client fake.FakeDynamicClient, stopper string) {
+
+// }
+
 func TestNewInformerWatcher(t *testing.T) {
 	initAPIResources(t)
+	stoppers := make(map[schema.GroupVersionResource]string)
 
-	for _, gvr := range gvrList {
-		t.Log(dynamicClient.Resource(gvr))
+	for {
+		if gvrList != nil {
+			// Create Informers for each test resource
+			for _, gvr := range gvrList {
+				t.Logf("Found resource %s, creating informer", gvr.String())
+
+				// Create informer for each GroupVersionResource
+				informer, _ := InformerForResource(gvr)
+
+				t.Logf("Created %s informer %+v\n\n", gvr.Resource, informer)
+
+				stoppers[gvr] = "stop"
+			}
+			t.Logf("Created stoppers: %+v", stoppers)
+		}
+		break
 	}
-
-	// TODO: It would be neat to use a fake discovery client to discovery fake resources
-	// simliar to how we're using it in main to get the gvr
-	// var discoveryClient fake.FakeDiscovery
-
-	//  // TODO: It would be useful for us to initialize the data similiarliy to how we are setting the data in main.
-	//  // However the dynamicClient that we're using needs a kubeConfig, so we don't actually have resources to list.
-	//  // Create fake data for the dynamic resource.
-
-	// fmt.Println("dynamic", dynamicClient)
-	// fmt.Println("resources", apiResourceList)
-
-	// dynamicClient.Resources = []*v1.APIResourceList{
-	//  &v1.APIResourceList: {
-	//      APIResources: apiResourceList,
-	//  },
-	// }
-	// for i, resource := range dynamicClient.Resources {
-	//  InformerForResource(resource.g)
-	// }
-	// genInformer := GenericInformer{}
-	// gen := &genInformer
-	// listAndResync(gen, dynamicClient)
 }
-
-/*func TestGetSelectedPods(t *testing.T) {
-    t.Parallel()
-    data := []struct {
-        clientset         kubernetes.Interface
-        countExpectedPods int
-        inputNamespace    string
-        listOpt           v1.ListOptions
-        err               error
-    }{
-        // Pods are in the system but they do not match the creteria
-        {
-            clientset: fake.NewSimpleClientset(&v1.Pod{
-                ObjectMeta: v1.ObjectMeta{
-                    Name:        "influxdb-v2",
-                    Namespace:   "default",
-                    Annotations: map[string]string{},
-                },
-            }, &v1.Pod{
-                ObjectMeta: v1.ObjectMeta{
-                    Name:        "chronograf",
-                    Namespace:   "default",
-                    Annotations: map[string]string{},
-                },
-            }),
-            inputNamespace:    "default",
-            countExpectedPods: 0,
-        },
-        // there are not pods in the default namespace with the right annotation and in status running
-        {
-            clientset: fake.NewSimpleClientset(&v1.Pod{
-                ObjectMeta: v1.ObjectMeta{
-                    Name:      "influxdb-v2",
-                    Namespace: "hola",
-                    Annotations: map[string]string{
-                        ProfefeEnabledAnnotation: "true",
-                    },
-                },
-                Status: v1.PodStatus{
-                    Phase: v1.PodRunning,
-                },
-            }, &v1.Pod{
-                ObjectMeta: v1.ObjectMeta{
-                    Name:        "chronograf",
-                    Namespace:   "none",
-                    Annotations: map[string]string{},
-                },
-            }),
-            inputNamespace:    "default",
-            countExpectedPods: 0,
-        },
-        // there is a pod in the default namespace with the right annotation and in status running
-        {
-            clientset: fake.NewSimpleClientset(&v1.Pod{
-                ObjectMeta: v1.ObjectMeta{
-                    Name:      "influxdb-v2",
-                    Namespace: "default",
-                    Annotations: map[string]string{
-                        ProfefeEnabledAnnotation: "true",
-                    },
-                },
-                Status: v1.PodStatus{
-                    Phase: v1.PodRunning,
-                },
-            }, &v1.Pod{
-                ObjectMeta: v1.ObjectMeta{
-                    Name:        "chronograf",
-                    Namespace:   "none",
-                    Annotations: map[string]string{},
-                },
-            }),
-            inputNamespace:    "default",
-            countExpectedPods: 1,
-        },
-    }
-    for _, single := range data {
-        t.Run("", func(single struct {
-            clientset         kubernetes.Interface
-            countExpectedPods int
-            inputNamespace    string
-            listOpt           v1.ListOptions
-            err               error
-        }) func(t *testing.T) {
-            return func(t *testing.T) {
-                pods, err := GetSelectedPods(single.clientset, single.inputNamespace, single.listOpt)
-                if err != nil {
-                    if single.err == nil {
-                        t.Fatalf(err.Error())
-                    }
-                    if !strings.EqualFold(single.err.Error(), err.Error()) {
-                        t.Fatalf("expected err: %s got err: %s", single.err, err)
-                    }
-                } else {
-                    if len(pods) != single.countExpectedPods {
-                        t.Fatalf("expected %d pods, got %d", single.countExpectedPods, len(pods))
-                    }
-                }
-            }
-        }(single))
-    }
-}*/
