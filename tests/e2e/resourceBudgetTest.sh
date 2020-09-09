@@ -12,7 +12,7 @@ SEARCH_COLLECTOR_IMAGE=$1
 
 create_kind_cluster() { 
     WORKDIR=`pwd`
-    if [[ ! -f /usr/local/bin/kind ]]; then
+    if [ ! -f /usr/local/bin/kind ]; then
     	echo "Installing kind from (https://kind.sigs.k8s.io/)."
     
     	# uname returns your operating system name
