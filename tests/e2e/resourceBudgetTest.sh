@@ -29,9 +29,9 @@ create_kind_cluster() {
     kind delete cluster --name collector-test --quiet || true
     
     echo "Starting kind cluster: collector-test" 
-    rm -rf $HOME/.kube/kind-collector-test
+    rm -rf ${WORKDIR}/tests/e2e/kind/kubeconfig
     kind create cluster \
-        --kubeconfig $HOME/.kube/kind-collector-test \
+        --kubeconfig ${WORKDIR}/tests/e2e/kind/kubeconfig \
         --name collector-test \
         --config ${WORKDIR}/tests/e2e/kind/kind-collector-test.config.yaml \
         --quiet
@@ -41,17 +41,17 @@ run_container() {
     docker run \
         -e CLUSTER_NAME="local-cluster" \
         -e DEPLOYED_IN_HUB="true" \
-        -e KUBECONFIG="$HOME/.kube/kind-collector-test" \
+        -e KUBECONFIG=".kubeconfig" \
         -e KUBERNETES_SERVICE_HOST="https://127.0.0.1" \
         -e KUBERNETES_SERVICE_PORT="63481" \
         -v $PWD/sslcert:/sslcert  \
-        -v $HOME/.kube/kind-collector-test:$HOME/.kube/kind-collector-test \
+        -v ${WORKDIR}/tests/e2e/kind/kubeconfig:/.kubeconfig \
         --network="host" \
         --name search-collector \
         ${SEARCH_COLLECTOR_IMAGE} &
 
-    echo "Waiting 60s for search-collector container to start."
-    sleep 60
+    echo "Waiting 90s for search-collector container to start."
+    sleep 90
     OUTPUT=$(docker stats --no-stream --format "{{.MemUsage}} : {{.CPUPerc}}" search-collector) 
     MEM=$(echo $OUTPUT | awk '{print $1}' | sed 's/[^0-9\.]*//g')
     CPU=$(echo $OUTPUT | awk '{print $5}' | sed 's/[^0-9\.]*//g')
@@ -59,6 +59,7 @@ run_container() {
     echo "Stopping and removing search-collector container."
     docker stop search-collector
     docker rm search-collector
+    rm -rf ${WORKDIR}/tests/e2e/kind/kubeconfig
     kind delete cluster --name collector-test --quiet
 }
 
