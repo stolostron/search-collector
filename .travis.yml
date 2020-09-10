@@ -72,12 +72,13 @@ jobs:
         - make sonar/go 
         - make security/scans
 
-    # - stage: test-e2e
-    #   name: "Run e2e tests"
-    #   if: type = pull_request
-    #   script:
-    #     # Run e2e tests.
-    #     - make component/test/e2e
+    - stage: test-e2e
+      name: "Run e2e tests"
+      if: type = pull_request
+      script:
+        # Run e2e tests.
+        - make component/pull
+        - make component/test/e2e
 
     - stage: release-ff
       name: "Push commits to current release branch"
