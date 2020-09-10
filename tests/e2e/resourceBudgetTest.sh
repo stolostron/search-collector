@@ -79,7 +79,7 @@ verify_mem_cpu() {
         echo "\tUsed:   $CPU"
         echo "\tBudget: $CPU_BUDGET"
     fi
-    if [ "$MEM_TEST" -eq 1 || "$CPU_TEST" -eq 1 ]; then
+    if ["$MEM_TEST" -eq 1] || ["$CPU_TEST" -eq 1 ]; then
         echo "TEST FAILED."
         exit 1
     fi
