@@ -10,7 +10,9 @@ import (
 	str "strings"
 	"sync"
 	"testing"
+	"time"
 
+	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -18,15 +20,23 @@ import (
 )
 
 var dynamicClient = fake.FakeDynamicClient{}                  // Fake Dynamic client that the informer will be accessing.
-var gvrList = []schema.GroupVersionResource{}                 // GroupVersionResource list.
+var gvrList = make(map[string]schema.GroupVersionResource)    // GroupVersionResource list.
 var resources = make(map[string][]*unstructured.Unstructured) // Key: GVR resource - Value: Test data for that resource.
 var wg = sync.WaitGroup{}                                     // Wait group to monitor the gorountines being created.
-var numOfRoutines = 0                                         // This will help us keep track of how many routines are actually still running.
 
 // The API Resource List is retreived through the discovery client
 // so since we're skipping the discovery client and just using the GVR List, we can bypass using the API List
 // var apiResourceList = []v1.APIResource{}
 
+var inputChan = make(chan *tr.Event)
+var outputChan = make(chan tr.NodeEvent)
+
+var fakeUpsertTransformer = tr.Transformer{
+	Input:  inputChan,
+	Output: outputChan,
+}
+
+// We need the upsert transformer to send the data along the channels for the informer.
 func initAPIResources(t *testing.T) {
 	dir := "../../test-data"
 	files, err := ioutil.ReadDir(dir)
@@ -63,11 +73,10 @@ func initAPIResources(t *testing.T) {
 		} else {
 			gvr.Version = apiVersion[0]
 		}
-
-		gvrList = append(gvrList, gvr)
+		gvrList[gvr.Resource] = gvr
 
 		// We need to create resources for the dynamic client.
-		dynamicClient.Resource(gvr).Create(data, v1.CreateOptions{})
+		_, err := dynamicClient.Resource(gvr).Create(data, v1.CreateOptions{})
 
 		if err != nil {
 			t.Fatalf("Error creating resource %s ::: failed with Error: %s", data.GetKind(), err)
@@ -84,43 +93,37 @@ func initAPIResources(t *testing.T) {
 func FakeRun(t *testing.T, inform *GenericInformer, stopper chan struct{}) {
 	for {
 		t.Log("(Re)starting informer with fake client: ", inform.gvr.String())
-		FakeListAndResync(t, inform, dynamicClient) // List and Resync
-		// FakeWatch(t, inform, dynamicClient, stopper) // Watcher
+		FakeListAndResync(t, inform)  // List and Resync
+		FakeWatch(t, inform, stopper) // Watcher
+
 		if inform.stopped {
 			break
 		}
 	}
-
 	// Since informer has stopped, we can reduce the wg count.
 	t.Log("Informer was stopped. ", inform.gvr.String())
-	wg.Done()
-	numOfRoutines--
-
-	// If there's only one routine, we can decrement the final wg. We do this because all other routines have finished.
-	if numOfRoutines == 1 {
-		wg.Done()
-		numOfRoutines--
-	}
 }
 
 // FakeListAndResync implements a fake list and resync functionality, to mock the list and resync of the generic informer.
-func FakeListAndResync(t *testing.T, inform *GenericInformer, client fake.FakeDynamicClient) {
+func FakeListAndResync(t *testing.T, inform *GenericInformer) {
 	// We already stored the resources data for each informer within a map. So we can just access that within this function.
 
+	// Add all resources.
 	for i := range resources[inform.gvr.Resource] {
 		t.Logf("KIND: %s UUID: %s, ResourceVersion: %s",
 			inform.gvr.Resource, resources[inform.gvr.Resource][i].GetUID(), resources[inform.gvr.Resource][i].GetResourceVersion())
-		inform.AddFunc(resources[inform.gvr.Resource][i])
+		// TODO: Set up adding resources to event channel.
+		// inform.AddFunc(resources[inform.gvr.Resource][i])
 		inform.resourceIndex[string(resources[inform.gvr.Resource][i].GetUID())] = resources[inform.gvr.Resource][i].GetResourceVersion()
 	}
-
-	inform.stopped = true // Stopping for dev purposes.
 }
 
-// FakeWatch implements a fake watcher for the informer, using the fake dynamic client.
-// func FakeWatch(t *testing.T, inform *GenericInformer, client fake.FakeDynamicClient, stopper chan struct{}) {
-
-// }
+// FakeWatch implements a fake watcher for the informer.
+func FakeWatch(t *testing.T, inform *GenericInformer, stopper chan struct{}) {
+	t.Logf("Fake watching\t[Group: %s \tKind: %s]", inform.gvr.Group, inform.gvr.Resource)
+	inform.stopped = true // Stopping for dev purposes.
+	wg.Done()
+}
 
 func TestNewInformerWatcher(t *testing.T) {
 	initAPIResources(t)
@@ -128,30 +131,22 @@ func TestNewInformerWatcher(t *testing.T) {
 
 	createFakeInformerAddHandler := func(resourceName string) func(interface{}) {
 		return func(obj interface{}) {
-			// resource := obj.(*unstructured.Unstructured)
-			t.Logf("Added")
+			res := obj.(*unstructured.Unstructured)
+			upsert := tr.Event{
+				Time:           time.Now().Unix(),
+				Operation:      tr.Create,
+				Resource:       res,
+				ResourceString: resourceName,
+			}
+			fakeUpsertTransformer.Input <- &upsert
 		}
 	}
-
-	// createFakeInformerUpdateHandler := func(resourceName string) func(interface{}, interface{}) {
-	// 	return func(oldObj, newObj interface{}) {
-	// 		// resource := newObj.(*unstructured.Unstructured)
-	// 		t.Logf("Updated")
-	// 	}
-	// }
-
-	// fakeInformerDeleteHandler := func(obj interface{}) {
-	// 	// resource := obj.(*unstructured.Unstructured)
-	// 	t.Logf("Deleted")
-	// }
 
 	go func() {
 		for {
 			if gvrList != nil {
 				// Create Informers for each test resource
 				for _, gvr := range gvrList {
-					wg.Add(1)
-					numOfRoutines++
 					t.Logf("Found resource %s, creating informer", gvr.String())
 
 					// Create informer for each GroupVersionResource
@@ -160,25 +155,27 @@ func TestNewInformerWatcher(t *testing.T) {
 
 					// Set the fake informer functions
 					informer.AddFunc = createFakeInformerAddHandler(gvr.Resource)
-					// informer.UpdateFunc = createFakeInformerUpdateHandler(gvr.Resource)
+
+					// TODO: Add update and delete action handlers.
+					// informer.UpdateFunc = createFakeInfomerUpdateHandler(gvr.Resource)
 					// informer.DeleteFunc = fakeInformerDeleteHandler
 
 					// In the test, we can simulate that the informer stopped. Allowing us to test the retry logic.
 					stopper := make(chan struct{})
 					stoppers[gvr] = stopper
 					go FakeRun(t, &informer, stopper)
+					wg.Add(1)
 				}
 				t.Log("Total test informers running: ", len(stoppers))
 			}
-			// Breaking for test purposes.
+			// Breaking for dev/test purposes.
+			wg.Done()
 			break
 		}
 		// After we handle every event and finish with the watcher and informer, we can exit out the test.
 	}()
 	// Similarly to how we keep the transformer routines running, we'll keep the test informers running.
 	// However, after the test conditions we can decrement the waitgroup and exit the test.
-
 	wg.Add(1)
-	numOfRoutines++
 	wg.Wait()
 }
