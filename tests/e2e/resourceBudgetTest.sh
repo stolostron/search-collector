@@ -51,7 +51,6 @@ run_container() {
         -v $KUBECONFIG_PATH:/.kubeconfig \
         --network="host" \
         --name search-collector \
-        --privileged \
         ${SEARCH_COLLECTOR_IMAGE} &
 
     echo "Waiting 90s for search-collector container to start."
