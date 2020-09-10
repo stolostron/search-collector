@@ -37,7 +37,7 @@ create_kind_cluster() {
         --name collector-test \
         --config ${WORKDIR}/tests/e2e/kind/kind-collector-test.config.yaml \
         --quiet
-
+    chmod 777 $KUBECONFIG_PATH
 }
 
 run_container() {
@@ -51,6 +51,7 @@ run_container() {
         -v $KUBECONFIG_PATH:/.kubeconfig \
         --network="host" \
         --name search-collector \
+        --privileged \
         ${SEARCH_COLLECTOR_IMAGE} &
 
     echo "Waiting 90s for search-collector container to start."
