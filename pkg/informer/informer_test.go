@@ -13,6 +13,7 @@ import (
 	"time"
 
 	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -24,17 +25,12 @@ var gvrList = make(map[string]schema.GroupVersionResource)    // GroupVersionRes
 var resources = make(map[string][]*unstructured.Unstructured) // Key: GVR resource - Value: Test data for that resource.
 var wg = sync.WaitGroup{}                                     // Wait group to monitor the gorountines being created.
 
+// var input = make(chan *tr.Event)
+// var output = make(chan tr.NodeEvent)
+
 // The API Resource List is retreived through the discovery client
 // so since we're skipping the discovery client and just using the GVR List, we can bypass using the API List
 // var apiResourceList = []v1.APIResource{}
-
-var inputChan = make(chan *tr.Event)
-var outputChan = make(chan tr.NodeEvent)
-
-var fakeUpsertTransformer = tr.Transformer{
-	Input:  inputChan,
-	Output: outputChan,
-}
 
 // We need the upsert transformer to send the data along the channels for the informer.
 func initAPIResources(t *testing.T) {
@@ -92,6 +88,13 @@ func initAPIResources(t *testing.T) {
 // FakeRun simulate the informer run process.
 func FakeRun(t *testing.T, inform *GenericInformer, stopper chan struct{}) {
 	for {
+		// Similarly to how we're using a retry logic in the informer, we need to test that the informer can be restarted.
+		if inform.retries > 0 {
+			wait := time.Duration(2 * time.Second)
+			t.Logf("Preparing to wait %s before simulating testing retry", wait)
+			time.Sleep(wait)
+		}
+
 		t.Log("(Re)starting informer with fake client: ", inform.gvr.String())
 		FakeListAndResync(t, inform)  // List and Resync
 		FakeWatch(t, inform, stopper) // Watcher
@@ -104,24 +107,82 @@ func FakeRun(t *testing.T, inform *GenericInformer, stopper chan struct{}) {
 	t.Log("Informer was stopped. ", inform.gvr.String())
 }
 
+// Create a fake object just with the UID
+func fakeNewUnstructured(t *testing.T, uid string) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"uid": uid,
+			},
+		},
+	}
+}
+
 // FakeListAndResync implements a fake list and resync functionality, to mock the list and resync of the generic informer.
 func FakeListAndResync(t *testing.T, inform *GenericInformer) {
 	// We already stored the resources data for each informer within a map. So we can just access that within this function.
+
+	// In order to test tthe retry logic, we need to set a previous list of resources.
+	var prevResourceIndex map[string]string
+	if len(inform.resourceIndex) > 0 {
+		assert.Greater(t, inform.retries, int64(0)) // Test that this is the retry.
+		prevResourceIndex = inform.resourceIndex
+		inform.resourceIndex = make(map[string]string)
+	}
 
 	// Add all resources.
 	for i := range resources[inform.gvr.Resource] {
 		t.Logf("KIND: %s UUID: %s, ResourceVersion: %s",
 			inform.gvr.Resource, resources[inform.gvr.Resource][i].GetUID(), resources[inform.gvr.Resource][i].GetResourceVersion())
 		// TODO: Set up adding resources to event channel.
-		// inform.AddFunc(resources[inform.gvr.Resource][i])
+		inform.AddFunc(resources[inform.gvr.Resource][i])
 		inform.resourceIndex[string(resources[inform.gvr.Resource][i].GetUID())] = resources[inform.gvr.Resource][i].GetResourceVersion()
+	}
+
+	// Test to see if the previous resource index is equal to the current resource index.
+	if inform.retries > 0 {
+		assert.Equal(t, inform.resourceIndex, prevResourceIndex)
+	}
+
+	t.Logf("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
+		inform.gvr.Group, inform.gvr.Resource, len(resources[inform.gvr.Resource]), resources[inform.gvr.Resource][0].GetResourceVersion())
+
+	// Similiary to what we do in the informer list and resync func, we need to simulate a retry for testing purposes.
+	for key := range prevResourceIndex {
+		if _, exist := inform.resourceIndex[key]; !exist {
+			t.Logf("Test resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
+			obj := fakeNewUnstructured(t, key)
+			inform.DeleteFunc(obj)
+		}
 	}
 }
 
 // FakeWatch implements a fake watcher for the informer.
 func FakeWatch(t *testing.T, inform *GenericInformer, stopper chan struct{}) {
 	t.Logf("Fake watching\t[Group: %s \tKind: %s]", inform.gvr.Group, inform.gvr.Resource)
-	inform.stopped = true // Stopping for dev purposes.
+
+	// We can simulate the retry logic first
+	if inform.retries == 0 {
+		t.Logf("Error watching resources for %s.", inform.gvr.String())
+		inform.retries++
+		return
+	}
+
+	// Create watch events
+	// watchEvents := make(<-chan Event)
+
+	// Reset informer retry
+	inform.retries = 0
+
+	// TODO: Incoporate events for the informer to watch and process.
+	// Since we're already adding data in the fake list and resync
+	// we can test updating and deleting the gvr resource.
+
+	// t.Logf("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
+	// t.Logf("Received DELETE event. Kind: %s ", inform.gvr.Resource)
+
+	// Since we're simulating the retry logic, we can stop the informer after it has tested for the events.
+	inform.stopped = true
 	wg.Done()
 }
 
@@ -138,14 +199,41 @@ func TestNewInformerWatcher(t *testing.T) {
 				Resource:       res,
 				ResourceString: resourceName,
 			}
-			fakeUpsertTransformer.Input <- &upsert
+			t.Log("AddFunc", upsert)
 		}
+	}
+
+	createFakeInformerUpdateHandler := func(resourceName string) func(interface{}, interface{}) {
+		return func(oldObj, newObj interface{}) {
+			res := newObj.(*unstructured.Unstructured)
+			upsert := tr.Event{
+				Time:           time.Now().Unix(),
+				Operation:      tr.Update,
+				Resource:       res,
+				ResourceString: resourceName,
+			}
+			t.Log("UpdateFunc", upsert)
+		}
+	}
+
+	fakeInformerDeleteHandler := func(obj interface{}) {
+		res := obj.(*unstructured.Unstructured)
+		upsert := tr.NodeEvent{
+			Time:      time.Now().Unix(),
+			Operation: tr.Delete,
+			Node: tr.Node{
+				UID: str.Join([]string{"local-cluster", string(res.GetUID())}, "/"),
+			},
+		}
+		t.Log("DeleteFunc", upsert)
 	}
 
 	go func() {
 		for {
 			if gvrList != nil {
 				// Create Informers for each test resource
+				// TODO: Implement stoppers
+
 				for _, gvr := range gvrList {
 					t.Logf("Found resource %s, creating informer", gvr.String())
 
@@ -155,10 +243,8 @@ func TestNewInformerWatcher(t *testing.T) {
 
 					// Set the fake informer functions
 					informer.AddFunc = createFakeInformerAddHandler(gvr.Resource)
-
-					// TODO: Add update and delete action handlers.
-					// informer.UpdateFunc = createFakeInfomerUpdateHandler(gvr.Resource)
-					// informer.DeleteFunc = fakeInformerDeleteHandler
+					informer.UpdateFunc = createFakeInformerUpdateHandler(gvr.Resource)
+					informer.DeleteFunc = fakeInformerDeleteHandler
 
 					// In the test, we can simulate that the informer stopped. Allowing us to test the retry logic.
 					stopper := make(chan struct{})
@@ -168,6 +254,7 @@ func TestNewInformerWatcher(t *testing.T) {
 				}
 				t.Log("Total test informers running: ", len(stoppers))
 			}
+
 			// Breaking for dev/test purposes.
 			wg.Done()
 			if len(stoppers) == len(gvrList) {
