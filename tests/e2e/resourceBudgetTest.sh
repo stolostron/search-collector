@@ -58,9 +58,6 @@ run_container() {
     MEM=$(echo $OUTPUT | awk '{print $1}' | sed 's/[^0-9\.]*//g')
     CPU=$(echo $OUTPUT | awk '{print $5}' | sed 's/[^0-9\.]*//g')
 
-    echo "!!! MEM $MEM"
-    echo "!!! CPU $CPU"
-
     echo "Stopping and removing search-collector container."
     docker stop search-collector
     docker rm search-collector
@@ -68,15 +65,10 @@ run_container() {
     kind delete cluster --name collector-test --quiet
 }
 
-
 verify_mem_cpu() {
     TEST_FAILED=false
-    # if (( $(echo "$MEM > $MEM_BUDGET" |bc -l) )); then
     MEM_TEST=$(awk 'BEGIN {print ('$MEM' >= '$MEM_BUDGET')}')
     CPU_TEST=$(awk 'BEGIN {print ('$CPU' >= '$CPU_BUDGET')}')
-
-    echo "!!! MEM_TEST $MEM_TEST"
-    echo "!!! CPU_TEST $CPU_TEST"
 
     if [ "$MEM_TEST" -eq 1 ]; then
         echo "MEMORY budget exceeded."
@@ -84,27 +76,20 @@ verify_mem_cpu() {
         echo "\tBudget: $MEM_BUDGET"
         TEST_FAILED=true
     fi
-    # if (( $(echo "$CPU > $CPU_BUDGET" |bc -l) )); then
     if [ "$CPU_TEST" -eq 1 ]; then
         echo "CPU budget exceeded."
         echo "\tUsed:   $CPU"
         echo "\tBudget: $CPU_BUDGET"
         TEST_FAILED=true
     fi
-    if [[ $TEST_FAILED == "true" ]]; then
+    if [ "$TEST_FAILED" == "true" ]; then
         echo "TEST FAILED."
         exit 1
     fi
 }
 
-echo ">> create_kind_cluster"
 create_kind_cluster
-
-echo ">> run_container"
 run_container
-
-echo ">> verify_mem_cpu"
 verify_mem_cpu
-
 
 echo "\nTEST PASSED."

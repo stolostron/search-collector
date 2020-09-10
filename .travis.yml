@@ -65,13 +65,13 @@ jobs:
         - make component/push
         - make component/test/e2e
 
-    # - stage: unit-test
-    #   name: "Run lint, unit tests, sonar, and security scans"
-    #   script:
-    #     # Run lint and unit tests.
-    #     - make component/test/unit
-    #     - make sonar/go 
-    #     - make security/scans
+    - stage: unit-test
+      name: "Run lint, unit tests, sonar, and security scans"
+      script:
+        # Run lint and unit tests.
+        - make component/test/unit
+        - make sonar/go 
+        - make security/scans
 
     - stage: test-e2e
       name: "Run e2e tests"
