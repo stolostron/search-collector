@@ -11,6 +11,7 @@ if [ $1 ]; then
 else
     SEARCH_COLLECTOR_IMAGE="search-collector"
 fi
+KUBECONFIG_PATH=${PWD}/.kubeconfig-kind
 
 
 create_kind_cluster() { 
@@ -29,12 +30,14 @@ create_kind_cluster() {
     kind delete cluster --name collector-test --quiet || true
     
     echo "Starting kind cluster: collector-test" 
-    rm -rf ${WORKDIR}/tests/e2e/kind/kubeconfig
+    # rm -rf ${WORKDIR}/tests/e2e/kind/kubeconfig
+    rm -rf $KUBECONFIG_PATH
     kind create cluster \
-        --kubeconfig ${WORKDIR}/tests/e2e/kind/kubeconfig \
+        --kubeconfig $KUBECONFIG_PATH \
         --name collector-test \
         --config ${WORKDIR}/tests/e2e/kind/kind-collector-test.config.yaml \
         --quiet
+
 }
 
 run_container() {
@@ -45,7 +48,7 @@ run_container() {
         -e KUBERNETES_SERVICE_HOST="https://127.0.0.1" \
         -e KUBERNETES_SERVICE_PORT="63481" \
         -v $PWD/sslcert:/sslcert  \
-        -v ${WORKDIR}/tests/e2e/kind/kubeconfig:/.kubeconfig \
+        -v $KUBECONFIG_PATH:/.kubeconfig \
         --network="host" \
         --name search-collector \
         ${SEARCH_COLLECTOR_IMAGE} &
@@ -59,7 +62,7 @@ run_container() {
     echo "Stopping and removing search-collector container."
     docker stop search-collector
     docker rm search-collector
-    rm -rf ${WORKDIR}/tests/e2e/kind/kubeconfig
+    rm -rf $KUBECONFIG_PATH
     kind delete cluster --name collector-test --quiet
 }
 
