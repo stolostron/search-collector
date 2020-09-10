@@ -39,18 +39,20 @@ func newTestUnstructured(apiVersion, kind, namespace, name, uid string) *unstruc
 
 // Verify that AddFunc is called for each mocked resource.
 func Test_listAndResync(t *testing.T) {
-	client := fakeDynamicClient()
 
 	// Create informer instance to test.
 	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
 	informer, _ := InformerForResource(gvr)
+
+	// Add the fake client to be used by informer.
+	informer.client = fakeDynamicClient()
 
 	// Mock the AddFunc to count how many times it gets called.
 	var addFunc_count = 0
 	informer.AddFunc = func(interface{}) { addFunc_count++ }
 
 	// Execute function
-	listAndResync(&informer, client)
+	informer.listAndResync()
 
 	// Verify that informer.AddFunc is called for each of the mocked resources (5 times).
 	if addFunc_count != 5 {
@@ -60,11 +62,13 @@ func Test_listAndResync(t *testing.T) {
 
 // Verify that DeleteFunc is called for indexed resources that no longer exist.
 func Test_listAndResync_syncWithPrevState(t *testing.T) {
-	client := fakeDynamicClient()
 
 	// Create informer instance to test.
 	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
 	informer, _ := InformerForResource(gvr)
+
+	// Add the fake client to be used by informer.
+	informer.client = fakeDynamicClient()
 
 	// Add existing state to the informer
 	informer.resourceIndex["fake-uid"] = "fake-resource-version" // This resource should get deleted.
@@ -75,7 +79,7 @@ func Test_listAndResync_syncWithPrevState(t *testing.T) {
 	informer.DeleteFunc = func(interface{}) { deleteFunc_count++ }
 
 	// Execute function
-	listAndResync(&informer, client)
+	informer.listAndResync()
 
 	// Verify that informer.DeleteFunc is called once for resource with "fake-uid"
 	if deleteFunc_count != 1 {
