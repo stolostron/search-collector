@@ -5,7 +5,7 @@
 echo "=== TEST: Memory and CPU budget ===\n"
 
 CPU_BUDGET=1.00
-MEM_BUDGET=15.00
+MEM_BUDGET=5.00
 if [ $1 ]; then
     SEARCH_COLLECTOR_IMAGE=$1
 else
@@ -82,7 +82,7 @@ verify_mem_cpu() {
         echo "\tBudget: $CPU_BUDGET"
         TEST_FAILED=true
     fi
-    if [ "$TEST_FAILED" == "true" ]; then
+    if [[ "$TEST_FAILED" == "true" ]]; then
         echo "TEST FAILED."
         exit 1
     fi
