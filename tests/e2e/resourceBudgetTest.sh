@@ -5,7 +5,7 @@
 echo "=== TEST: Memory and CPU budget ===\n"
 
 CPU_BUDGET=5.00
-MEM_BUDGET=4.00
+MEM_BUDGET=15.00
 if [ $1 ]; then
     SEARCH_COLLECTOR_IMAGE=$1
 else
@@ -35,21 +35,23 @@ create_kind_cluster() {
         --name collector-test \
         --config ${WORKDIR}/tests/e2e/kind/kind-collector-test.config.yaml \
         --quiet
-    export KUBECONFIG=$HOME/.kube/kind-collector-test
 }
 
 run_container() {
     docker run \
         -e CLUSTER_NAME="local-cluster" \
         -e DEPLOYED_IN_HUB="true" \
+        -e KUBECONFIG="$HOME/.kube/kind-collector-test" \
+        -e KUBERNETES_SERVICE_HOST="https://127.0.0.1" \
+        -e KUBERNETES_SERVICE_PORT="63481" \
         -v $PWD/sslcert:/sslcert  \
-        -v ~/.kube/kind-collector-test:/.kube/config \
+        -v $HOME/.kube/kind-collector-test:$HOME/.kube/kind-collector-test \
         --network="host" \
         --name search-collector \
         ${SEARCH_COLLECTOR_IMAGE} &
 
-    echo "Waiting 90s for search-collector container to start."
-    sleep 90
+    echo "Waiting 60s for search-collector container to start."
+    sleep 60
     OUTPUT=$(docker stats --no-stream --format "{{.MemUsage}} : {{.CPUPerc}}" search-collector) 
     MEM=$(echo $OUTPUT | awk '{print $1}' | sed 's/[^0-9\.]*//g')
     CPU=$(echo $OUTPUT | awk '{print $5}' | sed 's/[^0-9\.]*//g')
