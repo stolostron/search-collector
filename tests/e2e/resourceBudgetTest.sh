@@ -4,7 +4,7 @@
 
 echo "=== TEST: Memory and CPU budget ===\n"
 
-CPU_BUDGET=5.00
+CPU_BUDGET=1.00
 MEM_BUDGET=15.00
 if [ $1 ]; then
     SEARCH_COLLECTOR_IMAGE=$1
@@ -72,20 +72,26 @@ run_container() {
 verify_mem_cpu() {
     TEST_FAILED=false
     # if (( $(echo "$MEM > $MEM_BUDGET" |bc -l) )); then
-    if awk 'BEGIN {print ('$MEM' <= '$MEM_BUDGET')}'; then
+    MEM_TEST=$(awk 'BEGIN {print ('$MEM' >= '$MEM_BUDGET')}')
+    CPU_TEST=$(awk 'BEGIN {print ('$CPU' >= '$CPU_BUDGET')}')
+
+    echo "!!! MEM_TEST $MEM_TEST"
+    echo "!!! CPU_TEST $CPU_TEST"
+
+    if [ "$MEM_TEST" -eq 1 ]; then
         echo "MEMORY budget exceeded."
         echo "\tUsed:   $MEM"
         echo "\tBudget: $MEM_BUDGET"
         TEST_FAILED=true
     fi
     # if (( $(echo "$CPU > $CPU_BUDGET" |bc -l) )); then
-    if awk 'BEGIN {print ('$CPU' <= '$CPU_BUDGET')}'; then
+    if [ "$CPU_TEST" -eq 1 ]; then
         echo "CPU budget exceeded."
         echo "\tUsed:   $CPU"
         echo "\tBudget: $CPU_BUDGET"
         TEST_FAILED=true
     fi
-    if [ $TEST_FAILED eq "true" ]; then
+    if [[ $TEST_FAILED == "true" ]]; then
         echo "TEST FAILED."
         exit 1
     fi
