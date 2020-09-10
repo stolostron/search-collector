@@ -170,7 +170,9 @@ func TestNewInformerWatcher(t *testing.T) {
 			}
 			// Breaking for dev/test purposes.
 			wg.Done()
-			break
+			if len(stoppers) == len(gvrList) {
+				break
+			}
 		}
 		// After we handle every event and finish with the watcher and informer, we can exit out the test.
 	}()
