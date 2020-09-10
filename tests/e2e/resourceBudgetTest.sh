@@ -38,7 +38,6 @@ create_kind_cluster() {
         --quiet
     chmod +R $KUBECONFIG_PATH
 }
-create_kind_cluster
 
 run_container() {
     docker run \
@@ -59,25 +58,28 @@ run_container() {
     MEM=$(echo $OUTPUT | awk '{print $1}' | sed 's/[^0-9\.]*//g')
     CPU=$(echo $OUTPUT | awk '{print $5}' | sed 's/[^0-9\.]*//g')
 
+    echo "!!! MEM $MEM"
+    echo "!!! CPU $CPU"
+
     echo "Stopping and removing search-collector container."
     docker stop search-collector
     docker rm search-collector
     rm -rf $KUBECONFIG_PATH
     kind delete cluster --name collector-test --quiet
 }
-echo ">> run_container"
-run_container
 
 
 verify_mem_cpu() {
     TEST_FAILED=false
-    if (( $(echo "$MEM > $MEM_BUDGET" |bc -l) )); then
+    # if (( $(echo "$MEM > $MEM_BUDGET" |bc -l) )); then
+    if awk 'BEGIN {print ('$MEM' >= '$MEM_BUDGET')}'; then
         echo "MEMORY budget exceeded."
         echo "\tUsed:   $MEM"
         echo "\tBudget: $MEM_BUDGET"
         TEST_FAILED=true
     fi
-    if (( $(echo "$CPU > $CPU_BUDGET" |bc -l) )); then
+    # if (( $(echo "$CPU > $CPU_BUDGET" |bc -l) )); then
+    if awk 'BEGIN {print ('$CPU' >= '$CPU_BUDGET')}'; then
         echo "CPU budget exceeded."
         echo "\tUsed:   $CPU"
         echo "\tBudget: $CPU_BUDGET"
@@ -88,6 +90,13 @@ verify_mem_cpu() {
         exit 1
     fi
 }
+
+echo ">> create_kind_cluster"
+create_kind_cluster
+
+echo ">> run_container"
+run_container
+
 echo ">> verify_mem_cpu"
 verify_mem_cpu
 
