@@ -5,7 +5,7 @@
 echo "=== TEST: Memory and CPU budget ===\n"
 
 CPU_BUDGET=5.00
-MEM_BUDGET=14.00
+MEM_BUDGET=4.00
 if [ $1 ]; then
     SEARCH_COLLECTOR_IMAGE=$1
 else
