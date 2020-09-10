@@ -29,16 +29,16 @@ create_kind_cluster() {
     # Delete kind cluster collector-test if it exists
     kind delete cluster --name collector-test --quiet || true
     
-    echo "Starting kind cluster: collector-test" 
-    # rm -rf ${WORKDIR}/tests/e2e/kind/kubeconfig
+    echo "Starting kind cluster: collector-test"
     rm -rf $KUBECONFIG_PATH
     kind create cluster \
         --kubeconfig $KUBECONFIG_PATH \
         --name collector-test \
         --config ${WORKDIR}/tests/e2e/kind/kind-collector-test.config.yaml \
         --quiet
-    chmod 777 $KUBECONFIG_PATH
+    chmod +R $KUBECONFIG_PATH
 }
+create_kind_cluster
 
 run_container() {
     docker run \
@@ -65,6 +65,8 @@ run_container() {
     rm -rf $KUBECONFIG_PATH
     kind delete cluster --name collector-test --quiet
 }
+echo ">> run_container"
+run_container
 
 
 verify_mem_cpu() {
@@ -86,9 +88,7 @@ verify_mem_cpu() {
         exit 1
     fi
 }
-
-create_kind_cluster
-run_container
+echo ">> verify_mem_cpu"
 verify_mem_cpu
 
 
