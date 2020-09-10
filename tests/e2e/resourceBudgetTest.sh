@@ -36,7 +36,7 @@ create_kind_cluster() {
         --name collector-test \
         --config ${WORKDIR}/tests/e2e/kind/kind-collector-test.config.yaml \
         --quiet
-    chmod +R $KUBECONFIG_PATH
+    chmod +r $KUBECONFIG_PATH
 }
 
 run_container() {
