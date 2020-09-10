@@ -72,20 +72,20 @@ run_container() {
 verify_mem_cpu() {
     TEST_FAILED=false
     # if (( $(echo "$MEM > $MEM_BUDGET" |bc -l) )); then
-    if awk 'BEGIN {print ('$MEM' >= '$MEM_BUDGET')}'; then
+    if awk 'BEGIN {print ('$MEM' <= '$MEM_BUDGET')}'; then
         echo "MEMORY budget exceeded."
         echo "\tUsed:   $MEM"
         echo "\tBudget: $MEM_BUDGET"
         TEST_FAILED=true
     fi
     # if (( $(echo "$CPU > $CPU_BUDGET" |bc -l) )); then
-    if awk 'BEGIN {print ('$CPU' >= '$CPU_BUDGET')}'; then
+    if awk 'BEGIN {print ('$CPU' <= '$CPU_BUDGET')}'; then
         echo "CPU budget exceeded."
         echo "\tUsed:   $CPU"
         echo "\tBudget: $CPU_BUDGET"
         TEST_FAILED=true
     fi
-    if [ $TEST_FAILED == "true" ]; then
+    if [ $TEST_FAILED eq "true" ]; then
         echo "TEST FAILED."
         exit 1
     fi
