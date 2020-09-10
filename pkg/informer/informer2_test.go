@@ -4,6 +4,7 @@ package informer
 
 import (
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -84,5 +85,51 @@ func Test_listAndResync_syncWithPrevState(t *testing.T) {
 	// Verify that informer.DeleteFunc is called once for resource with "fake-uid"
 	if deleteFunc_count != 1 {
 		t.Errorf("Expected informer.DeleteFunc to be called 1 time, but got %d.", deleteFunc_count)
+	}
+}
+
+func Test_Run(t *testing.T) {
+	// Create informer instance to test.
+	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
+	informer, _ := InformerForResource(gvr)
+
+	// Add the fake client to be used by informer.
+	informer.client = fakeDynamicClient()
+
+	// Mock the AddFunc to count how many times it gets called.
+	var addFunc_count = 0
+	informer.AddFunc = func(interface{}) { addFunc_count++ }
+
+	// Execute function
+	go informer.Run(make(chan struct{}))
+	time.Sleep(1 * time.Second)
+
+	// Verify that informer.AddFunc is called for each of the mocked resources (5 times).
+	if addFunc_count != 5 {
+		t.Errorf("Expected informer.AddFunc to be called 5 times, but got %d.", addFunc_count)
+	}
+}
+
+// Verify that backoff logic waits after retry.
+func Test_Run_retryBackoff(t *testing.T) {
+	// Create informer instance to test.
+	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
+	informer, _ := InformerForResource(gvr)
+
+	// Add the fake client to be used by informer.
+	informer.client = fakeDynamicClient()
+
+	informer.retries = 2
+	startTime := time.Now()
+	retryTime := time.Now() // Initializing to now ensures that the test fail if AddFunc is not called in the expected time.
+	informer.AddFunc = func(interface{}) { retryTime = time.Now() }
+
+	// Execute function
+	go informer.Run(make(chan struct{}))
+	time.Sleep(5 * time.Second)
+
+	// Verify backoff logic waits 4 seconds before retrying.
+	if startTime.Add(4 * time.Second).After(retryTime) {
+		t.Errorf("Backoff logic failed to wait for 4 seconds.")
 	}
 }
