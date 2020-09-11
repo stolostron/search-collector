@@ -13,8 +13,13 @@ import (
 	"k8s.io/client-go/dynamic/fake"
 )
 
-func fakeDynamicClient() *fake.FakeDynamicClient {
+// Create a GroupVersionResource
+var gvr = schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
 
+// Create a stopper
+var stopper = make(chan struct{})
+
+func fakeDynamicClient() *fake.FakeDynamicClient {
 	scheme := runtime.NewScheme()
 	return fake.NewSimpleDynamicClient(scheme,
 		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-foo", "id-001"),
@@ -27,7 +32,6 @@ func fakeDynamicClient() *fake.FakeDynamicClient {
 
 func generateSimpleEvent(informer GenericInformer, t *testing.T) {
 	// Add resource. Generates ADDED event.
-	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
 	newResource := newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-new", "id-999")
 	_, err1 := informer.client.Resource(gvr).Namespace("ns-foo").Create(newResource, v1.CreateOptions{})
 
@@ -58,7 +62,6 @@ func newTestUnstructured(apiVersion, kind, namespace, name, uid string) *unstruc
 
 func initInformer() (informer GenericInformer, _ *int, _ *int, _ *int) {
 	// Create informer instance to test.
-	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
 	informer, _ = InformerForResource(gvr)
 
 	// Add the fake client to be used by informer.
@@ -71,6 +74,17 @@ func initInformer() (informer GenericInformer, _ *int, _ *int, _ *int) {
 	informer.UpdateFunc = func(interface{}, interface{}) { updateFuncCount++ }
 
 	return informer, &addFuncCount, &deleteFuncCount, &updateFuncCount
+}
+
+// Verify that a generic informer can be created.
+func Test_InformerForResource_create(t *testing.T) {
+	// Create generic informer
+	informer, _ := InformerForResource(gvr)
+
+	// Verify that the informer event functions have not been initialized.
+	informer.AddFunc(nil)
+	informer.UpdateFunc(nil, nil)
+	informer.DeleteFunc(nil)
 }
 
 // Verify that AddFunc is called for each mocked resource.
@@ -112,7 +126,6 @@ func Test_Run(t *testing.T) {
 	informer, addFuncCount, deleteFuncCount, updateFuncCount := initInformer()
 
 	// Start informer routine
-	stopper := make(chan struct{})
 	go informer.Run(stopper)
 	time.Sleep(10 * time.Millisecond)
 
@@ -155,13 +168,37 @@ func Test_Run_retryBackoff(t *testing.T) {
 	}
 }
 
+// Verify that if the client is not set when the informer is being ran, a new client will be set.
+func Test_Run_withClientNotSet(t *testing.T) {
+	// Create informer instance to test.
+	informer, _, _, _ := initInformer()
+	informer.client = nil
+
+	go informer.Run(make(chan struct{}))
+	time.Sleep(2 * time.Second)
+
+	if informer.client == nil {
+		t.Errorf("Client failed to set during run()")
+	}
+}
+
+// Test helper function that returns the smaller integer
+func Test_min(t *testing.T) {
+	var a, b int64 = 1, 2
+
+	if min(a, b) != a {
+		t.Errorf("Expected a: %d to be smaller than b: %d", a, b)
+	}
+
+	if min(b, a) != a {
+		t.Errorf("Expected a: %d to be smaller than b: %d", a, b)
+	}
+}
+
 // Verify that the informer is able to watch resources and process the events.
 func Test_watch(t *testing.T) {
 	// Create informer instance to test.
 	informer, _, _, _ := initInformer()
-
-	// Create a stopper for the watch function
-	stopper := make(chan struct{})
 
 	go informer.watch(stopper)
 	time.Sleep(10 * time.Millisecond)
