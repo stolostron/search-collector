@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,26 +39,35 @@ func newTestUnstructured(apiVersion, kind, namespace, name, uid string) *unstruc
 	}
 }
 
-// Verify that AddFunc is called for each mocked resource.
-func Test_listAndResync(t *testing.T) {
-
+func initInformer() (informer GenericInformer, _ *int, _ *int, _ *int) {
 	// Create informer instance to test.
 	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
-	informer, _ := InformerForResource(gvr)
+	informer, _ = InformerForResource(gvr)
 
 	// Add the fake client to be used by informer.
 	informer.client = fakeDynamicClient()
 
-	// Mock the AddFunc to count how many times it gets called.
-	var addFunc_count = 0
-	informer.AddFunc = func(interface{}) { addFunc_count++ }
+	// Add mock functions
+	var addFuncCount, updateFuncCount, deleteFuncCount int
+	informer.AddFunc = func(interface{}) { addFuncCount++ }
+	informer.DeleteFunc = func(interface{}) { deleteFuncCount++ }
+	informer.UpdateFunc = func(interface{}, interface{}) { updateFuncCount++ }
+
+	return informer, &addFuncCount, &deleteFuncCount, &updateFuncCount
+}
+
+// Verify that AddFunc is called for each mocked resource.
+func Test_listAndResync(t *testing.T) {
+
+	// Create informer instance to test.
+	informer, addFuncCount, _, _ := initInformer()
 
 	// Execute function
 	informer.listAndResync()
 
 	// Verify that informer.AddFunc is called for each of the mocked resources (5 times).
-	if addFunc_count != 5 {
-		t.Errorf("Expected informer.AddFunc to be called 5 times, but got %d.", addFunc_count)
+	if *addFuncCount != 5 {
+		t.Errorf("Expected informer.AddFunc to be called 5 times, but got %d.", *addFuncCount)
 	}
 }
 
@@ -65,59 +75,58 @@ func Test_listAndResync(t *testing.T) {
 func Test_listAndResync_syncWithPrevState(t *testing.T) {
 
 	// Create informer instance to test.
-	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
-	informer, _ := InformerForResource(gvr)
-
-	// Add the fake client to be used by informer.
-	informer.client = fakeDynamicClient()
+	informer, _, deleteFuncCount, _ := initInformer()
 
 	// Add existing state to the informer
 	informer.resourceIndex["fake-uid"] = "fake-resource-version" // This resource should get deleted.
 	informer.resourceIndex["id-001"] = "some-resource-version"   // This resource won't get deleted.
 
-	// Mock the DeleteFunc to count how many times it gets called.
-	var deleteFunc_count = 0
-	informer.DeleteFunc = func(interface{}) { deleteFunc_count++ }
-
 	// Execute function
 	informer.listAndResync()
 
 	// Verify that informer.DeleteFunc is called once for resource with "fake-uid"
-	if deleteFunc_count != 1 {
-		t.Errorf("Expected informer.DeleteFunc to be called 1 time, but got %d.", deleteFunc_count)
+	if *deleteFuncCount != 1 {
+		t.Errorf("Expected informer.DeleteFunc to be called 1 time, but got %d.", *deleteFuncCount)
 	}
 }
 
 func Test_Run(t *testing.T) {
 	// Create informer instance to test.
-	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
-	informer, _ := InformerForResource(gvr)
+	informer, addFuncCount, deleteFuncCount, updateFuncCount := initInformer()
 
-	// Add the fake client to be used by informer.
-	informer.client = fakeDynamicClient()
-
-	// Mock the AddFunc to count how many times it gets called.
-	var addFunc_count = 0
-	informer.AddFunc = func(interface{}) { addFunc_count++ }
-
-	// Execute function
+	// Start informer routine
 	go informer.Run(make(chan struct{}))
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Millisecond)
+
+	// Add resource. Generates ADDED event.
+	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
+	newResource := newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-new", "id-999")
+	informer.client.Resource(gvr).Namespace("ns-foo").Create(newResource, v1.CreateOptions{})
+
+	// Update resource. Generates MODIFIED event.
+	informer.client.Resource(gvr).Namespace("ns-foo").Update(newResource, v1.UpdateOptions{})
+
+	// Delete resource. Generated DELETED event.
+	informer.client.Resource(gvr).Namespace("ns-foo").Delete("name-bar2", &v1.DeleteOptions{})
+
+	time.Sleep(100 * time.Millisecond)
 
 	// Verify that informer.AddFunc is called for each of the mocked resources (5 times).
-	if addFunc_count != 5 {
-		t.Errorf("Expected informer.AddFunc to be called 5 times, but got %d.", addFunc_count)
+	if *addFuncCount != 6 {
+		t.Errorf("Expected informer.AddFunc to be called 6 times, but got %d.", *addFuncCount)
+	}
+	if *updateFuncCount != 1 {
+		t.Errorf("Expected informer.UpdateFunc to be called 1 times, but got %d.", *updateFuncCount)
+	}
+	if *deleteFuncCount != 1 {
+		t.Errorf("Expected informer.DeleteFunc to be called 1 times, but got %d.", *deleteFuncCount)
 	}
 }
 
 // Verify that backoff logic waits after retry.
 func Test_Run_retryBackoff(t *testing.T) {
 	// Create informer instance to test.
-	gvr := schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
-	informer, _ := InformerForResource(gvr)
-
-	// Add the fake client to be used by informer.
-	informer.client = fakeDynamicClient()
+	informer, _, _, _ := initInformer()
 
 	informer.retries = 2
 	startTime := time.Now()
