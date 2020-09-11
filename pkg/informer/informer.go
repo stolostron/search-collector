@@ -16,6 +16,7 @@ import (
 
 // GenericInformer ...
 type GenericInformer struct {
+	client        dynamic.Interface
 	gvr           schema.GroupVersionResource
 	AddFunc       func(interface{})
 	DeleteFunc    func(interface{})
@@ -28,16 +29,10 @@ type GenericInformer struct {
 // InformerForResource initialize a Generic Informer for a resource (GVR).
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	i := GenericInformer{
-		gvr: resource,
-		AddFunc: (func(interface{}) {
-			glog.Info("Add function not initialized.")
-		}),
-		UpdateFunc: (func(interface{}, interface{}) {
-			glog.Info("Update function not initialized.")
-		}),
-		DeleteFunc: (func(interface{}) {
-			glog.Info("Delete function not initialized.")
-		}),
+		gvr:           resource,
+		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized. For ", resource.String()) }),
+		DeleteFunc:    (func(interface{}) { glog.Warning("DeleteFunc not initialized. For ", resource.String()) }),
+		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not initialized. For ", resource.String()) }),
 		retries:       0,
 		resourceIndex: make(map[string]string),
 	}
@@ -54,9 +49,12 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 			time.Sleep(wait)
 		}
 		glog.V(2).Info("(Re)starting informer: ", inform.gvr.String())
-		client := config.GetDynamicClient()
-		listAndResync(inform, client)
-		watch(inform, client, stopper)
+		if inform.client == nil {
+			inform.client = config.GetDynamicClient()
+		}
+
+		inform.listAndResync()
+		inform.watch(stopper)
 
 		if inform.stopped {
 			break
@@ -87,10 +85,10 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 
 // List current resources and fires ADDED events. Then sync the current state with the previous
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
-func listAndResync(inform *GenericInformer, client dynamic.Interface) {
+func (inform *GenericInformer) listAndResync() {
 
 	// List resources.
-	resources, listError := client.Resource(inform.gvr).List(metav1.ListOptions{})
+	resources, listError := inform.client.Resource(inform.gvr).List(metav1.ListOptions{})
 	if listError != nil {
 		glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
 		inform.retries++
@@ -126,9 +124,9 @@ func listAndResync(inform *GenericInformer, client dynamic.Interface) {
 }
 
 // Watch resources and process events.
-func watch(inform *GenericInformer, client dynamic.Interface, stopper chan struct{}) {
+func (inform *GenericInformer) watch(stopper chan struct{}) {
 
-	watch, watchError := client.Resource(inform.gvr).Watch(metav1.ListOptions{})
+	watch, watchError := inform.client.Resource(inform.gvr).Watch(metav1.ListOptions{})
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
 		inform.retries++
@@ -184,12 +182,12 @@ func watch(inform *GenericInformer, client dynamic.Interface, stopper chan struc
 				delete(inform.resourceIndex, string(obj.GetUID()))
 
 			case "ERROR":
-				glog.V(2).Infof("Received ERROR event. Ending listAndWatch() for %s ", inform.gvr.String())
+				glog.V(2).Infof("Received ERROR event. Ending listAndWatch() for %s", inform.gvr.String())
 				watch.Stop()
 				return
 
 			default:
-				glog.V(2).Infof("Received unexpected event. Ending listAndWatch() for %s ", inform.gvr.String())
+				glog.V(2).Infof("Received unexpected event. Ending listAndWatch() for %s", inform.gvr.String())
 				watch.Stop()
 				return
 			}
