@@ -175,7 +175,7 @@ func Test_Run_withClientNotSet(t *testing.T) {
 	informer.client = nil
 
 	go informer.Run(make(chan struct{}))
-	time.Sleep(2 * time.Second)
+	time.Sleep(10 * time.Millisecond)
 
 	if informer.client == nil {
 		t.Errorf("Client failed to set during run()")
