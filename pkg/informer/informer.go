@@ -29,16 +29,10 @@ type GenericInformer struct {
 // InformerForResource initialize a Generic Informer for a resource (GVR).
 func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	i := GenericInformer{
-		gvr: resource,
-		AddFunc: (func(interface{}) {
-			glog.Info("Add function not initialized.")
-		}),
-		UpdateFunc: (func(interface{}, interface{}) {
-			glog.Info("Update function not initialized.")
-		}),
-		DeleteFunc: (func(interface{}) {
-			glog.Info("Delete function not initialized.")
-		}),
+		gvr:           resource,
+		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized. For ", resource.String()) }),
+		DeleteFunc:    (func(interface{}) { glog.Warning("DeleteFunc not initialized. For ", resource.String()) }),
+		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not initialized. For ", resource.String()) }),
 		retries:       0,
 		resourceIndex: make(map[string]string),
 	}
