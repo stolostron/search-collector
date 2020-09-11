@@ -21,18 +21,18 @@ type GenericInformer struct {
 	AddFunc       func(interface{})
 	DeleteFunc    func(interface{})
 	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
-	resourceIndex map[string]string                        // Keeps an index of resources. key=UUID  value=resourceVersion
+	resourceIndex map[string]string                        // Index of curr resources [key=UUID value=resourceVersion]
 	retries       int64                                    // Counts times we have tried without establishing a watch.
-	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly.
+	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
-func InformerForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
+func InformerForResource(res schema.GroupVersionResource) (GenericInformer, error) {
 	i := GenericInformer{
-		gvr:           resource,
-		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized. For ", resource.String()) }),
-		DeleteFunc:    (func(interface{}) { glog.Warning("DeleteFunc not initialized. For ", resource.String()) }),
-		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not initialized. For ", resource.String()) }),
+		gvr:           res,
+		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
+		DeleteFunc:    (func(interface{}) { glog.Warning("DeleteFunc not initialized for ", res.String()) }),
+		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
 		retries:       0,
 		resourceIndex: make(map[string]string),
 	}
