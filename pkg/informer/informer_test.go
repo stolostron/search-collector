@@ -169,18 +169,18 @@ func Test_Run_retryBackoff(t *testing.T) {
 }
 
 // Verify that if the client is not set when the informer is being ran, a new client will be set.
-func Test_Run_withClientNotSet(t *testing.T) {
-	// Create informer instance to test.
-	informer, _, _, _ := initInformer()
-	informer.client = nil
+// func Test_Run_withClientNotSet(t *testing.T) {
+// 	// Create informer instance to test.
+// 	informer, _, _, _ := initInformer()
+// 	informer.client = nil
 
-	go informer.Run(make(chan struct{}))
-	time.Sleep(10 * time.Millisecond)
+// 	go informer.Run(make(chan struct{}))
+// 	time.Sleep(10 * time.Millisecond)
 
-	if informer.client == nil {
-		t.Errorf("Client failed to set during run()")
-	}
-}
+// 	if informer.client == nil {
+// 		t.Errorf("Client failed to set during run()")
+// 	}
+// }
 
 // Test helper function that returns the smaller integer
 func Test_min(t *testing.T) {
