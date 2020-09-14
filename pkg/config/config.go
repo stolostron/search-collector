@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package config
@@ -26,7 +27,7 @@ import (
 
 // Out of box defaults
 const (
-	COLLECTOR_API_VERSION      = "2.0.0"
+	COLLECTOR_API_VERSION      = "2.1.0"
 	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010" // this will be deprecated in the future
 	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
 	DEFAULT_AGGREGATOR_PORT    = "3010"
@@ -36,32 +37,33 @@ const (
 	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
 	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE       = "production"
-	DEFAULT_TILLER_HOST        = "tiller-deploy.kube-system" // this will be deprecated.
-	DEFAULT_TILLER_PORT        = "44134"                     // this will be deprecated.
+	DEFAULT_TILLER_HOST        = "tiller-deploy.kube-system" // Deprecated in 2.1
+	DEFAULT_TILLER_PORT        = "44134"                     // Deprecated in 2.1
 )
 
-// Define a config type for gonfig to hold our config properties.
+// Configuration options for the search-collector.
 type Config struct {
-	AggregatorConfig     *rest.Config // Config object for hub. Used to get TLS credentials.
-	AggregatorConfigFile string       `env:"HUB_CONFIG"`        // Config file for hub. Will be mounted in a secret.
-	AggregatorURL        string       `env:"AGGREGATOR_URL"`    // URL of the Aggregator, includes port but not any path
-	AggregatorHost       string       `env:"AGGREGATOR_HOST"`   // Host of the Aggregator
-	AggregatorPort       string       `env:"AGGREGATOR_PORT"`   // Port of the Aggregator
-	ClusterName          string       `env:"CLUSTER_NAME"`      // The name of this cluster
-	ClusterNamespace     string       `env:"CLUSTER_NAMESPACE"` // The namespace of this cluster
-	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`   // Tracks if the collector is deployed in the Hub or in a Klusterlet.
-	HeartbeatMS          int          `env:"HEARTBEAT_MS"`      // Interval in milliseconds at which collector sends an empty payload to ensure connection
-	KubeConfig           string       `env:"KUBECONFIG"`        // Local kubeconfig path
-	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`    // Maximum backoff tiem in MS - sender will never wait longer than this to send
-	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"`
-	ReportRateMS         int          `env:"REPORT_RATE_MS"` // Interval in milliseconds at which changes are reported to the aggregator.
-	RuntimeMode          string       `env:"RUNTIME_MODE"`   // Running mode (development or production)
+	AggregatorConfig *rest.Config // Config object for hub. Used to get TLS credentials.
+
+	AggregatorConfigFile string `env:"HUB_CONFIG"`         // Config file for hub. Will be mounted in a secret.
+	AggregatorURL        string `env:"AGGREGATOR_URL"`     // URL of the Aggregator, includes port but not any path
+	AggregatorHost       string `env:"AGGREGATOR_HOST"`    // Host of the Aggregator
+	AggregatorPort       string `env:"AGGREGATOR_PORT"`    // Port of the Aggregator
+	ClusterName          string `env:"CLUSTER_NAME"`       // The name of this cluster
+	ClusterNamespace     string `env:"CLUSTER_NAMESPACE"`  // The namespace of this cluster
+	DeployedInHub        bool   `env:"DEPLOYED_IN_HUB"`    // Tracks if deployed in the Hub or Managed cluster
+	HeartbeatMS          int    `env:"HEARTBEAT_MS"`       // Interval(ms) to send empty payload to ensure connection
+	KubeConfig           string `env:"KUBECONFIG"`         // Local kubeconfig path
+	MaxBackoffMS         int    `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
+	RediscoverRateMS     int    `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
+	ReportRateMS         int    `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
+	RuntimeMode          string `env:"RUNTIME_MODE"`       // Running mode (development or production)
 	TillerOpts           tlsutil.Options
-	TillerURL            string `env:"TILLER_URL"` // URL host path of the tiller server
+	TillerURL            string `env:"TILLER_URL"` // Deprecated: URL host path of the tiller server
 }
 
 var Cfg = Config{}
-var FilePath = flag.String("c", "./config.json", "Collector configuration file") // -c example.json, config.json is the default
+var FilePath = flag.String("c", "./config.json", "Collector configuration file") // ./config.json is the default
 
 func init() {
 	// Load default config from ./config.json.
@@ -69,7 +71,7 @@ func init() {
 	if _, err := os.Stat(filepath.Join(".", "config.json")); !os.IsNotExist(err) {
 		err = gonfig.GetConf(*FilePath, &Cfg)
 		if err != nil {
-			fmt.Println("Error reading config file:", err) // Uses fmt.Println in case something is wrong with glog args
+			fmt.Println("Error reading config file:", err) // Uses fmt.Println in case something is wrong with glog
 		}
 		glog.Info("Successfully read from config file: ", *FilePath)
 	} else {
@@ -159,13 +161,15 @@ func init() {
 	if Cfg.AggregatorConfigFile != "" {
 		hubConfig, err := clientcmd.BuildConfigFromFlags("", Cfg.AggregatorConfigFile)
 		if err != nil {
-			glog.Error("Error building K8s client from config file [", Cfg.AggregatorConfigFile, "].  Original error: ", err)
+			glog.Error("Error building K8s client from config file [", Cfg.AggregatorConfigFile, "]. Original error: ",
+				err)
 		}
 
-		Cfg.AggregatorURL = hubConfig.Host + "/apis/proxy.open-cluster-management.io/v1beta1/namespaces/" + Cfg.ClusterNamespace + "/clusterstatuses"
+		Cfg.AggregatorURL = hubConfig.Host + "/apis/proxy.open-cluster-management.io/v1beta1/namespaces/" +
+			Cfg.ClusterNamespace + "/clusterstatuses"
 		Cfg.AggregatorConfig = hubConfig
 
-		glog.Info("Running inside klusterlet.  Aggregator URL: ", Cfg.AggregatorURL)
+		glog.Info("Running inside klusterlet. Aggregator URL: ", Cfg.AggregatorURL)
 	}
 }
 
