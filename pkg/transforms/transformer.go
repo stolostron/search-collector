@@ -33,6 +33,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/helm/pkg/proto/hapi/release"
+
+	ocpapp "github.com/openshift/api/apps/v1"
 )
 
 // Operation is the event operation
@@ -249,6 +251,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = DeploymentResourceBuilder(&typedResource)
+
+			//This is an ocp specific resource
+		case [2]string{"DeploymentConfig", "apps"}:
+			typedResource := ocpapp.DeploymentConfig{}
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
 
 			//This is the application's HelmCR of kind HelmRelease.
 		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
