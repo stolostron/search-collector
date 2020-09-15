@@ -12,7 +12,7 @@ import (
 
 func TestTransformDeploymentConfig(t *testing.T) {
 	var d v1.DeploymentConfig
-	UnmarshalFile("deployment.json", &d, t)
+	UnmarshalFile("deploymentconfig.json", &d, t)
 	node := DeploymentConfigResourceBuilder(&d).BuildNode()
 
 	// Test only the fields that exist in deployment

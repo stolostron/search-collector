@@ -253,7 +253,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = DeploymentResourceBuilder(&typedResource)
 
 			//This is an ocp specific resource
-		case [2]string{"DeploymentConfig", "apps"}:
+		case [2]string{"DeploymentConfig", "apps.openshift.io"}:
 			typedResource := ocpapp.DeploymentConfig{}
 			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
