@@ -259,6 +259,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
+			trans = DeploymentConfigResourceBuilder(&typedResource)
 
 			//This is the application's HelmCR of kind HelmRelease.
 		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:

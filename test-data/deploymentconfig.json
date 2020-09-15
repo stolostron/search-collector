@@ -1,13 +1,42 @@
 {
-   "apiVersion": "v1",
    "kind": "DeploymentConfig",
+   "apiVersion": "apps.openshift.io/v1",
    "metadata": {
-      "name": "frontend"
+      "annotations": {
+         "apps.open-cluster-management.io/hosting-deployable": "mortgagedc-ch/mortgagedc-channel-DeploymentConfig-mortgagedc-deploy",
+         "apps.open-cluster-management.io/hosting-subscription": "default/mortgagedc-subscription",
+         "apps.open-cluster-management.io/sync-source": "subgbk8s-default/mortgagedc-subscription"
+      },
+      "selfLink": "/apis/apps.openshift.io/v1/namespaces/default/deploymentconfigs/mortgagedc-deploy",
+      "resourceVersion": "118645246",
+      "name": "mortgagedc-deploy",
+      "uid": "69ecfb03-32cb-4808-977a-8a12f6f9854b",
+      "creationTimestamp": "2020-09-11T14:46:22Z",
+      "generation": 2,
+      "namespace": "default",
+      "labels": {
+         "app": "mortgagedc-mortgage"
+      }
    },
    "spec": {
+      "strategy": {
+         "type": "Recreate",
+         "recreateParams": {
+            "timeoutSeconds": 600
+         },
+         "resources": {},
+         "activeDeadlineSeconds": 21600
+      },
+      "triggers": [
+         {
+            "type": "ConfigChange"
+         }
+      ],
       "replicas": 1,
+      "test": false,
       "selector": {
-         "name": "frontend"
+         "app": "mortgagedc-mortgage",
+         "deploymentConfig": "mortgagedc-mortgage"
       },
       "template": {
          "metadata": {
@@ -21,7 +50,7 @@
             "containers": [
                {
                   "name": "mortgagedc-mortgage",
-                  "image": "test/mortgage:0.4.0",
+                  "image": "fxiang/mortgage:0.4.0",
                   "ports": [
                      {
                         "containerPort": 9080,
@@ -45,27 +74,6 @@
             "securityContext": {},
             "schedulerName": "default-scheduler"
          }
-      },
-      "triggers": [
-         {
-            "type": "ConfigChange 1"
-         },
-         {
-            "imageChangeParams": {
-               "automatic": true,
-               "containerNames": [
-                  "helloworld"
-               ],
-               "from": {
-                  "kind": "ImageStreamTag",
-                  "name": "hello-openshift:latest"
-               }
-            },
-            "type": "ImageChange  2"
-         }
-      ],
-      "strategy": {
-         "type": "Rolling"
       }
    },
    "status": {
