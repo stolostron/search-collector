@@ -21,10 +21,7 @@ func DeploymentConfigResourceBuilder(d *v1.DeploymentConfig) *DeploymentConfigRe
 	node.Properties["available"] = int64(d.Status.AvailableReplicas)
 	node.Properties["current"] = int64(d.Status.Replicas)
 	node.Properties["ready"] = int64(d.Status.ReadyReplicas)
-	node.Properties["desired"] = int64(0)
-	if &d.Spec.Replicas != nil {
-		node.Properties["desired"] = int64(d.Spec.Replicas)
-	}
+	node.Properties["desired"] = int64(d.Spec.Replicas)
 
 	return &DeploymentConfigResource{node: node}
 }
