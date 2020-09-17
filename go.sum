@@ -962,6 +962,8 @@ github.com/opencontainers/selinux v0.0.0-20170621221121-4a2974bf1ee9/go.mod h1:+
 github.com/opencontainers/selinux v1.2.2/go.mod h1:+BLncwf63G4dgOzykXAxcmnFlUaOlkDdmw/CqsW6pjs=
 github.com/opencontainers/selinux v1.3.1-0.20190929122143-5215b1806f52/go.mod h1:+BLncwf63G4dgOzykXAxcmnFlUaOlkDdmw/CqsW6pjs=
 github.com/openshift/api v0.0.0-20200205133042-34f0ec8dab87/go.mod h1:fT6U/JfG8uZzemTRwZA2kBDJP5nWz7v05UHnty/D+pk=
+github.com/openshift/api v0.0.0-20200527184302-a843dc3262a0 h1:ANjZW6uA4ZmqT7fgHdK+Yqum2qil9hrGUPOUZQJpqS0=
+github.com/openshift/api v0.0.0-20200527184302-a843dc3262a0/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
 github.com/openshift/api v3.9.1-0.20190424152011-77b8897ec79a+incompatible/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
 github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible h1:6il8W875Oq9vycPkRV5TteLP9IfMEX3lyOl5yN+CtdI=
 github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
