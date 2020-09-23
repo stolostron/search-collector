@@ -347,7 +347,7 @@ func (r *Reconciler) reconcileNode() {
 			// If node has already been sent, check the previous helm revision is latest and discard current one
 			if inPrevious {
 				if previousNode.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
-					glog.V(3).Infof("Skip %d for  release %s - previous is good",
+					glog.V(5).Infof("Skip %d for  release %s - previous is good",
 						ne.Node.Properties["revision"], ne.Node.Properties["name"])
 					return
 				}
@@ -355,7 +355,7 @@ func (r *Reconciler) reconcileNode() {
 			// If we have processed this release already (ready to send), check it's the latest and discard current one
 			if nodeVal, ok := r.currentNodes[ne.UID]; ok {
 				if nodeVal.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
-					glog.V(3).Infof("Skip %d for  release %s - lower revision",
+					glog.V(5).Infof("Skip %d for  release %s - lower revision",
 						ne.Node.Properties["revision"], ne.Node.Properties["name"])
 					return
 				}
