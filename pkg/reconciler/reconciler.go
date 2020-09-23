@@ -253,7 +253,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 
 	// Loop across all the nodes and build their edges.
 	for _, uid := range append(appUIDs, otherUIDs...) {
-		glog.V(3).Infof("Calculating edges UID: %s", uid)
+		glog.V(5).Infof("Calculating edges UID: %s", uid)
 		edges := r.edgeFuncs[uid](ns) // Get edges from this specific node
 
 		edges = append(edges, tr.CommonEdges(uid, ns)...) // Get common edges for this node
@@ -347,7 +347,7 @@ func (r *Reconciler) reconcileNode() {
 			// If node has already been sent, check the previous helm revision is latest and discard current one
 			if inPrevious {
 				if previousNode.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
-					glog.V(3).Infof("Skip %d for  release %s - previous is good",
+					glog.V(5).Infof("Skip %d for  release %s - previous is good",
 						ne.Node.Properties["revision"], ne.Node.Properties["name"])
 					return
 				}
@@ -355,7 +355,7 @@ func (r *Reconciler) reconcileNode() {
 			// If we have processed this release already (ready to send), check it's the latest and discard current one
 			if nodeVal, ok := r.currentNodes[ne.UID]; ok {
 				if nodeVal.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
-					glog.V(3).Infof("Skip %d for  release %s - lower revision",
+					glog.V(5).Infof("Skip %d for  release %s - lower revision",
 						ne.Node.Properties["revision"], ne.Node.Properties["name"])
 					return
 				}
