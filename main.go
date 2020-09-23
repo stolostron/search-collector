@@ -188,14 +188,6 @@ func main() {
 	wg.Wait() // This will never end (until we kill the process)
 }
 
-// // Returns the smaller of two ints
-// func min(a, b int) int {
-// 	if a > b {
-// 		return b
-// 	}
-// 	return a
-// }
-
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
 func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
