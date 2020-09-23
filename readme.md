@@ -8,7 +8,7 @@ This process targets any kubernetes cluster to collect data about its configurat
 The data model is documented at ./pkg/transforms/README.md
 
 
-## Config and Usage
+## Usage and Configuration
 
 ### Running Locally
 > **Pre-requisite:** Go v1.13
@@ -28,7 +28,7 @@ The data model is documented at ./pkg/transforms/README.md
 
 
 ### Environment Variables
-Control the behavior of this collector with these environment variables. For development these could be set on ./config.json
+Control the behavior of this service with these environment variables. For development these could be set on ./config.json
 
 Name            | Required | Default Value          | Description
 ----            | -------- | -------------          | -----------
@@ -43,6 +43,6 @@ REDISCOVER_RATE_MS | no    | 60000  // 1 min        | Interval(ms) to poll for c
 REPORT_RATE_MS  | no       | 5000   // 5 seconds    | Interval(ms) to send changes to the aggregator
 RUNTIME_MODE    | no       | production             | Running mode (development or production)
 
-### Other config options
-- The application can read from a json config file, and from environment variables. If both provide a value for a specific property, the environment variable will override the file.
+### Other Configuration Options
+- Environment variables can also be set in ./config.json for development. If both provide a value for a specific property, the environment variable will override the file. You can define your own config json file and pass it to the application with `-c <config_file>`
 - The application can take any flags for [glog](https://github.com/golang/glog), it will pass them straight into glog. The glog flag `--logtostderr` is set to true by default.
