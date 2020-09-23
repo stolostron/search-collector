@@ -272,3 +272,43 @@ func (s *Sender) Sync() error {
 	s.lastSentTime = time.Now().Unix()
 	return nil
 }
+
+// Starts the send loop to send data on an interval.
+// In case of error it backoffs and retries.
+func (s *Sender) StartSendLoop() {
+
+	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
+	backoffFactor := float64(0)
+
+	for {
+		glog.V(3).Info("Beginning Send Cycle")
+		err := s.Sync()
+		if err != nil {
+			glog.Error("SEND ERROR: ", err)
+			if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond <
+				time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
+				// Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max
+				// wait time (an hour) so that we don't overflow int.
+				backoffFactor++
+			}
+		} else {
+			glog.V(2).Info("Send Cycle Completed Successfully")
+			backoffFactor = float64(0)
+		}
+		nextSleepInterval := config.Cfg.ReportRateMS * int(math.Exp2(backoffFactor))
+		timeToSleep := time.Duration(min(nextSleepInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
+		if backoffFactor > 0 {
+			glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
+		}
+		// Sleep either for the current backed off interval, or the maximum time defined in the config
+		time.Sleep(timeToSleep)
+	}
+}
+
+// Returns the smaller of two ints
+func min(a, b int) int {
+	if a > b {
+		return b
+	}
+	return a
+}
