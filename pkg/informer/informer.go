@@ -132,7 +132,7 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 		inform.retries++
 		return
 	}
-	glog.V(3).Infof("Watching\t[Group: %s \tKind: %s]  ===>  Watch: %s", inform.gvr.Group, inform.gvr.Resource, watch)
+	glog.V(3).Infof("Watching\t[Group: %s \tKind: %s]", inform.gvr.Group, inform.gvr.Resource)
 
 	watchEvents := watch.ResultChan()
 	inform.retries = 0 // Reset retries because we have a successful list and a watch.
