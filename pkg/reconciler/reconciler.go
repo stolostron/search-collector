@@ -253,7 +253,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 
 	// Loop across all the nodes and build their edges.
 	for _, uid := range append(appUIDs, otherUIDs...) {
-		glog.V(3).Infof("Calculating edges UID: %s", uid)
+		glog.V(5).Infof("Calculating edges UID: %s", uid)
 		edges := r.edgeFuncs[uid](ns) // Get edges from this specific node
 
 		edges = append(edges, tr.CommonEdges(uid, ns)...) // Get common edges for this node
