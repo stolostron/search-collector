@@ -293,7 +293,7 @@ func (s *Sender) StartSendLoop() {
 			}
 		} else {
 			glog.V(2).Info("Send Cycle Completed Successfully")
-			backoffFactor = float64(0)
+			backoffFactor = float64(0) // Reset backoff to 0 because we had a sucessful send.
 		}
 		nextSleepInterval := config.Cfg.ReportRateMS * int(math.Exp2(backoffFactor))
 		timeToSleep := time.Duration(min(nextSleepInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
