@@ -285,10 +285,10 @@ func (s *Sender) StartSendLoop() {
 		err := s.Sync()
 		if err != nil {
 			glog.Error("SEND ERROR: ", err)
+			// Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max
+			// wait time so that we don't overflow int. Can be changed with env:MAX_BACKOFF_MS
 			if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond <
 				time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
-				// Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max
-				// wait time (an hour) so that we don't overflow int.
 				backoffFactor++
 			}
 		} else {
