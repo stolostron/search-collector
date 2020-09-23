@@ -33,6 +33,7 @@ const (
 	DEFAULT_AGGREGATOR_PORT    = "3010"
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
 	DEFAULT_HEARTBEAT_MS       = 60000  // 1 min
+	DEFAULT_INITIAL_DELAY_MS   = 30000  // 30 seconds
 	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
 	DEFAULT_REDISCOVER_RATE_MS = 60000  // 1 min
 	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
@@ -53,6 +54,7 @@ type Config struct {
 	ClusterNamespace     string `env:"CLUSTER_NAMESPACE"`  // The namespace of this cluster
 	DeployedInHub        bool   `env:"DEPLOYED_IN_HUB"`    // Tracks if deployed in the Hub or Managed cluster
 	HeartbeatMS          int    `env:"HEARTBEAT_MS"`       // Interval(ms) to send empty payload to ensure connection
+	InitialDelayMS       int    `env:"INITIAL_DELAY_MS"`   // Collect period before sending initial payload
 	KubeConfig           string `env:"KUBECONFIG"`         // Local kubeconfig path
 	MaxBackoffMS         int    `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
 	RediscoverRateMS     int    `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
@@ -97,10 +99,11 @@ func init() {
 		setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
 	}
 
-	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
+	setDefaultInt(&Cfg.InitialDelayMS, "INITIAL_DELAY_MS", DEFAULT_INITIAL_DELAY_MS)
 	setDefaultInt(&Cfg.MaxBackoffMS, "MAX_BACKOFF_MS", DEFAULT_MAX_BACKOFF_MS)
 	setDefaultInt(&Cfg.RediscoverRateMS, "REDISCOVER_RATE_MS", DEFAULT_REDISCOVER_RATE_MS)
+	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) {

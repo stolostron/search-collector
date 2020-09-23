@@ -13,7 +13,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math"
 	"os"
 	"runtime"
 	"strings"
@@ -175,51 +174,18 @@ func main() {
 		}
 	}()
 
-	// Start a routine to send data every interval.
-	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
-	backoffFactor := float64(0)
+	// Wait until all informers receive resources. Default is 30 seconds (env:INITIAL_DELAY_MS)
+	// If we send too quickly we won't have the full state and could unecessarily delete and re-add resources.
+	time.Sleep(time.Duration(config.Cfg.InitialDelayMS) * time.Millisecond)
 
-	go func() {
-		// First time send after 15 seconds, then send every ReportRateMS milliseconds.
-		time.Sleep(15 * time.Second)
-		for {
-			glog.V(2).Info("Beginning Send Cycle")
-			err = sender.Sync()
-			if err != nil {
-				glog.Error("SENDING ERROR: ", err)
-				if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond <
-					time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
-					// Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max
-					// wait time (an hour) so that we don't overflow int.
-					backoffFactor++
-				}
-			} else {
-				glog.V(2).Info("Send Cycle Completed Successfully")
-				backoffFactor = float64(0)
-			}
-			nextSleepInterval := config.Cfg.ReportRateMS * int(math.Exp2(backoffFactor))
-			timeToSleep := time.Duration(min(nextSleepInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
-			if backoffFactor > 0 {
-				glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
-			}
-			// Sleep either for the current backed off interval, or the maximum time defined in the config
-			time.Sleep(timeToSleep)
-		}
-	}()
+	// Starts the send loop.
+	go sender.StartSendLoop()
 
 	// We don't actually use this to wait on anything, since the transformer routines don't ever end unless something
 	// goes wrong. We just use this to wait forever in main once we start things up.
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait() // This will never end (until we kill the process)
-}
-
-// Returns the smaller of two ints
-func min(a, b int) int {
-	if a > b {
-		return b
-	}
-	return a
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
