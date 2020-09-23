@@ -247,8 +247,6 @@ func (s *Sender) Sync() error {
 			return nil
 		}
 		glog.V(2).Info("Sending empty payload for heartbeat.")
-	} else {
-		glog.V(2).Info("Sending diff payload.")
 	}
 	err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 	if err != nil {
