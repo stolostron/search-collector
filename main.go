@@ -124,7 +124,7 @@ func main() {
 
 	// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
 	stoppers := make(map[schema.GroupVersionResource]chan struct{})
-	memStats := runtime.MemStats{}
+	// memStats := runtime.MemStats{}
 
 	// Start a routine to keep our informers up to date.
 	go func() {
@@ -167,11 +167,9 @@ func main() {
 					stoppers[gvr] = stopper
 					go informer.Run(stopper)
 
-					informer.WaitForResync()
-
-					runtime.ReadMemStats(&memStats)
-					glog.Info(" Total Alloc: ", memStats.TotalAlloc/1000000, " MB \tAlloc: ",
-						memStats.Alloc/1000000, " MB \tGCs: ", memStats.NumGC, "  \t", gvr.Resource)
+					// runtime.ReadMemStats(&memStats)
+					// glog.Info(" Total Alloc: ", memStats.TotalAlloc/1000000, " MB \tAlloc: ",
+					// 	memStats.Alloc/1000000, " MB \tGCs: ", memStats.NumGC, "  \t", gvr.Resource)
 				}
 				glog.V(2).Info("Total informers running: ", len(stoppers))
 			}

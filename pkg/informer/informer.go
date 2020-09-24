@@ -26,19 +26,19 @@ type GenericInformer struct {
 	resourceIndex       map[string]string // Index of curr resources [key=UUID value=resourceVersion]
 	retries             int64             // Counts times we have tried without establishing a watch.
 	stopped             bool              // Tracks when the informer is stopped, used to exit cleanly
-	syncCompleted       bool
+	// syncCompleted       bool
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
 func InformerForResource(res schema.GroupVersionResource) (GenericInformer, error) {
 	i := GenericInformer{
-		gvr:                 res,
-		AddFunc:             (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
-		DeleteFunc:          (func(interface{}) { glog.Warning("DeleteFunc not initialized for ", res.String()) }),
-		UpdateFunc:          (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
-		retries:             0,
-		resourceIndex:       make(map[string]string),
-		syncCompleted:       false,
+		gvr:           res,
+		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
+		DeleteFunc:    (func(interface{}) { glog.Warning("DeleteFunc not initialized for ", res.String()) }),
+		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
+		retries:       0,
+		resourceIndex: make(map[string]string),
+		// syncCompleted:       false,
 		lastResourceVersion: "0",
 	}
 	return i, nil
@@ -89,12 +89,12 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 // List current resources and fires ADDED events. Then sync the current state with the previous
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func (inform *GenericInformer) listAndResync() {
-	inform.syncCompleted = false
+	// inform.syncCompleted = false
 	var prevResourceIndex map[string]string
 	memStats := goruntime.MemStats{}
 
 	// List resources.
-	opts := metav1.ListOptions{Limit: 1000}
+	opts := metav1.ListOptions{Limit: 250}
 	for {
 		resources, listError := inform.client.Resource(inform.gvr).List(opts)
 		if listError != nil {
@@ -132,7 +132,7 @@ func (inform *GenericInformer) listAndResync() {
 			// glog.Info("remaining item count ", metadata["remainingItemCount"])
 
 			opts.Continue = metadata["continue"].(string)
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Duration(10) * time.Millisecond)
 		} else {
 			break
 		}
@@ -147,7 +147,7 @@ func (inform *GenericInformer) listAndResync() {
 		}
 	}
 
-	inform.syncCompleted = true
+	// inform.syncCompleted = true
 }
 
 // Watch resources and process events.
@@ -224,9 +224,9 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 	}
 }
 
-func (inform *GenericInformer) WaitForResync() {
-	for !inform.syncCompleted {
-		time.Sleep(time.Duration(10 * time.Millisecond))
-	}
-	// time.Sleep(time.Duration(len(inform.resourceIndex)) * time.Millisecond)
-}
+// func (inform *GenericInformer) WaitForResync() {
+// 	for !inform.syncCompleted {
+// 		time.Sleep(time.Duration(1 * time.Millisecond))
+// 	}
+// 	// time.Sleep(time.Duration(len(inform.resourceIndex)) * time.Millisecond)
+// }
