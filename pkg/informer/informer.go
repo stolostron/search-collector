@@ -59,7 +59,7 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		}
 
 		inform.listAndResync()
-		time.Sleep(60 * time.Second) // TODO: Instead of this try to start watcher from last resource version.
+		// time.Sleep(10 * time.Second) // TODO: Instead of this try to start watcher from last resource version.
 		inform.watch(stopper)
 
 	}
@@ -129,7 +129,7 @@ func (inform *GenericInformer) listAndResync() {
 			glog.Info("\t>>> Total Alloc: ", memStats.TotalAlloc/1000000,
 				" MB \tAlloc: ", memStats.Alloc/1000000, " MB \tGCs: ",
 				memStats.NumGC, "\t", inform.gvr.Resource)
-			glog.Info("remaining item count ", metadata["remainingItemCount"])
+			// glog.Info("remaining item count ", metadata["remainingItemCount"])
 
 			opts.Continue = metadata["continue"].(string)
 			time.Sleep(1 * time.Second)
