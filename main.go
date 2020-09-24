@@ -166,6 +166,8 @@ func main() {
 					stopper := make(chan struct{})
 					stoppers[gvr] = stopper
 					go informer.Run(stopper)
+
+					informer.WaitForResync()
 				}
 				glog.V(2).Info("Total informers running: ", len(stoppers))
 			}

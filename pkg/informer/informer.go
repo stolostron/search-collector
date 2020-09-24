@@ -24,6 +24,7 @@ type GenericInformer struct {
 	resourceIndex map[string]string                        // Index of curr resources [key=UUID value=resourceVersion]
 	retries       int64                                    // Counts times we have tried without establishing a watch.
 	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly
+	syncCompleted bool
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
@@ -35,20 +36,21 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
 		retries:       0,
 		resourceIndex: make(map[string]string),
+		syncCompleted: false,
 	}
 	return i, nil
 }
 
 // Run runs the informer.
 func (inform *GenericInformer) Run(stopper chan struct{}) {
-	for {
+	for !inform.stopped {
 		if inform.retries > 0 {
 			// Backoff strategy: Adds 2 seconds each retry, up to 2 mins.
 			wait := time.Duration(min(inform.retries*2, 120)) * time.Second
 			glog.V(3).Infof("Waiting %s before retrying listAndWatch for %s", wait, inform.gvr.String())
 			time.Sleep(wait)
 		}
-		glog.V(2).Info("(Re)starting informer: ", inform.gvr.String())
+		glog.V(3).Info("(Re)starting informer: ", inform.gvr.String())
 		if inform.client == nil {
 			inform.client = config.GetDynamicClient()
 		}
@@ -56,11 +58,8 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		inform.listAndResync()
 		inform.watch(stopper)
 
-		if inform.stopped {
-			break
-		}
 	}
-	glog.V(3).Info("Informer was stopped. ", inform.gvr.String())
+	glog.V(2).Info("Informer was stopped. ", inform.gvr.String())
 }
 
 // Helper function that returns the smaller of two integers.
@@ -86,6 +85,7 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 // List current resources and fires ADDED events. Then sync the current state with the previous
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func (inform *GenericInformer) listAndResync() {
+	inform.syncCompleted = false
 
 	// List resources.
 	resources, listError := inform.client.Resource(inform.gvr).List(metav1.ListOptions{})
@@ -121,6 +121,8 @@ func (inform *GenericInformer) listAndResync() {
 			inform.DeleteFunc(obj)
 		}
 	}
+
+	inform.syncCompleted = true
 }
 
 // Watch resources and process events.
@@ -132,6 +134,8 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 		inform.retries++
 		return
 	}
+	defer watch.Stop()
+
 	glog.V(3).Infof("Watching\t[Group: %s \tKind: %s]", inform.gvr.Group, inform.gvr.Resource)
 
 	watchEvents := watch.ResultChan()
@@ -183,14 +187,18 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 
 			case "ERROR":
 				glog.V(2).Infof("Received ERROR event. Ending listAndWatch() for %s", inform.gvr.String())
-				watch.Stop()
 				return
 
 			default:
 				glog.V(2).Infof("Received unexpected event. Ending listAndWatch() for %s", inform.gvr.String())
-				watch.Stop()
 				return
 			}
 		}
+	}
+}
+
+func (inform *GenericInformer) WaitForResync() {
+	for !inform.syncCompleted {
+		time.Sleep(time.Duration(10 * time.Millisecond))
 	}
 }
