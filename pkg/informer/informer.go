@@ -56,7 +56,7 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		}
 
 		inform.listAndResync()
-		time.Sleep(30 * time.Second) // Try to delay until memory is released.
+		time.Sleep(60 * time.Second) // TODO: Instead of this try to start watcher from last resource version.
 		inform.watch(stopper)
 
 	}
