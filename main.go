@@ -170,8 +170,8 @@ func main() {
 					informer.WaitForResync()
 
 					runtime.ReadMemStats(&memStats)
-					glog.Info("\tTotal Alloc: ", memStats.TotalAlloc/1000000, " MB \tAlloc: ",
-						memStats.Alloc/1000000, " MB \tGarbageCollections: ", memStats.NumGC, "\t", gvr.Resource)
+					glog.Info(" Total Alloc: ", memStats.TotalAlloc/1000000, " MB \tAlloc: ",
+						memStats.Alloc/1000000, " MB \tGCs: ", memStats.NumGC, "  \t", gvr.Resource)
 				}
 				glog.V(2).Info("Total informers running: ", len(stoppers))
 			}

@@ -102,9 +102,6 @@ func (inform *GenericInformer) listAndResync() {
 			inform.retries++
 			return
 		}
-		if inform.gvr.Resource == "configmaps" {
-			glog.Info("Result for ", inform.gvr.String(), "  ", resources.UnstructuredContent()["metadata"])
-		}
 
 		// Save the previous state.
 		// IMPORTANT: Keep this after we have successfully listed the resources, otherwise we'll lose the previous state.
@@ -129,12 +126,13 @@ func (inform *GenericInformer) listAndResync() {
 		if metadata["remainingItemCount"] != nil && metadata["remainingItemCount"] != 0 {
 
 			goruntime.ReadMemStats(&memStats)
-			glog.Info("   >>> ", inform.gvr.Resource, "\tTotal Alloc: ", memStats.TotalAlloc/1000000,
-				" MB \tAlloc: ", memStats.Alloc/1000000, " MBGarbageCollections: ", memStats.NumGC)
+			glog.Info("\t>>> Total Alloc: ", memStats.TotalAlloc/1000000,
+				" MB \tAlloc: ", memStats.Alloc/1000000, " MB \tGCs: ",
+				memStats.NumGC, "\t", inform.gvr.Resource)
 			glog.Info("remaining item count ", metadata["remainingItemCount"])
-			// glog.Info("continue from ", metadata["continue"])
+
 			opts.Continue = metadata["continue"].(string)
-			time.Sleep(5 * time.Second)
+			time.Sleep(1 * time.Second)
 		} else {
 			break
 		}
@@ -215,7 +213,7 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 				delete(inform.resourceIndex, string(obj.GetUID()))
 
 			case "ERROR":
-				glog.Infof("Received ERROR event. Ending listAndWatch() for %s", inform.gvr.String(), event)
+				glog.Infof("Received ERROR event. Ending listAndWatch() for %s %s", inform.gvr.String(), event)
 				return
 
 			default:
@@ -230,5 +228,5 @@ func (inform *GenericInformer) WaitForResync() {
 	for !inform.syncCompleted {
 		time.Sleep(time.Duration(10 * time.Millisecond))
 	}
-	time.Sleep(time.Duration(len(inform.resourceIndex)) * time.Millisecond)
+	// time.Sleep(time.Duration(len(inform.resourceIndex)) * time.Millisecond)
 }
