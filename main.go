@@ -16,7 +16,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/open-cluster-management/search-collector/pkg/config"
@@ -181,13 +180,8 @@ func main() {
 	time.Sleep(time.Duration(config.Cfg.InitialDelayMS+60000) * time.Millisecond)
 
 	// Starts the send loop.
-	go sender.StartSendLoop()
+	sender.StartSendLoop()
 
-	// We don't actually use this to wait on anything, since the transformer routines don't ever end unless something
-	// goes wrong. We just use this to wait forever in main once we start things up.
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	wg.Wait() // This will never end (until we kill the process)
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
