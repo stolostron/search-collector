@@ -56,6 +56,7 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		}
 
 		inform.listAndResync()
+		time.Sleep(30 * time.Second) // Try to delay until memory is released.
 		inform.watch(stopper)
 
 	}
