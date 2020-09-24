@@ -128,13 +128,13 @@ func (inform *GenericInformer) listAndResync() {
 		metadata := resources.UnstructuredContent()["metadata"].(map[string]interface{})
 		if metadata["remainingItemCount"] != nil && metadata["remainingItemCount"] != 0 {
 
-			// glog.Info("\n\nResource: ", inform.gvr.String())
-
 			goruntime.ReadMemStats(&memStats)
-			glog.Info("   >>> ", inform.gvr.Resource, "\tTotal Alloc: ", memStats.TotalAlloc/1000000, " MB \tAlloc: ", memStats.Alloc/1000000, " MB")
+			glog.Info("   >>> ", inform.gvr.Resource, "\tTotal Alloc: ", memStats.TotalAlloc/1000000,
+				" MB \tAlloc: ", memStats.Alloc/1000000, " MBGarbageCollections: ", memStats.NumGC)
 			glog.Info("remaining item count ", metadata["remainingItemCount"])
 			// glog.Info("continue from ", metadata["continue"])
 			opts.Continue = metadata["continue"].(string)
+			time.Sleep(5 * time.Second)
 		} else {
 			break
 		}
@@ -155,7 +155,8 @@ func (inform *GenericInformer) listAndResync() {
 // Watch resources and process events.
 func (inform *GenericInformer) watch(stopper chan struct{}) {
 
-	opts := metav1.ListOptions{ResourceVersion: inform.lastResourceVersion}
+	// opts := metav1.ListOptions{ResourceVersion: inform.lastResourceVersion}
+	opts := metav1.ListOptions{}
 	watch, watchError := inform.client.Resource(inform.gvr).Watch(opts)
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
