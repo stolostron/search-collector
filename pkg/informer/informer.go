@@ -3,7 +3,6 @@
 package informer
 
 import (
-	goruntime "runtime"
 	"time"
 
 	"github.com/golang/glog"
@@ -17,27 +16,25 @@ import (
 
 // GenericInformer ...
 type GenericInformer struct {
-	client              dynamic.Interface
-	gvr                 schema.GroupVersionResource
-	AddFunc             func(interface{})
-	DeleteFunc          func(interface{})
-	UpdateFunc          func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
-	lastResourceVersion string
-	resourceIndex       map[string]string // Index of curr resources [key=UUID value=resourceVersion]
-	retries             int64             // Counts times we have tried without establishing a watch.
-	stopped             bool              // Tracks when the informer is stopped, used to exit cleanly
+	client        dynamic.Interface
+	gvr           schema.GroupVersionResource
+	AddFunc       func(interface{})
+	DeleteFunc    func(interface{})
+	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
+	resourceIndex map[string]string                        // Index of curr resources [key=UUID value=resourceVersion]
+	retries       int64                                    // Counts times we have tried without establishing a watch.
+	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
 func InformerForResource(res schema.GroupVersionResource) (GenericInformer, error) {
 	i := GenericInformer{
-		gvr:                 res,
-		AddFunc:             (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
-		DeleteFunc:          (func(interface{}) { glog.Warning("DeleteFunc not initialized for ", res.String()) }),
-		UpdateFunc:          (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
-		retries:             0,
-		resourceIndex:       make(map[string]string),
-		lastResourceVersion: "0",
+		gvr:           res,
+		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
+		DeleteFunc:    (func(interface{}) { glog.Warning("DeleteFunc not initialized for ", res.String()) }),
+		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
+		retries:       0,
+		resourceIndex: make(map[string]string),
 	}
 	return i, nil
 }
@@ -87,7 +84,6 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func (inform *GenericInformer) listAndResync() {
 	var prevResourceIndex map[string]string
-	memStats := goruntime.MemStats{}
 
 	// List resources.
 	opts := metav1.ListOptions{Limit: 250}
@@ -116,16 +112,9 @@ func (inform *GenericInformer) listAndResync() {
 		}
 		glog.V(3).Infof("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 			inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
-		inform.lastResourceVersion = resources.GetResourceVersion()
 
 		metadata := resources.UnstructuredContent()["metadata"].(map[string]interface{})
 		if metadata["remainingItemCount"] != nil && metadata["remainingItemCount"] != 0 {
-
-			goruntime.ReadMemStats(&memStats)
-			glog.Info("\t>>> Total Alloc: ", memStats.TotalAlloc/1000000,
-				" MB \tAlloc: ", memStats.Alloc/1000000, " MB \tGCs: ",
-				memStats.NumGC, "\t", inform.gvr.Resource)
-
 			opts.Continue = metadata["continue"].(string)
 		} else {
 			break
@@ -145,9 +134,7 @@ func (inform *GenericInformer) listAndResync() {
 // Watch resources and process events.
 func (inform *GenericInformer) watch(stopper chan struct{}) {
 
-	// opts := metav1.ListOptions{ResourceVersion: inform.lastResourceVersion}
-	opts := metav1.ListOptions{}
-	watch, watchError := inform.client.Resource(inform.gvr).Watch(opts)
+	watch, watchError := inform.client.Resource(inform.gvr).Watch(metav1.ListOptions{})
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
 		inform.retries++

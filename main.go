@@ -165,7 +165,6 @@ func main() {
 					stopper := make(chan struct{})
 					stoppers[gvr] = stopper
 					go informer.Run(stopper)
-
 				}
 				glog.V(2).Info("Total informers running: ", len(stoppers))
 			}
@@ -176,7 +175,7 @@ func main() {
 
 	// Wait until all informers receive resources. Default is 30 seconds (env:INITIAL_DELAY_MS)
 	// If we send too quickly we won't have the full state and could unecessarily delete and re-add resources.
-	time.Sleep(time.Duration(config.Cfg.InitialDelayMS+60000) * time.Millisecond)
+	time.Sleep(time.Duration(config.Cfg.InitialDelayMS) * time.Millisecond)
 
 	// Starts the send loop.
 	sender.StartSendLoop()
