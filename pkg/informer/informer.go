@@ -202,4 +202,5 @@ func (inform *GenericInformer) WaitForResync() {
 	for !inform.syncCompleted {
 		time.Sleep(time.Duration(10 * time.Millisecond))
 	}
+	time.Sleep(time.Duration(len(inform.resourceIndex)) * time.Millisecond)
 }
