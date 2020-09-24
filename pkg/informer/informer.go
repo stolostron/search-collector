@@ -3,6 +3,7 @@
 package informer
 
 import (
+	goruntime "runtime"
 	"time"
 
 	"github.com/golang/glog"
@@ -16,27 +17,29 @@ import (
 
 // GenericInformer ...
 type GenericInformer struct {
-	client        dynamic.Interface
-	gvr           schema.GroupVersionResource
-	AddFunc       func(interface{})
-	DeleteFunc    func(interface{})
-	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
-	resourceIndex map[string]string                        // Index of curr resources [key=UUID value=resourceVersion]
-	retries       int64                                    // Counts times we have tried without establishing a watch.
-	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly
-	syncCompleted bool
+	client              dynamic.Interface
+	gvr                 schema.GroupVersionResource
+	AddFunc             func(interface{})
+	DeleteFunc          func(interface{})
+	UpdateFunc          func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
+	lastResourceVersion string
+	resourceIndex       map[string]string // Index of curr resources [key=UUID value=resourceVersion]
+	retries             int64             // Counts times we have tried without establishing a watch.
+	stopped             bool              // Tracks when the informer is stopped, used to exit cleanly
+	syncCompleted       bool
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
 func InformerForResource(res schema.GroupVersionResource) (GenericInformer, error) {
 	i := GenericInformer{
-		gvr:           res,
-		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
-		DeleteFunc:    (func(interface{}) { glog.Warning("DeleteFunc not initialized for ", res.String()) }),
-		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
-		retries:       0,
-		resourceIndex: make(map[string]string),
-		syncCompleted: false,
+		gvr:                 res,
+		AddFunc:             (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
+		DeleteFunc:          (func(interface{}) { glog.Warning("DeleteFunc not initialized for ", res.String()) }),
+		UpdateFunc:          (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
+		retries:             0,
+		resourceIndex:       make(map[string]string),
+		syncCompleted:       false,
+		lastResourceVersion: "0",
 	}
 	return i, nil
 }
@@ -87,32 +90,55 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func (inform *GenericInformer) listAndResync() {
 	inform.syncCompleted = false
+	var prevResourceIndex map[string]string
+	memStats := goruntime.MemStats{}
 
 	// List resources.
-	resources, listError := inform.client.Resource(inform.gvr).List(metav1.ListOptions{})
-	if listError != nil {
-		glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
-		inform.retries++
-		return
-	}
+	opts := metav1.ListOptions{Limit: 1000}
+	for {
+		resources, listError := inform.client.Resource(inform.gvr).List(opts)
+		if listError != nil {
+			glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
+			inform.retries++
+			return
+		}
+		if inform.gvr.Resource == "configmaps" {
+			glog.Info("Result for ", inform.gvr.String(), "  ", resources.UnstructuredContent()["metadata"])
+		}
 
-	// Save the previous state.
-	// IMPORTANT: Keep this after we have successfully listed the resources, otherwise we'll lose the previous state.
-	var prevResourceIndex map[string]string
-	if len(inform.resourceIndex) > 0 {
-		prevResourceIndex = inform.resourceIndex
-		inform.resourceIndex = make(map[string]string)
-	}
+		// Save the previous state.
+		// IMPORTANT: Keep this after we have successfully listed the resources, otherwise we'll lose the previous state.
+		// FIXME
+		if len(inform.resourceIndex) > 0 {
+			prevResourceIndex = inform.resourceIndex
+			inform.resourceIndex = make(map[string]string)
+		}
 
-	// Add all resources.
-	for i := range resources.Items {
-		glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
-			inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
-		inform.AddFunc(&resources.Items[i])
-		inform.resourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
+		// Add all resources.
+		for i := range resources.Items {
+			glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
+				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
+			inform.AddFunc(&resources.Items[i])
+			inform.resourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
+		}
+		glog.V(3).Infof("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
+			inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
+		inform.lastResourceVersion = resources.GetResourceVersion()
+
+		metadata := resources.UnstructuredContent()["metadata"].(map[string]interface{})
+		if metadata["remainingItemCount"] != nil && metadata["remainingItemCount"] != 0 {
+
+			// glog.Info("\n\nResource: ", inform.gvr.String())
+
+			goruntime.ReadMemStats(&memStats)
+			glog.Info("   >>> ", inform.gvr.Resource, "\tTotal Alloc: ", memStats.TotalAlloc/1000000, " MB \tAlloc: ", memStats.Alloc/1000000, " MB")
+			glog.Info("remaining item count ", metadata["remainingItemCount"])
+			// glog.Info("continue from ", metadata["continue"])
+			opts.Continue = metadata["continue"].(string)
+		} else {
+			break
+		}
 	}
-	glog.V(3).Infof("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
-		inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
 	// Delete resources from previous state that no longer exist in the current state.
 	for key := range prevResourceIndex {
@@ -129,7 +155,8 @@ func (inform *GenericInformer) listAndResync() {
 // Watch resources and process events.
 func (inform *GenericInformer) watch(stopper chan struct{}) {
 
-	watch, watchError := inform.client.Resource(inform.gvr).Watch(metav1.ListOptions{})
+	opts := metav1.ListOptions{ResourceVersion: inform.lastResourceVersion}
+	watch, watchError := inform.client.Resource(inform.gvr).Watch(opts)
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
 		inform.retries++
@@ -187,11 +214,11 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 				delete(inform.resourceIndex, string(obj.GetUID()))
 
 			case "ERROR":
-				glog.V(2).Infof("Received ERROR event. Ending listAndWatch() for %s", inform.gvr.String())
+				glog.Infof("Received ERROR event. Ending listAndWatch() for %s", inform.gvr.String(), event)
 				return
 
 			default:
-				glog.V(2).Infof("Received unexpected event. Ending listAndWatch() for %s", inform.gvr.String())
+				glog.Infof("Received unexpected event. Ending listAndWatch() for %s", inform.gvr.String())
 				return
 			}
 		}
