@@ -21,9 +21,10 @@ type GenericInformer struct {
 	AddFunc       func(interface{})
 	DeleteFunc    func(interface{})
 	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
-	resourceIndex map[string]string                        // Index of curr resources [key=UUID value=resourceVersion]
-	retries       int64                                    // Counts times we have tried without establishing a watch.
-	stopped       bool                                     // Tracks when the informer is stopped, used to exit cleanly
+	initialized   bool
+	resourceIndex map[string]string // Index of curr resources [key=UUID value=resourceVersion]
+	retries       int64             // Counts times we have tried without establishing a watch.
+	stopped       bool              // Tracks when the informer is stopped, used to exit cleanly
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
@@ -33,6 +34,7 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
 		DeleteFunc:    (func(interface{}) { glog.Warning("DeleteFunc not initialized for ", res.String()) }),
 		UpdateFunc:    (func(interface{}, interface{}) { glog.Warning("UpdateFunc not init for ", res.String()) }),
+		initialized:   false,
 		retries:       0,
 		resourceIndex: make(map[string]string),
 	}
@@ -54,6 +56,7 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		}
 
 		inform.listAndResync()
+		inform.initialized = true
 		inform.watch(stopper)
 
 	}
@@ -197,5 +200,11 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 				return
 			}
 		}
+	}
+}
+
+func (inform *GenericInformer) WaitUntilInitialized() {
+	for !inform.initialized {
+		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
 }

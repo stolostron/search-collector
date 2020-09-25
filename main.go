@@ -122,11 +122,12 @@ func main() {
 		}
 	}
 
-	// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
-	stoppers := make(map[schema.GroupVersionResource]chan struct{})
+	informersStarted := false
 
 	// Start a routine to keep our informers up to date.
 	go func() {
+		// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
+		stoppers := make(map[schema.GroupVersionResource]chan struct{})
 		for {
 			gvrList, err := supportedResources(discoveryClient)
 			if err != nil {
@@ -164,22 +165,25 @@ func main() {
 
 					stopper := make(chan struct{})
 					stoppers[gvr] = stopper
-					informer.Run(stopper)
+					go informer.Run(stopper)
+					informer.WaitUntilInitialized()
 				}
-				glog.V(2).Info("Total informers running: ", len(stoppers))
+				glog.Info("Total informers running: ", len(stoppers))
+				informersStarted = true
 			}
 
 			time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
 		}
 	}()
 
-	// Wait until all informers receive resources. Default is 30 seconds (env:INITIAL_DELAY_MS)
-	// If we send too quickly we won't have the full state and could unecessarily delete and re-add resources.
-	time.Sleep(time.Duration(1000) * time.Millisecond)
+	glog.Info("Waiting for informers to start and load initial state...")
+	for !informersStarted {
+		time.Sleep(time.Duration(100) * time.Millisecond)
+	}
+	// time.Sleep(time.Duration(1000) * time.Millisecond) // Additional wait to ensure all resources are processed.
 
-	// Starts the send loop.
+	glog.Info("Starting the sender.")
 	sender.StartSendLoop()
-
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
