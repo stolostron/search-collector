@@ -203,8 +203,16 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 	}
 }
 
+// Waits until informer has completed the initial listAndSync() of resources.
+// Times out after 10 seconds.
 func (inform *GenericInformer) WaitUntilInitialized() {
+	start := time.Now()
+	timeout := time.Duration(1) * time.Second
 	for !inform.initialized {
+		if time.Since(start) > timeout {
+			glog.Infof("Informer %s timed out after %s waiting for initialization.", inform.gvr.String(), timeout)
+			break
+		}
 		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
 }
