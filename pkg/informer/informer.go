@@ -83,7 +83,9 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 // List current resources and fires ADDED events. Then sync the current state with the previous
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func (inform *GenericInformer) listAndResync() {
-	var prevResourceIndex map[string]string
+
+	// Save the previous state.
+	newResourceIndex := make(map[string]string)
 
 	// List resources.
 	opts := metav1.ListOptions{Limit: 250}
@@ -95,20 +97,12 @@ func (inform *GenericInformer) listAndResync() {
 			return
 		}
 
-		// Save the previous state.
-		// IMPORTANT: Keep this after we have successfully listed the resources, otherwise we'll lose the previous state.
-		// FIXME
-		if len(inform.resourceIndex) > 0 {
-			prevResourceIndex = inform.resourceIndex
-			inform.resourceIndex = make(map[string]string)
-		}
-
 		// Add all resources.
 		for i := range resources.Items {
 			glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
 				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 			inform.AddFunc(&resources.Items[i])
-			inform.resourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
+			newResourceIndex[string(resources.Items[i].GetUID())] = resources.Items[i].GetResourceVersion()
 		}
 		glog.V(3).Infof("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 			inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
@@ -122,11 +116,12 @@ func (inform *GenericInformer) listAndResync() {
 	}
 
 	// Delete resources from previous state that no longer exist in the current state.
-	for key := range prevResourceIndex {
-		if _, exist := inform.resourceIndex[key]; !exist {
+	for key := range inform.resourceIndex {
+		if _, exist := newResourceIndex[key]; !exist {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
 			obj := newUnstructured(inform.gvr.Resource, key)
 			inform.DeleteFunc(obj)
+			delete(inform.resourceIndex, key) // Thread safe?
 		}
 	}
 }
