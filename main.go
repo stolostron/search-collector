@@ -168,7 +168,7 @@ func main() {
 					go informer.Run(stopper)
 					informer.WaitUntilInitialized()
 				}
-				glog.Info("Total informers running: ", len(stoppers))
+				glog.V(2).Info("Total informers running: ", len(stoppers))
 				informersStarted = true
 			}
 
