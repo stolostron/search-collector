@@ -176,11 +176,10 @@ func main() {
 		}
 	}()
 
-	glog.Info("Waiting for informers to start and load initial state...")
+	glog.Info("Waiting for informers load initial state...")
 	for !informersStarted {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
-	// time.Sleep(time.Duration(1000) * time.Millisecond) // Additional wait to ensure all resources are processed.
 
 	glog.Info("Starting the sender.")
 	sender.StartSendLoop()
