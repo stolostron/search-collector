@@ -53,7 +53,6 @@ type Config struct {
 	ClusterNamespace     string `env:"CLUSTER_NAMESPACE"`  // The namespace of this cluster
 	DeployedInHub        bool   `env:"DEPLOYED_IN_HUB"`    // Tracks if deployed in the Hub or Managed cluster
 	HeartbeatMS          int    `env:"HEARTBEAT_MS"`       // Interval(ms) to send empty payload to ensure connection
-	InitialDelayMS       int    `env:"INITIAL_DELAY_MS"`   // Collect period before sending initial payload
 	KubeConfig           string `env:"KUBECONFIG"`         // Local kubeconfig path
 	MaxBackoffMS         int    `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
 	RediscoverRateMS     int    `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
