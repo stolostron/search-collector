@@ -210,7 +210,7 @@ func (inform *GenericInformer) WaitUntilInitialized() {
 	timeout := time.Duration(1) * time.Second
 	for !inform.initialized {
 		if time.Since(start) > timeout {
-			glog.Infof("Informer %s timed out after %s waiting for initialization.", inform.gvr.String(), timeout)
+			glog.Infof("Informer [%s] timed out after %s waiting for initialization.", inform.gvr.String(), timeout)
 			break
 		}
 		time.Sleep(time.Duration(10) * time.Millisecond)
