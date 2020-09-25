@@ -84,7 +84,7 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
 func (inform *GenericInformer) listAndResync() {
 
-	// Save the previous state.
+	// Keep track of new resources added to consolidate against the previous state.
 	newResourceIndex := make(map[string]string)
 
 	// List resources.
@@ -107,6 +107,8 @@ func (inform *GenericInformer) listAndResync() {
 		glog.V(3).Infof("Listed\t[Group: %s \tKind: %s]  ===>  resourceTotal: %d  resourceVersion: %s",
 			inform.gvr.Group, inform.gvr.Resource, len(resources.Items), resources.GetResourceVersion())
 
+		// Check if there's more items and set the "continue" option for the next request.
+		// If there isn't any more items we break from the loop.
 		metadata := resources.UnstructuredContent()["metadata"].(map[string]interface{})
 		if metadata["remainingItemCount"] != nil && metadata["remainingItemCount"] != 0 {
 			opts.Continue = metadata["continue"].(string)
@@ -115,7 +117,7 @@ func (inform *GenericInformer) listAndResync() {
 		}
 	}
 
-	// Delete resources from previous state that no longer exist in the current state.
+	// Delete resources from previous state that no longer exist in the new state.
 	for key := range inform.resourceIndex {
 		if _, exist := newResourceIndex[key]; !exist {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
