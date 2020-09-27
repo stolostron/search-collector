@@ -37,7 +37,6 @@ AGGREGATOR_HOST | yes      | https://localhost      | Location of the aggregator
 AGGREGATOR_PORT | yes      | 3010                   |
 CLUSTER_NAME    | yes      | local-cluster          | Name of cluster where this collector is running.
 HEARTBEAT_MS    | no       | 60000  // 1 min        | Interval(ms) to send empty payload to ensure connection
-INITIAL_DELAY_MS| no       | 30000  // 30 seconds   | Period to collect data before sending initial payload. Sending too soon causes resources to get deleted and re-added.
 MAX_BACKOFF_MS  | no       | 600000 // 10 min       | Maximum backoff in ms to wait after send error
 REDISCOVER_RATE_MS | no    | 60000  // 1 min        | Interval(ms) to poll for changes to CRDs
 REPORT_RATE_MS  | no       | 5000   // 5 seconds    | Interval(ms) to send changes to the aggregator
