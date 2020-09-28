@@ -214,3 +214,15 @@ func Test_watch(t *testing.T) {
 		t.Errorf("Expected informer.stopped to be true, but got %t", informer.stopped)
 	}
 }
+
+// Verify that WaitUntilInitialized(timeout) times out after passed time duration.
+func Test_WaitUntilInitialized_timeout(t *testing.T) {
+	informer, _, _, _ := initInformer()
+	start := time.Now()
+	informer.WaitUntilInitialized(time.Duration(2) * time.Millisecond)
+
+	// WaitUntilInitialized() polls every 10ms, so need to confirm that the timeout was triggered within 15ms.
+	if time.Since(start) > time.Duration(15)*time.Millisecond {
+		t.Errorf("Expected WaitUntilInitialized to time out within 15 milliseconds, but got %s", time.Since(start))
+	}
+}
