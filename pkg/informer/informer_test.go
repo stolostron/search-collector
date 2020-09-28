@@ -221,6 +221,7 @@ func Test_WaitUntilInitialized_timeout(t *testing.T) {
 	start := time.Now()
 	informer.WaitUntilInitialized(time.Duration(2) * time.Millisecond)
 
+	// WaitUntilInitialized() polls every 10ms, so need to confirm that the timeout was triggered within 15ms.
 	if time.Since(start) > time.Duration(15)*time.Millisecond {
 		t.Errorf("Expected WaitUntilInitialized to time out within 15 milliseconds, but got %s", time.Since(start))
 	}
