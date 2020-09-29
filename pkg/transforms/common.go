@@ -148,6 +148,7 @@ func edgesByOwner(ret []Edge, destUID string, ns NodeStore, nodeInfo NodeInfo) [
 					}
 				}
 
+				// Safeguard to prevent infinite recursion.
 				if len(ret) >= maxRecursionDepth {
 					glog.Infof("OwnerUID recursion reached the max depth of %.", maxRecursionDepth)
 					return ret
@@ -156,6 +157,7 @@ func edgesByOwner(ret []Edge, destUID string, ns NodeStore, nodeInfo NodeInfo) [
 				// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 				// Call the edgesByOwner recursively to create the ownedBy edge
 				if dest.GetMetadata("OwnerUID") != "" && dest.GetMetadata("OwnerUID") != nodeInfo.UID {
+					// Iterate our existing edges and check if an edge already exists to prevent a circular dependency.
 					for _, existingEdge := range ret {
 						if existingEdge.SourceUID == dest.GetMetadata("OwnerUID") || existingEdge.DestUID == dest.GetMetadata("OwnerUID") {
 							glog.Info("Skipping ownerUID edge to prevent circular dependency.")
