@@ -196,7 +196,7 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 				return
 
 			default:
-				glog.Infof("Received unexpected event. Ending listAndWatch() for %s", inform.gvr.String())
+				glog.V(2).Infof("Received unexpected event. Ending listAndWatch() for %s", inform.gvr.String())
 				return
 			}
 		}
