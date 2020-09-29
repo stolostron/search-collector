@@ -150,7 +150,7 @@ func edgesByOwner(ret []Edge, destUID string, ns NodeStore, nodeInfo NodeInfo) [
 
 				// Safeguard to prevent infinite recursion.
 				if len(ret) >= maxRecursionDepth {
-					glog.Infof("OwnerUID recursion reached the max depth of %.", maxRecursionDepth)
+					glog.Infof("OwnerUID recursion reached the max depth of %d.", maxRecursionDepth)
 					return ret
 				}
 
