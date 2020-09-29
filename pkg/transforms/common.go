@@ -81,7 +81,7 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 
 	//ownedBy edges
 	if currNode.GetMetadata("OwnerUID") != "" {
-		ret = append(ret, edgesByOwner([]Edge{}, currNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
+		ret = append(ret, edgesByOwner(ret, currNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
 	}
 
 	//deployer subscriber edges
