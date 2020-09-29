@@ -81,7 +81,7 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 
 	//ownedBy edges
 	if currNode.GetMetadata("OwnerUID") != "" {
-		ret = append(ret, edgesByOwner(currNode.GetMetadata("OwnerUID"), ns, nodeInfo)...)
+		ret = append(ret, edgesByOwner(currNode.GetMetadata("OwnerUID"), ns, nodeInfo, []string{})...)
 	}
 
 	//deployer subscriber edges
@@ -117,8 +117,13 @@ type NodeInfo struct {
 
 // Function to create an edge between the pod and it's owner, if it exists
 // If the pod is owned by a replicaset which in turn is owned by a deployment, the function will be recursively called to create edges between pod->replicaset and pod->deployment
-func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo) []Edge {
+func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo, seenDests []string) []Edge {
 	ret := []Edge{}
+	for _, value := range seenDests {
+		if value == destUID {
+			return ret
+		}
+	}
 	if destUID != "" {
 		//Lookup by UID to see if the owner Node exists
 		if dest, ok := ns.ByUID[destUID]; ok {
@@ -130,7 +135,7 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo) []Edge {
 					SourceKind: nodeInfo.Kind,
 					DestKind:   dest.Properties["kind"].(string),
 				})
-
+				seenDests = append(seenDests, destUID)    //add destUID to processed/seen destinations
 				if dest.GetMetadata("ReleaseUID") != "" { // If owner included/owned by a release...
 					if _, ok := ns.ByUID[dest.GetMetadata("ReleaseUID")]; ok { // ...make sure the release exists...
 						if nodeInfo.UID != dest.GetMetadata("ReleaseUID") { //avoid connecting node to itself
@@ -148,7 +153,7 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo) []Edge {
 				// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 				// Call the edgesByOwner recursively to create the ownedBy edge
 				if dest.GetMetadata("OwnerUID") != "" {
-					ret = append(ret, edgesByOwner(dest.GetMetadata("OwnerUID"), ns, nodeInfo)...)
+					ret = append(ret, edgesByOwner(dest.GetMetadata("OwnerUID"), ns, nodeInfo, seenDests)...)
 				}
 			}
 		} else {
