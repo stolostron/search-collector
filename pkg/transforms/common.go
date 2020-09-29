@@ -76,6 +76,9 @@ func addReleaseOwnerUID(node Node, ns NodeStore) {
 		if ok { // If the HelmRelease node is in the list of current nodes
 			node.Metadata["OwnerUID"] = releaseNode.UID
 		}
+		if node.Properties["namespace"].(string) == "_NONE" && node.Properties["kind"].(string) == "ClusterRole" {
+			glog.Info("In addReleaseOwnerUID: ClusterRole ", node.Properties["name"], " has ownerUID :", node.Metadata["OwnerUID"])
+		}
 	}
 }
 
@@ -89,9 +92,14 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 	} else { // If namespace property is not present, nodeTripleMap assigns namespace to be _NONE in reconciler (reconciler.go:47)
 		namespace = "_NONE"
 	}
-
+	if namespace == "_NONE" && kind == "ClusterRole" {
+		glog.Info("ClusterRole ", currNode.Properties["name"], " has ownerUID :", currNode.Metadata["OwnerUID"])
+	}
 	if currNode.Metadata["OwnerUID"] == "" {
 		addReleaseOwnerUID(currNode, ns) //add OwnerUID for resources owned by HelmRelease, but doesn't have an associated ownerRef
+		if namespace == "_NONE" && kind == "ClusterRole" {
+			glog.Info("ClusterRole ", currNode.Properties["name"], " has ownerUID :", currNode.Metadata["OwnerUID"])
+		}
 	}
 	nodeInfo := NodeInfo{Name: currNode.Properties["name"].(string), NameSpace: namespace, UID: uid, EdgeType: "ownedBy", Kind: kind}
 
