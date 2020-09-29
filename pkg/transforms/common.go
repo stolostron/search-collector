@@ -159,8 +159,7 @@ func edgesByOwner(ret []Edge, destUID string, ns NodeStore, nodeInfo NodeInfo) [
 				if dest.GetMetadata("OwnerUID") != "" && dest.GetMetadata("OwnerUID") != nodeInfo.UID {
 					// Iterate our existing edges and check if an edge already exists to prevent a circular dependency.
 					for _, existingEdge := range ret {
-						if existingEdge.SourceUID == dest.GetMetadata("OwnerUID") ||
-							existingEdge.DestUID == dest.GetMetadata("OwnerUID") {
+						if existingEdge.SourceUID == dest.GetMetadata("OwnerUID") {
 							glog.Info("Skipping ownerUID edge to prevent circular dependency.")
 							return ret
 						}
