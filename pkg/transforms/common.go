@@ -63,7 +63,20 @@ func transformCommon(resource machineryV1.Object) Node {
 		Metadata:   make(map[string]string),
 	}
 	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
+	if resource.GetAnnotations()["meta.helm.sh/release-name"] != "" && resource.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
+		n.Metadata["_ownerReleaseName"] = resource.GetAnnotations()["meta.helm.sh/release-name"]
+		n.Metadata["_ownerReleaseNamespace"] = resource.GetAnnotations()["meta.helm.sh/release-namespace"]
+	}
 	return n
+}
+
+func addReleaseOwnerUID(node Node, ns NodeStore) {
+	if node.GetMetadata("_ownerReleaseName") != "" && node.GetMetadata("_ownerReleaseNamespace") != "" {
+		releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][node.GetMetadata("_ownerReleaseNamespace")][node.GetMetadata("_ownerReleaseName")]
+		if ok { // If the HelmRelease node is in the list of current nodes
+			node.Metadata["OwnerUID"] = releaseNode.UID
+		}
+	}
 }
 
 func CommonEdges(uid string, ns NodeStore) []Edge {
@@ -77,6 +90,9 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 		namespace = "_NONE"
 	}
 
+	if currNode.Metadata["OwnerUID"] == "" {
+		addReleaseOwnerUID(currNode, ns) //add OwnerUID for resources owned by HelmRelease, but doesn't have an associated ownerRef
+	}
 	nodeInfo := NodeInfo{Name: currNode.Properties["name"].(string), NameSpace: namespace, UID: uid, EdgeType: "ownedBy", Kind: kind}
 
 	//ownedBy edges
