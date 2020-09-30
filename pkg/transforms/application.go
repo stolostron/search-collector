@@ -54,7 +54,7 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 		for _, deployable := range strings.Split(a.annotations["apps.open-cluster-management.io/deployables"], ",") {
 			deployableMap[deployable] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns, []string{})...)
 	}
 
 	if len(a.annotations["apps.open-cluster-management.io/subscriptions"]) > 0 {
@@ -62,7 +62,7 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 		for _, subscription := range strings.Split(a.annotations["apps.open-cluster-management.io/subscriptions"], ",") {
 			subscriptionMap[subscription] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(subscriptionMap, "Subscription", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(subscriptionMap, "Subscription", nodeInfo, ns, []string{})...)
 	}
 
 	if len(a.annotations["apps.open-cluster-management.io/placementbindings"]) > 0 {
@@ -70,7 +70,7 @@ func (a ApplicationResource) BuildEdges(ns NodeStore) []Edge {
 		for _, pBinding := range strings.Split(a.annotations["apps.open-cluster-management.io/placementbindings"], ",") {
 			placementBindingMap[pBinding] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(placementBindingMap, "PlacementBinding", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(placementBindingMap, "PlacementBinding", nodeInfo, ns, []string{})...)
 	}
 	return ret
 }

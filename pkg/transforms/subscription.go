@@ -54,13 +54,13 @@ func SubscriptionResourceBuilder(s *app.Subscription) *SubscriptionResource {
 	const oldGitType = "github"
 	annotations := s.GetAnnotations()
 	for _, annotation := range []string{"branch", "path", "commit"} {
-		annotationValue := annotations[appAnnotationPrefix + gitType + "-" + annotation]
+		annotationValue := annotations[appAnnotationPrefix+gitType+"-"+annotation]
 		if annotationValue == "" {
 			// Try old version of the annotation - to be removed if/when these annotations are no longer supported
-			annotationValue = annotations[appAnnotationPrefix + oldGitType + "-" + annotation]
+			annotationValue = annotations[appAnnotationPrefix+oldGitType+"-"+annotation]
 		}
 		if annotationValue != "" {
-			node.Properties["_" + gitType + strings.ReplaceAll(annotation, "-", "")] = annotationValue
+			node.Properties["_"+gitType+strings.ReplaceAll(annotation, "-", "")] = annotationValue
 		}
 	}
 	// Add metadata specific to this type
@@ -97,7 +97,7 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		for _, channel := range strings.Split(s.Spec.Channel, ",") {
 			channelMap[channel] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(channelMap, "Channel", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(channelMap, "Channel", nodeInfo, ns, []string{})...)
 	}
 	// refersTo edges
 	// Builds edges between subscription and placement rules
@@ -105,7 +105,7 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		nodeInfo.EdgeType = "refersTo"
 		placementRuleMap := make(map[string]struct{})
 		placementRuleMap[s.Spec.Placement.PlacementRef.Name] = struct{}{}
-		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns, []string{})...)
 	}
 	//subscribesTo edges
 	if len(s.annotations["apps.open-cluster-management.io/deployables"]) > 0 {
@@ -114,7 +114,7 @@ func (s SubscriptionResource) BuildEdges(ns NodeStore) []Edge {
 		for _, deployable := range strings.Split(s.annotations["apps.open-cluster-management.io/deployables"], ",") {
 			deployableMap[deployable] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns, []string{})...)
 	}
 
 	return ret

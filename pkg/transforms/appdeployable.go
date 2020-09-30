@@ -55,7 +55,7 @@ func (d AppDeployableResource) BuildEdges(ns NodeStore) []Edge {
 		for _, channel := range d.Spec.Channels {
 			channelMap[channel] = struct{}{}
 		}
-		ret = append(ret, edgesByDestinationName(channelMap, "Channel", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(channelMap, "Channel", nodeInfo, ns, []string{})...)
 	}
 
 	// refersTo edges
@@ -64,7 +64,7 @@ func (d AppDeployableResource) BuildEdges(ns NodeStore) []Edge {
 		nodeInfo.EdgeType = "refersTo"
 		placementRuleMap := make(map[string]struct{})
 		placementRuleMap[d.Spec.Placement.PlacementRef.Name] = struct{}{}
-		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(placementRuleMap, "PlacementRule", nodeInfo, ns, []string{})...)
 	}
 	return ret
 }
