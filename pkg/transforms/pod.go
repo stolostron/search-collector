@@ -158,11 +158,11 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	}
 
 	//Create all 'attachedTo' edges between pod and nodes of a specific kind(secrets, configmaps, volumeClaims, volumes)
-	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
-	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
-	ret = append(ret, edgesByDestinationName(volumeClaimMap, "PersistentVolumeClaim", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns, []string{})...)
+	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns, []string{})...)
+	ret = append(ret, edgesByDestinationName(volumeClaimMap, "PersistentVolumeClaim", nodeInfo, ns, []string{})...)
 	nodeInfo.NameSpace = "_NONE"
-	ret = append(ret, edgesByDestinationName(volumeMap, "PersistentVolume", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(volumeMap, "PersistentVolume", nodeInfo, ns, []string{})...)
 
 	//runsOn edges
 	if p.Spec.NodeName != "" {
