@@ -64,21 +64,18 @@ func transformCommon(resource machineryV1.Object) Node {
 	}
 	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
 	if resource.GetAnnotations()["meta.helm.sh/release-name"] != "" && resource.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
-		n.Metadata["_ownerReleaseName"] = resource.GetAnnotations()["meta.helm.sh/release-name"]
-		n.Metadata["_ownerReleaseNamespace"] = resource.GetAnnotations()["meta.helm.sh/release-namespace"]
+		n.Metadata["OwnerReleaseName"] = resource.GetAnnotations()["meta.helm.sh/release-name"]
+		n.Metadata["OwnerReleaseNamespace"] = resource.GetAnnotations()["meta.helm.sh/release-namespace"]
 	}
 	return n
 }
 
 func addReleaseOwnerUID(node Node, ns NodeStore) {
-	if node.GetMetadata("_ownerReleaseName") != "" && node.GetMetadata("_ownerReleaseNamespace") != "" {
-		releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][node.GetMetadata("_ownerReleaseNamespace")][node.GetMetadata("_ownerReleaseName")]
-		if ok { // If the HelmRelease node is in the list of current nodes
-			node.Metadata["OwnerUID"] = releaseNode.UID
-		}
-		if node.Properties["namespace"].(string) == "_NONE" && node.Properties["kind"].(string) == "ClusterRole" {
-			glog.Info("In addReleaseOwnerUID: ClusterRole ", node.Properties["name"], " has ownerUID :", node.Metadata["OwnerUID"])
-		}
+	releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][node.GetMetadata("OwnerReleaseNamespace")][node.GetMetadata("OwnerReleaseName")]
+	if ok { // If the HelmRelease node is in the list of current nodes
+		node.Metadata["OwnerUID"] = releaseNode.UID
+	} else {
+		glog.V(3).Info("Release node not found with kind:HelmRelease, namespace: ", node.GetMetadata("OwnerReleaseNamespace"), " name: ", node.GetMetadata("OwnerReleaseName"))
 	}
 }
 
@@ -92,14 +89,8 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 	} else { // If namespace property is not present, nodeTripleMap assigns namespace to be _NONE in reconciler (reconciler.go:47)
 		namespace = "_NONE"
 	}
-	if namespace == "_NONE" && kind == "ClusterRole" {
-		glog.Info("ClusterRole ", currNode.Properties["name"], " has ownerUID :", currNode.Metadata["OwnerUID"])
-	}
-	if currNode.Metadata["OwnerUID"] == "" {
+	if currNode.Metadata["OwnerUID"] == "" && currNode.Metadata["OwnerReleaseName"] != "" && currNode.Metadata["OwnerReleaseNamespace"] != "" {
 		addReleaseOwnerUID(currNode, ns) //add OwnerUID for resources owned by HelmRelease, but doesn't have an associated ownerRef
-		if namespace == "_NONE" && kind == "ClusterRole" {
-			glog.Info("ClusterRole ", currNode.Properties["name"], " has ownerUID :", currNode.Metadata["OwnerUID"])
-		}
 	}
 	nodeInfo := NodeInfo{Name: currNode.Properties["name"].(string), NameSpace: namespace, UID: uid, EdgeType: "ownedBy", Kind: kind}
 
