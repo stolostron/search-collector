@@ -90,7 +90,8 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 		namespace = "_NONE"
 	}
 	if currNode.Metadata["OwnerUID"] == "" && currNode.Metadata["OwnerReleaseName"] != "" && currNode.Metadata["OwnerReleaseNamespace"] != "" {
-		addReleaseOwnerUID(currNode, ns) //add OwnerUID for resources owned by HelmRelease, but doesn't have an associated ownerRef
+		addReleaseOwnerUID(currNode, ns) //add OwnerUID for resources deployed by HelmRelease, but doesn't have an associated ownerRef
+		//mostly cluster-scoped resources like ClusterRole and ClusterRoleBinding
 	}
 	nodeInfo := NodeInfo{Name: currNode.Properties["name"].(string), NameSpace: namespace, UID: uid, EdgeType: "ownedBy", Kind: kind}
 
