@@ -177,6 +177,9 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo, seenDests []s
 	ret := []Edge{}
 	for _, value := range seenDests {
 		if value == destUID {
+			alreadySeenNode := ns.ByUID[destUID]
+			glog.Info("This destination ", alreadySeenNode.Properties["kind"].(string), "/", alreadySeenNode.Properties["namespace"].(string), "/", alreadySeenNode.Properties["name"].(string), " is already processed")
+			glog.Info("seenDests: ", seenDests)
 			return ret
 		}
 	}
@@ -226,6 +229,9 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 	for _, value := range seenDests {
 		//Checking against nodeInfo.UID - it gets updated every time edgesByDestinationName is called
 		if value == nodeInfo.UID {
+			alreadySeenNode := ns.ByUID[nodeInfo.UID]
+			glog.Info("This destination ", alreadySeenNode.Properties["kind"].(string), "/", alreadySeenNode.Properties["namespace"].(string), "/", alreadySeenNode.Properties["name"].(string), " is already processed")
+			glog.Info("seenDests: ", seenDests)
 			return ret
 		}
 	}
@@ -340,6 +346,9 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 		//Checking against UID - it gets updated every time findSub is called
 		for _, value := range seenDests {
 			if value == UID {
+				alreadySeenNode := ns.ByUID[UID]
+				glog.Info("This destination ", alreadySeenNode.Properties["kind"].(string), "/", alreadySeenNode.Properties["namespace"].(string), "/", alreadySeenNode.Properties["name"].(string), " is already processed")
+				glog.Info("seenDests: ", seenDests)
 				return ret
 			}
 		}
