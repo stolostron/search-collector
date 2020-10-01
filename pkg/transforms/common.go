@@ -63,7 +63,8 @@ func transformCommon(resource machineryV1.Object) Node {
 		Metadata:   make(map[string]string),
 	}
 	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
-	if resource.GetAnnotations()["meta.helm.sh/release-name"] != "" && resource.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
+	//Adding OwnerReleaseName and Namespace for the resources that doesn't have ownerRef, but are deployed by a release
+	if n.Metadata["OwnerUID"] == "" && resource.GetAnnotations()["meta.helm.sh/release-name"] != "" && resource.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
 		n.Metadata["OwnerReleaseName"] = resource.GetAnnotations()["meta.helm.sh/release-name"]
 		n.Metadata["OwnerReleaseNamespace"] = resource.GetAnnotations()["meta.helm.sh/release-namespace"]
 	}
