@@ -52,20 +52,20 @@ func (a AppHelmCRResource) BuildEdges(ns NodeStore) []Edge {
 
 	if a.ObjectMeta.Name != "" {
 		releaseMap[a.ObjectMeta.Name] = struct{}{}
-		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
+		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns, []string{})...)
 	}
 	if a.Repo.SecretRef != nil {
 		secretMap := make(map[string]struct{})
 		if a.Repo.SecretRef.Name != "" {
 			secretMap[a.Repo.SecretRef.Name] = struct{}{}
-			ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
+			ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns, []string{})...)
 		}
 	}
 	if a.Repo.ConfigMapRef != nil {
 		configmapMap := make(map[string]struct{})
 		if a.Repo.ConfigMapRef.Name != "" {
 			configmapMap[a.Repo.ConfigMapRef.Name] = struct{}{}
-			ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
+			ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns, []string{})...)
 		}
 	}
 	return ret
