@@ -60,8 +60,8 @@ func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
 		secretMap[c.Spec.SecretRef.Name] = struct{}{}
 	}
 
-	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
-	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
+	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns, []string{})...)
+	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns, []string{})...)
 
 	// deploys edges
 	// HelmRepo channel to deployables edges
@@ -73,7 +73,7 @@ func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
 			for deployable := range deployables {
 				deployableMap[deployable] = struct{}{}
 			}
-			ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns)...)
+			ret = append(ret, edgesByDestinationName(deployableMap, "Deployable", nodeInfo, ns, []string{})...)
 		}
 	}
 	return ret
