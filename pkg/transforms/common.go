@@ -63,7 +63,21 @@ func transformCommon(resource machineryV1.Object) Node {
 		Metadata:   make(map[string]string),
 	}
 	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
+	//Adding OwnerReleaseName and Namespace for the resources that doesn't have ownerRef, but are deployed by a release
+	if n.Metadata["OwnerUID"] == "" && resource.GetAnnotations()["meta.helm.sh/release-name"] != "" && resource.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
+		n.Metadata["OwnerReleaseName"] = resource.GetAnnotations()["meta.helm.sh/release-name"]
+		n.Metadata["OwnerReleaseNamespace"] = resource.GetAnnotations()["meta.helm.sh/release-namespace"]
+	}
 	return n
+}
+
+func addReleaseOwnerUID(node Node, ns NodeStore) {
+	releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][node.GetMetadata("OwnerReleaseNamespace")][node.GetMetadata("OwnerReleaseName")]
+	if ok { // If the HelmRelease node is in the list of current nodes
+		node.Metadata["OwnerUID"] = releaseNode.UID
+	} else {
+		glog.V(3).Info("Release node not found with kind:HelmRelease, namespace: ", node.GetMetadata("OwnerReleaseNamespace"), " name: ", node.GetMetadata("OwnerReleaseName"))
+	}
 }
 
 func CommonEdges(uid string, ns NodeStore) []Edge {
@@ -76,7 +90,10 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 	} else { // If namespace property is not present, nodeTripleMap assigns namespace to be _NONE in reconciler (reconciler.go:47)
 		namespace = "_NONE"
 	}
-
+	if currNode.Metadata["OwnerUID"] == "" && currNode.Metadata["OwnerReleaseName"] != "" && currNode.Metadata["OwnerReleaseNamespace"] != "" {
+		addReleaseOwnerUID(currNode, ns) //add OwnerUID for resources deployed by HelmRelease, but doesn't have an associated ownerRef
+		//mostly cluster-scoped resources like ClusterRole and ClusterRoleBinding
+	}
 	nodeInfo := NodeInfo{Name: currNode.Properties["name"].(string), NameSpace: namespace, UID: uid, EdgeType: "ownedBy", Kind: kind}
 
 	//ownedBy edges
