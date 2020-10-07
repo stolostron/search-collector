@@ -178,21 +178,11 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo, seenDests []s
 	for _, value := range seenDests {
 		if value == destUID {
 			alreadySeenNode := ns.ByUID[destUID]
-			if alreadySeenNode.Properties["kind"] != nil && alreadySeenNode.Properties["namespace"] != nil && alreadySeenNode.Properties["name"] != nil {
-				var alreadySeenNodeKind = ""
-				var alreadySeenNodeNameSpace = ""
-				var alreadySeenNodeName = ""
-				if val, ok := alreadySeenNode.Properties["kind"].(string); ok {
-					alreadySeenNodeKind = val
-				}
-				if val, ok := alreadySeenNode.Properties["namespace"].(string); ok {
-					alreadySeenNodeNameSpace = val
-				}
-				if val, ok := alreadySeenNode.Properties["name"].(string); ok {
-					alreadySeenNodeName = val
-				}
-				glog.V(5).Info("This destination ", alreadySeenNodeKind, "/", alreadySeenNodeNameSpace, "/", alreadySeenNodeName, " is already processed")
-			}
+			m := make(map[string]interface{})
+			m["alreadySeenNodeKind"] = alreadySeenNode.Properties["kind"]
+			m["alreadySeenNodeNameSpace"] = alreadySeenNode.Properties["namespace"]
+			m["alreadySeenNodeName"] = alreadySeenNode.Properties["name"]
+			glog.V(5).Infof("This destination %v/%v/%v is already processed", m["alreadySeenNodeKind"], m["alreadySeenNodeNameSpace"], m["alreadySeenNodeName"])
 			return ret
 		}
 	}
@@ -243,21 +233,11 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 		//Checking against nodeInfo.UID - it gets updated every time edgesByDestinationName is called
 		if value == nodeInfo.UID {
 			alreadySeenNode := ns.ByUID[nodeInfo.UID]
-			if alreadySeenNode.Properties["kind"] != nil && alreadySeenNode.Properties["namespace"] != nil && alreadySeenNode.Properties["name"] != nil {
-				var alreadySeenNodeKind = ""
-				var alreadySeenNodeNameSpace = ""
-				var alreadySeenNodeName = ""
-				if val, ok := alreadySeenNode.Properties["kind"].(string); ok {
-					alreadySeenNodeKind = val
-				}
-				if val, ok := alreadySeenNode.Properties["namespace"].(string); ok {
-					alreadySeenNodeNameSpace = val
-				}
-				if val, ok := alreadySeenNode.Properties["name"].(string); ok {
-					alreadySeenNodeName = val
-				}
-				glog.V(5).Info("This destination ", alreadySeenNodeKind, "/", alreadySeenNodeNameSpace, "/", alreadySeenNodeName, " is already processed")
-			}
+			m := make(map[string]interface{})
+			m["alreadySeenNodeKind"] = alreadySeenNode.Properties["kind"]
+			m["alreadySeenNodeNameSpace"] = alreadySeenNode.Properties["namespace"]
+			m["alreadySeenNodeName"] = alreadySeenNode.Properties["name"]
+			glog.V(5).Infof("This destination %v/%v/%v is already processed", m["alreadySeenNodeKind"], m["alreadySeenNodeNameSpace"], m["alreadySeenNodeName"])
 			return ret
 		}
 	}
@@ -373,21 +353,11 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 		for _, value := range seenDests {
 			if value == UID {
 				alreadySeenNode := ns.ByUID[UID]
-				if alreadySeenNode.Properties["kind"] != nil && alreadySeenNode.Properties["namespace"] != nil && alreadySeenNode.Properties["name"] != nil {
-					var alreadySeenNodeKind = ""
-					var alreadySeenNodeNameSpace = ""
-					var alreadySeenNodeName = ""
-					if val, ok := alreadySeenNode.Properties["kind"].(string); ok {
-						alreadySeenNodeKind = val
-					}
-					if val, ok := alreadySeenNode.Properties["namespace"].(string); ok {
-						alreadySeenNodeNameSpace = val
-					}
-					if val, ok := alreadySeenNode.Properties["name"].(string); ok {
-						alreadySeenNodeName = val
-					}
-					glog.V(5).Info("This destination ", alreadySeenNodeKind, "/", alreadySeenNodeNameSpace, "/", alreadySeenNodeName, " is already processed")
-				}
+				m := make(map[string]interface{})
+				m["alreadySeenNodeKind"] = alreadySeenNode.Properties["kind"]
+				m["alreadySeenNodeNameSpace"] = alreadySeenNode.Properties["namespace"]
+				m["alreadySeenNodeName"] = alreadySeenNode.Properties["name"]
+				glog.V(5).Infof("This destination %v/%v/%v is already processed", m["alreadySeenNodeKind"], m["alreadySeenNodeNameSpace"], m["alreadySeenNodeName"])
 				return ret
 			}
 		}
