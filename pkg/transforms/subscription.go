@@ -41,10 +41,12 @@ func SubscriptionResourceBuilder(s *app.Subscription) *SubscriptionResource {
 		node.Properties["status"] = s.Status.Phase
 	}
 	// Add timeWindow property
+	node.Properties["timeWindow"] = "none"
 	if s.Spec.TimeWindow != nil && s.Spec.TimeWindow.WindowType != "" {
 		node.Properties["timeWindow"] = s.Spec.TimeWindow.WindowType
 	}
 	// Add localPlacement property
+	node.Properties["localPlacement"] = false
 	if s.Spec.Placement != nil && s.Spec.Placement.Local != nil {
 		node.Properties["localPlacement"] = *s.Spec.Placement.Local
 	}
