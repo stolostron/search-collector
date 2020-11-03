@@ -24,9 +24,6 @@ require (
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.16.7+incompatible
 	sigs.k8s.io/application v0.8.3
-
-
-
 )
 
 replace (
