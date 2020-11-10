@@ -5,22 +5,23 @@ module github.com/open-cluster-management/search-collector
 go 1.15
 
 require (
+	github.com/Masterminds/sprig v0.0.0-20191002150024-e4c0945838d5 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
 	github.com/kennygrant/sanitize v1.2.4
-	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20200602150427-d0f4af8aba9d 
-    github.com/open-cluster-management/multicloud-operators-channel v1.0.1-0.20200930214554-fa55cf642642
-    github.com/open-cluster-management/multicloud-operators-deployable v0.0.0-20200925154205-fc4ec3e30a4d
-    github.com/open-cluster-management/multicloud-operators-placementrule v1.0.1-2020-06-08-14-28-27.0.20200927053545-8e131abcf13c
-    github.com/open-cluster-management/multicloud-operators-subscription v1.0.0-2020-05-12-21-17-19.0.20201009005738-cbe273a045ab 
-	github.com/open-cluster-management/multicloud-operators-foundation v1.0.0 
-	github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.1-0.20200603160156-4d66bd136ba3 //Use 2.0 when available
+	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20200602150427-d0f4af8aba9d
+	github.com/open-cluster-management/multicloud-operators-channel v1.0.1-0.20200930214554-fa55cf642642
+	github.com/open-cluster-management/multicloud-operators-deployable v0.0.0-20200925154205-fc4ec3e30a4d
+	github.com/open-cluster-management/multicloud-operators-foundation v0.0.0-20200629084830-3965fdd47134
+	github.com/open-cluster-management/multicloud-operators-placementrule v1.0.1-2020-06-08-14-28-27.0.20200927053545-8e131abcf13c
+	github.com/open-cluster-management/multicloud-operators-subscription v1.0.0-2020-05-12-21-17-19.0.20201009005738-cbe273a045ab
+	github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.1-2020-06-08-14-28-27.0.20200819124024-818f01d780ff //Use 2.0 when available
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/tkanos/gonfig v0.0.0-20181112185242-896f3d81fadf
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
+	k8s.io/api v0.18.6
+	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.16.7+incompatible
 	sigs.k8s.io/application v0.8.3
