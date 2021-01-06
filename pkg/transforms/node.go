@@ -27,17 +27,8 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 
 	var roles []string
 	labels := n.ObjectMeta.Labels
-	roleSet := map[string]struct{}{
-		"node-role.kubernetes.io/proxy":      {},
-		"node-role.kubernetes.io/management": {},
-		"node-role.kubernetes.io/master":     {},
-		"node-role.kubernetes.io/va":         {},
-		"node-role.kubernetes.io/etcd":       {},
-		"node-role.kubernetes.io/worker":     {},
-	}
-
 	for key, value := range labels {
-		if _, found := roleSet[key]; found && value == "" {
+		if strings.HasPrefix(key, "node-role.kubernetes.io/") && value == "" {
 			roles = append(roles, strings.TrimPrefix(key, "node-role.kubernetes.io/"))
 		}
 	}
