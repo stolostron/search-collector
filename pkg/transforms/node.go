@@ -31,6 +31,7 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 		"node-role.kubernetes.io/proxy":      {},
 		"node-role.kubernetes.io/management": {},
 		"node-role.kubernetes.io/master":     {},
+		"node-role.kubernetes.io/infra":      {},
 		"node-role.kubernetes.io/va":         {},
 		"node-role.kubernetes.io/etcd":       {},
 		"node-role.kubernetes.io/worker":     {},
