@@ -63,6 +63,8 @@ func unstructuredProperties(r *unstructured.Unstructured) map[string]interface{}
 	if len(slice) == 2 {
 		ret["apigroup"] = slice[0]
 		ret["apiversion"] = slice[1]
+	} else {
+		ret["apiversion"] = slice[0]
 	}
 
 	if r.GetLabels() != nil {
