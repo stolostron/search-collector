@@ -24,5 +24,6 @@ func TestTransformNode(t *testing.T) {
 	AssertEqual("architecture", node.Properties["architecture"], "amd64", t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(8), t)
 	AssertEqual("osImage", node.Properties["osImage"], "Ubuntu 16.04.5 LTS", t)
+	AssertEqual("_systemUUID", node.Properties["_systemUUID"], "4BCDE0D7-CFFB-4A8F-B6F8-0026F347AD93", t)
 	AssertDeepEqual("role", node.Properties["role"], []string{"etcd", "management", "master", "proxy", "va"}, t)
 }

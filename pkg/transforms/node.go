@@ -4,7 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
-Copyright (c) 2020 Red Hat, Inc.
+Copyright (c) 2020, 2021 Red Hat, Inc.
 */
 
 package transforms
@@ -45,6 +45,7 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 	node.Properties["architecture"] = n.Status.NodeInfo.Architecture
 	node.Properties["cpu"], _ = n.Status.Capacity.Cpu().AsInt64()
 	node.Properties["osImage"] = n.Status.NodeInfo.OSImage
+	node.Properties["_systemUUID"] = n.Status.NodeInfo.SystemUUID
 	node.Properties["role"] = roles
 
 	return &NodeResource{node: node}
