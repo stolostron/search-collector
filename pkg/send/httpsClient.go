@@ -39,7 +39,7 @@ func getHTTPSClient() (client http.Client) {
 		caCert, err := ioutil.ReadFile("./sslcert/tls.crt")
 		if err != nil {
 			// Exit because this is an unrecoverable configuration problem.
-			glog.Fatal("Error loading TLS certificate from mounted secret. Certificate must be mounted at ./sslcert/tls.crt  Original error: ", err)
+			glog.Fatal("Error loading TLS certificate from mounted secret at ./sslcert/tls.crt. Original error: ", err)
 		}
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
@@ -47,7 +47,7 @@ func getHTTPSClient() (client http.Client) {
 		cert, err := tls.LoadX509KeyPair("./sslcert/tls.crt", "./sslcert/tls.key")
 		if err != nil {
 			// Exit because this is an unrecoverable configuration problem.
-			glog.Fatal("Error loading TLS certificate from mounted secret. Certificate must be mounted at ./sslcert/tls.crt and ./sslcert/tls.key  Original error: ", err)
+			glog.Fatal("Error loading TLS certs from ./sslcert/tls.crt and ./sslcert/tls.key. Original error: ", err)
 		}
 
 		// Configure TLS
