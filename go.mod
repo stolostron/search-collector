@@ -5,7 +5,6 @@ module github.com/open-cluster-management/search-collector
 go 1.15
 
 require (
-	github.com/Masterminds/sprig v0.0.0-20191002150024-e4c0945838d5 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
