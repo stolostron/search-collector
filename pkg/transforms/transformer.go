@@ -32,7 +32,6 @@ import (
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/helm/pkg/proto/hapi/release"
 
 	ocpapp "github.com/openshift/api/apps/v1"
 )
@@ -395,52 +394,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		}
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)
-
-		if IsHelmRelease(event.Resource) {
-			typedResource := core.ConfigMap{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			releaseName := typedResource.GetLabels()["NAME"]
-			release := getReleaseFromHelm(releaseName)
-			if release == nil {
-				AddToRetryChannel(event)
-			}
-			releaseTrans := HelmReleaseResource{&typedResource, release}
-			output <- NewNodeEvent(event, releaseTrans, "releases")
-		}
 	}
-}
-
-//	If the resource is a ConfigMap with label "OWNER:TILLER", it references a Helm Release
-func IsHelmRelease(resource *unstructured.Unstructured) bool {
-	if kind := resource.GetKind(); kind == "ConfigMap" {
-		for label, value := range resource.GetLabels() {
-			if label == "OWNER" && value == "TILLER" {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func getReleaseFromHelm(releaseName string) *release.Release {
-	helmClient := GetHelmClient()
-	if !HealthyConnection() {
-		if len(helmReleaseRetry) < 1 {
-			glog.Warning("Helm client not healthy; Cannot fetch helm release:", releaseName)
-		}
-		return nil
-	}
-
-	rc, err := helmClient.ReleaseContent(releaseName)
-	if err != nil {
-		glog.Warning("Failed to fetch helm release: ", releaseName, err)
-		return nil
-	}
-	glog.V(3).Info("Retrieved helm release from Tiller: ", releaseName)
-	return rc.GetRelease()
 }
 
 // Handles a panic from inside transformRoutine.

@@ -13,7 +13,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -22,7 +21,6 @@ import (
 	"github.com/tkanos/gonfig"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/helm/pkg/tlsutil"
 )
 
 // Out of box defaults
@@ -32,13 +30,11 @@ const (
 	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
 	DEFAULT_AGGREGATOR_PORT    = "3010"
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
-	DEFAULT_HEARTBEAT_MS       = 300000  // 5 min
-	DEFAULT_MAX_BACKOFF_MS     = 600000  // 10 min
-	DEFAULT_REDISCOVER_RATE_MS = 120000  // 2 min
-	DEFAULT_REPORT_RATE_MS     = 5000    // 5 seconds
+	DEFAULT_HEARTBEAT_MS       = 300000 // 5 min
+	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
+	DEFAULT_REDISCOVER_RATE_MS = 120000 // 2 min
+	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE       = "production"
-	DEFAULT_TILLER_HOST        = "tiller-deploy.kube-system" // Deprecated in 2.1
-	DEFAULT_TILLER_PORT        = "44134"                     // Deprecated in 2.1
 )
 
 // Configuration options for the search-collector.
@@ -58,8 +54,6 @@ type Config struct {
 	RediscoverRateMS     int    `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
 	ReportRateMS         int    `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
 	RuntimeMode          string `env:"RUNTIME_MODE"`       // Running mode (development or production)
-	TillerOpts           tlsutil.Options
-	TillerURL            string `env:"TILLER_URL"` // Deprecated: URL host path of the tiller server
 }
 
 var Cfg = Config{}
@@ -108,35 +102,6 @@ func init() {
 		defaultKubePath = ""
 	}
 	setDefault(&Cfg.KubeConfig, "KUBECONFIG", defaultKubePath)
-
-	defaultTillerUrl := net.JoinHostPort(DEFAULT_TILLER_HOST, DEFAULT_TILLER_PORT)
-	if Cfg.RuntimeMode == "development" {
-		// find an external ip address to connect to tiller for dev env
-		// warning: this assumes the proxy node has same ip as master
-		// only use this config to make development life easier
-		client, _ := clientcmd.BuildConfigFromFlags("", Cfg.KubeConfig)
-		if client != nil && client.Host != "" {
-			u, _ := url.Parse(client.Host)
-			defaultTillerUrl = net.JoinHostPort(u.Hostname(), "31514")
-		}
-
-		glog.Warning("Using insecure HTTPS connection to tiller.")
-		Cfg.TillerOpts = tlsutil.Options{
-			CertFile:           filepath.Join(os.Getenv("HOME"), ".helm", "cert.pem"),
-			CaCertFile:         filepath.Join(os.Getenv("HOME"), ".helm", "ca.pem"),
-			KeyFile:            filepath.Join(os.Getenv("HOME"), ".helm", "key.pem"),
-			InsecureSkipVerify: true,
-		}
-	} else {
-		Cfg.TillerOpts = tlsutil.Options{
-			CertFile:           filepath.Join("/helmcerts", "tls.crt"),
-			CaCertFile:         filepath.Join("/helmcerts", "ca.crt"),
-			KeyFile:            filepath.Join("/helmcerts", "tls.key"),
-			InsecureSkipVerify: false,
-		}
-	}
-
-	setDefault(&Cfg.TillerURL, "TILLER_URL", defaultTillerUrl)
 
 	// Special logic for setting DEPLOYED_IN_HUB with default to false
 	if val := os.Getenv("DEPLOYED_IN_HUB"); val != "" {
