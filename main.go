@@ -65,9 +65,6 @@ func main() {
 	// Create Sender, attached to transformer
 	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
 
-	// Disabeling Helm client because it's no longer needed for Helm v3. Will remove once we confirm nothing is broken.
-	// tr.StartHelmClientProvider(transformChannel, config.GetKubeConfig())
-
 	// Get kubernetes client for discovering resource types
 	discoveryClient := config.GetDiscoveryClient()
 
@@ -109,17 +106,6 @@ func main() {
 			},
 		}
 		reconciler.Input <- ne
-
-		if tr.IsHelmRelease(resource) {
-			releaseNE := tr.NodeEvent{
-				Time:      time.Now().Unix(),
-				Operation: tr.Delete,
-				Node: tr.Node{
-					UID: tr.GetHelmReleaseUID(resource.GetLabels()["NAME"]),
-				},
-			}
-			reconciler.Input <- releaseNE
-		}
 	}
 
 	informersStarted := false
