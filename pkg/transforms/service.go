@@ -36,7 +36,8 @@ func ServiceResourceBuilder(s *v1.Service) *ServiceResource {
 	if len(s.Spec.Ports) > 0 {
 		for _, p := range s.Spec.Ports {
 			if p.NodePort != 0 {
-				ports = append(ports, strings.Join([]string{strconv.Itoa(int(p.Port)), ":", strconv.Itoa(int(p.NodePort)), "/", string(p.Protocol)}, ""))
+				ports = append(ports, strings.Join([]string{strconv.Itoa(int(p.Port)), ":",
+					strconv.Itoa(int(p.NodePort)), "/", string(p.Protocol)}, ""))
 			} else {
 				ports = append(ports, strings.Join([]string{strconv.Itoa(int(p.Port)), string(p.Protocol)}, "/"))
 			}

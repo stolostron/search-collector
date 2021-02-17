@@ -25,7 +25,8 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 	}
 	n.Metadata["OwnerUID"] = ownerRefUID(r.GetOwnerReferences())
 	//Adding OwnerReleaseName and Namespace for the resources that doesn't have ownerRef, but are deployed by a release
-	if n.Metadata["OwnerUID"] == "" && r.GetAnnotations()["meta.helm.sh/release-name"] != "" && r.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
+	if n.Metadata["OwnerUID"] == "" && r.GetAnnotations()["meta.helm.sh/release-name"] != "" &&
+		r.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
 		n.Metadata["OwnerReleaseName"] = r.GetAnnotations()["meta.helm.sh/release-name"]
 		n.Metadata["OwnerReleaseNamespace"] = r.GetAnnotations()["meta.helm.sh/release-namespace"]
 	}
