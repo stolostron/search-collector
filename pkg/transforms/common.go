@@ -209,7 +209,8 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 		for name := range propSet {
 			// For channels/subscriptions/deployables/applications, get the namespace and name from each string,
 			// if present. Else, assume it is in the node's namespace
-			if destKind == "Channel" || destKind == "Deployable" || destKind == "Subscription" || destKind == "Application" {
+			if destKind == "Channel" || destKind == "Deployable" || destKind == "Subscription" ||
+				destKind == "Application" {
 				destKindInfo := strings.Split(name, "/")
 				if len(destKindInfo) == 2 {
 					nodeInfo.NameSpace = destKindInfo[0]
@@ -237,7 +238,8 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 						if destNode.Metadata["_hostingApplication"] != "" {
 							currAppInfo := nodeInfo.NameSpace + "/" + nodeInfo.Name
 							if !strings.Contains(destNode.Metadata["_hostingApplication"], currAppInfo) {
-								destNode.Metadata["_hostingApplication"] = destNode.Metadata["_hostingApplication"] + "," + nodeInfo.NameSpace + "/" + nodeInfo.Name
+								destNode.Metadata["_hostingApplication"] = destNode.Metadata["_hostingApplication"] +
+									"," + nodeInfo.NameSpace + "/" + nodeInfo.Name
 							}
 						} else {
 							destNode.Metadata["_hostingApplication"] = nodeInfo.NameSpace + "/" + nodeInfo.Name
@@ -251,25 +253,28 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 						// _hostingApplication) to deployables, placementrule and channel
 						subUID := nodeInfo.UID
 						nodeInfoDestApp := NodeInfo{
-							UID: destNode.UID,
-							Name: name,
+							UID:       destNode.UID,
+							Name:      name,
 							NameSpace: nodeInfo.NameSpace,
-							Kind: destKind,
-							EdgeType: "contains"
+							Kind:      destKind,
+							EdgeType:  "contains",
 						}
 						ret = append(ret, edgesToApplication(nodeInfoDestApp, ns, subUID, true)...)
 					}
 				}
 			} else {
-				glog.V(4).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
+				glog.V(4).Infof("For %s, %s edge not created as %s named %s not found",
+					nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name,
+					nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
 			}
 		}
 		seenDests = append(seenDests, nodeInfo.UID) //add nodeInfo UID to processed/seen nodes
 
 		// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 		// Call the edgesByOwner recursively to create the uses edge
-		if nodeInfo.Kind != "Deployable" { //Adding this edge case to avoid duplicating edges between subscription to placementrules and applications
-			//deployable's owner will be subscription - this edge is already covered in subscription
+		if nodeInfo.Kind != "Deployable" {
+			// Adding this edge case to avoid duplicating edges between subscription to placementrules and applications
+			// deployable's owner will be subscription - this edge is already covered in subscription
 			if nextSrc, ok := ns.ByUID[nodeInfo.UID]; ok {
 				if nextSrc.GetMetadata("OwnerUID") != "" {
 					if nextSrcOwner, ok := ns.ByUID[nextSrc.GetMetadata("OwnerUID")]; ok {
@@ -308,22 +313,33 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 					//Connect incoming node to all applications in the Subscription node's metadata
 					if destKind == "Subscription" && nodeInfo.Kind != "Application" {
 						depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, dest.UID, false)...)
-					} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" { // Build edges between all applications connected to the subscription (using metadata _hostingApplication) to the hosting-deployable
+					} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" {
+						// Build edges between all applications connected to the subscription
+						// (using metadata _hostingApplication) to the hosting-deployable
 						subUID := nodeInfo.UID
-						nodeInfoDestApp := NodeInfo{UID: dest.UID, Name: name, NameSpace: namespace, Kind: destKind, EdgeType: "contains"}
+						nodeInfoDestApp := NodeInfo{
+							UID:       dest.UID,
+							Name:      name,
+							NameSpace: namespace,
+							Kind:      destKind,
+							EdgeType:  "contains",
+						}
 						depSubedges = append(depSubedges, edgesToApplication(nodeInfoDestApp, ns, subUID, true)...)
 					}
 				}
 			} else {
-				glog.V(4).Infof("For %s, %s edge not created as %s named %s not found", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, namespace+"/"+name)
+				glog.V(4).Infof("For %s, %s edge not created as %s named %s not found",
+					nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, namespace+"/"+name)
 			}
 		} else {
-			glog.V(4).Infof("For %s, %s edge not created as %s is not in namespace/name format", nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destNsName)
+			glog.V(4).Infof("For %s, %s edge not created as %s is not in namespace/name format",
+				nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destNsName)
 		}
 		return depSubedges
 	}
 
-	//Inner function to call edgesByDepSub for creating edges from node to hosting deployable/subscription - recursively calls with the owner's properties if the incoming node doesn't have them
+	// Inner function to call edgesByDepSub for creating edges from node to hosting deployable/subscription -
+	// recursively calls with the owner's properties if the incoming node doesn't have them
 	var findSub func(string) []Edge
 	var seenDests []string
 	findSub = func(UID string) []Edge {
@@ -348,7 +364,7 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 
 			// Recursively call the function with ownerUID, if the node doesn't have hosting deployable/subscription
 			// properties but has an owner reference.
-			// This is mainly to create edges from pods to subscription/deployable, when the hosting 
+			// This is mainly to create edges from pods to subscription/deployable, when the hosting
 			// deployable/subscription properties are not in pods, but present in deployments
 			if subscription == "" && deployable == "" {
 				if node.GetMetadata("OwnerUID") != "" {
