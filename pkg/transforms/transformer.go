@@ -50,10 +50,10 @@ type Event struct {
 	Time           int64
 	Operation      Operation
 	Resource       *unstructured.Unstructured
-	ResourceString string // This is a plural identifier of the kind, though in k8s this is called a "resource". e.g. for a pod, this is "pods"
+	ResourceString string // This is a plural identifier of the kind.
 }
 
-// A generic node type that is passed to the aggregator for translation to whatever graphDB technology.
+// A generic node type that is passed to the aggregator to store in the database.
 type Node struct {
 	UID            string                 `json:"uid"`
 	ResourceString string                 `json:"resourceString"`
@@ -72,7 +72,8 @@ func (n Node) GetMetadata(md string) string {
 	return ""
 }
 
-// These are the input to the sender. They have the node, and then they keep the time which is used for reconciling this version with other versions that the sender may already have.
+// These are the input to the sender. They have the node, and then they keep the time which is used for reconciling
+// this version with other versions that the sender may already have.
 type NodeEvent struct {
 	Node
 	ComputeEdges func(ns NodeStore) []Edge
@@ -84,8 +85,7 @@ type Deletion struct {
 	UID string `json:"uid,omitempty"`
 }
 
-// make new constructor here, dry up code, then start testing
-
+// make new constructor here.
 func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEvent {
 	ne := NodeEvent{
 		Time:         event.Time,
@@ -127,7 +127,6 @@ type Transform interface {
 type Transformer struct {
 	Input  chan *Event    // Put your k8s resources and corresponding times in here.
 	Output chan NodeEvent // And receive your aggregator-ready nodes (and times) from here.
-	// TODO add stopper channel?
 }
 
 var (
@@ -154,13 +153,14 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 
 }
 
-// This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
-// If anything goes wrong in here that requires you to skip the current resource, call panic() and the routine will be spun back up by handleRoutineExit and the bad resource won't be in there because it was already taken out by the previous run.
+// This function processes k8s objects into Nodes, then pass them into the output channel.
+// If anything goes wrong in here that requires you to skip the current resource, call panic()
+// and the routine will be spun back up by handleRoutineExit and the bad resource won't be in there
+// because it was already taken out by the previous run.
 func TransformRoutine(input chan *Event, output chan NodeEvent) {
 	defer handleRoutineExit(input, output)
 	glog.Info("Starting transformer routine")
 
-	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
 		var trans Transform
 
@@ -177,19 +177,21 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 		}
 		kindApigroup := [2]string{event.Resource.GetKind(), apiGroup}
-		//TODO: Might have to add more transform cases if resources like DaemonSet, StatefulSet etc. have other apigroups
+		// Might have to add more transform cases if resources like DaemonSet, StatefulSet etc. have other apigroups
 		switch kindApigroup {
 		case [2]string{"Application", "app.k8s.io"}:
 			typedResource := application.Application{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = ApplicationResourceBuilder(&typedResource)
 
-		case [2]string{"Channel", "app.ibm.com"}, [2]string{"Channel", "apps.open-cluster-management.io"}:
+		case [2]string{"Channel", "apps.open-cluster-management.io"}:
 			typedResource := acmapp.Channel{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -197,7 +199,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"CronJob", "batch"}:
 			typedResource := batchBeta.CronJob{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -205,7 +208,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"DaemonSet", "extensions"}:
 			typedResource := apps.DaemonSet{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -213,31 +217,26 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"DaemonSet", "apps"}:
 			typedResource := apps.DaemonSet{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = DaemonSetResourceBuilder(&typedResource)
 
-		case [2]string{"Deployable", "app.ibm.com"}, [2]string{"Deployable", "apps.open-cluster-management.io"}:
+		case [2]string{"Deployable", "apps.open-cluster-management.io"}:
 			typedResource := appDeployable.Deployable{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = AppDeployableResourceBuilder(&typedResource)
 
-		case [2]string{"Deployable", "mcm.ibm.com"}:
-			typedResource := appDeployable.Deployable{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = DeployableResourceBuilder(&typedResource)
-
 		case [2]string{"Deployment", "apps"}:
 			typedResource := apps.Deployment{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -245,7 +244,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"Deployment", "extensions"}:
 			typedResource := apps.Deployment{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -254,7 +254,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			//This is an ocp specific resource
 		case [2]string{"DeploymentConfig", "apps.openshift.io"}:
 			typedResource := ocpapp.DeploymentConfig{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -263,7 +264,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			//This is the application's HelmCR of kind HelmRelease.
 		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
 			typedResource := appHelmRelease.HelmRelease{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -271,7 +273,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -279,7 +282,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"Namespace", ""}:
 			typedResource := core.Namespace{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -287,7 +291,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"Node", ""}:
 			typedResource := core.Node{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -295,7 +300,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"PersistentVolume", ""}:
 			typedResource := core.PersistentVolume{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -303,31 +309,35 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"PersistentVolumeClaim", ""}:
 			typedResource := core.PersistentVolumeClaim{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PersistentVolumeClaimResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementBinding", "mcm.ibm.com"}, [2]string{"PlacementBinding", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementBinding", "apps.open-cluster-management.io"}:
 			typedResource := mcm.PlacementBinding{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PlacementBindingResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementPolicy", "mcm.ibm.com"}, [2]string{"PlacementPolicy", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementPolicy", "apps.open-cluster-management.io"}:
 			typedResource := mcm.PlacementPolicy{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PlacementPolicyResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementRule", "app.ibm.com"}, [2]string{"PlacementRule", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementRule", "apps.open-cluster-management.io"}:
 			typedResource := rule.PlacementRule{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -335,15 +345,18 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"Pod", ""}:
 			typedResource := core.Pod{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PodResourceBuilder(&typedResource)
 
-		case [2]string{"Policy", "policy.open-cluster-management.io"}, [2]string{"Policy", "policies.open-cluster-management.io"}:
+		case [2]string{"Policy", "policy.open-cluster-management.io"},
+			[2]string{"Policy", "policies.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -351,7 +364,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"ReplicaSet", "apps"}:
 			typedResource := apps.ReplicaSet{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -359,7 +373,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"ReplicaSet", "extensions"}:
 			typedResource := apps.ReplicaSet{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -367,7 +382,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"Service", ""}:
 			typedResource := core.Service{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -375,7 +391,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"StatefulSet", "apps"}:
 			typedResource := apps.StatefulSet{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
@@ -383,7 +400,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"Subscription", "app.ibm.com"}, [2]string{"Subscription", "apps.open-cluster-management.io"}:
 			typedResource := subscription.Subscription{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
