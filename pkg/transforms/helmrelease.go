@@ -140,14 +140,16 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 		// ownedBy edges
 		if resourceNode, ok := ns.ByKindNamespaceName[kind][namespace][name]; ok {
 			if resourceNode.Metadata != nil { // Metadata can be nil if no node found
-				resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"]) // update node metadata to include release for upstream edge from resource to Release
+				// update node metadata to include release for upstream edge from resource to Release
+				resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"])
 			}
 			if GetHelmReleaseUID(h.GetLabels()["NAME"]) != "" {
 				// Add hosting Subscription/Deployable properties to the resource so that they can tracked
 				if helmNode.Properties["_hostingSubscription"] != "" || helmNode.Properties["_hostingDeployable"] != "" {
 					resourceNode := ns.ByUID[resourceNode.UID]
 					//Copy the properties only if the node doesn't have it yet or if they are not the same
-					if _, ok := resourceNode.Properties["_hostingSubscription"]; !ok && helmNode.Properties["_hostingSubscription"] != resourceNode.Properties["_hostingSubscription"] {
+					if _, ok := resourceNode.Properties["_hostingSubscription"]; !ok &&
+						helmNode.Properties["_hostingSubscription"] != resourceNode.Properties["_hostingSubscription"] {
 						copyhostingSubProperties(UID, resourceNode.UID, ns)
 					}
 				}
@@ -161,10 +163,12 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 					})
 				}
 			} else {
-				glog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found", kind, name, h.GetLabels()["NAME"])
+				glog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found",
+					kind, name, h.GetLabels()["NAME"])
 			}
 		} else {
-			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s", h.GetLabels()["NAME"], kind, name, namespace)
+			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s",
+				h.GetLabels()["NAME"], kind, name, namespace)
 		}
 	}
 	return edges
