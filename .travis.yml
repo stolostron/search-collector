@@ -82,7 +82,7 @@ jobs:
 
     - stage: release-ff
       name: "Push commits to current release branch"
-      if: type = push AND branch =~ /^master$/
+      if: type = push AND branch =~ /^main$/
       script:
         - make release-ff
 
