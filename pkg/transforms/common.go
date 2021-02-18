@@ -75,12 +75,12 @@ func transformCommon(resource machineryV1.Object) Node {
 func addReleaseOwnerUID(node Node, ns NodeStore) {
 	ownerNamespace := node.GetMetadata("OwnerReleaseNamespace")
 	ownerName := node.GetMetadata("OwnerReleaseName")
-	releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][ownerNamespace][ownerName]
-	if ok { // If the HelmRelease node is in the list of current nodes
+
+	// If the HelmRelease node is in the list of current nodes
+	if releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][ownerNamespace][ownerName]; ok {
 		node.Metadata["OwnerUID"] = releaseNode.UID
 	} else {
-		glog.V(3).Infof("Release node not found with kind:HelmRelease, namespace: %s name: %s",
-			ownerNamespace, ownerName)
+		glog.V(3).Infof("HelmRelease node not found for namespace: %s name: %s", ownerNamespace, ownerName)
 	}
 }
 
