@@ -63,7 +63,7 @@ func transformCommon(resource machineryV1.Object) Node {
 		Metadata:   make(map[string]string),
 	}
 	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
-	//Adding OwnerReleaseName and Namespace for the resources that doesn't have ownerRef, but are deployed by a release
+	// Adding OwnerReleaseName and Namespace to resources that doesn't have ownerRef but are deployed by a release.
 	if n.Metadata["OwnerUID"] == "" && resource.GetAnnotations()["meta.helm.sh/release-name"] != "" &&
 		resource.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
 		n.Metadata["OwnerReleaseName"] = resource.GetAnnotations()["meta.helm.sh/release-name"]
@@ -73,12 +73,14 @@ func transformCommon(resource machineryV1.Object) Node {
 }
 
 func addReleaseOwnerUID(node Node, ns NodeStore) {
-	releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][node.GetMetadata("OwnerReleaseNamespace")][node.GetMetadata("OwnerReleaseName")]
+	ownerNamespace := node.GetMetadata("OwnerReleaseNamespace")
+	ownerName := node.GetMetadata("OwnerReleaseName")
+	releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][ownerNamespace][ownerName]
 	if ok { // If the HelmRelease node is in the list of current nodes
 		node.Metadata["OwnerUID"] = releaseNode.UID
 	} else {
 		glog.V(3).Infof("Release node not found with kind:HelmRelease, namespace: %s name: %s",
-			node.GetMetadata("OwnerReleaseNamespace"), node.GetMetadata("OwnerReleaseName"))
+			ownerNamespace, ownerName)
 	}
 }
 
@@ -96,7 +98,7 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 	}
 	if currNode.Metadata["OwnerUID"] == "" && currNode.Metadata["OwnerReleaseName"] != "" &&
 		currNode.Metadata["OwnerReleaseNamespace"] != "" {
-		//add OwnerUID for resources deployed by HelmRelease, but doesn't have an associated ownerRef
+		// add OwnerUID for resources deployed by HelmRelease, but doesn't have an associated ownerRef
 		// mostly cluster-scoped resources like ClusterRole and ClusterRoleBinding
 		addReleaseOwnerUID(currNode, ns)
 	}
@@ -108,12 +110,12 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 		Kind:      kind,
 	}
 
-	//ownedBy edges
+	// ownedBy edges
 	if currNode.GetMetadata("OwnerUID") != "" {
 		ret = append(ret, edgesByOwner(currNode.GetMetadata("OwnerUID"), ns, nodeInfo, []string{})...)
 	}
 
-	//deployer subscriber edges
+	// deployer subscriber edges
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
 	return ret
 }
@@ -122,10 +124,6 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 func prefixedUID(uid apiTypes.UID) string {
 	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
 }
-
-// func prefixedUIDStr(uid string) string {
-// 	return strings.Join([]string{config.Cfg.ClusterName, string(uid)}, "/")
-// }
 
 // Prefixes the given UID with the cluster name from config and a /
 func ownerRefUID(ownerReferences []machineryV1.OwnerReference) string {
@@ -155,9 +153,9 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo, seenDests []s
 		}
 	}
 	if destUID != "" {
-		//Lookup by UID to see if the owner Node exists
+		// Lookup by UID to see if the owner Node exists
 		if dest, ok := ns.ByUID[destUID]; ok {
-			if nodeInfo.UID != destUID { //avoid connecting node to itself
+			if nodeInfo.UID != destUID { // avoid connecting node to itself
 				ret = append(ret, Edge{
 					SourceUID:  nodeInfo.UID,
 					DestUID:    destUID,
@@ -165,10 +163,10 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo, seenDests []s
 					SourceKind: nodeInfo.Kind,
 					DestKind:   dest.Properties["kind"].(string),
 				})
-				seenDests = append(seenDests, destUID)    //add destUID to processed/seen destinations
+				seenDests = append(seenDests, destUID)    // add destUID to processed/seen destinations
 				if dest.GetMetadata("ReleaseUID") != "" { // If owner included/owned by a release...
 					if _, ok := ns.ByUID[dest.GetMetadata("ReleaseUID")]; ok { // ...make sure the release exists...
-						if nodeInfo.UID != dest.GetMetadata("ReleaseUID") { //avoid connecting node to itself
+						if nodeInfo.UID != dest.GetMetadata("ReleaseUID") { // avoid connecting node to itself
 							ret = append(ret, Edge{ // ... then add edge from source to release
 								SourceUID:  nodeInfo.UID,
 								DestUID:    dest.GetMetadata("ReleaseUID"),
@@ -196,10 +194,15 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo, seenDests []s
 
 // Function used to get all edges for a specific destKind - the propSet are maps of resource names,
 // nodeInfo has additional info about the node and nodestore has all the current nodes
-func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeInfo NodeInfo, ns NodeStore, seenDests []string) []Edge {
+func edgesByDestinationName(
+	propSet map[string]struct{},
+	destKind string,
+	nodeInfo NodeInfo,
+	ns NodeStore,
+	seenDests []string) []Edge {
 	ret := []Edge{}
 	for _, value := range seenDests {
-		//Checking against nodeInfo.UID - it gets updated every time edgesByDestinationName is called
+		// Checking against nodeInfo.UID - it gets updated every time edgesByDestinationName is called
 		if value == nodeInfo.UID {
 			return ret
 		}
@@ -224,7 +227,7 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 				}
 			}
 			if destNode, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
-				if nodeInfo.UID != destNode.UID { //avoid connecting node to itself
+				if nodeInfo.UID != destNode.UID { // avoid connecting node to itself
 					ret = append(ret, Edge{
 						SourceUID:  nodeInfo.UID,
 						DestUID:    destNode.UID,
@@ -245,7 +248,7 @@ func edgesByDestinationName(propSet map[string]struct{}, destKind string, nodeIn
 							destNode.Metadata["_hostingApplication"] = nodeInfo.NameSpace + "/" + nodeInfo.Name
 						}
 					} else if destKind == "Subscription" && nodeInfo.Kind != "Application" {
-						//Connect incoming node to all applications in the Subscription node's metadata
+						// Connect incoming node to all applications in the Subscription node's metadata
 						ret = append(ret, edgesToApplication(nodeInfo, ns, destNode.UID, false)...)
 					} else if nodeInfo.Kind == "Subscription" && (destKind == "Deployable" ||
 						destKind == "PlacementRule" || destKind == "Channel") {
@@ -302,7 +305,7 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 			name := strings.Split(destNsName, "/")[1]
 
 			if dest, ok := ns.ByKindNamespaceName[destKind][namespace][name]; ok {
-				if nodeInfo.UID != dest.UID { //avoid connecting node to itself
+				if nodeInfo.UID != dest.UID { // avoid connecting node to itself
 					depSubedges = append(depSubedges, Edge{
 						SourceUID:  nodeInfo.UID,
 						DestUID:    dest.UID,
@@ -310,7 +313,7 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 						SourceKind: nodeInfo.Kind,
 						DestKind:   dest.Properties["kind"].(string),
 					})
-					//Connect incoming node to all applications in the Subscription node's metadata
+					// Connect incoming node to all applications in the Subscription node's metadata
 					if destKind == "Subscription" && nodeInfo.Kind != "Application" {
 						depSubedges = append(depSubedges, edgesToApplication(nodeInfo, ns, dest.UID, false)...)
 					} else if nodeInfo.Kind == "Subscription" && destKind == "Deployable" {
@@ -352,15 +355,17 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 		subscription := ""
 		deployable := ""
 		if node, ok := ns.ByUID[UID]; ok {
-			if subscription, ok = node.Properties["_hostingSubscription"].(string); ok && node.Properties["_hostingSubscription"] != "" {
+			if subscription, ok = node.Properties["_hostingSubscription"].(string); ok &&
+				node.Properties["_hostingSubscription"] != "" {
 				nodeInfo.EdgeType = "deployedBy"
 				ret = append(ret, edgesByDepSub(subscription, "Subscription")...)
 			}
-			if deployable, ok = node.Properties["_hostingDeployable"].(string); ok && node.Properties["_hostingDeployable"] != "" {
+			if deployable, ok = node.Properties["_hostingDeployable"].(string); ok &&
+				node.Properties["_hostingDeployable"] != "" {
 				nodeInfo.EdgeType = "definedBy"
 				ret = append(ret, edgesByDepSub(deployable, "Deployable")...)
 			}
-			seenDests = append(seenDests, UID) //add UID to processed/seen destinations
+			seenDests = append(seenDests, UID) // add UID to processed/seen destinations
 
 			// Recursively call the function with ownerUID, if the node doesn't have hosting deployable/subscription
 			// properties but has an owner reference.
@@ -444,12 +449,14 @@ func copyhostingSubProperties(srcUID string, destUID string, ns NodeStore) {
 	ok := false
 	// Copy the properties to the destination - this makes it easy to connect them back to the subscription/application
 	if srcFound && destFound {
-		if subscription, ok = srcNode.Properties["_hostingSubscription"].(string); ok && srcNode.Properties["_hostingSubscription"] != "" {
+		if subscription, ok = srcNode.Properties["_hostingSubscription"].(string); ok &&
+			srcNode.Properties["_hostingSubscription"] != "" {
 			if destNode.Properties["_hostingSubscription"] != subscription {
 				destNode.Properties["_hostingSubscription"] = subscription
 			}
 		}
-		if deployable, ok = srcNode.Properties["_hostingDeployable"].(string); ok && srcNode.Properties["_hostingDeployable"] != "" {
+		if deployable, ok = srcNode.Properties["_hostingDeployable"].(string); ok &&
+			srcNode.Properties["_hostingDeployable"] != "" {
 			if destNode.Properties["_hostingDeployable"] != deployable {
 				destNode.Properties["_hostingDeployable"] = deployable
 			}
