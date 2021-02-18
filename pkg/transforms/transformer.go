@@ -39,6 +39,8 @@ import (
 // Operation is the event operation
 type Operation int
 
+var APPS_OPEN_CLUSTER_MANAGEMENT_IO = "apps.open-cluster-management.io"
+
 const (
 	Create Operation = iota // 0
 	Update                  // 1
@@ -188,7 +190,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationResourceBuilder(&typedResource)
 
-		case [2]string{"Channel", "apps.open-cluster-management.io"}:
+		case [2]string{"Channel", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := acmapp.Channel{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -224,7 +226,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DaemonSetResourceBuilder(&typedResource)
 
-		case [2]string{"Deployable", "apps.open-cluster-management.io"}:
+		case [2]string{"Deployable", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := appDeployable.Deployable{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -262,7 +264,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = DeploymentConfigResourceBuilder(&typedResource)
 
 			//This is the application's HelmCR of kind HelmRelease.
-		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
+		case [2]string{"HelmRelease", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := appHelmRelease.HelmRelease{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -316,7 +318,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PersistentVolumeClaimResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementBinding", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementBinding", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := mcm.PlacementBinding{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -325,7 +327,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementBindingResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementPolicy", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementPolicy", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := mcm.PlacementPolicy{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -334,7 +336,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementPolicyResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementRule", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementRule", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := rule.PlacementRule{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -398,7 +400,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = StatefulSetResourceBuilder(&typedResource)
 
-		case [2]string{"Subscription", "app.ibm.com"}, [2]string{"Subscription", "apps.open-cluster-management.io"}:
+		case [2]string{"Subscription", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := subscription.Subscription{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -424,7 +426,8 @@ func handleRoutineExit(input chan *Event, output chan NodeEvent) {
 		glog.Errorf("Error in transformer routine: %v\n", r)
 		glog.Error(string(debug.Stack()))
 
-		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
+		// Start up a new routine with the same channels as the old one. The bad input will be gone since the
+		// old routine (the one that just crashed) took it out of the channel.
 		go TransformRoutine(input, output)
 	}
 }
