@@ -424,7 +424,8 @@ func handleRoutineExit(input chan *Event, output chan NodeEvent) {
 		glog.Errorf("Error in transformer routine: %v\n", r)
 		glog.Error(string(debug.Stack()))
 
-		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
+		// Start up a new routine with the same channels as the old one. The bad input will be gone since the
+		// old routine (the one that just crashed) took it out of the channel.
 		go TransformRoutine(input, output)
 	}
 }

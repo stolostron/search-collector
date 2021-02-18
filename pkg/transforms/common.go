@@ -165,16 +165,15 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo, seenDests []s
 				})
 				seenDests = append(seenDests, destUID)    // add destUID to processed/seen destinations
 				if dest.GetMetadata("ReleaseUID") != "" { // If owner included/owned by a release...
-					if _, ok := ns.ByUID[dest.GetMetadata("ReleaseUID")]; ok { // ...make sure the release exists...
-						if nodeInfo.UID != dest.GetMetadata("ReleaseUID") { // avoid connecting node to itself
-							ret = append(ret, Edge{ // ... then add edge from source to release
-								SourceUID:  nodeInfo.UID,
-								DestUID:    dest.GetMetadata("ReleaseUID"),
-								EdgeType:   "ownedBy",
-								SourceKind: nodeInfo.Kind,
-								DestKind:   dest.Properties["kind"].(string),
-							})
-						}
+					if _, ok := ns.ByUID[dest.GetMetadata("ReleaseUID")]; ok && // ...make sure the release exists...
+						nodeInfo.UID != dest.GetMetadata("ReleaseUID") { // avoid connecting node to itself
+						ret = append(ret, Edge{ // ... then add edge from source to release
+							SourceUID:  nodeInfo.UID,
+							DestUID:    dest.GetMetadata("ReleaseUID"),
+							EdgeType:   "ownedBy",
+							SourceKind: nodeInfo.Kind,
+							DestKind:   dest.Properties["kind"].(string),
+						})
 					}
 				}
 
@@ -278,14 +277,12 @@ func edgesByDestinationName(
 		if nodeInfo.Kind != "Deployable" {
 			// Adding this edge case to avoid duplicating edges between subscription to placementrules and applications
 			// deployable's owner will be subscription - this edge is already covered in subscription
-			if nextSrc, ok := ns.ByUID[nodeInfo.UID]; ok {
-				if nextSrc.GetMetadata("OwnerUID") != "" {
-					if nextSrcOwner, ok := ns.ByUID[nextSrc.GetMetadata("OwnerUID")]; ok {
-						nodeInfo.UID = nextSrc.GetMetadata("OwnerUID")
-						nodeInfo.Kind = nextSrcOwner.Properties["kind"].(string)
-						nodeInfo.EdgeType = "uses"
-						ret = append(ret, edgesByDestinationName(propSet, destKind, nodeInfo, ns, seenDests)...)
-					}
+			if nextSrc, ok := ns.ByUID[nodeInfo.UID]; ok && nextSrc.GetMetadata("OwnerUID") != "" {
+				if nextSrcOwner, ok := ns.ByUID[nextSrc.GetMetadata("OwnerUID")]; ok {
+					nodeInfo.UID = nextSrc.GetMetadata("OwnerUID")
+					nodeInfo.Kind = nextSrcOwner.Properties["kind"].(string)
+					nodeInfo.EdgeType = "uses"
+					ret = append(ret, edgesByDestinationName(propSet, destKind, nodeInfo, ns, seenDests)...)
 				}
 			}
 		}
