@@ -15,6 +15,7 @@ import (
 var mutex sync.Mutex
 var dynamicClient dynamic.Interface
 
+// Get the kubernetes dynamic client.
 func GetDynamicClient() dynamic.Interface {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -57,12 +58,3 @@ func GetDiscoveryClient() *discovery.DiscoveryClient {
 	}
 	return discoveryClient
 }
-
-// func GetKubeClient() *kubernetes.Clientset {
-// 	clientConfig, _ := clientcmd.BuildConfigFromFlags("", getKubeConfig())
-// 	clientset, err := kubernetes.NewForConfig(clientConfig)
-// 	if err != nil {
-// 		panic(err.Error())
-// 	}
-// 	return clientset
-// }
