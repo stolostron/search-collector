@@ -23,3 +23,17 @@ func TestTransformReplicaSet(t *testing.T) {
 	AssertEqual("current", node.Properties["current"], int64(1), t)
 	AssertEqual("desired", node.Properties["desired"], int64(1), t)
 }
+
+func TestReplicaSetBuildEdges(t *testing.T) {
+	var rs v1.ReplicaSet
+	UnmarshalFile("replicaset.json", &rs, t)
+
+	store := NodeStore{
+		ByUID:               make(map[string]Node),
+		ByKindNamespaceName: make(map[string]map[string]map[string]Node),
+	}
+
+	edges := ReplicaSetResourceBuilder(&rs).BuildEdges(store)
+
+	AssertEqual("ReplicaSet has no edges:", len(edges), 0, t)
+}

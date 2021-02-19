@@ -60,7 +60,7 @@ func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
 		return []Edge{}
 	}
 
-	// TODO future: Match a pod in another namespace , but config will be different in those cases.
+	// Future: Match a pod in another namespace , but config will be different in those cases.
 	pods := ns.ByKindNamespaceName["Pod"][s.node.Properties["namespace"].(string)]
 	nodeInfo := NodeInfo{
 		Name:      s.node.Properties["name"].(string),
