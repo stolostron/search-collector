@@ -25,3 +25,17 @@ func TestTransformJob(t *testing.T) {
 	AssertEqual("completions", node.Properties["completions"], int64(1), t)
 	AssertEqual("parallelism", node.Properties["parallelism"], int64(1), t)
 }
+
+func TestJobBuildEdges(t *testing.T) {
+	var j v1.Job
+	UnmarshalFile("job.json", &j, t)
+
+	store := NodeStore{
+		ByUID:               make(map[string]Node),
+		ByKindNamespaceName: make(map[string]map[string]map[string]Node),
+	}
+
+	edges := JobResourceBuilder(&j).BuildEdges(store)
+
+	AssertEqual("Job has no edges:", len(edges), 0, t)
+}

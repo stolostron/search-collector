@@ -55,3 +55,28 @@ func TestTransformPodInitState(t *testing.T) {
 	AssertEqual("startedAt", node.Properties["startedAt"], date.UTC().Format(time.RFC3339), t)
 	AssertEqual("status", node.Properties["status"], "Init:CrashLoopBackOff", t)
 }
+
+func TestPodBuildEdges(t *testing.T) {
+	var p v1.Pod
+	UnmarshalFile("pod.json", &p, t)
+
+	byUID := make(map[string]Node)
+	byKindNameNamespace := make(map[string]map[string]map[string]Node)
+	n := Node{
+		UID:        "123-secret",
+		Properties: make(map[string]interface{}),
+		Metadata:   make(map[string]string),
+	}
+	byUID["123-secret"] = n
+	byKindNameNamespace["Secret"] = make(map[string]map[string]Node)
+	byKindNameNamespace["Secret"]["default"] = make(map[string]Node)
+	byKindNameNamespace["Secret"]["default"]["test"] = n
+	store := NodeStore{
+		ByUID:               byUID,
+		ByKindNamespaceName: byKindNameNamespace,
+	}
+
+	edges := PodResourceBuilder(&p).BuildEdges(store)
+
+	AssertEqual("Pod attachedTo Secret:", len(edges), 1, t)
+}
