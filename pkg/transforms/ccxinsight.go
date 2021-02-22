@@ -2,6 +2,7 @@ package transforms
 
 import (
 	// "strings"
+	"github.com/golang/glog"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -19,12 +20,13 @@ func (i CCXInsightResource) BuildNode() Node {
 	node.Properties["apigroup"] = gvk.Group
 
 	// Extract the properties specific to this type
+	reportMessage, _, _ := unstructured.NestedString(i.UnstructuredContent(), "results", "message")
+	glog.Info(reportMessage)
+	node.Properties["message"] = reportMessage
 
-	ruleViolationCount, _, _ := unstructured.NestedInt64(i.UnstructuredContent(), "spec", "report", "meta", "count")
-	node.Properties["ruleViolationCount"] = ruleViolationCount
-
-	// ruleData, _, _ := unstructured.NestedSlice(i.UnstructuredContent(), "spec", "report", "data")
-	// node.Properties["ruleData"] = ruleData
+	riskScore, _, _ := unstructured.NestedString(i.UnstructuredContent(), "results", "risk")
+	glog.Info(riskScore)
+	node.Properties["risk"] = riskScore
 
 	return node
 }

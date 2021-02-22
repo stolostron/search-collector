@@ -409,7 +409,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = SubscriptionResourceBuilder(&typedResource)
 
-		case [2]string{"CCXInsight", "console.open-cluster-management.io"}:
+		case [2]string{"PolicyReport", "open-cluster-management.io"}:
 			// typedResource := apps.StatefulSet{}
 			// err = json.Unmarshal(j, &typedResource)
 			// if err != nil {
