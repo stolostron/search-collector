@@ -13,11 +13,13 @@ import (
 	p "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policies/v1"
 )
 
+// PolicyResource ...
 type PolicyResource struct {
-	*p.Policy
+	node Node
 }
 
-func (p PolicyResource) BuildNode() Node {
+// PolicyResourceBuilder ...
+func PolicyResourceBuilder(p *p.Policy) *PolicyResource {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -34,9 +36,15 @@ func (p PolicyResource) BuildNode() Node {
 	if okns && okpp {
 		node.Properties["_parentPolicy"] = pnamespace + "/" + ppolicy
 	}
-	return node
+	return &PolicyResource{node: node}
 }
 
+// BuildNode construct the node for Policy Resources
+func (p PolicyResource) BuildNode() Node {
+	return p.node
+}
+
+// BuildEdges construct the edges for Policy Resources
 func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}

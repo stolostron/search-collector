@@ -4,6 +4,8 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package reconciler
@@ -21,7 +23,8 @@ import (
 const CACHE_SIZE = 500
 
 // Public type for the complete state of the system.
-// Looks a little different than the format of reconciler's internal state because this is friendlier for outside use by other packages
+// Looks a little different than the format of reconciler's internal state because this is friendlier
+// for outside use by other packages
 type CompleteState struct {
 	Nodes                  []tr.Node // All the nodes
 	Edges                  []tr.Edge // All the edges
@@ -29,7 +32,8 @@ type CompleteState struct {
 }
 
 // Public type for the diff state of the system since the previous.
-// Looks a little different than the format of reconciler's internal state because this is friendlier for outside use by other packages
+// Looks a little different than the format of reconciler's internal state because this is friendlier
+// for outside use by other packages
 type Diff struct {
 	AddNodes, UpdateNodes  []tr.Node     // Nodes to be added or updated
 	DeleteNodes            []tr.Deletion // UIDs of nodes to be deleted
@@ -77,11 +81,11 @@ type Reconciler struct {
 	totalEdges    int                           // Save the total count as we build to avoid looping when needed
 
 	Input       chan tr.NodeEvent
-	mutex       sync.Mutex // Used to protect currentState and diffState as they are edited and read by multiple goroutines
-	purgedNodes *lru.Cache // Keep track of deleted nodes, so the reconciler can prevent out of order processing of events
+	mutex       sync.Mutex // Used to protect currentState and diffState as they are accessed by multiple goroutines
+	purgedNodes *lru.Cache // Tracks deleted nodes, so the reconciler can prevent out of order processing of events
 }
 
-// Creates a new Reconciler with a nil Input - you must set the Input and then start sending things through in order to use it.
+// Creates a new Reconciler with a nil Input. To use it, set the Input and then start sending things through.
 func NewReconciler() *Reconciler {
 	r := &Reconciler{
 		currentNodes:       make(map[string]tr.Node),
@@ -124,11 +128,14 @@ func (r *Reconciler) Diff() Diff {
 
 	// TODO combine the following 2 loops?
 
-	// Find elements that are in both new and old, and delete them from previous. After this, only the edges to be deleted will remain in previous.
-	// TODO shortcut this by checking whether one of the src/dest doesn't exist any more (could delete the whole map in the case of srcUID missing)
+	// Find elements that are in both new and old, and delete them from previous. After this, only the edges
+	// to be deleted will remain in previous.
+	// TODO shortcut this by checking whether one of the src/dest doesn't exist any more
+	// (could delete the whole map in the case of srcUID missing)
 	for srcUID, destMap := range newEdges {
 		for destUID, newEdge := range destMap {
-			if _, ok := r.previousEdges[srcUID][destUID]; ok { // If it's present in this loop it's obviously in the new set, so check the old
+			// If it's present in this loop it's obviously in the new set, so check the old.
+			if _, ok := r.previousEdges[srcUID][destUID]; ok {
 				delete(r.previousEdges[srcUID], destUID)
 			} else { // If it's in the new and NOT the old, it's an edge that's been added
 				ret.AddEdges = append(ret.AddEdges, newEdge)
@@ -142,14 +149,17 @@ func (r *Reconciler) Diff() Diff {
 		for destUID, oldEdge := range destMap {
 			destDeleted := false // flag to check if the destNode is in ret.DeleteNodes
 			// Loop through ret.DeleteNodes and check if the source or destination nodes are up for delete.
-			// Since the associated edges gets deleted automatically when the node is deleted, we won't add the edges to ret.DeleteEdges
+			// Since the associated edges gets deleted automatically when the node is deleted,
+			// we won't add the edges to ret.DeleteEdges
 			for _, delNode := range ret.DeleteNodes {
 				if srcUID == delNode.UID {
-					delete(r.previousEdges, srcUID) // If the srcUID is in ret.DeleteNodes, delete the whole sourceUID map from previousEdges and break out of the loop
+					// If srcUID is in ret.DeleteNodes, delete the whole sourceUID map from previousEdges and break
+					delete(r.previousEdges, srcUID)
 					srcDeleted = true
 					break
 				} else if destUID == delNode.UID {
-					delete(r.previousEdges[srcUID], destUID) // If the srcUID is in ret.DeleteNodes, delete the edge from previousEdges
+					// If the srcUID is in ret.DeleteNodes, delete the edge from previousEdges
+					delete(r.previousEdges[srcUID], destUID)
 					destDeleted = true
 				}
 			}
@@ -163,7 +173,8 @@ func (r *Reconciler) Diff() Diff {
 		}
 	}
 
-	// We are now done with the old list of previousEdges, next time this is called we will want the edges we just calculated to be the previous.
+	// We are now done with the old list of previousEdges.
+	// Next time this is called we will want the edges we just calculated to be the previous.
 	r.previousEdges = newEdges
 
 	r.resetDiffs()
@@ -196,7 +207,8 @@ func (r *Reconciler) Complete() CompleteState {
 		}
 	}
 
-	// We are now done with the old list of previousEdges, next time this is called we will want the edges we just calculated to be the previous.
+	// We are now done with the old list of previousEdges.
+	// Next time this is called we will want the edges we just calculated to be the previous.
 	r.previousEdges = newEdges
 
 	r.resetDiffs()
@@ -217,8 +229,9 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
 	}
 
-	//After building the nodestore, get all the application UIDs in appUIDs and others in otherUIDs.
-	//Process the application nodes first while building edges so that _hostingApplication metadata gets populated for subscription nodes
+	// After building the nodestore, get all the application UIDs in appUIDs and others in otherUIDs.
+	// Process the application nodes first while building edges so that _hostingApplication metadata
+	// gets populated for subscription nodes
 	allUIDs := make([]string, len(r.edgeFuncs))
 
 	// Copy all uids from reconciler edgeFuncs
@@ -240,7 +253,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 
 	// Loop across all the nodes and build their edges.
 	for _, uid := range append(appUIDs, otherUIDs...) {
-		glog.V(3).Infof("Calculating edges UID: %s", uid)
+		glog.V(5).Infof("Calculating edges UID: %s", uid)
 		edges := r.edgeFuncs[uid](ns) // Get edges from this specific node
 
 		edges = append(edges, tr.CommonEdges(uid, ns)...) // Get common edges for this node
@@ -262,7 +275,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 	return ret
 }
 
-// This method takes a channel and constantly receives from it, reconciling the input with whatever is currently stored.
+// This method takes a channel and constantly receives from it, reconciling the input with whatever is currently stored
 func (r *Reconciler) receive() {
 	glog.Info("Reconciler Routine Started")
 	for {
@@ -275,10 +288,13 @@ func (r *Reconciler) reconcileNode() {
 	ne := <-r.Input
 
 	// Take care of diffState and currentState
-	r.mutex.Lock() // Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit and then blocked, we could end up getting out of order
+	// Have to lock before the if statements, little awkward but if we made the decision to go ahead and edit
+	// and then blocked, we could end up getting out of order
+	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	// Check whether we already have this node in our diff/purged state with a more up to date time. If so, we ignore the version of it we're currently processing.
+	// Check whether we already have this node in our diff/purged state with a more up to date time.
+	// If so, we ignore the version of it we're currently processing.
 	otherNode, inDiff := r.diffNodes[ne.Node.UID]
 	nodeInterface, inPurged := r.purgedNodes.Get(ne.Node.UID)
 
@@ -311,26 +327,36 @@ func (r *Reconciler) reconcileNode() {
 		if inPrevious { // If this was in the previous, our operation for diffs is update, not create
 			ne.Operation = tr.Update
 
-			// skip updates if new event is redundant to our previous state (a property that we don't care about triggered an update)
-			// For nodes that are not applications or subscriptions, We only care about the Properties, the Metadata is only used to compute the edges and not sent with the node data.
-			// If the node is an application VulnerabilityPolicy or MutationPolicy or subscription, it might have changes to its metadata we need to account for - don't skip updates on those
-			if reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) && ne.Node.Properties["kind"] != "Application" && ne.Node.Properties["kind"] != "Subscription" {
+			// skip updates if new event is redundant to our previous state
+			// (a property that we don't care about triggered an update)
+			// For nodes that are not applications or subscriptions, We only care about the Properties,
+			// the Metadata is only used to compute the edges and not sent with the node data.
+			// If the node is an application or subscription, it might have changes to its metadata we
+			// need to account for so don't skip updates on those
+			if reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) &&
+				ne.Node.Properties["kind"] != "Application" &&
+				ne.Node.Properties["kind"] != "Subscription" {
 				return
 			}
 		}
-		// Each configmap for a helm release triggers a releases tranformation . If there are N configmaps we are processing the same
-		//helm release N times. Since the order which the configmap gets this point is not gauranteed , we are setting
-		// helm status which are old . Skipping if the current helm revison is OLDER than one we already have.
+		// Each configmap for a helm release triggers a releases tranformation . If there are N configmaps
+		// we are processing the same helm release N times. Since the order which the configmap gets this point
+		// is not gauranteed , we are setting helm status which are old . Skipping if the current helm revison
+		// is OLDER than one we already have.
 		if ne.Node.ResourceString == "releases" {
-			if inPrevious { // If this node in the previous(sent to redis already), check the previous helm revision is latest - if yes discard current one
+			// If node has already been sent, check the previous helm revision is latest and discard current one
+			if inPrevious {
 				if previousNode.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
-					glog.V(3).Infof("Skip %d for  release %s - previous is good", ne.Node.Properties["revision"], ne.Node.Properties["name"])
+					glog.V(5).Infof("Skip %d for  release %s - previous is good",
+						ne.Node.Properties["revision"], ne.Node.Properties["name"])
 					return
 				}
 			}
-			if nodeVal, ok := r.currentNodes[ne.UID]; ok { // check if we have this release processed already( ready to send to redis ) and that is latest - if yes discard current one
+			// If we have processed this release already (ready to send), check it's the latest and discard current one
+			if nodeVal, ok := r.currentNodes[ne.UID]; ok {
 				if nodeVal.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
-					glog.V(3).Infof("Skip %d for  release %s - lower revision", ne.Node.Properties["revision"], ne.Node.Properties["name"])
+					glog.V(5).Infof("Skip %d for  release %s - lower revision",
+						ne.Node.Properties["revision"], ne.Node.Properties["name"])
 					return
 				}
 			}
@@ -342,10 +368,13 @@ func (r *Reconciler) reconcileNode() {
 	}
 }
 
-// Clears out diffState and copies currentState into previousState. (has to actually make a copy, maps are normally pass by reference)
+// Clears out diffState and copies currentState into previousState.
+// (has to actually make a copy, maps are normally pass by reference)
 // NOT THREADSAFE with anything that edits structures in s, locking left up to the caller.
 func (r *Reconciler) resetDiffs() {
-	r.diffNodes = make(map[string]tr.NodeEvent) // We have to reset the diff every time we try to prepare something to send, so that it doesn't get out of sync with the complete/old.
+	// We have to reset the diff every time we try to prepare something to send,
+	// so that it doesn't get out of sync with the complete/old.
+	r.diffNodes = make(map[string]tr.NodeEvent)
 	r.previousNodes = make(map[string]tr.Node, len(r.currentNodes))
 
 	for uid, node := range r.currentNodes {

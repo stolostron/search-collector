@@ -26,8 +26,7 @@
                 "environment": "Dev",
                 "name": "test-1"
             }
-        },
-        "clusterReplicas": 1
+        }
     },
     "status": {
         "decisions": [

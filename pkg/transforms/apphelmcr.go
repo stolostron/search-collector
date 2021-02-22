@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -14,11 +15,14 @@ import (
 	app "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
 )
 
+// AppHelmCRResource ...
 type AppHelmCRResource struct {
-	*app.HelmRelease
+	node Node
+	Repo app.HelmReleaseRepo
 }
 
-func (a AppHelmCRResource) BuildNode() Node {
+// AppHelmCRResourceBuilder ...
+func AppHelmCRResourceBuilder(a *app.HelmRelease) *AppHelmCRResource {
 	node := transformCommon(a)         // Start off with the common properties
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 
@@ -38,34 +42,49 @@ func (a AppHelmCRResource) BuildNode() Node {
 			node.Properties["url"] = a.Repo.Source.HelmRepo.Urls
 		}
 	}
-	return node
+
+	// Need to pass repo so we can access it when building the edges.
+	return &AppHelmCRResource{node: node, Repo: a.Repo}
 }
 
+// BuildNode construct the node for the AppHelmCRResource Resources
+func (a AppHelmCRResource) BuildNode() Node {
+	return a.node
+}
+
+// BuildEdges construct the edges for the AppHelmCRResource Resources
 func (a AppHelmCRResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
-	UID := prefixedUID(a.UID)
+	UID := a.node.UID
 
-	nodeInfo := NodeInfo{NameSpace: a.Namespace, UID: UID, Kind: a.Kind, Name: a.Name, EdgeType: "attachedTo"}
+	nodeInfo := NodeInfo{
+		NameSpace: a.node.Properties["namespace"].(string),
+		UID:       UID,
+		Kind:      a.node.Properties["kind"].(string),
+		Name:      a.node.Properties["name"].(string),
+		EdgeType:  "attachedTo"}
 
-	//attachedTo edges
+	// attachedTo edges
 	releaseMap := make(map[string]struct{})
 
-	if a.ObjectMeta.Name != "" {
-		releaseMap[a.ObjectMeta.Name] = struct{}{}
-		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns)...)
+	if a.node.Properties["name"] != "" {
+		releaseMap[a.node.Properties["name"].(string)] = struct{}{}
+		ret = append(ret, edgesByDestinationName(releaseMap, "Release", nodeInfo, ns, []string{})...)
 	}
+
 	if a.Repo.SecretRef != nil {
 		secretMap := make(map[string]struct{})
 		if a.Repo.SecretRef.Name != "" {
 			secretMap[a.Repo.SecretRef.Name] = struct{}{}
-			ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns)...)
+			ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns, []string{})...)
 		}
 	}
+
 	if a.Repo.ConfigMapRef != nil {
 		configmapMap := make(map[string]struct{})
 		if a.Repo.ConfigMapRef.Name != "" {
 			configmapMap[a.Repo.ConfigMapRef.Name] = struct{}{}
-			ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns)...)
+			ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns, []string{})...)
 		}
 	}
 	return ret

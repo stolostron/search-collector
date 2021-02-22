@@ -10,7 +10,6 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
-	"encoding/json"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -32,10 +31,15 @@ import (
 	batchBeta "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/helm/pkg/proto/hapi/release"
+	"k8s.io/apimachinery/pkg/runtime"
+
+	ocpapp "github.com/openshift/api/apps/v1"
 )
 
+// Operation is the event operation
 type Operation int
+
+var APPS_OPEN_CLUSTER_MANAGEMENT_IO = "apps.open-cluster-management.io"
 
 const (
 	Create Operation = iota // 0
@@ -48,10 +52,10 @@ type Event struct {
 	Time           int64
 	Operation      Operation
 	Resource       *unstructured.Unstructured
-	ResourceString string // This is a plural identifier of the kind, though in k8s this is called a "resource". e.g. for a pod, this is "pods"
+	ResourceString string // This is a plural identifier of the kind.
 }
 
-// A generic node type that is passed to the aggregator for translation to whatever graphDB technology.
+// A generic node type that is passed to the aggregator to store in the database.
 type Node struct {
 	UID            string                 `json:"uid"`
 	ResourceString string                 `json:"resourceString"`
@@ -70,7 +74,8 @@ func (n Node) GetMetadata(md string) string {
 	return ""
 }
 
-// These are the input to the sender. They have the node, and then they keep the time which is used for reconciling this version with other versions that the sender may already have.
+// These are the input to the sender. They have the node, and then they keep the time which is used for reconciling
+// this version with other versions that the sender may already have.
 type NodeEvent struct {
 	Node
 	ComputeEdges func(ns NodeStore) []Edge
@@ -82,8 +87,7 @@ type Deletion struct {
 	UID string `json:"uid,omitempty"`
 }
 
-// make new constructor here, dry up code, then start testing
-
+// make new constructor here.
 func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEvent {
 	ne := NodeEvent{
 		Time:         event.Time,
@@ -125,7 +129,6 @@ type Transform interface {
 type Transformer struct {
 	Input  chan *Event    // Put your k8s resources and corresponding times in here.
 	Output chan NodeEvent // And receive your aggregator-ready nodes (and times) from here.
-	// TODO add stopper channel?
 }
 
 var (
@@ -152,22 +155,18 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 
 }
 
-// This function is to be run as a goroutine that processes k8s objects into Nodes, then spits them out into the output channel.
-// If anything goes wrong in here that requires you to skip the current resource, call panic() and the routine will be spun back up by handleRoutineExit and the bad resource won't be in there because it was already taken out by the previous run.
+// This function processes k8s objects into Nodes, then pass them into the output channel.
+// If anything goes wrong in here that requires you to skip the current resource, call panic()
+// and the routine will be spun back up by handleRoutineExit and the bad resource won't be in there
+// because it was already taken out by the previous run.
 func TransformRoutine(input chan *Event, output chan NodeEvent) {
 	defer handleRoutineExit(input, output)
 	glog.Info("Starting transformer routine")
 
-	// TODO not exactly sure, but we may need a stopper channel here.
 	for {
 		var trans Transform
 
 		event := <-input // Read from the input channel
-		// Pull out the kind and use marshal/unmarshal to convert to the right type.
-		j, err := json.Marshal(event.Resource)
-		if err != nil {
-			panic(err) // Will be caught by handleRoutineExit
-		}
 
 		// Determine apiGroup and version of the resource
 		apiGroup := ""
@@ -180,208 +179,235 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 		}
 		kindApigroup := [2]string{event.Resource.GetKind(), apiGroup}
-		//TODO: Might have to add more transform cases if resources like DaemonSet, StatefulSet etc. have other apigroups
+		// Might have to add more transform cases if resources like DaemonSet, StatefulSet etc. have other apigroups
 		switch kindApigroup {
 		case [2]string{"Application", "app.k8s.io"}:
 			typedResource := application.Application{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ApplicationResource{&typedResource}
+			trans = ApplicationResourceBuilder(&typedResource)
 
-		case [2]string{"Channel", "app.ibm.com"}, [2]string{"Channel", "apps.open-cluster-management.io"}:
+		case [2]string{"Channel", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := acmapp.Channel{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ChannelResource{&typedResource}
+			trans = ChannelResourceBuilder(&typedResource)
 
 		case [2]string{"CronJob", "batch"}:
 			typedResource := batchBeta.CronJob{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = CronJobResource{&typedResource}
+			trans = CronJobResourceBuilder(&typedResource)
 
 		case [2]string{"DaemonSet", "extensions"}:
 			typedResource := apps.DaemonSet{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DaemonSetResource{&typedResource}
+			trans = DaemonSetResourceBuilder(&typedResource)
 
 		case [2]string{"DaemonSet", "apps"}:
 			typedResource := apps.DaemonSet{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DaemonSetResource{&typedResource}
+			trans = DaemonSetResourceBuilder(&typedResource)
 
-		case [2]string{"Deployable", "app.ibm.com"}, [2]string{"Deployable", "apps.open-cluster-management.io"}:
+		case [2]string{"Deployable", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := appDeployable.Deployable{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = AppDeployableResource{&typedResource}
-
-		case [2]string{"Deployable", "mcm.ibm.com"}:
-			typedResource := appDeployable.Deployable{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = DeployableResource{&typedResource}
+			trans = AppDeployableResourceBuilder(&typedResource)
 
 		case [2]string{"Deployment", "apps"}:
 			typedResource := apps.Deployment{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DeploymentResource{&typedResource}
+			trans = DeploymentResourceBuilder(&typedResource)
 
 		case [2]string{"Deployment", "extensions"}:
 			typedResource := apps.Deployment{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = DeploymentResource{&typedResource}
+			trans = DeploymentResourceBuilder(&typedResource)
+
+			//This is an ocp specific resource
+		case [2]string{"DeploymentConfig", "apps.openshift.io"}:
+			typedResource := ocpapp.DeploymentConfig{}
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = DeploymentConfigResourceBuilder(&typedResource)
 
 			//This is the application's HelmCR of kind HelmRelease.
-		case [2]string{"HelmRelease", "apps.open-cluster-management.io"}:
+		case [2]string{"HelmRelease", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := appHelmRelease.HelmRelease{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = AppHelmCRResource{&typedResource}
+			trans = AppHelmCRResourceBuilder(&typedResource)
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = JobResource{&typedResource}
+			trans = JobResourceBuilder(&typedResource)
 
 		case [2]string{"Namespace", ""}:
 			typedResource := core.Namespace{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = NamespaceResource{&typedResource}
+			trans = NamespaceResourceBuilder(&typedResource)
 
 		case [2]string{"Node", ""}:
 			typedResource := core.Node{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = NodeResource{&typedResource}
+			trans = NodeResourceBuilder(&typedResource)
 
 		case [2]string{"PersistentVolume", ""}:
 			typedResource := core.PersistentVolume{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PersistentVolumeResource{&typedResource}
+			trans = PersistentVolumeResourceBuilder(&typedResource)
 
 		case [2]string{"PersistentVolumeClaim", ""}:
 			typedResource := core.PersistentVolumeClaim{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PersistentVolumeClaimResource{&typedResource}
+			trans = PersistentVolumeClaimResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementBinding", "mcm.ibm.com"}, [2]string{"PlacementBinding", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementBinding", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := mcm.PlacementBinding{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PlacementBindingResource{&typedResource}
+			trans = PlacementBindingResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementPolicy", "mcm.ibm.com"}, [2]string{"PlacementPolicy", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementPolicy", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := mcm.PlacementPolicy{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PlacementPolicyResource{&typedResource}
+			trans = PlacementPolicyResourceBuilder(&typedResource)
 
-		case [2]string{"PlacementRule", "app.ibm.com"}, [2]string{"PlacementRule", "apps.open-cluster-management.io"}:
+		case [2]string{"PlacementRule", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := rule.PlacementRule{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PlacementRuleResource{&typedResource}
+			trans = PlacementRuleResourceBuilder(&typedResource)
 
 		case [2]string{"Pod", ""}:
 			typedResource := core.Pod{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PodResource{&typedResource}
+			trans = PodResourceBuilder(&typedResource)
 
-		case [2]string{"Policy", "policy.open-cluster-management.io"}, [2]string{"Policy", "policies.open-cluster-management.io"}:
+		case [2]string{"Policy", "policy.open-cluster-management.io"},
+			[2]string{"Policy", "policies.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PolicyResource{&typedResource}
+			trans = PolicyResourceBuilder(&typedResource)
 
 		case [2]string{"ReplicaSet", "apps"}:
 			typedResource := apps.ReplicaSet{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ReplicaSetResource{&typedResource}
+			trans = ReplicaSetResourceBuilder(&typedResource)
 
 		case [2]string{"ReplicaSet", "extensions"}:
 			typedResource := apps.ReplicaSet{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ReplicaSetResource{&typedResource}
+			trans = ReplicaSetResourceBuilder(&typedResource)
 
 		case [2]string{"Service", ""}:
 			typedResource := core.Service{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ServiceResource{&typedResource}
+			trans = ServiceResourceBuilder(&typedResource)
 
 		case [2]string{"StatefulSet", "apps"}:
 			typedResource := apps.StatefulSet{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = StatefulSetResource{&typedResource}
+			trans = StatefulSetResourceBuilder(&typedResource)
 
-		case [2]string{"Subscription", "app.ibm.com"}, [2]string{"Subscription", "apps.open-cluster-management.io"}:
+		case [2]string{"Subscription", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := subscription.Subscription{}
-			err = json.Unmarshal(j, &typedResource)
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = SubscriptionResource{&typedResource}
+			trans = SubscriptionResourceBuilder(&typedResource)
 
 		case [2]string{"CCXInsight", "console.open-cluster-management.io"}:
 			// typedResource := apps.StatefulSet{}
@@ -393,56 +419,11 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			glog.Info(trans)
 
 		default:
-			trans = UnstructuredResource{event.Resource}
+			trans = GenericResourceBuilder(event.Resource)
 		}
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)
-
-		if IsHelmRelease(event.Resource) {
-			typedResource := core.ConfigMap{}
-			err = json.Unmarshal(j, &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			releaseName := typedResource.GetLabels()["NAME"]
-			release := getReleaseFromHelm(releaseName)
-			if release == nil {
-				AddToRetryChannel(event)
-			}
-			releaseTrans := HelmReleaseResource{&typedResource, release}
-			output <- NewNodeEvent(event, releaseTrans, "releases")
-		}
 	}
-}
-
-//	If the resource is a ConfigMap with label "OWNER:TILLER", it references a Helm Release
-func IsHelmRelease(resource *unstructured.Unstructured) bool {
-	if kind := resource.GetKind(); kind == "ConfigMap" {
-		for label, value := range resource.GetLabels() {
-			if label == "OWNER" && value == "TILLER" {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func getReleaseFromHelm(releaseName string) *release.Release {
-	helmClient := GetHelmClient()
-	if !HealthyConnection() {
-		if len(helmReleaseRetry) < 1 {
-			glog.Warning("Helm client not healthy; Cannot fetch helm release:", releaseName)
-		}
-		return nil
-	}
-
-	rc, err := helmClient.ReleaseContent(releaseName)
-	if err != nil {
-		glog.Warning("Failed to fetch helm release: ", releaseName, err)
-		return nil
-	}
-	glog.V(3).Info("Retrieved helm release from Tiller: ", releaseName)
-	return rc.GetRelease()
 }
 
 // Handles a panic from inside transformRoutine.
@@ -454,7 +435,8 @@ func handleRoutineExit(input chan *Event, output chan NodeEvent) {
 		glog.Errorf("Error in transformer routine: %v\n", r)
 		glog.Error(string(debug.Stack()))
 
-		// Start up a new routine with the same channels as the old one. The bad input will be gone since the old routine (the one that just crashed) took it out of the channel.
+		// Start up a new routine with the same channels as the old one. The bad input will be gone since the
+		// old routine (the one that just crashed) took it out of the channel.
 		go TransformRoutine(input, output)
 	}
 }

@@ -18,7 +18,7 @@ import (
 func TestTransformApplication(t *testing.T) {
 	var a app.Application
 	UnmarshalFile("application.json", &a, t)
-	node := ApplicationResource{&a}.BuildNode()
+	node := ApplicationResourceBuilder(&a).BuildNode()
 
 	// Test only the fields that exist in application - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Application", t)

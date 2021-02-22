@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -12,19 +13,27 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// NamespaceResource ...
 type NamespaceResource struct {
-	*v1.Namespace
+	node Node
 }
 
-func (n NamespaceResource) BuildNode() Node {
+// NamespaceResourceBuilder ...
+func NamespaceResourceBuilder(n *v1.Namespace) *NamespaceResource {
 	node := transformCommon(n)         // Start off with the common properties
 	apiGroupVersion(n.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 	node.Properties["status"] = string(n.Status.Phase)
 
-	return node
+	return &NamespaceResource{node: node}
 }
 
+// BuildNode construct the node for the Namespace Resources
+func (n NamespaceResource) BuildNode() Node {
+	return n.node
+}
+
+// BuildEdges construct the edges for the Namespace Resources
 func (n NamespaceResource) BuildEdges(ns NodeStore) []Edge {
 	//no op for now to implement interface
 	return []Edge{}

@@ -1,0 +1,113 @@
+{
+   "kind": "DeploymentConfig",
+   "apiVersion": "apps.openshift.io/v1",
+   "metadata": {
+      "annotations": {
+         "apps.open-cluster-management.io/hosting-deployable": "mortgagedc-ch/mortgagedc-channel-DeploymentConfig-mortgagedc-deploy",
+         "apps.open-cluster-management.io/hosting-subscription": "default/mortgagedc-subscription",
+         "apps.open-cluster-management.io/sync-source": "subgbk8s-default/mortgagedc-subscription"
+      },
+      "selfLink": "/apis/apps.openshift.io/v1/namespaces/default/deploymentconfigs/mortgagedc-deploy",
+      "resourceVersion": "118645246",
+      "name": "mortgagedc-deploy",
+      "uid": "69ecfb03-32cb-4808-977a-8a12f6f9854b",
+      "creationTimestamp": "2020-09-11T14:46:22Z",
+      "generation": 2,
+      "namespace": "default",
+      "labels": {
+         "app": "mortgagedc-mortgage"
+      }
+   },
+   "spec": {
+      "strategy": {
+         "type": "Recreate",
+         "recreateParams": {
+            "timeoutSeconds": 600
+         },
+         "resources": {},
+         "activeDeadlineSeconds": 21600
+      },
+      "triggers": [
+         {
+            "type": "ConfigChange"
+         }
+      ],
+      "replicas": 1,
+      "test": false,
+      "selector": {
+         "app": "mortgagedc-mortgage",
+         "deploymentConfig": "mortgagedc-mortgage"
+      },
+      "template": {
+         "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+               "app": "mortgagedc-mortgage",
+               "deploymentConfig": "mortgagedc-mortgage"
+            }
+         },
+         "spec": {
+            "containers": [
+               {
+                  "name": "mortgagedc-mortgage",
+                  "image": "fxiang/mortgage:0.4.0",
+                  "ports": [
+                     {
+                        "containerPort": 9080,
+                        "protocol": "TCP"
+                     }
+                  ],
+                  "resources": {
+                     "limits": {
+                        "cpu": "200m",
+                        "memory": "256Mi"
+                     }
+                  },
+                  "terminationMessagePath": "/dev/termination-log",
+                  "terminationMessagePolicy": "File",
+                  "imagePullPolicy": "Always"
+               }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "securityContext": {},
+            "schedulerName": "default-scheduler"
+         }
+      }
+   },
+   "status": {
+      "observedGeneration": 2,
+      "details": {
+         "message": "config change",
+         "causes": [
+            {
+               "type": "ConfigChange"
+            }
+         ]
+      },
+      "availableReplicas": 1,
+      "unavailableReplicas": 0,
+      "latestVersion": 1,
+      "updatedReplicas": 1,
+      "conditions": [
+         {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2020-09-11T14:47:46Z",
+            "lastTransitionTime": "2020-09-11T14:47:46Z",
+            "message": "Deployment config has minimum availability."
+         },
+         {
+            "type": "Progressing",
+            "status": "True",
+            "lastUpdateTime": "2020-09-11T14:47:47Z",
+            "lastTransitionTime": "2020-09-11T14:47:42Z",
+            "reason": "NewReplicationControllerAvailable",
+            "message": "replication controller \"mortgagedc-deploy-1\" successfully rolled out"
+         }
+      ],
+      "replicas": 1,
+      "readyReplicas": 1
+   }
+}

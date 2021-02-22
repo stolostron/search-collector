@@ -37,7 +37,8 @@ RUN microdnf update &&\
     microdnf clean all
 
 ENV VCS_REF="$VCS_REF" \
-    USER_UID=1001
+    USER_UID=1001 \
+    GOGC=50
 
 ADD output/search-collector /bin
 

@@ -7,15 +7,15 @@
             "apps.open-cluster-management.io/managed-cluster": "/",
             "apps.open-cluster-management.io/git-branch": "master",
             "apps.open-cluster-management.io/git-commit": "d67d8e10dcfa41dddcac14952e9872e1dfece06f",
-            "apps.open-cluster-management.io/git-path": "helloworld"
+            "apps.open-cluster-management.io/github-path": "helloworld"
         },
         "creationTimestamp": "2019-07-16T20:58:03Z",
         "generation": 3,
-        "name": "test-subscription",
+        "name": "test-subscription-2",
         "namespace": "default",
         "resourceVersion": "11715766",
-        "selfLink": "/apis/apps.open-cluster-management.io/v1alpha1/namespaces/default/subscriptions/test-subscription",
-        "uid": "57fd017f-b91d-20d1-803z-1f61f731b8bb"
+        "selfLink": "/apis/apps.open-cluster-management.io/v1alpha1/namespaces/default/subscriptions/test-subscription-2",
+        "uid": "17fd017f-b91d-20d1-803z-1f31f731b8bb"
     },
     "spec": {
         "channel": "testNs/test-channel",

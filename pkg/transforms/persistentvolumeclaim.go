@@ -4,6 +4,7 @@ OCO Source Materials
 (C) Copyright IBM Corporation 2019 All Rights Reserved
 The source code for this program is not published or otherwise divested of its trade secrets,
 irrespective of what has been deposited with the U.S. Copyright Office.
+Copyright (c) 2020 Red Hat, Inc.
 */
 
 package transforms
@@ -12,11 +13,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// PersistentVolumeClaimResource ...
 type PersistentVolumeClaimResource struct {
-	*v1.PersistentVolumeClaim
+	node Node
 }
 
-func (p PersistentVolumeClaimResource) BuildNode() Node {
+// PersistentVolumeClaimResourceBuilder ...
+func PersistentVolumeClaimResourceBuilder(p *v1.PersistentVolumeClaim) *PersistentVolumeClaimResource {
 	node := transformCommon(p) // Start off with the common properties
 
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
@@ -44,21 +47,32 @@ func (p PersistentVolumeClaimResource) BuildNode() Node {
 			node.Properties["request"] = request.String()
 		}
 	}
-	return node
+	return &PersistentVolumeClaimResource{node: node}
 }
 
+// BuildNode construct the node for the PersistentVolumeClaim Resources
+func (p PersistentVolumeClaimResource) BuildNode() Node {
+	return p.node
+}
+
+// BuildEdges construct the edges for the PersistentVolumeClaim Resources
 func (p PersistentVolumeClaimResource) BuildEdges(ns NodeStore) []Edge {
 	ret := make([]Edge, 0, 8)
-	UID := prefixedUID(p.UID)
+	UID := p.node.UID
 	pvClaimNode := ns.ByUID[UID]
 	//boundTo edges
-	nodeInfo := NodeInfo{Name: p.Name, NameSpace: "_NONE", UID: UID, EdgeType: "boundTo", Kind: p.Kind}
+	nodeInfo := NodeInfo{
+		Name:      p.node.Properties["name"].(string),
+		NameSpace: "_NONE",
+		UID:       UID,
+		EdgeType:  "boundTo",
+		Kind:      p.node.Properties["kind"].(string)}
 
 	volumeMap := make(map[string]struct{})
 	if pvClaimNode.Properties["volumeName"] != "" {
 		if volName, ok := pvClaimNode.Properties["volumeName"].(string); ok {
 			volumeMap[volName] = struct{}{}
-			ret = append(ret, edgesByDestinationName(volumeMap, "PersistentVolume", nodeInfo, ns)...)
+			ret = append(ret, edgesByDestinationName(volumeMap, "PersistentVolume", nodeInfo, ns, []string{})...)
 		}
 	}
 	return ret

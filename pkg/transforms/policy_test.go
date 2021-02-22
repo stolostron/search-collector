@@ -18,7 +18,7 @@ import (
 func TestTransformPolicy(t *testing.T) {
 	var p policy.Policy
 	UnmarshalFile("policy.json", &p, t)
-	node := PolicyResource{&p}.BuildNode()
+	node := PolicyResourceBuilder(&p).BuildNode()
 
 	// Test only the fields that exist in policy - the common test will test the other bits
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "enforce", t)
