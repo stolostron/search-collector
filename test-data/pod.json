@@ -44,7 +44,7 @@
                     {
                         "name": "env-from-configmap",
                         "valueFrom": {
-                            "secretKeyRef": {
+                            "configMapKeyRef": {
                                 "key": "test-key",
                                 "name": "test-configmap"
                             }
@@ -97,7 +97,7 @@
             {
                 "name": "mounted-persistentVolumeClaim",
                 "persistentVolumeClaim": {
-                    "claimName": "test-persistentVolumeClaim"
+                    "claimName": "test-pvc"
                 }
             }
         ]

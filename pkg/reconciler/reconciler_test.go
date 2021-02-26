@@ -379,7 +379,7 @@ func TestReconcilerComplete(t *testing.T) {
 	// Update counts when the test data is changed
 	// We don't create Nodes for kind = Event
 	const Nodes = 32
-	const Edges = 45
+	const Edges = 51
 	if len(com.Edges) != Edges || com.TotalEdges != Edges || len(com.Nodes) != Nodes || com.TotalNodes != Nodes {
 		ns := tr.NodeStore{
 			ByUID:               testReconciler.currentNodes,

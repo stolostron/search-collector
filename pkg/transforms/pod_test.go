@@ -61,6 +61,7 @@ func TestPodBuildEdges(t *testing.T) {
 
 	byUID := make(map[string]Node)
 	byKindNameNamespace := make(map[string]map[string]map[string]Node)
+
 	n := Node{
 		UID:        "uuid-123-secret",
 		Properties: make(map[string]interface{}),
@@ -100,5 +101,9 @@ func TestPodBuildEdges(t *testing.T) {
 
 	edges := PodResourceBuilder(&p).BuildEdges(store)
 
-	AssertEqual("Pod attachedTo Secret:", len(edges), 1, t)
+	AssertEqual("Pod edge total: ", len(edges), 3, t)
+
+	AssertEqual("Pod attachedTo", edges[0].DestKind, "Secret", t)
+	AssertEqual("Pod attachedTo", edges[1].DestKind, "ConfigMap", t)
+	AssertEqual("Pod attachedTo", edges[2].DestKind, "PersistentVolumeClaim", t)
 }
