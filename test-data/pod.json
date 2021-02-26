@@ -39,6 +39,17 @@
                         "name": "test",
                         "readOnly": true
                     }
+                ],
+                "env": [
+                    {
+                        "name": "test-env",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "key": "test-key",
+                                "name": "test-secret"
+                            }
+                        }
+                    }
                 ]
             }
         ],
