@@ -12,7 +12,7 @@
             "app": "test-fixture-selector",
             "release": "test-fixture-selector-release"
         },
-        "name": "fake-pod-dqqkm",
+        "name": "fake-pod-initializing",
         "namespace": "default",
         "ownerReferences": [
             {
@@ -21,12 +21,12 @@
                 "controller": true,
                 "kind": "ReplicaSet",
                 "name": "fake-replicaset",
-                "uid": "eb762405-361f-11e9-85ca-00163e019656"
+                "uid": "000000-361f-11e9-85ca-00163e019656"
             }
         ],
         "resourceVersion": "1347647",
-        "selfLink": "/api/v1/namespaces/deafult/pods/fake-pod-dqqkm",
-        "uid": "eb790c2e-361f-11e9-85ca-00163e019656"
+        "selfLink": "/api/v1/namespaces/deafult/pods/fake-pod-initializing",
+        "uid": "0000000-361f-11e9-85ca-00163e019656"
     },
     "spec": {
         "containers": [
@@ -187,7 +187,7 @@
         ],
         "hostIP": "1.1.1.1",
         "phase": "Running",
-        "podIP": "2.2.2.2",
+        "podIP": "2.2.2.3",
         "qosClass": "BestEffort",
         "startTime": "2019-02-21T21:30:33Z"
     }
