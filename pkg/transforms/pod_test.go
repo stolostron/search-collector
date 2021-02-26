@@ -56,6 +56,15 @@ func TestTransformPodInitState(t *testing.T) {
 	AssertEqual("status", node.Properties["status"], "Init:CrashLoopBackOff", t)
 }
 
+func TestTransformPodInitFailed(t *testing.T) {
+	var p v1.Pod
+	UnmarshalFile("pod-init-failed.json", &p, t)
+	node := PodResourceBuilder(&p).BuildNode()
+
+	// Test only status of pood with a completed init container
+	AssertEqual("status", node.Properties["status"], "Init:ExitCode:255", t)
+}
+
 func TestPodBuildEdges(t *testing.T) {
 	var p v1.Pod
 	UnmarshalFile("pod.json", &p, t)

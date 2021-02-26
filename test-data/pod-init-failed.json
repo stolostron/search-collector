@@ -3,7 +3,7 @@
     "kind": "Pod",
     "metadata": {
         "creationTimestamp": "2019-02-21T21:30:33Z",
-        "name": "fake-pod-initializing",
+        "name": "fake-pod-init-failed",
         "namespace": "default",
         "ownerReferences": [
             {
@@ -16,43 +16,15 @@
             }
         ],
         "resourceVersion": "1347647",
-        "selfLink": "/api/v1/namespaces/deafult/pods/fake-pod-initializing",
-        "uid": "uuid-pod-initializing"
+        "selfLink": "/api/v1/namespaces/deafult/pods/fake-pod-init-failed",
+        "uid": "uuid-pod-init-failed"
     },
     "spec": {
         "containers": [
             {
-                "image": "fake-image:0.5.0.1",
+                "image": "fake-image",
                 "imagePullPolicy": "IfNotPresent",
-                "livenessProbe": {
-                    "exec": {
-                        "command": [
-                            "sh",
-                            "-c",
-                            "exec echo start thing"
-                        ]
-                    },
-                    "failureThreshold": 3,
-                    "initialDelaySeconds": 30,
-                    "periodSeconds": 10,
-                    "successThreshold": 1,
-                    "timeoutSeconds": 5
-                },
                 "name": "fake-pod",
-                "readinessProbe": {
-                    "exec": {
-                        "command": [
-                            "sh",
-                            "-c",
-                            "exec echo start thing"
-                        ]
-                    },
-                    "failureThreshold": 3,
-                    "initialDelaySeconds": 10,
-                    "periodSeconds": 10,
-                    "successThreshold": 1,
-                    "timeoutSeconds": 2
-                },
                 "resources": {},
                 "securityContext": {
                     "procMount": "Default",
@@ -129,7 +101,7 @@
         "containerStatuses": [
             {
                 "containerID": "docker://7b432a1a92955c7cb3bfc6de7664a5fc634dc06432cadf0eb6b97897ea29fcfb",
-                "image": "fake-image:0.5.0.1",
+                "image": "fake-image",
                 "imageID": "docker-pullable://fake-image@sha256:396c3d5a7ee6174f6f9ca0f626474673a003b0be87afec31a4e91e61ebd9ab70",
                 "lastState": {
                     "terminated": {
@@ -155,30 +127,34 @@
                 "containerID": "containerd://0946e0d702d7f4d476749ba4a055b607b01cdc43f7b2dfb38b5524447e570167",
                 "image": "docker.io/library/busybox:latest",
                 "imageID": "docker.io/library/busybox@sha256:e1488cb900233d035575f0a7787448cb1fa93bed0ccc0d4efc1963d7d72a8f17",
-                "lastState": {
-                    "terminated": {
-                        "containerID": "containerd://0946e0d702d7f4d476749ba4a055b607b01cdc43f7b2dfb38b5524447e570167",
-                        "exitCode": 0,
-                        "finishedAt": "2021-02-18T22:27:07Z",
-                        "reason": "Completed",
-                        "startedAt": "2021-02-18T22:27:07Z"
-                    }
-                },
-                "name": "busybox",
-                "ready": false,
-                "restartCount": 2,
+                "name": "init-container-completed",
+                "ready": true,
+                "restartCount": 0,
                 "started": false,
                 "state": {
-                    "waiting": {
-                        "message": "back-off 40s restarting failed container=busybox pod=busybox-8448df7966-fwfdb_default(8ea5a557-5c08-41fb-a366-22581ce39f3a)",
-                        "reason": "CrashLoopBackOff"
+                    "terminated": {
+                        "exitCode": 0
+                    }
+                }
+            },
+            {
+                "containerID": "containerd://0946e0d702d7f4d476749ba4a055b607b01cdc43f7b2dfb38b5524447e570167",
+                "image": "docker.io/library/busybox:latest",
+                "imageID": "docker.io/library/busybox@sha256:e1488cb900233d035575f0a7787448cb1fa93bed0ccc0d4efc1963d7d72a8f17",
+                "name": "init-container-failed",
+                "ready": false,
+                "restartCount": 0,
+                "started": false,
+                "state": {
+                    "terminated": {
+                        "exitCode": 255
                     }
                 }
             }
         ],
         "hostIP": "1.1.1.1",
         "phase": "Running",
-        "podIP": "2.2.2.3",
+        "podIP": "2.2.2.4",
         "qosClass": "BestEffort",
         "startTime": "2019-02-21T21:30:33Z"
     }
