@@ -42,7 +42,16 @@
                 ],
                 "env": [
                     {
-                        "name": "test-env",
+                        "name": "env-from-configmap",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "key": "test-key",
+                                "name": "test-configmap"
+                            }
+                        }
+                    },
+                    {
+                        "name": "env-from-secret",
                         "valueFrom": {
                             "secretKeyRef": {
                                 "key": "test-key",
