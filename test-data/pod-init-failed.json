@@ -150,6 +150,20 @@
                         "exitCode": 255
                     }
                 }
+            },
+            {
+                "containerID": "containerd://0946e0d702d7f4d476749ba4a055b607b01cdc43f7b2dfb38b5524447e570167",
+                "image": "docker.io/library/busybox:latest",
+                "imageID": "docker.io/library/busybox@sha256:e1488cb900233d035575f0a7787448cb1fa93bed0ccc0d4efc1963d7d72a8f17",
+                "name": "init-container-running",
+                "ready": true,
+                "restartCount": 0,
+                "started": true,
+                "state": {
+                    "running": {
+                        "startedAt": "2019-03-03T15:13:07Z"
+                    }
+                }
             }
         ],
         "hostIP": "1.1.1.1",

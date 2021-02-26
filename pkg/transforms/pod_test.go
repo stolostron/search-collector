@@ -38,7 +38,7 @@ func TestTransformPod(t *testing.T) {
 
 func TestTransformPodInitState(t *testing.T) {
 	var p v1.Pod
-	UnmarshalFile("pod-initializing.json", &p, t)
+	UnmarshalFile("pod-init-waiting.json", &p, t)
 	node := PodResourceBuilder(&p).BuildNode()
 
 	// Build time struct matching time in test data
