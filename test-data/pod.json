@@ -3,15 +3,6 @@
     "kind": "Pod",
     "metadata": {
         "creationTimestamp": "2019-02-21T21:30:33Z",
-        "generateName": "fake-pod-",
-        "labels": {
-            "chart": "fake-pod-3.1.2",
-            "heritage": "Tiller",
-            "k8s-app": "fake-pod",
-            "pod-template-hash": "57845467b7",
-            "app": "test-fixture-selector",
-            "release": "test-fixture-selector-release"
-        },
         "name": "fake-pod-dqqkm",
         "namespace": "default",
         "ownerReferences": [
@@ -26,42 +17,14 @@
         ],
         "resourceVersion": "1347647",
         "selfLink": "/api/v1/namespaces/deafult/pods/fake-pod-dqqkm",
-        "uid": "eb790c2e-361f-11e9-85ca-00163e019656"
+        "uid": "uuid-fake-pod-aaaaa"
     },
     "spec": {
         "containers": [
             {
-                "image": "fake-image:0.5.0.1",
+                "image": "fake-image:latest",
                 "imagePullPolicy": "IfNotPresent",
-                "livenessProbe": {
-                    "exec": {
-                        "command": [
-                            "sh",
-                            "-c",
-                            "exec echo start thing"
-                        ]
-                    },
-                    "failureThreshold": 3,
-                    "initialDelaySeconds": 30,
-                    "periodSeconds": 10,
-                    "successThreshold": 1,
-                    "timeoutSeconds": 5
-                },
                 "name": "fake-pod",
-                "readinessProbe": {
-                    "exec": {
-                        "command": [
-                            "sh",
-                            "-c",
-                            "exec echo start thing"
-                        ]
-                    },
-                    "failureThreshold": 3,
-                    "initialDelaySeconds": 10,
-                    "periodSeconds": 10,
-                    "successThreshold": 1,
-                    "timeoutSeconds": 2
-                },
                 "resources": {},
                 "securityContext": {
                     "procMount": "Default",
@@ -100,10 +63,21 @@
         ],
         "volumes": [
             {
-                "name": "test",
+                "name": "mounted-secret",
                 "secret": {
-                    "defaultMode": 420,
-                    "secretName": "test"
+                    "secretName": "test-secret"
+                }
+            },
+            {
+                "name": "mounted-configmap",
+                "configmap": {
+                    "configmapName": "test-configmap"
+                }
+            },
+            {
+                "name": "mounted-persistentVolumeClaim",
+                "persistentVolumeClaim": {
+                    "claimName": "test-persistentVolumeClaim"
                 }
             }
         ]
@@ -138,20 +112,11 @@
         "containerStatuses": [
             {
                 "containerID": "docker://7b432a1a92955c7cb3bfc6de7664a5fc634dc06432cadf0eb6b97897ea29fcfb",
-                "image": "fake-image:0.5.0.1",
+                "image": "fake-image:latest",
                 "imageID": "docker-pullable://fake-image@sha256:396c3d5a7ee6174f6f9ca0f626474673a003b0be87afec31a4e91e61ebd9ab70",
-                "lastState": {
-                    "terminated": {
-                        "containerID": "docker://bb34f9255cc22740e2dfe3e426cdd832e70335279e6f0e13d50fe4c1ab051e60",
-                        "exitCode": 255,
-                        "finishedAt": "2019-03-03T15:11:22Z",
-                        "reason": "Error",
-                        "startedAt": "2019-03-03T15:07:05Z"
-                    }
-                },
                 "name": "fake-pod",
                 "ready": true,
-                "restartCount": 2,
+                "restartCount": 0,
                 "state": {
                     "running": {
                         "startedAt": "2019-03-03T15:13:07Z"

@@ -29,30 +29,20 @@ func TestTransformPod(t *testing.T) {
 	AssertEqual("kind", node.Properties["kind"], "Pod", t)
 	AssertEqual("hostIP", node.Properties["hostIP"], "1.1.1.1", t)
 	AssertEqual("podIP", node.Properties["podIP"], "2.2.2.2", t)
-	AssertEqual("restarts", node.Properties["restarts"], int64(2), t)
+	AssertEqual("restarts", node.Properties["restarts"], int64(0), t)
 	AssertDeepEqual("container", node.Properties["container"], []string{"fake-pod"}, t)
-	AssertDeepEqual("image", node.Properties["image"], []string{"fake-image:0.5.0.1"}, t)
+	AssertDeepEqual("image", node.Properties["image"], []string{"fake-image:latest"}, t)
 	AssertEqual("startedAt", node.Properties["startedAt"], date.UTC().Format(time.RFC3339), t)
 	AssertEqual("status", node.Properties["status"], string(v1.PodRunning), t)
 }
 
-func TestTransformPodInitState(t *testing.T) {
+func TestTransformPodInitWaiting(t *testing.T) {
 	var p v1.Pod
 	UnmarshalFile("pod-init-waiting.json", &p, t)
 	node := PodResourceBuilder(&p).BuildNode()
 
-	// Build time struct matching time in test data
-	date := time.Date(2019, 02, 21, 21, 30, 33, 0, time.UTC)
-
-	// Test only the fields that exist in pods - the common test will test the other bits
-
-	AssertEqual("kind", node.Properties["kind"], "Pod", t)
-	AssertEqual("hostIP", node.Properties["hostIP"], "1.1.1.1", t)
 	AssertEqual("podIP", node.Properties["podIP"], "2.2.2.3", t)
 	AssertEqual("restarts", node.Properties["restarts"], int64(2), t)
-	AssertDeepEqual("container", node.Properties["container"], []string{"fake-pod"}, t)
-	AssertDeepEqual("image", node.Properties["image"], []string{"fake-image:0.5.0.1"}, t)
-	AssertEqual("startedAt", node.Properties["startedAt"], date.UTC().Format(time.RFC3339), t)
 	AssertEqual("status", node.Properties["status"], "Init:CrashLoopBackOff", t)
 }
 
@@ -72,14 +62,24 @@ func TestPodBuildEdges(t *testing.T) {
 	byUID := make(map[string]Node)
 	byKindNameNamespace := make(map[string]map[string]map[string]Node)
 	n := Node{
-		UID:        "123-secret",
+		UID:        "uuid-123-secret",
 		Properties: make(map[string]interface{}),
 		Metadata:   make(map[string]string),
 	}
-	byUID["123-secret"] = n
+	byUID["uuid-123-secret"] = n
 	byKindNameNamespace["Secret"] = make(map[string]map[string]Node)
 	byKindNameNamespace["Secret"]["default"] = make(map[string]Node)
-	byKindNameNamespace["Secret"]["default"]["test"] = n
+	byKindNameNamespace["Secret"]["default"]["test-secret"] = n
+	n_configmap := Node{
+		UID:        "uuid-123-configmap",
+		Properties: make(map[string]interface{}),
+		Metadata:   make(map[string]string),
+	}
+	byUID["uuid-123-configmap"] = n_configmap
+	byKindNameNamespace["ConfigMap"] = make(map[string]map[string]Node)
+	byKindNameNamespace["ConfigMap"]["default"] = make(map[string]Node)
+	byKindNameNamespace["ConfigMap"]["default"]["test-configmap"] = n_configmap
+
 	store := NodeStore{
 		ByUID:               byUID,
 		ByKindNamespaceName: byKindNameNamespace,
