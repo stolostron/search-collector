@@ -65,7 +65,6 @@ func TestPodBuildEdges(t *testing.T) {
 	n_secret := Node{
 		UID:        "uuid-123-secret",
 		Properties: make(map[string]interface{}),
-		Metadata:   make(map[string]string),
 	}
 	byUID["uuid-123-secret"] = n_secret
 	byKindNameNamespace["Secret"] = make(map[string]map[string]Node)
@@ -75,7 +74,6 @@ func TestPodBuildEdges(t *testing.T) {
 	n_configmap := Node{
 		UID:        "uuid-123-configmap",
 		Properties: make(map[string]interface{}),
-		Metadata:   make(map[string]string),
 	}
 	n_configmap.Properties["name"] = "test-configmap"
 	byUID["uuid-123-configmap"] = n_configmap
@@ -86,18 +84,16 @@ func TestPodBuildEdges(t *testing.T) {
 	n_pv := Node{
 		UID:        "uuid-123-pv",
 		Properties: make(map[string]interface{}),
-		Metadata:   make(map[string]string),
 	}
 	n_pv.Properties["name"] = "test-pv"
 	byUID["uuid-123-pv"] = n_pv
 	byKindNameNamespace["PersistentVolume"] = make(map[string]map[string]Node)
-	byKindNameNamespace["PersistentVolume"]["default"] = make(map[string]Node)
-	byKindNameNamespace["PersistentVolume"]["default"]["test-pvc"] = n_pv
+	byKindNameNamespace["PersistentVolume"]["_NONE"] = make(map[string]Node)
+	byKindNameNamespace["PersistentVolume"]["_NONE"]["test-pv"] = n_pv
 
 	n_pvc := Node{
 		UID:        "uuid-123-pvc",
 		Properties: make(map[string]interface{}),
-		Metadata:   make(map[string]string),
 	}
 	n_pvc.Properties["name"] = "test-pvc"
 	n_pvc.Properties["volumeName"] = "test-pv"
@@ -113,9 +109,10 @@ func TestPodBuildEdges(t *testing.T) {
 
 	edges := PodResourceBuilder(&p).BuildEdges(store)
 
-	AssertEqual("Pod edge total: ", len(edges), 3, t)
+	AssertEqual("Pod edge total: ", len(edges), 4, t)
 
 	AssertEqual("Pod attachedTo", edges[0].DestKind, "Secret", t)
 	AssertEqual("Pod attachedTo", edges[1].DestKind, "ConfigMap", t)
 	AssertEqual("Pod attachedTo", edges[2].DestKind, "PersistentVolumeClaim", t)
+	AssertEqual("Pod attachedTo", edges[3].DestKind, "PersistentVolume", t)
 }
