@@ -102,6 +102,29 @@ func TestPodBuildEdges(t *testing.T) {
 	byKindNameNamespace["PersistentVolumeClaim"]["default"] = make(map[string]Node)
 	byKindNameNamespace["PersistentVolumeClaim"]["default"]["test-pvc"] = n_pvc
 
+	n_node := Node{
+		UID:        "uuid-123-node",
+		Properties: make(map[string]interface{}),
+	}
+	n_node.Properties["name"] = "1.1.1.1"
+	n_node.Properties["kind"] = "Node"
+	byUID["uuid-123-node"] = n_node
+	byKindNameNamespace["Node"] = make(map[string]map[string]Node)
+	byKindNameNamespace["Node"]["_NONE"] = make(map[string]Node)
+	byKindNameNamespace["Node"]["_NONE"]["1.1.1.1"] = n_node
+
+	n_pod := Node{
+		UID:        "local-cluster/uuid-fake-pod-aaaaa",
+		Properties: make(map[string]interface{}),
+		Metadata:   make(map[string]string),
+	}
+	n_pod.Properties["name"] = "fake-pod-aaaa"
+	n_pod.Properties["kind"] = "Pod"
+	byUID["local-cluster/uuid-fake-pod-aaaaa"] = n_pod
+	byKindNameNamespace["Pod"] = make(map[string]map[string]Node)
+	byKindNameNamespace["Pod"]["default"] = make(map[string]Node)
+	byKindNameNamespace["Pod"]["default"]["fake-pod-aaaaa"] = n_pod
+
 	store := NodeStore{
 		ByUID:               byUID,
 		ByKindNamespaceName: byKindNameNamespace,
@@ -109,10 +132,11 @@ func TestPodBuildEdges(t *testing.T) {
 
 	edges := PodResourceBuilder(&p).BuildEdges(store)
 
-	AssertEqual("Pod edge total: ", len(edges), 4, t)
+	AssertEqual("Pod edge total: ", len(edges), 5, t)
 
 	AssertEqual("Pod attachedTo", edges[0].DestKind, "Secret", t)
 	AssertEqual("Pod attachedTo", edges[1].DestKind, "ConfigMap", t)
 	AssertEqual("Pod attachedTo", edges[2].DestKind, "PersistentVolumeClaim", t)
 	AssertEqual("Pod attachedTo", edges[3].DestKind, "PersistentVolume", t)
+	AssertEqual("Pod runsOn", edges[4].DestKind, "Node", t)
 }
