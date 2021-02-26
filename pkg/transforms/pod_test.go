@@ -70,15 +70,28 @@ func TestPodBuildEdges(t *testing.T) {
 	byKindNameNamespace["Secret"] = make(map[string]map[string]Node)
 	byKindNameNamespace["Secret"]["default"] = make(map[string]Node)
 	byKindNameNamespace["Secret"]["default"]["test-secret"] = n
+
 	n_configmap := Node{
 		UID:        "uuid-123-configmap",
 		Properties: make(map[string]interface{}),
 		Metadata:   make(map[string]string),
 	}
+	n_configmap.Properties["name"] = "test-configmap"
 	byUID["uuid-123-configmap"] = n_configmap
 	byKindNameNamespace["ConfigMap"] = make(map[string]map[string]Node)
 	byKindNameNamespace["ConfigMap"]["default"] = make(map[string]Node)
 	byKindNameNamespace["ConfigMap"]["default"]["test-configmap"] = n_configmap
+
+	n_pvc := Node{
+		UID:        "uuid-123-pvc",
+		Properties: make(map[string]interface{}),
+		Metadata:   make(map[string]string),
+	}
+	n_pvc.Properties["name"] = "test-pvc"
+	byUID["uuid-123-pvc"] = n_configmap
+	byKindNameNamespace["PersistentVolumeClaim"] = make(map[string]map[string]Node)
+	byKindNameNamespace["PersistentVolumeClaim"]["default"] = make(map[string]Node)
+	byKindNameNamespace["PersistentVolumeClaim"]["default"]["test-pvc"] = n_pvc
 
 	store := NodeStore{
 		ByUID:               byUID,
