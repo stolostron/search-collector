@@ -62,15 +62,15 @@ func TestPodBuildEdges(t *testing.T) {
 	byUID := make(map[string]Node)
 	byKindNameNamespace := make(map[string]map[string]map[string]Node)
 
-	n := Node{
+	n_secret := Node{
 		UID:        "uuid-123-secret",
 		Properties: make(map[string]interface{}),
 		Metadata:   make(map[string]string),
 	}
-	byUID["uuid-123-secret"] = n
+	byUID["uuid-123-secret"] = n_secret
 	byKindNameNamespace["Secret"] = make(map[string]map[string]Node)
 	byKindNameNamespace["Secret"]["default"] = make(map[string]Node)
-	byKindNameNamespace["Secret"]["default"]["test-secret"] = n
+	byKindNameNamespace["Secret"]["default"]["test-secret"] = n_secret
 
 	n_configmap := Node{
 		UID:        "uuid-123-configmap",
@@ -83,13 +83,25 @@ func TestPodBuildEdges(t *testing.T) {
 	byKindNameNamespace["ConfigMap"]["default"] = make(map[string]Node)
 	byKindNameNamespace["ConfigMap"]["default"]["test-configmap"] = n_configmap
 
+	n_pv := Node{
+		UID:        "uuid-123-pv",
+		Properties: make(map[string]interface{}),
+		Metadata:   make(map[string]string),
+	}
+	n_pv.Properties["name"] = "test-pv"
+	byUID["uuid-123-pv"] = n_pv
+	byKindNameNamespace["PersistentVolume"] = make(map[string]map[string]Node)
+	byKindNameNamespace["PersistentVolume"]["default"] = make(map[string]Node)
+	byKindNameNamespace["PersistentVolume"]["default"]["test-pvc"] = n_pv
+
 	n_pvc := Node{
 		UID:        "uuid-123-pvc",
 		Properties: make(map[string]interface{}),
 		Metadata:   make(map[string]string),
 	}
 	n_pvc.Properties["name"] = "test-pvc"
-	byUID["uuid-123-pvc"] = n_configmap
+	n_pvc.Properties["volumeName"] = "test-pv"
+	byUID["uuid-123-pvc"] = n_pvc
 	byKindNameNamespace["PersistentVolumeClaim"] = make(map[string]map[string]Node)
 	byKindNameNamespace["PersistentVolumeClaim"]["default"] = make(map[string]Node)
 	byKindNameNamespace["PersistentVolumeClaim"]["default"]["test-pvc"] = n_pvc
