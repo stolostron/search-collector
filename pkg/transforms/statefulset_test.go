@@ -29,12 +29,10 @@ func TestStatefulSetBuildEdges(t *testing.T) {
 	var ss v1.StatefulSet
 	UnmarshalFile("statefulset.json", &ss, t)
 
-	store := NodeStore{
-		ByUID:               make(map[string]Node),
-		ByKindNamespaceName: make(map[string]map[string]map[string]Node),
-	}
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
 
-	edges := StatefulSetResourceBuilder(&ss).BuildEdges(store)
+	edges := StatefulSetResourceBuilder(&ss).BuildEdges(nodeStore)
 
 	AssertEqual("StatefulSet has no edges:", len(edges), 0, t)
 }

@@ -30,12 +30,10 @@ func TestJobBuildEdges(t *testing.T) {
 	var j v1.Job
 	UnmarshalFile("job.json", &j, t)
 
-	store := NodeStore{
-		ByUID:               make(map[string]Node),
-		ByKindNamespaceName: make(map[string]map[string]map[string]Node),
-	}
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
 
-	edges := JobResourceBuilder(&j).BuildEdges(store)
+	edges := JobResourceBuilder(&j).BuildEdges(nodeStore)
 
 	AssertEqual("Job has no edges:", len(edges), 0, t)
 }

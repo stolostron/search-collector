@@ -28,12 +28,10 @@ func TestReplicaSetBuildEdges(t *testing.T) {
 	var rs v1.ReplicaSet
 	UnmarshalFile("replicaset.json", &rs, t)
 
-	store := NodeStore{
-		ByUID:               make(map[string]Node),
-		ByKindNamespaceName: make(map[string]map[string]map[string]Node),
-	}
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
 
-	edges := ReplicaSetResourceBuilder(&rs).BuildEdges(store)
+	edges := ReplicaSetResourceBuilder(&rs).BuildEdges(nodeStore)
 
 	AssertEqual("ReplicaSet has no edges:", len(edges), 0, t)
 }
