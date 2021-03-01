@@ -56,84 +56,36 @@ func TestTransformPodInitFailed(t *testing.T) {
 }
 
 func TestPodBuildEdges(t *testing.T) {
+
+	// Build a fake NodeStore with nodes deeded to generate edges.
+	nodes := []Node{{
+		UID:        "uuid-123-secret",
+		Properties: map[string]interface{}{"kind": "Secret", "namespace": "default", "name": "test-secret"},
+	}, {
+		UID:        "uuid-123-configmap",
+		Properties: map[string]interface{}{"kind": "ConfigMap", "namespace": "default", "name": "test-configmap"},
+	}, {
+		UID:        "uuid-123-pv",
+		Properties: map[string]interface{}{"kind": "PersistentVolume", "namespace": "_NONE", "name": "test-pv"},
+	}, {
+		UID:        "uuid-123-pvc",
+		Properties: map[string]interface{}{"kind": "PersistentVolumeClaim", "namespace": "default", "name": "test-pvc", "volumeName": "test-pv"},
+	}, {
+		UID:        "uuid-123-node",
+		Properties: map[string]interface{}{"kind": "Node", "namespace": "_NONE", "name": "1.1.1.1"},
+	}, {
+		UID:        "local-cluster/uuid-fake-pod-aaaaa",
+		Properties: map[string]interface{}{"kind": "Pod", "namespace": "default", "name": "fake-pod-aaaa"},
+	}}
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource pod.json
 	var p v1.Pod
 	UnmarshalFile("pod.json", &p, t)
+	edges := PodResourceBuilder(&p).BuildEdges(nodeStore)
 
-	byUID := make(map[string]Node)
-	byKindNameNamespace := make(map[string]map[string]map[string]Node)
-
-	n_secret := Node{
-		UID:        "uuid-123-secret",
-		Properties: make(map[string]interface{}),
-	}
-	byUID["uuid-123-secret"] = n_secret
-	byKindNameNamespace["Secret"] = make(map[string]map[string]Node)
-	byKindNameNamespace["Secret"]["default"] = make(map[string]Node)
-	byKindNameNamespace["Secret"]["default"]["test-secret"] = n_secret
-
-	n_configmap := Node{
-		UID:        "uuid-123-configmap",
-		Properties: make(map[string]interface{}),
-	}
-	n_configmap.Properties["name"] = "test-configmap"
-	byUID["uuid-123-configmap"] = n_configmap
-	byKindNameNamespace["ConfigMap"] = make(map[string]map[string]Node)
-	byKindNameNamespace["ConfigMap"]["default"] = make(map[string]Node)
-	byKindNameNamespace["ConfigMap"]["default"]["test-configmap"] = n_configmap
-
-	n_pv := Node{
-		UID:        "uuid-123-pv",
-		Properties: make(map[string]interface{}),
-	}
-	n_pv.Properties["name"] = "test-pv"
-	byUID["uuid-123-pv"] = n_pv
-	byKindNameNamespace["PersistentVolume"] = make(map[string]map[string]Node)
-	byKindNameNamespace["PersistentVolume"]["_NONE"] = make(map[string]Node)
-	byKindNameNamespace["PersistentVolume"]["_NONE"]["test-pv"] = n_pv
-
-	n_pvc := Node{
-		UID:        "uuid-123-pvc",
-		Properties: make(map[string]interface{}),
-	}
-	n_pvc.Properties["name"] = "test-pvc"
-	n_pvc.Properties["volumeName"] = "test-pv"
-	byUID["uuid-123-pvc"] = n_pvc
-	byKindNameNamespace["PersistentVolumeClaim"] = make(map[string]map[string]Node)
-	byKindNameNamespace["PersistentVolumeClaim"]["default"] = make(map[string]Node)
-	byKindNameNamespace["PersistentVolumeClaim"]["default"]["test-pvc"] = n_pvc
-
-	n_node := Node{
-		UID:        "uuid-123-node",
-		Properties: make(map[string]interface{}),
-	}
-	n_node.Properties["name"] = "1.1.1.1"
-	n_node.Properties["kind"] = "Node"
-	byUID["uuid-123-node"] = n_node
-	byKindNameNamespace["Node"] = make(map[string]map[string]Node)
-	byKindNameNamespace["Node"]["_NONE"] = make(map[string]Node)
-	byKindNameNamespace["Node"]["_NONE"]["1.1.1.1"] = n_node
-
-	n_pod := Node{
-		UID:        "local-cluster/uuid-fake-pod-aaaaa",
-		Properties: make(map[string]interface{}),
-		Metadata:   make(map[string]string),
-	}
-	n_pod.Properties["name"] = "fake-pod-aaaa"
-	n_pod.Properties["kind"] = "Pod"
-	byUID["local-cluster/uuid-fake-pod-aaaaa"] = n_pod
-	byKindNameNamespace["Pod"] = make(map[string]map[string]Node)
-	byKindNameNamespace["Pod"]["default"] = make(map[string]Node)
-	byKindNameNamespace["Pod"]["default"]["fake-pod-aaaaa"] = n_pod
-
-	store := NodeStore{
-		ByUID:               byUID,
-		ByKindNamespaceName: byKindNameNamespace,
-	}
-
-	edges := PodResourceBuilder(&p).BuildEdges(store)
-
+	// Verify created edges.
 	AssertEqual("Pod edge total: ", len(edges), 5, t)
-
 	AssertEqual("Pod attachedTo", edges[0].DestKind, "Secret", t)
 	AssertEqual("Pod attachedTo", edges[1].DestKind, "ConfigMap", t)
 	AssertEqual("Pod attachedTo", edges[2].DestKind, "PersistentVolumeClaim", t)
