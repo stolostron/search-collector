@@ -25,13 +25,15 @@ func TestTransformReplicaSet(t *testing.T) {
 }
 
 func TestReplicaSetBuildEdges(t *testing.T) {
-	var rs v1.ReplicaSet
-	UnmarshalFile("replicaset.json", &rs, t)
-
+	// Build a fake NodeStore with nodes needed to generate edges.
 	nodes := make([]Node, 0)
 	nodeStore := BuildFakeNodeStore(nodes)
 
+	// Build edges from mock resource replicaset.json
+	var rs v1.ReplicaSet
+	UnmarshalFile("replicaset.json", &rs, t)
 	edges := ReplicaSetResourceBuilder(&rs).BuildEdges(nodeStore)
 
+	// Validate results
 	AssertEqual("ReplicaSet has no edges:", len(edges), 0, t)
 }

@@ -57,7 +57,7 @@ func TestTransformPodInitFailed(t *testing.T) {
 
 func TestPodBuildEdges(t *testing.T) {
 
-	// Build a fake NodeStore with nodes deeded to generate edges.
+	// Build a fake NodeStore with nodes needed to generate edges.
 	nodes := []Node{{
 		UID:        "uuid-123-secret",
 		Properties: map[string]interface{}{"kind": "Secret", "namespace": "default", "name": "test-secret"},
