@@ -21,11 +21,12 @@ func (i CCXInsightResource) BuildNode() Node {
 
 	// Extract the properties specific to this type
 	reportMessage, _, _ := unstructured.NestedString(i.UnstructuredContent(), "results", "message")
-	glog.Info(reportMessage)
 	node.Properties["message"] = reportMessage
 
-	riskScore, _, _ := unstructured.NestedString(i.UnstructuredContent(), "results", "risk")
-	glog.Info(riskScore)
+	category, _, _ := unstructured.NestedString(i.UnstructuredContent(), "results", "category")
+	node.Properties["category"] = category
+
+	riskScore, _, _ := unstructured.NestedString(i.UnstructuredContent(), "results", "data", "total_risk")
 	node.Properties["risk"] = riskScore
 
 	return node
