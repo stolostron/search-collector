@@ -1,9 +1,6 @@
 package transforms
 
 import (
-	// "strings"
-	"github.com/golang/glog"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
