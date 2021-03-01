@@ -2,6 +2,7 @@ package transforms
 
 import (
 	"encoding/json"
+	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -48,7 +49,10 @@ func (i CCXInsightResource) BuildNode() Node {
 	reportData, _, _ := unstructured.NestedMap(i.UnstructuredContent())
 	data, _ := json.Marshal(reportData)
 	var policyReport PolicyReport
-	json.Unmarshal(data, &policyReport)
+	err := json.Unmarshal(data, &policyReport)
+	if err != nil {
+		glog.Fatal("Unable to unmarshal policy report json ", err)
+	}
 
 	node.Properties["message"] = policyReport.Results[0].Message
 	node.Properties["category"] = policyReport.Results[0].Category
