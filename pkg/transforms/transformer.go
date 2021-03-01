@@ -416,7 +416,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			// 	panic(err) // Will be caught by handleRoutineExit
 			// }
 			trans = CCXInsightResource{event.Resource}
-			glog.Info(trans)
 
 		default:
 			trans = GenericResourceBuilder(event.Resource)
