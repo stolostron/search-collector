@@ -139,7 +139,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 		EdgeType:  "attachedTo",
 		Kind:      p.node.Properties["kind"].(string)}
 
-	//attachedTo edges
+	// attachedTo edges
 	secretMap := make(map[string]struct{})
 	configmapMap := make(map[string]struct{})
 	volumeClaimMap := make(map[string]struct{})
@@ -174,14 +174,14 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 		}
 	}
 
-	//Create all 'attachedTo' edges between pod and nodes of a specific kind(secrets, configmaps, volumeClaims, volumes)
+	// Create all 'attachedTo' edges between pod and nodes of a specific kind(secrets, configmaps, volumeClaims, volumes)
 	ret = append(ret, edgesByDestinationName(secretMap, "Secret", nodeInfo, ns, []string{})...)
 	ret = append(ret, edgesByDestinationName(configmapMap, "ConfigMap", nodeInfo, ns, []string{})...)
 	ret = append(ret, edgesByDestinationName(volumeClaimMap, "PersistentVolumeClaim", nodeInfo, ns, []string{})...)
 	nodeInfo.NameSpace = "_NONE"
 	ret = append(ret, edgesByDestinationName(volumeMap, "PersistentVolume", nodeInfo, ns, []string{})...)
 
-	//runsOn edges
+	// runsOn edges
 	if p.Spec.NodeName != "" {
 		nodeName := p.Spec.NodeName
 		srcNode := ns.ByUID[UID]

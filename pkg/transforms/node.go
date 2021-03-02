@@ -45,7 +45,9 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 	node.Properties["architecture"] = n.Status.NodeInfo.Architecture
 	node.Properties["cpu"], _ = n.Status.Capacity.Cpu().AsInt64()
 	node.Properties["osImage"] = n.Status.NodeInfo.OSImage
-	node.Properties["_systemUUID"] = n.Status.NodeInfo.SystemUUID
+	// Workaround a bug in cAdvisor on ppc64le (see https://github.com/google/cadvisor/pull/2811)
+	// that causes a trailing null character in SystemUUID.
+	node.Properties["_systemUUID"] = strings.TrimRight(n.Status.NodeInfo.SystemUUID, "\000")
 	node.Properties["role"] = roles
 
 	return &NodeResource{node: node}
