@@ -1,5 +1,4 @@
 # Copyright (c) 2020 Red Hat, Inc.
-# Copyright Contributors to the Open Cluster Management project
 
 include build/Configfile
 BINDIR ?= output
@@ -46,6 +45,10 @@ test:
 .PHONY: coverage
 coverage:
 	go tool cover -html=cover.out -o=cover.html
+
+.PHONY: copyright-check
+copyright-check:
+	./build/copyright-check.sh
 
 .PHONY: clean
 clean::
