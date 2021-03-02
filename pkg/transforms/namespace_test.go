@@ -20,3 +20,17 @@ func TestTransformNamespace(t *testing.T) {
 	// Test only the fields that exist in namespace - the common test will test the other bits
 	AssertEqual("status", node.Properties["status"], "Active", t)
 }
+
+func TestNamespaceBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource namespace.json
+	var ns v1.Namespace
+	UnmarshalFile("namespace.json", &ns, t)
+	edges := NamespaceResourceBuilder(&ns).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("Namespace has no edges:", len(edges), 0, t)
+}

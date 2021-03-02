@@ -19,3 +19,17 @@ func TestTransformService(t *testing.T) {
 
 	AssertEqual("kind", node.Properties["kind"], "Service", t)
 }
+
+func TestServiceBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource cronjob.json
+	var svc v1.Service
+	UnmarshalFile("service.json", &svc, t)
+	edges := ServiceResourceBuilder(&svc).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("Service has no edges:", len(edges), 0, t)
+}

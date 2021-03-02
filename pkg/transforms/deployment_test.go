@@ -23,3 +23,17 @@ func TestTransformDeployment(t *testing.T) {
 	AssertEqual("desired", node.Properties["desired"], int64(1), t)
 	AssertEqual("ready", node.Properties["ready"], int64(1), t)
 }
+
+func TestDeploymentBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource deployment.json
+	var d v1.Deployment
+	UnmarshalFile("deployment.json", &d, t)
+	edges := DeploymentResourceBuilder(&d).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("Deployment has no edges:", len(edges), 0, t)
+}

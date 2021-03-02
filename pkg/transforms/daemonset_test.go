@@ -24,3 +24,17 @@ func TestTransformDaemonSet(t *testing.T) {
 	AssertEqual("ready", node.Properties["ready"], int64(1), t)
 	AssertEqual("updated", node.Properties["updated"], int64(1), t)
 }
+
+func TestDaemonSetBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource daemonset.json
+	var ds v1.DaemonSet
+	UnmarshalFile("daemonset.json", &ds, t)
+	edges := DaemonSetResourceBuilder(&ds).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("DaemonSet has no edges:", len(edges), 0, t)
+}
