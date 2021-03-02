@@ -31,3 +31,17 @@ func TestTransformCronJob(t *testing.T) {
 	AssertEqual("schedule", node.Properties["schedule"], "30 23 * * *", t)
 	AssertEqual("suspend", node.Properties["suspend"], false, t)
 }
+
+func TestCronJobBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource cronjob.json
+	var cron v1.CronJob
+	UnmarshalFile("cronjob.json", &cron, t)
+	edges := CronJobResourceBuilder(&cron).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("CronJob has no edges:", len(edges), 0, t)
+}

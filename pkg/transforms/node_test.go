@@ -27,3 +27,17 @@ func TestTransformNode(t *testing.T) {
 	AssertEqual("_systemUUID", node.Properties["_systemUUID"], "4BCDE0D7-CFFB-4A8F-B6F8-0026F347AD93", t)
 	AssertDeepEqual("role", node.Properties["role"], []string{"etcd", "management", "master", "proxy", "va"}, t)
 }
+
+func TestNodeBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource node.json
+	var n v1.Node
+	UnmarshalFile("node.json", &n, t)
+	edges := NodeResourceBuilder(&n).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("Node has no edges:", len(edges), 0, t)
+}
