@@ -46,9 +46,6 @@ test:
 coverage:
 	go tool cover -html=cover.out -o=cover.html
 
-.PHONY: copyright-check
-copyright-check:
-	./build/copyright-check.sh
 
 .PHONY: clean
 clean::
