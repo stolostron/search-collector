@@ -1,3 +1,5 @@
+# Copyright Contributors to the Open Cluster Management project
+
 ifdef GIT
 IMAGE_VERSION :=$(shell git rev-parse --short HEAD)
 VCS_URL ?=$(shell git config --get remote.origin.url)
