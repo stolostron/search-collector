@@ -21,3 +21,17 @@ func TestTransformReplicaSet(t *testing.T) {
 	AssertEqual("current", node.Properties["current"], int64(1), t)
 	AssertEqual("desired", node.Properties["desired"], int64(1), t)
 }
+
+func TestReplicaSetBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource replicaset.json
+	var rs v1.ReplicaSet
+	UnmarshalFile("replicaset.json", &rs, t)
+	edges := ReplicaSetResourceBuilder(&rs).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("ReplicaSet has no edges:", len(edges), 0, t)
+}
