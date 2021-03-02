@@ -11,7 +11,7 @@ The data model is documented at ./pkg/transforms/README.md
 ## Usage and Configuration
 
 ### Running Locally
-> **Pre-requisite:** Go v1.15
+> **Pre-requisite:** Go v1.13
 1. Fetch Dependencies: `make deps`
     > **TIP 1:** You may need to install mercurial. `brew install mercurial`
     >
