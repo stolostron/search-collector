@@ -7,7 +7,6 @@
 package transforms
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -86,8 +85,6 @@ func (s ServiceResource) BuildEdges(ns NodeStore) []Edge {
 			}
 		}
 	}
-
-	fmt.Println("Created edges: ", ret)
 
 	return ret
 }

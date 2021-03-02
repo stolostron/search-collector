@@ -22,7 +22,11 @@ func TestTransformService(t *testing.T) {
 
 func TestServiceBuildEdges(t *testing.T) {
 	// Build a fake NodeStore with nodes needed to generate edges.
-	nodes := make([]Node, 0)
+	nodes := []Node{{
+		UID: "local-cluster/uuid-fake-pod",
+		Properties: map[string]interface{}{"kind": "Pod", "namespace": "default", "name": "fake-pod",
+			"label": map[string]string{"app": "test-fixture-selector", "release": "test-fixture-selector-release"}},
+	}}
 	nodeStore := BuildFakeNodeStore(nodes)
 
 	// Build edges from mock resource cronjob.json
@@ -31,5 +35,7 @@ func TestServiceBuildEdges(t *testing.T) {
 	edges := ServiceResourceBuilder(&svc).BuildEdges(nodeStore)
 
 	// Validate results
-	AssertEqual("Service has no edges:", len(edges), 0, t)
+	AssertEqual("Service has no edges:", len(edges), 1, t)
+
+	AssertEqual("Service usedBy: ", edges[0].DestKind, "Pod", t)
 }
