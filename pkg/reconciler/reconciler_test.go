@@ -6,6 +6,7 @@ The source code for this program is not published or otherwise divested of its t
 irrespective of what has been deposited with the U.S. Copyright Office.
 Copyright (c) 2020 Red Hat, Inc.
 */
+// Copyright Contributors to the Open Cluster Management project
 
 package reconciler
 

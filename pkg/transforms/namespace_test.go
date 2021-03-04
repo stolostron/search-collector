@@ -6,6 +6,7 @@ The source code for this program is not published or otherwise divested of its t
 irrespective of what has been deposited with the U.S. Copyright Office.
 Copyright (c) 2020 Red Hat, Inc.
 */
+// Copyright Contributors to the Open Cluster Management project
 
 package transforms
 
@@ -22,4 +23,18 @@ func TestTransformNamespace(t *testing.T) {
 
 	// Test only the fields that exist in namespace - the common test will test the other bits
 	AssertEqual("status", node.Properties["status"], "Active", t)
+}
+
+func TestNamespaceBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource namespace.json
+	var ns v1.Namespace
+	UnmarshalFile("namespace.json", &ns, t)
+	edges := NamespaceResourceBuilder(&ns).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("Namespace has no edges:", len(edges), 0, t)
 }

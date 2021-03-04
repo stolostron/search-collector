@@ -6,6 +6,7 @@ The source code for this program is not published or otherwise divested of its t
 irrespective of what has been deposited with the U.S. Copyright Office.
 Copyright (c) 2020 Red Hat, Inc.
 */
+// Copyright Contributors to the Open Cluster Management project
 
 package transforms
 
@@ -26,4 +27,18 @@ func TestTransformNode(t *testing.T) {
 	AssertEqual("osImage", node.Properties["osImage"], "Ubuntu 16.04.5 LTS", t)
 	AssertEqual("_systemUUID", node.Properties["_systemUUID"], "4BCDE0D7-CFFB-4A8F-B6F8-0026F347AD93", t)
 	AssertDeepEqual("role", node.Properties["role"], []string{"etcd", "management", "master", "proxy", "va"}, t)
+}
+
+func TestNodeBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource node.json
+	var n v1.Node
+	UnmarshalFile("node.json", &n, t)
+	edges := NodeResourceBuilder(&n).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("Node has no edges:", len(edges), 0, t)
 }

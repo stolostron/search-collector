@@ -6,6 +6,7 @@ The source code for this program is not published or otherwise divested of its t
 irrespective of what has been deposited with the U.S. Copyright Office.
 Copyright (c) 2020 Red Hat, Inc.
 */
+// Copyright Contributors to the Open Cluster Management project
 
 package transforms
 
@@ -26,4 +27,18 @@ func TestTransformDaemonSet(t *testing.T) {
 	AssertEqual("desired", node.Properties["desired"], int64(1), t)
 	AssertEqual("ready", node.Properties["ready"], int64(1), t)
 	AssertEqual("updated", node.Properties["updated"], int64(1), t)
+}
+
+func TestDaemonSetBuildEdges(t *testing.T) {
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := make([]Node, 0)
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	// Build edges from mock resource daemonset.json
+	var ds v1.DaemonSet
+	UnmarshalFile("daemonset.json", &ds, t)
+	edges := DaemonSetResourceBuilder(&ds).BuildEdges(nodeStore)
+
+	// Validate results
+	AssertEqual("DaemonSet has no edges:", len(edges), 0, t)
 }
