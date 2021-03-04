@@ -4,9 +4,6 @@
 package transforms
 
 import (
-	// "encoding/json"
-	// "github.com/golang/glog"
-	// "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strings"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -14,13 +11,7 @@ import (
 // PolicyReport report
 type PolicyReport struct {
 	metav1.TypeMeta `json:",inline"`
-	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// Meta struct {
-	// 	Name      string `json:"name"`
-	// 	Namespace string `json:"namespace"`
-	// } `json:"metadata"`
 	Results []ReportResults `json:"results"`
 }
 
