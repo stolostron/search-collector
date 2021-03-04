@@ -33,10 +33,12 @@ type ReportData struct {
 	Resolution string `json:"resolution"`
 }
 
+// CCXInsightResource type 
 type CCXInsightResource struct {
 	*unstructured.Unstructured
 }
 
+// BuildNode Creates the redisGraph node for this resource
 func (i CCXInsightResource) BuildNode() Node {
 	node := transformCommon(i) // Start off with the common properties
 
@@ -61,8 +63,9 @@ func (i CCXInsightResource) BuildNode() Node {
 	return node
 }
 
+// BuildEdges builds any necessary edges to related resources
 func (i CCXInsightResource) BuildEdges(ns NodeStore) []Edge {
-	// TODO does the PolicyReport have edges?
+	// TODO What edges does PolicyReport need
 	ret := []Edge{}
 	return ret
 }

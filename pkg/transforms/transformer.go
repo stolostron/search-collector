@@ -411,11 +411,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = SubscriptionResourceBuilder(&typedResource)
 
 		case [2]string{"PolicyReport", "wgpolicyk8s.io"}:
-			// typedResource := apps.StatefulSet{}
-			// err = json.Unmarshal(j, &typedResource)
-			// if err != nil {
-			// 	panic(err) // Will be caught by handleRoutineExit
-			// }
 			trans = CCXInsightResource{event.Resource}
 
 		default:
