@@ -24,6 +24,17 @@ import (
 )
 
 func getHTTPSClient() (client http.Client) {
+	// Configure TLS
+	tlsCfg := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		},
+		// RootCAs:      caCertPool,
+		// Certificates: []tls.Certificate{cert},
+	}
 
 	// Klusterlet deployment: Get httpClient using the mounted kubeconfig.
 	if !config.Cfg.DeployedInHub {
@@ -39,28 +50,20 @@ func getHTTPSClient() (client http.Client) {
 		// Hub deployment: Generate TLS config using the mounted certificates.
 		caCert, err := ioutil.ReadFile("./sslcert/tls.crt")
 		if err != nil {
-			// Exit because this is an unrecoverable configuration problem.
-			glog.Fatal("Error loading TLS certificate from mounted secret at ./sslcert/tls.crt. Original error: ", err)
+			glog.Error("WARNING: Using insecure TLS conn. Couldn't load certs ", err)
+			tlsCfg.InsecureSkipVerify = true
+		} else {
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+			tlsCfg.RootCAs = caCertPool
 		}
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
 
 		cert, err := tls.LoadX509KeyPair("./sslcert/tls.crt", "./sslcert/tls.key")
 		if err != nil {
-			// Exit because this is an unrecoverable configuration problem.
-			glog.Fatal("Error loading TLS certs from ./sslcert/tls.crt and ./sslcert/tls.key. Original error: ", err)
-		}
-
-		// Configure TLS
-		tlsCfg := &tls.Config{
-			MinVersion:               tls.VersionTLS12,
-			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			},
-			RootCAs:      caCertPool,
-			Certificates: []tls.Certificate{cert},
+			glog.Error("WARNING: Using insecure TLS conn. Couldn't load certs ", err)
+			tlsCfg.InsecureSkipVerify = true
+		} else {
+			tlsCfg.Certificates = []tls.Certificate{cert}
 		}
 
 		tr := &http.Transport{
