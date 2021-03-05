@@ -36,22 +36,9 @@ func getHTTPSClient() (client http.Client) {
 		client = *(aggregatorRESTClient.Client)
 		return client
 	} else {
-		// Hub deployment: Generate TLS config using the mounted certificates.
-		caCert, err := ioutil.ReadFile("./sslcert/tls.crt")
-		if err != nil {
-			// Exit because this is an unrecoverable configuration problem.
-			glog.Fatal("Error loading TLS certificate from mounted secret at ./sslcert/tls.crt. Original error: ", err)
-		}
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
-
-		cert, err := tls.LoadX509KeyPair("./sslcert/tls.crt", "./sslcert/tls.key")
-		if err != nil {
-			// Exit because this is an unrecoverable configuration problem.
-			glog.Fatal("Error loading TLS certs from ./sslcert/tls.crt and ./sslcert/tls.key. Original error: ", err)
-		}
-
-		// Configure TLS
+		// Hub deployment:
+		// Generate TLS config using the mounted certificates. If certificates aren't found wee use
+		// insecure TLS connection (InsecureSkipVerify). This should only happen during development.
 		tlsCfg := &tls.Config{
 			MinVersion:               tls.VersionTLS12,
 			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
@@ -59,16 +46,26 @@ func getHTTPSClient() (client http.Client) {
 			CipherSuites: []uint16{
 				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 			},
-			RootCAs:      caCertPool,
-			Certificates: []tls.Certificate{cert},
+			// RootCAs:      caCertPool,
+			// Certificates: []tls.Certificate{cert},
+		}
+		caCert, err := ioutil.ReadFile("./sslcert/tls.crt")
+		cert, err2 := tls.LoadX509KeyPair("./sslcert/tls.crt", "./sslcert/tls.key")
+		if err != nil || err2 != nil {
+			glog.Error("WARNING: Using insecure TLS connection. Couldn't load certs ", err, err2)
+			tlsCfg.InsecureSkipVerify = true
+		} else {
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+			tlsCfg.RootCAs = caCertPool
+
+			tlsCfg.Certificates = []tls.Certificate{cert}
 		}
 
 		tr := &http.Transport{
 			TLSClientConfig: tlsCfg,
 		}
 
-		client = http.Client{Transport: tr}
-
-		return client
+		return http.Client{Transport: tr}
 	}
 }

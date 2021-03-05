@@ -18,6 +18,7 @@ require (
 	github.com/open-cluster-management/multicloud-operators-subscription v1.0.0-2020-05-12-21-17-19.0.20201009005738-cbe273a045ab
 	github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.1-2020-06-08-14-28-27.0.20200819124024-818f01d780ff //Use 2.0 when available
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
+	github.com/stretchr/testify v1.6.0
 	github.com/tkanos/gonfig v0.0.0-20181112185242-896f3d81fadf
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.6
