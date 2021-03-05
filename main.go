@@ -163,7 +163,7 @@ func main() {
 		}
 	}()
 
-	glog.Info("Waiting for informers load initial state...")
+	glog.Info("Waiting for informers to load initial state...")
 	for !informersStarted {
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
