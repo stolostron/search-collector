@@ -1,0 +1,23 @@
+{
+    "kind": "PolicyReport",
+    "apiVersion": "wgpolicyk8s.io/v1alpha1",
+    "metadata": {
+        "name": "report.risk.1",
+        "namespace": "test-cluster"
+    },
+    "results": [
+        {
+            "category": "category,category1,category2",
+            "data": {
+                "created_at": "2021-03-02T21:26:04Z",
+                "details": "policyreport testing risk 1 details",
+                "reason": "policyreport testing risk 1 reason",
+                "resolution": "policyreport testing risk 1 resolution",
+                "total_risk": "1"
+            },
+            "message": "policyreport testing risk 1",
+            "policy": "policyreport testing risk 1 policy",
+            "status": "policyreport testing risk 1 status"
+        }
+    ]
+}

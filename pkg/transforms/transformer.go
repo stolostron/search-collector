@@ -410,6 +410,15 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = SubscriptionResourceBuilder(&typedResource)
 
+		case [2]string{"PolicyReport", "wgpolicyk8s.io"}:
+			typedResource := PolicyReport{}
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = PolicyReportResourceBuilder(&typedResource)
+
 		default:
 			trans = GenericResourceBuilder(event.Resource)
 		}
