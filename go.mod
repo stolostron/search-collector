@@ -6,6 +6,7 @@ module github.com/open-cluster-management/search-collector
 go 1.15
 
 require (
+	github.com/argoproj/argo-cd v1.8.7
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2

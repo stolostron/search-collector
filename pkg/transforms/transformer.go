@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	argoapplication "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	"github.com/golang/glog"
 	acmapp "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
 	appDeployable "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1"
@@ -190,6 +191,15 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = ApplicationResourceBuilder(&typedResource)
+
+		case [2]string{"Application", "argoproj.io"}:
+			typedResource := argoapplication.Application{}
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = ArgoApplicationResourceBuilder(&typedResource)
 
 		case [2]string{"Channel", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := acmapp.Channel{}
