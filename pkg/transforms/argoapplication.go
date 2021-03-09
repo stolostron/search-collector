@@ -3,8 +3,6 @@
 package transforms
 
 import (
-	"strings"
-
 	app "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 )
 
@@ -19,16 +17,14 @@ func ArgoApplicationResourceBuilder(a *app.Application) *ArgoApplicationResource
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 
 	// Extract the properties specific to this type
-	if a.Spec.Destination != nil {
-		if a.Spec.Destination.Name != "" {
-			node.Properties["destinationName"] = a.Spec.Destination.Name
-		}
-		if a.Spec.Destination.Namespace != "" {
-			node.Properties["destinationNamespace"] = a.Spec.Destination.Namespace
-		}
-		if a.Spec.Destination.Server != "" {
-			node.Properties["destinationServer"] = a.Spec.Destination.Server
-		}
+	if a.Spec.Destination.Name != "" {
+		node.Properties["destinationName"] = a.Spec.Destination.Name
+	}
+	if a.Spec.Destination.Namespace != "" {
+		node.Properties["destinationNamespace"] = a.Spec.Destination.Namespace
+	}
+	if a.Spec.Destination.Server != "" {
+		node.Properties["destinationServer"] = a.Spec.Destination.Server
 	}
 	if a.Spec.Source != nil {
 		if a.Spec.Source.Path != "" {
