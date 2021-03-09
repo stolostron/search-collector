@@ -34,13 +34,13 @@ func fakeDynamicClient() *fake.FakeDynamicClient {
 func generateSimpleEvent(informer GenericInformer, t *testing.T) {
 	// Add resource. Generates ADDED event.
 	newResource := newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-new", "id-999")
-	_, err1 := informer.client.Resource(gvr).Namespace("ns-foo").Create(newResource, v1.CreateOptions{})
+	_, err1 := informer.client.Resource(gvr).Namespace("ns-foo").Create(nil, newResource, v1.CreateOptions{})
 
 	// Update resource. Generates MODIFIED event.
-	_, err2 := informer.client.Resource(gvr).Namespace("ns-foo").Update(newResource, v1.UpdateOptions{})
+	_, err2 := informer.client.Resource(gvr).Namespace("ns-foo").Update(nil, newResource, v1.UpdateOptions{})
 
 	// Delete resource. Generated DELETED event.
-	err3 := informer.client.Resource(gvr).Namespace("ns-foo").Delete("name-bar2", &v1.DeleteOptions{})
+	err3 := informer.client.Resource(gvr).Namespace("ns-foo").Delete(nil, "name-bar2", v1.DeleteOptions{})
 
 	if err1 != nil || err2 != nil || err3 != nil {
 		t.Error("Error generating mocked events.")
