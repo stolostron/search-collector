@@ -1,0 +1,28 @@
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+      "creationTimestamp": "2021-02-10T02:15:57Z",
+      "name": "helloworld",
+      "namespace": "argocd"
+  },
+  "spec": {
+      "destination": {
+          "name": "local-cluster",
+          "namespace": "argo-helloworld",
+          "server": "https://kubernetes.default.svc"
+      },
+      "project": "default",
+      "source": {
+          "path": "helloworld",
+          "chart": "hello-chart",
+          "repoURL": "https://github.com/fxiang1/app-samples",
+          "targetRevision": "HEAD"
+      },
+      "syncPolicy": {
+          "automated": {
+              "selfHeal": true
+          }
+      }
+  }
+}
