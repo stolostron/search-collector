@@ -17,6 +17,7 @@ func ArgoApplicationResourceBuilder(a *app.Application) *ArgoApplicationResource
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 
 	// Extract the properties specific to this type
+	// Destination properties
 	if a.Spec.Destination.Name != "" {
 		node.Properties["destinationName"] = a.Spec.Destination.Name
 	}
@@ -26,19 +27,18 @@ func ArgoApplicationResourceBuilder(a *app.Application) *ArgoApplicationResource
 	if a.Spec.Destination.Server != "" {
 		node.Properties["destinationServer"] = a.Spec.Destination.Server
 	}
-	if a.Spec.Source != nil {
-		if a.Spec.Source.Path != "" {
-			node.Properties["path"] = a.Spec.Source.Path
-		}
-		if a.Spec.Source.Chart != "" {
-			node.Properties["chart"] = a.Spec.Source.Chart
-		}
-		if a.Spec.Source.RepoURL != "" {
-			node.Properties["repoURL"] = a.Spec.Source.RepoURL
-		}
-		if a.Spec.Source.TargetRevision != "" {
-			node.Properties["targetRevision"] = a.Spec.Source.TargetRevision
-		}
+	// Source properties
+	if a.Spec.Source.Path != "" {
+		node.Properties["path"] = a.Spec.Source.Path
+	}
+	if a.Spec.Source.Chart != "" {
+		node.Properties["chart"] = a.Spec.Source.Chart
+	}
+	if a.Spec.Source.RepoURL != "" {
+		node.Properties["repoURL"] = a.Spec.Source.RepoURL
+	}
+	if a.Spec.Source.TargetRevision != "" {
+		node.Properties["targetRevision"] = a.Spec.Source.TargetRevision
 	}
 
 	return &ArgoApplicationResource{node: node}
