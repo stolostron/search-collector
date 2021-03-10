@@ -15,7 +15,7 @@ ifeq ($(ARCH), x86_64)
 else
 	IMAGE_NAME_ARCH =$(IMAGE_NAME)-$(ARCH)
 endif
-IMAGE_MAINTAINER =jpadilla@redhat.com
+IMAGE_MAINTAINER =acm-contact@redhat.com
 IMAGE_VENDOR =Red Hat
 IMAGE_DESCRIPTION =Search collector service
 IMAGE_SUMMARY =$(IMAGE_DESCRIPTION)
