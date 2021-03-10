@@ -191,6 +191,10 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ApplicationResourceBuilder(&typedResource)
 
+		case [2]string{"Application", "argoproj.io"}:
+			generic := GenericResourceBuilder(event.Resource)
+			trans = ArgoApplicationResourceBuilder(generic.BuildNode(), event.Resource.UnstructuredContent())
+
 		case [2]string{"Channel", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := acmapp.Channel{}
 			err := runtime.DefaultUnstructuredConverter.
