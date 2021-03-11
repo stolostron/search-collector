@@ -40,11 +40,10 @@ FROM scratch
 WORKDIR /opt/app/
 COPY --from=builder /go/src/github.com/open-cluster-management/search-collector/main ./main
 
-
-RUN microdnf update &&\
-    microdnf install ca-certificates vi --nodocs &&\
-    mkdir /licenses &&\
-    microdnf clean all
+# RUN microdnf update &&\
+#     microdnf install ca-certificates vi --nodocs &&\
+#     mkdir /licenses &&\
+#     microdnf clean all
 
 ENV VCS_REF="$VCS_REF" \
     USER_UID=1001 \
