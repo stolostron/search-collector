@@ -54,8 +54,6 @@ before_script:
   - make
   # Set the image tag differently for PRs.
   - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi;
-  # Use ssh to pull from private repos.
-  - git config --global url."git@github.com:".insteadOf "https://github.com/"
 
 jobs:
   include:
