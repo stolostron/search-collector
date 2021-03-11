@@ -1,5 +1,10 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.2
 
+WORKDIR /go/src/github.com/open-cluster-management/search-collector
+COPY . .
+RUN CGO_ENABLED=0 GOGC=25 go build -trimpath -o main main.go
+
+
 ARG VCS_REF
 ARG VCS_URL
 ARG IMAGE_NAME
@@ -31,6 +36,11 @@ LABEL org.label-schema.vendor="Red Hat" \
       io.k8s.description="$IMAGE_DESCRIPTION" \
       io.openshift.tags="$IMAGE_OPENSHIFT_TAGS"
 
+FROM scratch
+WORKDIR /opt/app/
+COPY --from=builder /go/src/github.com/open-cluster-management/search-collector/main ./main
+
+
 RUN microdnf update &&\
     microdnf install ca-certificates vi --nodocs &&\
     mkdir /licenses &&\
@@ -43,4 +53,4 @@ ENV VCS_REF="$VCS_REF" \
 ADD output/search-collector /bin
 
 USER ${USER_UID}
-ENTRYPOINT ["bin/search-collector"]
+ENTRYPOINT ["/opt/app/main"]
