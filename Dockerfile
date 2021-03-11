@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.2
+FROM registry.ci.openshift.org/open-cluster-management/builder:go1.15-linux-amd64 AS builder
 
 WORKDIR /go/src/github.com/open-cluster-management/search-collector
 COPY . .
@@ -48,7 +48,7 @@ RUN microdnf update &&\
 
 ENV VCS_REF="$VCS_REF" \
     USER_UID=1001 \
-    GOGC=50
+    GOGC=25
 
 ADD output/search-collector /bin
 
