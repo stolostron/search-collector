@@ -19,22 +19,19 @@ default::
 deps:
 	go mod tidy
 
-.PHONY: search-collector
-search-collector:
-	CGO_ENABLED=0 GOGC=25 go build -a -v -i -installsuffix cgo -ldflags '-s -w' -o $(BINDIR)/search-collector ./
-
 .PHONY: build
-build: search-collector
+build:
+	CGO_ENABLED=0 GOGC=25 go build -o $(BINDIR)/search-collector ./
 
 .PHONY: build-linux
 build-linux:
-	make search-collector GOOS=linux
+	make build GOOS=linux
 
 .PHONY: lint
 lint:
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.38.0
 	# Flag GOGC=25 needed to run garbage collection more often and avoid out of memory issue.
-	GOGC=50 golangci-lint run --timeout=3m
+	GOGC=25 golangci-lint run --timeout=3m
 
 run:
 	GOGC=25 go run main.go

@@ -8,14 +8,14 @@ endif
 
 
 IMAGE_NAME =$(shell cat COMPONENT_NAME)
-IMAGE_DISPLAY_NAME =Search Colector
+IMAGE_DISPLAY_NAME =Search Collector
 ARCH = $(shell uname -m)
 ifeq ($(ARCH), x86_64)
 	IMAGE_NAME_ARCH =$(IMAGE_NAME)-amd64
 else
 	IMAGE_NAME_ARCH =$(IMAGE_NAME)-$(ARCH)
 endif
-IMAGE_MAINTAINER =jpadilla@redhat.com
+IMAGE_MAINTAINER =acm-contact@redhat.com
 IMAGE_VENDOR =Red Hat
 IMAGE_DESCRIPTION =Search collector service
 IMAGE_SUMMARY =$(IMAGE_DESCRIPTION)
