@@ -8,7 +8,7 @@ endif
 
 
 IMAGE_NAME =$(shell cat COMPONENT_NAME)
-IMAGE_DISPLAY_NAME =Search Colector
+IMAGE_DISPLAY_NAME =Search Collector
 ARCH = $(shell uname -m)
 ifeq ($(ARCH), x86_64)
 	IMAGE_NAME_ARCH =$(IMAGE_NAME)-amd64

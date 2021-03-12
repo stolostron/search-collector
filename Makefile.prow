@@ -1,0 +1,7 @@
+# Copyright Contributors to the Open Cluster Management project
+
+-include /opt/build-harness/Makefile.prow
+
+.PHONY: build
+build:
+	CGO_ENABLED=0 GOGC=25 go build -o $(BINDIR)/search-collector ./
