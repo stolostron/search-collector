@@ -1,9 +1,10 @@
+# Copyright Contributors to the Open Cluster Management project
+
 FROM registry.ci.openshift.org/open-cluster-management/builder:go1.15-linux-amd64 AS builder
 
 WORKDIR /go/src/github.com/open-cluster-management/search-collector
 COPY . .
 RUN CGO_ENABLED=0 GOGC=25 go build -trimpath -o main main.go
-
 
 ARG VCS_REF
 ARG VCS_URL
@@ -36,20 +37,19 @@ LABEL org.label-schema.vendor="Red Hat" \
       io.k8s.description="$IMAGE_DESCRIPTION" \
       io.openshift.tags="$IMAGE_OPENSHIFT_TAGS"
 
-FROM scratch
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+
+RUN microdnf update &&\
+    microdnf install ca-certificates vi --nodocs &&\
+    mkdir /licenses &&\
+    microdnf clean all
+
 WORKDIR /opt/app/
 COPY --from=builder /go/src/github.com/open-cluster-management/search-collector/main ./main
-
-# RUN microdnf update &&\
-#     microdnf install ca-certificates vi --nodocs &&\
-#     mkdir /licenses &&\
-#     microdnf clean all
 
 ENV VCS_REF="$VCS_REF" \
     USER_UID=1001 \
     GOGC=25
-
-ADD output/search-collector /bin
 
 USER ${USER_UID}
 ENTRYPOINT ["/opt/app/main"]
