@@ -1,3 +1,8 @@
+[comment]: # ( Copyright Contributors to the Open Cluster Management project )
+# WORK IN PROGRESS
+
+We are in the process of enabling this repo for community contribution. See wiki [here](https://open-cluster-management.io/concepts/architecture/).
+
 # Open Cluster Management - Search Collector
 
 The `search collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/open-cluster-management/search/blob/master/feature-spec/search.md) has an overview of all the search components.
