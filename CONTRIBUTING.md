@@ -47,6 +47,7 @@ After your PR is ready to commit, please run following commands to check your co
 
 ```shell
 make test
+make lint
 ```
 
 ## Build images
