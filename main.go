@@ -48,6 +48,7 @@ func main() {
 	// so that we take maximum advantage of whatever hardware we're on
 	numThreads := runtime.NumCPU()
 
+	glog.Info("The Search Collector, as built by PROW!")
 	glog.Info("Starting Search Collector")
 	if commit, ok := os.LookupEnv("VCS_REF"); ok {
 		glog.Info("Built from git commit: ", commit)
