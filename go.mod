@@ -31,6 +31,7 @@ replace (
 	github.com/buger/jsonparser => github.com/buger/jsonparser v1.1.1
 	github.com/docker/docker => github.com/docker/docker v1.13.1
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200527184302-a843dc3262a0
+	golang.org/x/text => golang.org/x/text v0.3.5
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
