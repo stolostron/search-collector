@@ -27,7 +27,7 @@ func TestTransformPod(t *testing.T) {
 
 	// Test only the fields that exist in pods - the common test will test the other bits
 
-	AssertEqual("kind", node.Properties["kind"], "Pod", t)
+	AssertEqual("kind", node.Properties["kind"], "Deployment", t)
 	AssertEqual("hostIP", node.Properties["hostIP"], "1.1.1.1", t)
 	AssertEqual("podIP", node.Properties["podIP"], "2.2.2.2", t)
 	AssertEqual("restarts", node.Properties["restarts"], int64(0), t)
