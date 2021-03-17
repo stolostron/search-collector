@@ -55,8 +55,7 @@ make lint
 Make sure your code build passed.
 
 ```shell
-export BUILD_LOCALLY=1
-make
+make docker-build ## Ensure build succeeds
 ```
 
 Now, you can follow the [README](./README.md) to work with the open-cluster-management/search-collector repository.
