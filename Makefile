@@ -52,3 +52,7 @@ clean::
 	rm -rf ./$(BINDIR)
 	rm -rf ./.vendor-new
 	rm -rf ./vendor
+
+# Build the docker image
+docker-build: 
+	docker build -f Dockerfile . -t search-collector
