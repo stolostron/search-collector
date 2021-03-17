@@ -2,40 +2,67 @@
 
 package transforms
 
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
 // ArgoApplicationResource ...
 type ArgoApplicationResource struct {
 	node Node
 }
 
-// ArgoApplicationResourceBuilder ...
-func ArgoApplicationResourceBuilder(node Node, u map[string]interface{}) *ArgoApplicationResource {
-	// Extract the properties specific to this type
+type ArgoApplication struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+	Spec              ArgoApplicationSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+}
 
-	spec := u["spec"].(map[string]interface{})
+type ArgoApplicationSpec struct {
+	Source      ArgoApplicationSource      `json:"source" protobuf:"bytes,1,opt,name=source"`
+	Destination ArgoApplicationDestination `json:"destination" protobuf:"bytes,2,name=destination"`
+}
+
+type ArgoApplicationSource struct {
+	RepoURL        string `json:"repoURL" protobuf:"bytes,1,opt,name=repoURL"`
+	Path           string `json:"path,omitempty" protobuf:"bytes,2,opt,name=path"`
+	TargetRevision string `json:"targetRevision,omitempty" protobuf:"bytes,4,opt,name=targetRevision"`
+	Chart          string `json:"chart,omitempty" protobuf:"bytes,12,opt,name=chart"`
+}
+
+type ArgoApplicationDestination struct {
+	Server    string `json:"server,omitempty" protobuf:"bytes,1,opt,name=server"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+	Name      string `json:"name,omitempty" protobuf:"bytes,3,opt,name=name"`
+}
+
+// ArgoApplicationResourceBuilder ...
+func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource {
+	node := transformCommon(a)
+	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
+
+	// Extract the properties specific to this type
 	// Destination properties
-	destination := spec["destination"].(map[string]interface{})
-	if destination["name"] != "" {
-		node.Properties["destinationName"] = destination["name"]
+	if a.Spec.Destination.Name != "" {
+		node.Properties["destinationName"] = a.Spec.Destination.Name
 	}
-	if destination["namespace"] != "" {
-		node.Properties["destinationNamespace"] = destination["namespace"]
+	if a.Spec.Destination.Namespace != "" {
+		node.Properties["destinationNamespace"] = a.Spec.Destination.Namespace
 	}
-	if destination["server"] != "" {
-		node.Properties["destinationServer"] = destination["server"]
+	if a.Spec.Destination.Server != "" {
+		node.Properties["destinationServer"] = a.Spec.Destination.Server
 	}
 	// Source properties
-	source := spec["source"].(map[string]interface{})
-	if source["path"] != "" {
-		node.Properties["path"] = source["path"]
+	if a.Spec.Source.Path != "" {
+		node.Properties["path"] = a.Spec.Source.Path
 	}
-	if source["chart"] != "" {
-		node.Properties["chart"] = source["chart"]
+	if a.Spec.Source.Chart != "" {
+		node.Properties["chart"] = a.Spec.Source.Chart
 	}
-	if source["repoURL"] != "" {
-		node.Properties["repoURL"] = source["repoURL"]
+	if a.Spec.Source.RepoURL != "" {
+		node.Properties["repoURL"] = a.Spec.Source.RepoURL
 	}
-	if source["targetRevision"] != "" {
-		node.Properties["targetRevision"] = source["targetRevision"]
+	if a.Spec.Source.TargetRevision != "" {
+		node.Properties["targetRevision"] = a.Spec.Source.TargetRevision
 	}
 
 	return &ArgoApplicationResource{node: node}
