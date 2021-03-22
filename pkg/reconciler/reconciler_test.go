@@ -69,7 +69,6 @@ func createNodeEvents() []tr.NodeEvent {
 	p.Name = "testpod"
 	p.Kind = "Pod"
 	p.Namespace = "default"
-	p.SelfLink = "/api/v1/namespaces/default/pods/testpod"
 	p.UID = "5678"
 	podNode := tr.PodResourceBuilder(&p).BuildNode()
 	podNode.Metadata["OwnerUID"] = "local-cluster/1234"

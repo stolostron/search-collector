@@ -29,7 +29,6 @@ func CreateGenericResource() machineryV1.Object {
 	p.APIVersion = "v1"
 	p.Name = "testpod"
 	p.Namespace = "default"
-	p.SelfLink = "/api/v1/namespaces/default/pods/testpod"
 	p.UID = "00aa0000-00aa-00a0-a000-00000a00a0a0"
 	p.CreationTimestamp = timestamp
 	p.Labels = labels
@@ -46,7 +45,6 @@ func TestCommonProperties(t *testing.T) {
 	// Test all the fields.
 	AssertEqual("name", cp["name"], interface{}("testpod"), t)
 	AssertEqual("namespace", cp["namespace"], interface{}("default"), t)
-	AssertEqual("selfLink", cp["selfLink"], interface{}("/api/v1/namespaces/default/pods/testpod"), t)
 	AssertEqual("created", cp["created"], interface{}(timeString), t)
 
 	noLabels := true
