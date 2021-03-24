@@ -33,7 +33,6 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 	ret := make(map[string]interface{})
 
 	ret["name"] = resource.GetName()
-	ret["selfLink"] = resource.GetSelfLink()
 	ret["created"] = resource.GetCreationTimestamp().UTC().Format(time.RFC3339)
 	ret["_clusterNamespace"] = config.Cfg.ClusterNamespace
 	if config.Cfg.DeployedInHub {
