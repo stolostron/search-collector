@@ -1,5 +1,5 @@
 {
-    "apiVersion": "extensions/v1beta1",
+    "apiVersion": "apps/v1",
     "kind": "ReplicaSet",
     "metadata": {
         "annotations": {
@@ -30,7 +30,7 @@
             }
         ],
         "resourceVersion": "134381",
-        "selfLink": "/apis/extensions/v1beta1/namespaces/default/replicasets/fake-replicaset",
+        "selfLink": "/apis/apps/v1/namespaces/default/replicasets/fake-replicaset",
         "uid": "eb762405-361f-11e9-85ca-00163e019656"
     },
     "spec": {

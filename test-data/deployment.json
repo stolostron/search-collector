@@ -1,5 +1,5 @@
 {
-    "apiVersion": "extensions/v1beta1",
+    "apiVersion": "apps/v1",
     "kind": "Deployment",
     "metadata": {
         "annotations": {
@@ -18,7 +18,7 @@
         "name": "fake-deployment",
         "namespace": "default",
         "resourceVersion": "1142",
-        "selfLink": "/apis/extensions/v1beta1/namespaces/default/deployments/fake-deployment",
+        "selfLink": "/apis/1extensions/v1beta/namespaces/default/deployments/fake-deployment",
         "uid": "1cc734de-36dd-11e9-a4d8-00163e019656" 
     },
     "spec": {
