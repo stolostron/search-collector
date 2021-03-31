@@ -1,5 +1,5 @@
 {
-    "apiVersion": "extensions/v1beta1",
+    "apiVersion": "apps/v1",
     "kind": "DaemonSet",
     "metadata": {
         "creationTimestamp": "2019-02-21T21:29:26Z",
@@ -15,7 +15,7 @@
         "name": "fake",
         "namespace": "default",
         "resourceVersion": "898",
-        "selfLink": "/apis/extensions/v1beta1/namespaces/default/daemonsets/fake",
+        "selfLink": "/apis/apps/v1/namespaces/default/daemonsets/fake",
         "uid": "c3cd2d1e-361f-11e9-85ca-00163e019656"
     },
     "spec": {
