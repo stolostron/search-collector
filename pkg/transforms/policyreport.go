@@ -5,35 +5,36 @@ package transforms
 
 import (
 	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PolicyReport report
 type PolicyReport struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Results []ReportResults `json:"results"`
+	Results           []ReportResults `json:"results"`
 }
 
 // ReportResults rule violation results
 type ReportResults struct {
-	Policy string `json:"policy"`
-	Message string `json:"message"`
-	Category string `json:"category"`
-	Status string `json:"status"`
-	Data ReportData `json:"data"`
+	Policy      string     `json:"policy"`
+	Description string     `json:"message"`
+	Category    string     `json:"category"`
+	Result      string     `json:"result"`
+	Properties  ReportData `json:"properties"`
 }
 
 // ReportData rule violation data
 type ReportData struct {
-	Created string `json:"created_at"`
-	Details string `json:"details"`
-	TotalRisk string `json:"total_risk"`
-	Reason string `json:"reason"`
+	Created    string `json:"created_at"`
+	Details    string `json:"details"`
+	TotalRisk  string `json:"total_risk"`
+	Reason     string `json:"reason"`
 	Resolution string `json:"resolution"`
 }
 
-// PolicyReportResource type 
+// PolicyReportResource type
 type PolicyReportResource struct {
 	node Node
 }
@@ -48,9 +49,9 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	node.Properties["apigroup"] = gvk.Group
 
 	// Extract the properties specific to this type
-	node.Properties["message"] = string(pr.Results[0].Message)
+	node.Properties["message"] = string(pr.Results[0].Description)
 	node.Properties["category"] = strings.Split(pr.Results[0].Category, ",")
-	node.Properties["risk"] = string(pr.Results[0].Data.TotalRisk)
+	node.Properties["risk"] = string(pr.Results[0].Properties.TotalRisk)
 
 	return &PolicyReportResource{node: node}
 }
