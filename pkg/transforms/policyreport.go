@@ -18,15 +18,15 @@ type PolicyReport struct {
 
 // ReportResults rule violation results
 type ReportResults struct {
-	Policy      string     `json:"policy"`
-	Description string     `json:"message"`
-	Category    string     `json:"category"`
-	Result      string     `json:"result"`
-	Properties  ReportData `json:"properties"`
+	Policy      string           `json:"policy"`
+	Message     string           `json:"message"`
+	Category    string           `json:"category"`
+	Result      string           `json:"result"`
+	Properties  ReportProperties `json:"properties"`
 }
 
-// ReportData rule violation data
-type ReportData struct {
+// ReportProperties rule violation data
+type ReportProperties struct {
 	Created    string `json:"created_at"`
 	Details    string `json:"details"`
 	TotalRisk  string `json:"total_risk"`
@@ -49,9 +49,10 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	node.Properties["apigroup"] = gvk.Group
 
 	// Extract the properties specific to this type
-	node.Properties["message"] = string(pr.Results[0].Description)
+	node.Properties["message"] = string(pr.Results[0].Message)
 	node.Properties["category"] = strings.Split(pr.Results[0].Category, ",")
 	node.Properties["risk"] = string(pr.Results[0].Properties.TotalRisk)
+	node.Properties["result"] = string(pr.Results[0].Result)
 
 	return &PolicyReportResource{node: node}
 }
