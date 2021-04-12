@@ -17,7 +17,7 @@
             },
             "message": "policyreport testing risk 1",
             "policy": "policyreport testing risk 1 policy",
-            "status": "policyreport testing risk 1 status"
+            "result": "error"
         }
     ]
 }
