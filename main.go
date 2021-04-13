@@ -42,7 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
-
+	fmt.Println("User_id set in DockerFile: ", os.Getenv("USER_UID"))
 	// determine number of CPUs available.
 	// We make that many goroutines for transformation and reconciliation,
 	// so that we take maximum advantage of whatever hardware we're on
