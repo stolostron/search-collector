@@ -24,5 +24,10 @@
               "selfHeal": true
           }
       }
+  },
+  "status": {
+      "health": {
+          "status": "Healthy"
+      }
   }
 }

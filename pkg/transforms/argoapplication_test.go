@@ -20,4 +20,5 @@ func TestTransformArgoApplication(t *testing.T) {
 	AssertEqual("chart", node.Properties["chart"], "hello-chart", t)
 	AssertEqual("repoURL", node.Properties["repoURL"], "https://github.com/fxiang1/app-samples", t)
 	AssertEqual("targetRevision", node.Properties["targetRevision"], "HEAD", t)
+	AssertEqual("status", node.Properties["status"], "Healthy", t)
 }
