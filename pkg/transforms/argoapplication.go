@@ -14,7 +14,8 @@ type ArgoApplicationResource struct {
 type ArgoApplication struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              ArgoApplicationSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Spec              ArgoApplicationSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+	Status            ArgoApplicationStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
 type ArgoApplicationSpec struct {
@@ -35,6 +36,14 @@ type ArgoApplicationDestination struct {
 	Name      string `json:"name,omitempty" protobuf:"bytes,3,opt,name=name"`
 }
 
+type ArgoApplicationStatus struct {
+	Health ArgoApplicationHealth `json:"health" protobuf:"bytes,1,opt,name=health"`
+}
+
+type ArgoApplicationHealth struct {
+	Status string `json:"status" protobuf:"bytes,1,opt,name=status"`
+}
+
 // ArgoApplicationResourceBuilder ...
 func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource {
 	node := transformCommon(a)
@@ -52,6 +61,9 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 	node.Properties["chart"] = a.Spec.Source.Chart
 	node.Properties["repoURL"] = a.Spec.Source.RepoURL
 	node.Properties["targetRevision"] = a.Spec.Source.TargetRevision
+
+	// Status properties
+	node.Properties["status"] = a.Status.Health.Status
 
 	return &ArgoApplicationResource{node: node}
 }
