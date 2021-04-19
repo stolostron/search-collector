@@ -1,6 +1,6 @@
 # Copyright Contributors to the Open Cluster Management project
 
-FROM registry.ci.openshift.org/open-cluster-management/builder:go1.16-linux-amd64 AS builder
+FROM registry.ci.openshift.org/open-cluster-management/builder:go1.16-linux AS builder
 
 WORKDIR /go/src/github.com/open-cluster-management/search-collector
 COPY . .
