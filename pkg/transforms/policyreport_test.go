@@ -13,7 +13,7 @@ func TestTransformPolicyReport(t *testing.T) {
 	node := PolicyReportResourceBuilder(&pr).BuildNode()
 
 	// Test unique fields that exist in policy report and are shown in UI - the common test will test the other bits
-	AssertDeepEqual("category", node.Properties["category"], []string{"category", "category1", "category2", "category3", "category4"}, t)
+	AssertDeepEqual("category Length", len(node.Properties["category"].([]string)), 5, t)
 	AssertDeepEqual("insightPolicies", node.Properties["insightPolicies"], []string{"policyreport testing risk 1 policy", "policyreport testing risk 2 policy"}, t)
 	AssertDeepEqual("numInsightPolicies", node.Properties["numInsightPolicies"], 2, t)
 }
