@@ -18,11 +18,11 @@ type PolicyReport struct {
 
 // ReportResults rule violation results
 type ReportResults struct {
-	Policy      string           `json:"policy"`
-	Message     string           `json:"message"`
-	Category    string           `json:"category"`
-	Result      string           `json:"result"`
-	Properties  ReportProperties `json:"properties"`
+	Policy     string           `json:"policy"`
+	Message    string           `json:"message"`
+	Category   string           `json:"category"`
+	Result     string           `json:"result"`
+	Properties ReportProperties `json:"properties"`
 }
 
 // ReportProperties rule violation data
@@ -48,12 +48,23 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	node.Properties["apiversion"] = gvk.Version
 	node.Properties["apigroup"] = gvk.Group
 
+	// Total number of policies in the report
+	node.Properties["numInsightPolicies"] = len(pr.Results)
 	// Extract the properties specific to this type
-	node.Properties["message"] = string(pr.Results[0].Message)
-	node.Properties["category"] = strings.Split(pr.Results[0].Category, ",")
-	node.Properties["risk"] = string(pr.Results[0].Properties.TotalRisk)
-	node.Properties["result"] = string(pr.Results[0].Result)
-
+	categoryMap := make(map[string]struct{})
+	policies := make([]string, 0, len(pr.Results))
+	for _, result := range pr.Results {
+		for _, category := range strings.Split(result.Category, ",") {
+			categoryMap[category] = struct{}{}
+		}
+		policies = append(policies, result.Policy)
+	}
+	categories := make([]string, 0, len(categoryMap))
+	for k := range categoryMap {
+		categories = append(categories, k)
+	}
+	node.Properties["insightPolicies"] = policies
+	node.Properties["category"] = categories
 	return &PolicyReportResource{node: node}
 }
 

@@ -18,6 +18,19 @@
             "message": "policyreport testing risk 1",
             "policy": "policyreport testing risk 1 policy",
             "result": "error"
+        },
+        {
+            "category": "category,category3,category4",
+            "properties": {
+                "created_at": "2021-03-02T21:26:04Z",
+                "details": "policyreport testing risk 2 details",
+                "reason": "policyreport testing risk 2 reason",
+                "resolution": "policyreport testing risk 2 resolution",
+                "total_risk": "2"
+            },
+            "message": "policyreport testing risk 2",
+            "policy": "policyreport testing risk 2 policy",
+            "result": "error"
         }
     ]
 }
