@@ -48,8 +48,6 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	node.Properties["apiversion"] = gvk.Version
 	node.Properties["apigroup"] = gvk.Group
 
-	// Overwrite the name to be the namespace - which is same as the cluster the policy affects
-	node.Properties["name"] = pr.Namespace
 	// Total number of policies in the report
 	node.Properties["numInsightPolicies"] = len(pr.Results)
 	// Extract the properties specific to this type
