@@ -115,6 +115,8 @@ func PodResourceBuilder(p *v1.Pod) *PodResource {
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
 	node.Properties["startedAt"] = ""
+	node.Properties["ownerName"] = p.ObjectMeta.OwnerReferences[0].Name
+	node.Properties["ownerKind"] = p.ObjectMeta.OwnerReferences[0].Kind
 	if p.Status.StartTime != nil {
 		node.Properties["startedAt"] = p.Status.StartTime.UTC().Format(time.RFC3339)
 	}
