@@ -105,13 +105,7 @@ func PodResourceBuilder(p *v1.Pod) *PodResource {
 	}
 
 	node := transformCommon(p) // Start off with the common properties
-
-	var ownerName = ""
-	var ownerKind = ""
-	if len(p.ObjectMeta.OwnerReferences) > 0 {
-		ownerName = p.ObjectMeta.OwnerReferences[0].Name
-		ownerKind = p.ObjectMeta.OwnerReferences[0].Kind
-	}
+	ownerReferences := p.ObjectMeta.OwnerReferences
 
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -122,8 +116,10 @@ func PodResourceBuilder(p *v1.Pod) *PodResource {
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
 	node.Properties["startedAt"] = ""
-	node.Properties["ownerName"] = ownerName
-	node.Properties["ownerKind"] = ownerKind
+	if len(ownerReferences) > 0 && (ownerReferences[0].Kind == "ReplicationController" || ownerReferences[0].Kind == "ReplicaSet") {
+		node.Properties["ownerName"] = ownerReferences[0].Name
+		node.Properties["ownerKind"] = ownerReferences[0].Kind
+	}
 	if p.Status.StartTime != nil {
 		node.Properties["startedAt"] = p.Status.StartTime.UTC().Format(time.RFC3339)
 	}
