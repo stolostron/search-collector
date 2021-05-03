@@ -116,7 +116,8 @@ func PodResourceBuilder(p *v1.Pod) *PodResource {
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
 	node.Properties["startedAt"] = ""
-	if len(ownerReferences) > 0 && (ownerReferences[0].Kind == "ReplicationController" || ownerReferences[0].Kind == "ReplicaSet") {
+	if len(ownerReferences) > 0 &&
+		(ownerReferences[0].Kind == "ReplicationController" || ownerReferences[0].Kind == "ReplicaSet") {
 		node.Properties["ownerName"] = ownerReferences[0].Name
 		node.Properties["ownerKind"] = ownerReferences[0].Kind
 	}
