@@ -35,6 +35,7 @@ func TestTransformPod(t *testing.T) {
 	AssertDeepEqual("image", node.Properties["image"], []string{"fake-image:latest"}, t)
 	AssertEqual("startedAt", node.Properties["startedAt"], date.UTC().Format(time.RFC3339), t)
 	AssertEqual("status", node.Properties["status"], string(v1.PodRunning), t)
+	AssertEqual("_ownerUID", node.Properties["_ownerUID"], "local-cluster/eb762405-361f-11e9-85ca-00163e019656", t)
 }
 
 func TestTransformPodInitWaiting(t *testing.T) {
