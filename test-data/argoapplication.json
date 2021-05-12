@@ -4,7 +4,23 @@
   "metadata": {
       "creationTimestamp": "2021-02-10T02:15:57Z",
       "name": "helloworld",
-      "namespace": "argocd"
+      "namespace": "argocd",
+      "ownerReferences": [{
+        "apiVersion": "other.io/v2",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "name": "wrong-helloworld-set",
+        "kind": "ApplicationSet",
+        "uid": "8144b62e-aada-4d85-bb6b-c8077c007929"
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "name": "helloworld-set",
+        "kind": "ApplicationSet",
+        "uid": "8144b62e-aada-4d85-bb6b-c8077c007930"
+      }]
   },
   "spec": {
       "destination": {

@@ -13,6 +13,7 @@ func TestTransformArgoApplication(t *testing.T) {
 
 	// Test only the fields that exist in application - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Application", t)
+	AssertEqual("applicationSet", node.Properties["applicationSet"], "helloworld-set", t)
 	AssertEqual("destinationName", node.Properties["destinationName"], "local-cluster", t)
 	AssertEqual("destinationNamespace", node.Properties["destinationNamespace"], "argo-helloworld", t)
 	AssertEqual("destinationServer", node.Properties["destinationServer"], "https://kubernetes.default.svc", t)

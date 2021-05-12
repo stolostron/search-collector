@@ -3,6 +3,8 @@
 package transforms
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -50,6 +52,16 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 
 	// Extract the properties specific to this type
+
+	// ApplicationSet
+	applicationSet := ""
+	for _, ref := range a.ObjectMeta.OwnerReferences {
+		if strings.Index(ref.APIVersion, "argoproj.io/") == 0 && ref.Kind == "ApplicationSet" {
+			applicationSet = ref.Name
+			break
+		}
+	}
+	node.Properties["applicationSet"] = applicationSet
 
 	// Destination properties
 	node.Properties["destinationName"] = a.Spec.Destination.Name
