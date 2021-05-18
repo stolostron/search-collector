@@ -50,3 +50,18 @@ RUNTIME_MODE    | no       | production             | Running mode (development 
 ### Other Configuration Options
 - Environment variables can also be set in ./config.json for development. If both provide a value for a specific property, the environment variable will override the file. You can define your own config json file and pass it to the application with `-c <config_file>`
 - The application can take any flags for [glog](https://github.com/golang/glog), it will pass them straight into glog. The glog flag `--logtostderr` is set to true by default.
+
+
+### Contribution
+When making contributions to the search collector project, fork the project then merge your chages by creating a pull request from your personal fork to the main project.
+
+1. Fork Repository
+2. Clone your fork
+3. Set upstream origin `set upstream origin git@github.com:open-cluster-management/search-collector.git`
+4. Make your edits. Please test them locally before creating a pull request to ensure smooth merging :smile:
+5. Push your new commits to your personal fork `git push origin`
+6. Create a pull request from your personal fork again the upstream search-collector main branch
+
+
+
+
