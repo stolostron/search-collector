@@ -104,6 +104,10 @@ func buildSelfLink(nodeProps map[string]interface{}, resourceString string) stri
 		root = "api"
 	}
 
+	// The selfLink format is: /api/apigroup/apiversion/namespaces/namespace/kind-plural/name
+	// - apigroup, version, and namespace are optional
+	// Example 1:  /api/v1/namespaces/kube-system/configmaps/cluster-config-v1
+	// Example 2:  /api/v1/nodes/ip-10-0-143-224.us-east-2.compute.internal
 	selfLink := fmt.Sprintf("/%s%s%s/%s/%s", root, groupVersion, namespace, resourceString, nodeProps["name"].(string))
 	selfLink = strings.ReplaceAll(selfLink, ":", "%3A")
 	return selfLink
