@@ -8,7 +8,6 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
-	github.com/hashicorp/go-version v1.2.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20200602150427-d0f4af8aba9d
 	github.com/open-cluster-management/multicloud-operators-channel v1.0.0
@@ -27,6 +26,7 @@ require (
 )
 
 replace (
+	bitbucket.org/ww/goautoneg@v0.0.0-20120707110453-75cd24fc2f2c => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 	github.com/docker/docker => github.com/docker/docker v1.13.1
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
