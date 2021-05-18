@@ -5,6 +5,7 @@ module github.com/open-cluster-management/search-collector
 go 1.13
 
 require (
+	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
@@ -27,8 +28,8 @@ require (
 )
 
 replace (
-	bitbucket.org/ww/goautoneg@v0.0.0-20120707110453-75cd24fc2f2c => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 	github.com/docker/docker => github.com/docker/docker v1.13.1
+	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.14.0
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
