@@ -83,6 +83,8 @@ type Deletion struct {
 	UID string `json:"uid,omitempty"`
 }
 
+// Builds a selfLink using data from the node. This is used as a workaround to stay compatible with
+// kubernetes 1.20 which deprecates this field.
 func buildSelfLink(nodeProps map[string]interface{}, resourceString string) string {
 	namespace := ""
 	if nodeProps["namespace"] != nil && nodeProps["namespace"].(string) != "" {
@@ -91,10 +93,8 @@ func buildSelfLink(nodeProps map[string]interface{}, resourceString string) stri
 
 	root := "api/v1"
 	groupVersion := ""
-	if nodeProps["apigroup"] != nil &&
-		nodeProps["apigroup"].(string) != "" &&
-		nodeProps["apiversion"] != nil &&
-		nodeProps["apiversion"].(string) != "" {
+	if nodeProps["apigroup"] != nil && nodeProps["apigroup"].(string) != "" &&
+		nodeProps["apiversion"] != nil && nodeProps["apiversion"].(string) != "" {
 		root = "apis"
 		groupVersion = "/" + nodeProps["apigroup"].(string) + "/" + nodeProps["apiversion"].(string)
 	} else if nodeProps["apigroup"] != nil && nodeProps["apigroup"].(string) != "" {
@@ -124,6 +124,7 @@ func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEven
 	// A permanent fix is delivered in ACM 2.2
 	if ne.Node.Properties["selfLink"] == nil || ne.Node.Properties["selfLink"].(string) == "" {
 		ne.Node.Properties["selfLink"] = buildSelfLink(ne.Node.Properties, resourceString)
+		fmt.Println("replacing selfLink")
 	}
 
 	return ne
