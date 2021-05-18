@@ -128,7 +128,6 @@ func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEven
 	// A permanent fix is delivered in ACM 2.2
 	if ne.Node.Properties["selfLink"] == nil || ne.Node.Properties["selfLink"].(string) == "" {
 		ne.Node.Properties["selfLink"] = buildSelfLink(ne.Node.Properties, resourceString)
-		fmt.Println("replacing selfLink")
 	}
 
 	return ne
