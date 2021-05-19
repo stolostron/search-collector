@@ -16,6 +16,8 @@ func TestTransformPolicyReport(t *testing.T) {
 	AssertDeepEqual("category Length", len(node.Properties["category"].([]string)), 5, t)
 	AssertDeepEqual("insightPolicies", node.Properties["insightPolicies"], []string{"policyreport testing risk 1 policy", "policyreport testing risk 2 policy"}, t)
 	AssertDeepEqual("numInsightPolicies", node.Properties["numInsightPolicies"], 2, t)
+
+	AssertDeepEqual("scope", node.Properties["scope"], "test-clsuter", t)
 }
 
 func TestPolicyReportBuildEdges(t *testing.T) {
