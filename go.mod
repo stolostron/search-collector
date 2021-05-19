@@ -5,10 +5,10 @@ module github.com/open-cluster-management/search-collector
 go 1.13
 
 require (
+	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/protobuf v1.4.2
-	github.com/hashicorp/go-version v1.2.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20200602150427-d0f4af8aba9d
 	github.com/open-cluster-management/multicloud-operators-channel v1.0.0
@@ -19,8 +19,8 @@ require (
 	github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.1-0.20200603160156-4d66bd136ba3 //Use 2.0 when available
 	github.com/tkanos/gonfig v0.0.0-20181112185242-896f3d81fadf
 	gopkg.in/yaml.v2 v2.3.0
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
+	k8s.io/api v0.18.3
+	k8s.io/apimachinery v0.18.3
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.16.7+incompatible
 	sigs.k8s.io/application v0.8.3
@@ -28,6 +28,7 @@ require (
 
 replace (
 	github.com/docker/docker => github.com/docker/docker v1.13.1
+	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.14.0
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
