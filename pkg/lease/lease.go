@@ -1,6 +1,7 @@
 package lease
 
 import (
+	"os"
 	"time"
 
 	"github.com/golang/glog"
@@ -26,9 +27,9 @@ type LeaseReconciler struct {
 func (r *LeaseReconciler) Reconcile() {
 	glog.Info("In lease Reconcile")
 	if len(r.componentNamespace) == 0 {
-		r.componentNamespace = config.Cfg.ClusterNamespace
+		r.componentNamespace = getPodNamespace()
 	}
-	glog.Info("Cluster namespace is ", r.componentNamespace)
+	glog.Info("Lease namespace is ", r.componentNamespace)
 	lease, err := config.GetKubeClient().CoordinationV1().Leases(r.componentNamespace).Get(r.LeaseName, metav1.GetOptions{})
 
 	switch {
@@ -69,4 +70,13 @@ func (r *LeaseReconciler) Reconcile() {
 
 		return
 	}
+}
+
+func getPodNamespace() string {
+	if collectorPodNamespace, ok := os.LookupEnv("POD_NAMESPACE"); ok {
+		glog.Info("Pod namespace : ", collectorPodNamespace)
+		return collectorPodNamespace
+	}
+	glog.Info("Pod namespace is empty")
+	return "open-cluster-management-agent-addon"
 }

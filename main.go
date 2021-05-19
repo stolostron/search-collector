@@ -36,7 +36,7 @@ import (
 
 const (
 	AddonName            = "search"
-	LeaseDurationSeconds = 5
+	LeaseDurationSeconds = 60
 )
 
 func main() {
