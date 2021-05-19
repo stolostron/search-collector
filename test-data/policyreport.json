@@ -32,5 +32,10 @@
             "policy": "policyreport testing risk 2 policy",
             "result": "error"
         }
-    ]
+    ],
+    "scope": {
+        "kind": "cluster",
+        "name": "test-cluster",
+        "namespace": "test-cluster"
+    }
 }

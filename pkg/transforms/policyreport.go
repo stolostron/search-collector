@@ -7,13 +7,15 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // PolicyReport report
 type PolicyReport struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Results           []ReportResults `json:"results"`
+	metav1.TypeMeta                          `json:",inline"`
+	metav1.ObjectMeta                        `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Results           []ReportResults        `json:"results"`
+	Scope             corev1.ObjectReference `json:"scope"`
 }
 
 // ReportResults rule violation results
@@ -65,6 +67,8 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	}
 	node.Properties["insightPolicies"] = policies
 	node.Properties["category"] = categories
+	// extract the cluster scope from the PolicyReport resource
+	node.Properties["scope"] = string(pr.Scope.Name)
 	return &PolicyReportResource{node: node}
 }
 
