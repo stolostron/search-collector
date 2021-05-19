@@ -9,6 +9,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -23,7 +24,7 @@ func GetDynamicClient() dynamic.Interface {
 	if dynamicClient != nil {
 		return dynamicClient
 	}
-	newDynamicClient, err := dynamic.NewForConfig(getKubeConfig())
+	newDynamicClient, err := dynamic.NewForConfig(GetKubeConfig())
 	if err != nil {
 		glog.Fatal("Cannot Construct Dynamic Client ", err)
 	}
@@ -32,7 +33,7 @@ func GetDynamicClient() dynamic.Interface {
 	return dynamicClient
 }
 
-func getKubeConfig() *rest.Config {
+func GetKubeConfig() *rest.Config {
 	var clientConfig *rest.Config
 	var clientConfigError error
 
@@ -53,9 +54,18 @@ func getKubeConfig() *rest.Config {
 
 // Get kubernetes client for discovering resource types.
 func GetDiscoveryClient() *discovery.DiscoveryClient {
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(getKubeConfig())
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(GetKubeConfig())
 	if err != nil {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 	return discoveryClient
+}
+
+func GetKubeClient() *kubernetes.Clientset {
+	clientConfig, _ := clientcmd.BuildConfigFromFlags("", Cfg.KubeConfig)
+	clientset, err := kubernetes.NewForConfig(clientConfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	return clientset
 }
