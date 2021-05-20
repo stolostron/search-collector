@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	AddonName            = "search"
+	AddonName            = "search-collector"
 	LeaseDurationSeconds = 60
 )
 
