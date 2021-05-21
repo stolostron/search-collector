@@ -41,7 +41,8 @@ func (r *LeaseReconciler) Reconcile() {
 			},
 		}
 		if _, err := r.KubeClient.CoordinationV1().Leases(r.componentNamespace).Create(lease); err != nil {
-			glog.Errorf("Unable to create addon lease %q/%q on managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
+			glog.Errorf("Unable to create addon lease %q/%q on managed cluster. error:%v",
+				r.componentNamespace, r.LeaseName, err)
 		} else {
 			glog.Infof("Addon lease %q/%q on managed cluster created for Search", r.componentNamespace, r.LeaseName)
 		}
@@ -55,7 +56,8 @@ func (r *LeaseReconciler) Reconcile() {
 		// update lease
 		lease.Spec.RenewTime = &metav1.MicroTime{Time: time.Now()}
 		if _, err = r.KubeClient.CoordinationV1().Leases(r.componentNamespace).Update(lease); err != nil {
-			glog.Errorf("Unable to update cluster lease %q/%q on managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
+			glog.Errorf("Unable to update cluster lease %q/%q on managed cluster. error:%v",
+				r.componentNamespace, r.LeaseName, err)
 		} else {
 			glog.Infof("Addon lease %q/%q on managed cluster updated for Search", r.componentNamespace, r.LeaseName)
 		}
