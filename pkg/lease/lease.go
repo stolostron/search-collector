@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/open-cluster-management/search-collector/pkg/config"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,7 +23,7 @@ func (r *LeaseReconciler) Reconcile() {
 	if len(r.componentNamespace) == 0 {
 		r.componentNamespace = getPodNamespace()
 	}
-	lease, err := config.GetKubeClient().CoordinationV1().Leases(r.componentNamespace).Get(r.LeaseName, metav1.GetOptions{})
+	lease, err := r.KubeClient.CoordinationV1().Leases(r.componentNamespace).Get(r.LeaseName, metav1.GetOptions{})
 
 	switch {
 	case errors.IsNotFound(err):
