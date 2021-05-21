@@ -12,10 +12,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var (
-	agentLabel = map[string]string{"app": "search"}
-)
-
 // LeaseReconciler reconciles a Secret object
 type LeaseReconciler struct {
 	KubeClient           kubernetes.Interface
@@ -25,11 +21,9 @@ type LeaseReconciler struct {
 }
 
 func (r *LeaseReconciler) Reconcile() {
-	glog.Info("In lease Reconcile")
 	if len(r.componentNamespace) == 0 {
 		r.componentNamespace = getPodNamespace()
 	}
-	glog.Info("Lease namespace is ", r.componentNamespace)
 	lease, err := config.GetKubeClient().CoordinationV1().Leases(r.componentNamespace).Get(r.LeaseName, metav1.GetOptions{})
 
 	switch {
@@ -48,35 +42,31 @@ func (r *LeaseReconciler) Reconcile() {
 			},
 		}
 		if _, err := r.KubeClient.CoordinationV1().Leases(r.componentNamespace).Create(lease); err != nil {
-			glog.Errorf("unable to create addon lease %q/%q on local managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
+			glog.Errorf("Unable to create addon lease %q/%q on managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
 		} else {
-			glog.Infof("addon lease %q/%q on local managed cluster created", r.componentNamespace, r.LeaseName)
+			glog.Infof("Addon lease %q/%q on managed cluster created for Search", r.componentNamespace, r.LeaseName)
 		}
 
 		return
 	case err != nil:
-		glog.Errorf("unable to get addon lease %q/%q on local managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
+		glog.Errorf("Unable to get addon lease %q/%q on managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
 
 		return
 	default:
 		// update lease
 		lease.Spec.RenewTime = &metav1.MicroTime{Time: time.Now()}
 		if _, err = r.KubeClient.CoordinationV1().Leases(r.componentNamespace).Update(lease); err != nil {
-			glog.Errorf("unable to update cluster lease %q/%q on local managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
+			glog.Errorf("Unable to update cluster lease %q/%q on managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
 		} else {
-			glog.Infof("addon lease %q/%q on local managed cluster updated", r.componentNamespace, r.LeaseName)
+			glog.Infof("Addon lease %q/%q on managed cluster updated for Search", r.componentNamespace, r.LeaseName)
 		}
-		glog.Info("Exiting lease Reconcile")
-
 		return
 	}
 }
 
 func getPodNamespace() string {
 	if collectorPodNamespace, ok := os.LookupEnv("POD_NAMESPACE"); ok {
-		glog.Info("Pod namespace : ", collectorPodNamespace)
 		return collectorPodNamespace
 	}
-	glog.Info("Pod namespace is empty")
 	return "open-cluster-management-agent-addon"
 }

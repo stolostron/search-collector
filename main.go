@@ -66,11 +66,8 @@ func main() {
 		LeaseDurationSeconds: int32(LeaseDurationSeconds),
 	}
 	if !config.Cfg.DeployedInHub {
-		glog.Info("Going to call forever reconcile function")
+		glog.Info("Create/Update lease for search on managed cluster")
 		go wait.Forever(leaseReconciler.Reconcile, time.Duration(leaseReconciler.LeaseDurationSeconds)*time.Second)
-	} else {
-		glog.Info("Not going to call forever reconcile function")
-
 	}
 
 	// Create input channel
