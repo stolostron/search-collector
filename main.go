@@ -60,12 +60,12 @@ func main() {
 		glog.Info("Built from git commit: ", commit)
 	}
 
-	leaseReconciler := lease.LeaseReconciler{
-		KubeClient:           config.GetKubeClient(),
-		LeaseName:            AddonName,
-		LeaseDurationSeconds: int32(LeaseDurationSeconds),
-	}
 	if !config.Cfg.DeployedInHub {
+		leaseReconciler := lease.LeaseReconciler{
+			KubeClient:           config.GetKubeClient(),
+			LeaseName:            AddonName,
+			LeaseDurationSeconds: int32(LeaseDurationSeconds),
+		}
 		glog.Info("Create/Update lease for search on managed cluster")
 		go wait.Forever(leaseReconciler.Reconcile, time.Duration(leaseReconciler.LeaseDurationSeconds)*time.Second)
 	}
