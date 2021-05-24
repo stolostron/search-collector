@@ -9,6 +9,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -58,4 +59,12 @@ func GetDiscoveryClient() *discovery.DiscoveryClient {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 	return discoveryClient
+}
+
+func GetKubeClient() *kubernetes.Clientset {
+	kubeClient, err := kubernetes.NewForConfig(getKubeConfig())
+	if err != nil {
+		glog.Fatal("Cannot Construct Kube Client from Config: ", err)
+	}
+	return kubeClient
 }
