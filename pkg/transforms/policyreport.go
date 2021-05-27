@@ -55,7 +55,6 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	// Extract the properties specific to this type
 	categoryMap := make(map[string]struct{})
 	policies := make([]string, 0, len(pr.Results))
-	severityScores := make([]string, 0, len(pr.Results))
 	var critical = 0
 	var important = 0
 	var moderate = 0
@@ -66,7 +65,6 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 			categoryMap[category] = struct{}{}
 		}
 		policies = append(policies, result.Policy)
-		severityScores = append(severityScores, result.Properties.TotalRisk)
 		switch result.Properties.TotalRisk {
 		case "4":
 			critical++
@@ -84,7 +82,6 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	}
 	node.Properties["insightPolicies"] = policies
 	node.Properties["category"] = categories
-	node.Properties["policyReportSeverities"] = severityScores
 	node.Properties["critical"] = critical
 	node.Properties["important"] = important
 	node.Properties["moderate"] = moderate
