@@ -58,9 +58,8 @@ When making contributions to this project, fork the project then merge your chan
 1. Fork Repository
 2. Clone your fork
 3. Set upstream origin `set upstream origin git@github.com:open-cluster-management/search-collector.git`
-4. Make your edits. Please test them locally before creating a pull request to ensure smooth merging :smile:
+4. Make your edits. Test locally with `make test` before creating a pull request to ensure smooth merging :smile:
 5. Push your new commits to your personal fork `git push origin`
 6. Create a pull request from your personal fork again the upstream search-collector main branch
-
 
 
