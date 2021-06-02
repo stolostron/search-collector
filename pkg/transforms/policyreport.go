@@ -55,11 +55,26 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	// Extract the properties specific to this type
 	categoryMap := make(map[string]struct{})
 	policies := make([]string, 0, len(pr.Results))
+	var critical = 0
+	var important = 0
+	var moderate = 0
+	var low = 0
+
 	for _, result := range pr.Results {
 		for _, category := range strings.Split(result.Category, ",") {
 			categoryMap[category] = struct{}{}
 		}
 		policies = append(policies, result.Policy)
+		switch result.Properties.TotalRisk {
+		case "4":
+			critical++
+		case "3":
+			important++
+		case "2":
+			moderate++
+		case "1":
+			low++
+		}
 	}
 	categories := make([]string, 0, len(categoryMap))
 	for k := range categoryMap {
@@ -67,6 +82,10 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	}
 	node.Properties["insightPolicies"] = policies
 	node.Properties["category"] = categories
+	node.Properties["critical"] = critical
+	node.Properties["important"] = important
+	node.Properties["moderate"] = moderate
+	node.Properties["low"] = low
 	// extract the cluster scope from the PolicyReport resource
 	node.Properties["scope"] = string(pr.Scope.Name)
 	return &PolicyReportResource{node: node}
