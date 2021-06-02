@@ -53,7 +53,7 @@ RUNTIME_MODE    | no       | production             | Running mode (development 
 
 
 ### Contribution
-When making contributions to the search collector project, fork the project then merge your chages by creating a pull request from your personal fork to the main project.
+When making contributions to this project, fork the project then merge your changes by creating a pull request from your personal fork to the main project.
 
 1. Fork Repository
 2. Clone your fork
@@ -61,7 +61,6 @@ When making contributions to the search collector project, fork the project then
 4. Make your edits. Please test them locally before creating a pull request to ensure smooth merging :smile:
 5. Push your new commits to your personal fork `git push origin`
 6. Create a pull request from your personal fork again the upstream search-collector main branch
-
 
 
 
