@@ -51,7 +51,7 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	node.Properties["apigroup"] = gvk.Group
 
 	// Total number of policies in the report
-	node.Properties["numInsightPolicies"] = len(pr.Results)
+	node.Properties["numPolicyViolations"] = len(pr.Results)
 	// Extract the properties specific to this type
 	categoryMap := make(map[string]struct{})
 	policies := make([]string, 0, len(pr.Results))
@@ -80,7 +80,7 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	for k := range categoryMap {
 		categories = append(categories, k)
 	}
-	node.Properties["insightPolicies"] = policies
+	node.Properties["policyViolations"] = policies
 	node.Properties["category"] = categories
 	node.Properties["critical"] = critical
 	node.Properties["important"] = important
