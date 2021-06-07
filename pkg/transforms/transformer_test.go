@@ -33,7 +33,8 @@ func TestTransformRoutine(t *testing.T) {
 		Object: map[string]interface{}{
 			"kind": "foobar",
 			"metadata": map[string]interface{}{
-				"uid": "1234",
+				"uid":      "1234",
+				"selfLink": "/apis/v1/foobars/name",
 			},
 		},
 	}
