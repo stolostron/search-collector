@@ -3,17 +3,18 @@
 
 We are in the process of enabling this repo for community contribution. See wiki [here](https://open-cluster-management.io/concepts/architecture/).
 
-# Open Cluster Management - Search Collector
+# Open cluster management - Search collector
 
-The `search collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/open-cluster-management/search/blob/master/feature-spec/search.md) has an overview of all the search components.
+The `search-collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/open-cluster-management/search/blob/master/feature-spec/search.md) has an overview of all the search components.
 
 This process targets any kubernetes cluster to collect data about its configuration resources and computes relationships between those resources. Then this data is sent to the [search-aggregator](https://github.com/open-cluster-management/search-aggregator), where it gets indexed in graph format.
 
-## Data Model
-The data model is documented at ./pkg/transforms/README.md
+## Data model
+
+See the [Data model documentation](https://github.com/open-cluster-management/search-collector/blob/pkg/transforms/README.md) for more information. 
 
 
-## Usage and Configuration
+## Usage and configuration
 
 ### Running Locally
 > **Pre-requisite:** Go v1.15
