@@ -29,8 +29,8 @@ See the [Data model documentation](https://github.com/open-cluster-management/se
 3. Run the program with `make run` or `go run main.go`
 
 ### Running on a cluster
-- Pull image from quay.io and deploy to your cluster.
-- To test code changes, create a PR in this repo, the build process will push the PR image to quiay.io. From there you can pull it into your cluster.
+- Pull image from Quay.io and deploy to your cluster.
+- To test code changes, create a PR in this repo, the build process pushes the PR image to Quiay.io. From there you can pull it into your cluster.
 
 
 ### Environment Variables
@@ -49,8 +49,8 @@ REPORT_RATE_MS  | no       | 5000    // 5 seconds   | Interval(ms) to queue chan
 RUNTIME_MODE    | no       | production             | Running mode (development or production)
 
 ### Other Configuration Options
-- Environment variables can also be set in ./config.json for development. If both provide a value for a specific property, the environment variable will override the file. You can define your own config json file and pass it to the application with `-c <config_file>`
-- The application can take any flags for [glog](https://github.com/golang/glog), it will pass them straight into glog. The glog flag `--logtostderr` is set to true by default.
+- Environment variables can also be set in the `./config.json` for development. If both provide a value for a specific property, the environment variable overrides the file. You can define your own `config.json` file and pass it to the application with the following command: `-c <config_file>`
+- The application can take any flags for [glog](https://github.com/golang/glog), which passes them straight into glog. The glog flag `--logtostderr` is set to true by default.
 
 
 ### Contribution
