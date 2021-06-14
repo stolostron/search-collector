@@ -88,6 +88,7 @@ type Sender struct {
 // Sends to the URL provided by aggregatorURL, listing itself as clusterName.
 func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *Sender {
 
+	glog.Info("Constructing new sender")
 	// Construct senders
 	s := &Sender{
 		aggregatorURL:      aggregatorURL,
@@ -194,6 +195,9 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return errors.New("Aggregator busy")
 	} else if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusUnauthorized {
+			s.httpClient = getHTTPSClient()
+		}
 		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
 			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
 		return errors.New(msg)
