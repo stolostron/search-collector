@@ -195,12 +195,13 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return errors.New("Aggregator busy")
 	} else if resp.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
+			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
 		if resp.StatusCode == http.StatusUnauthorized {
 			glog.Info("Got 401 error. Updating httpsclient.")
 			s.httpClient = getHTTPSClient()
+			msg = "StatusUnauthorized"
 		}
-		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
-			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
 		return errors.New(msg)
 	}
 
@@ -279,7 +280,7 @@ func (s *Sender) Sync() error {
 
 // Starts the send loop to send data on an interval.
 // In case of error it backoffs and retries.
-func (s *Sender) StartSendLoop() {
+func (s *Sender) StartSendLoop() bool {
 
 	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
 	backoffFactor := float64(0)
@@ -295,6 +296,10 @@ func (s *Sender) StartSendLoop() {
 				time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
 				backoffFactor++
 			}
+			if err.Error() == "StatusUnauthorized" {
+				glog.Info("Break the send loop")
+				break
+			}
 		} else {
 			glog.V(2).Info("Send Cycle Completed Successfully")
 			backoffFactor = float64(0) // Reset backoff to 0 because we had a sucessful send.
@@ -307,6 +312,8 @@ func (s *Sender) StartSendLoop() {
 		// Sleep either for the current backed off interval, or the maximum time defined in the config
 		time.Sleep(timeToSleep)
 	}
+	glog.Info("Breaking and Returning restart=true for StatusUnauthorized")
+	return true
 }
 
 // Returns the smaller of two ints

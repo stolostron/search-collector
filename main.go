@@ -186,7 +186,10 @@ func main() {
 	}
 
 	glog.Info("Starting the sender.")
-	sender.StartSendLoop()
+	if sender.StartSendLoop() {
+		glog.Info("Restarting collector main")
+		main()
+	}
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
