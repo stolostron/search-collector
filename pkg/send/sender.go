@@ -196,6 +196,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		return errors.New("Aggregator busy")
 	} else if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusUnauthorized {
+			glog.Info("Got 401 error. Updating httpsclient.")
 			s.httpClient = getHTTPSClient()
 		}
 		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
