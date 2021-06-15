@@ -281,7 +281,7 @@ func (s *Sender) Sync() error {
 
 // Starts the send loop to send data on an interval.
 // In case of error it backoffs and retries.
-func (s *Sender) StartSendLoop() bool {
+func (s *Sender) StartSendLoop() {
 
 	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
 	backoffFactor := float64(0)
@@ -298,8 +298,7 @@ func (s *Sender) StartSendLoop() bool {
 				backoffFactor++
 			}
 			if err.Error() == "StatusUnauthorized" {
-				glog.Info("Break the send loop")
-				break
+				glog.Info("Got StatusUnauthorized error in StartSendLoop")
 			}
 		} else {
 			glog.V(2).Info("Send Cycle Completed Successfully")
@@ -313,8 +312,6 @@ func (s *Sender) StartSendLoop() bool {
 		// Sleep either for the current backed off interval, or the maximum time defined in the config
 		time.Sleep(timeToSleep)
 	}
-	glog.Info("Breaking and Returning restart=true for StatusUnauthorized")
-	return true
 }
 
 // Returns the smaller of two ints
