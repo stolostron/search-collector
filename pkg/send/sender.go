@@ -199,6 +199,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
 		if resp.StatusCode == http.StatusUnauthorized {
 			glog.Info("Got 401 error. Updating httpsclient.")
+			config.InitConfig()
 			s.httpClient = getHTTPSClient()
 			msg = "StatusUnauthorized"
 		}
