@@ -170,10 +170,9 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 			waitMS := int(math.Min(float64(retry*15*1000), float64(config.Cfg.MaxBackoffMS)))
 			glog.Warningf("Received Unauthorized response from Aggregator. Resending in %d ms after resetting config.",
 				waitMS)
-			time.Sleep(time.Duration(waitMS) * time.Millisecond)
-			glog.Info("Got 401 error. Updating httpsclient.")
 			config.InitConfig()
 			s.httpClient = getHTTPSClient()
+			time.Sleep(time.Duration(waitMS) * time.Millisecond)
 			continue
 		}
 		//TODO: Handle unauthorized here with retry and reset config

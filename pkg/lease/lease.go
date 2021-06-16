@@ -59,7 +59,7 @@ func (r *LeaseReconciler) Reconcile() {
 			glog.Errorf("Unable to update cluster lease %q/%q on managed cluster. error:%v",
 				r.componentNamespace, r.LeaseName, err)
 		} else {
-			glog.Infof("Addon lease %q/%q on managed cluster updated for Search", r.componentNamespace, r.LeaseName)
+			glog.V(2).Infof("Addon lease %q/%q on managed cluster updated for Search", r.componentNamespace, r.LeaseName)
 		}
 		return
 	}
