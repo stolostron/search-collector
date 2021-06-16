@@ -175,7 +175,6 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 			time.Sleep(time.Duration(waitMS) * time.Millisecond)
 			continue
 		}
-		//TODO: Handle unauthorized here with retry and reset config
 		return sendError
 	}
 }
