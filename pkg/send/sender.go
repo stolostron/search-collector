@@ -88,7 +88,6 @@ type Sender struct {
 // Sends to the URL provided by aggregatorURL, listing itself as clusterName.
 func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *Sender {
 
-	glog.Info("Constructing new sender")
 	// Construct senders
 	s := &Sender{
 		aggregatorURL:      aggregatorURL,
