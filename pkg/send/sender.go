@@ -166,7 +166,18 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 			glog.Warningf("Received busy response from Aggregator. Resending in %d ms.", waitMS)
 			time.Sleep(time.Duration(waitMS) * time.Millisecond)
 			continue
+		} else if sendError != nil && sendError.Error() == "401 Unauthorized" {
+			retry++
+			waitMS := int(math.Min(float64(retry*15*1000), float64(config.Cfg.MaxBackoffMS)))
+			glog.Warningf("Received Unauthorized response from Aggregator. Resending in %d ms after resetting config.",
+				waitMS)
+			time.Sleep(time.Duration(waitMS) * time.Millisecond)
+			glog.Info("Got 401 error. Updating httpsclient.")
+			config.InitConfig()
+			s.httpClient = getHTTPSClient()
+			continue
 		}
+		//TODO: Handle unauthorized here with retry and reset config
 		return sendError
 	}
 }
@@ -198,10 +209,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
 			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
 		if resp.StatusCode == http.StatusUnauthorized {
-			glog.Info("Got 401 error. Updating httpsclient.")
-			config.InitConfig()
-			s.httpClient = getHTTPSClient()
-			msg = "StatusUnauthorized"
+			msg = "401 Unauthorized"
 		}
 		return errors.New(msg)
 	}
