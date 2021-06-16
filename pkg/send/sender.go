@@ -305,9 +305,6 @@ func (s *Sender) StartSendLoop() {
 				time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
 				backoffFactor++
 			}
-			if err.Error() == "StatusUnauthorized" {
-				glog.Info("Got StatusUnauthorized error in StartSendLoop")
-			}
 		} else {
 			glog.V(2).Info("Send Cycle Completed Successfully")
 			backoffFactor = float64(0) // Reset backoff to 0 because we had a sucessful send.
