@@ -170,7 +170,7 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 			waitMS := int(math.Min(float64(retry*15*1000), float64(config.Cfg.MaxBackoffMS)))
 			glog.Warningf("Received Unauthorized response from Aggregator. Resending in %d ms after resetting config.",
 				waitMS)
-			config.InitConfig()
+			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.httpClient = getHTTPSClient()
 			time.Sleep(time.Duration(waitMS) * time.Millisecond)
 			continue
