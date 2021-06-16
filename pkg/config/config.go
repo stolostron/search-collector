@@ -61,6 +61,10 @@ var Cfg = Config{}
 var FilePath = flag.String("c", "./config.json", "Collector configuration file") // ./config.json is the default
 
 func init() {
+	InitConfig()
+}
+
+func InitConfig() {
 	// Load default config from ./config.json.
 	// These can be overridden in the next step if environment variables are set.
 	if _, err := os.Stat(filepath.Join(".", "config.json")); !os.IsNotExist(err) {
