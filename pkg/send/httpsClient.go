@@ -27,7 +27,6 @@ func getHTTPSClient() (client http.Client) {
 
 	// Klusterlet deployment: Get httpClient using the mounted kubeconfig.
 	if !config.Cfg.DeployedInHub {
-		glog.Info("In getHTTPSClient")
 		config.Cfg.AggregatorConfig.NegotiatedSerializer = unstructuredscheme.NewUnstructuredNegotiatedSerializer()
 		aggregatorRESTClient, err := rest.UnversionedRESTClientFor(config.Cfg.AggregatorConfig)
 		if err != nil {
