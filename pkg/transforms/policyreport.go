@@ -7,13 +7,15 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // PolicyReport report
 type PolicyReport struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Results           []ReportResults `json:"results"`
+	metav1.TypeMeta                          `json:",inline"`
+	metav1.ObjectMeta                        `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Results           []ReportResults        `json:"results"`
+	Scope             corev1.ObjectReference `json:"scope"`
 }
 
 // ReportResults rule violation results
@@ -49,22 +51,43 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	node.Properties["apigroup"] = gvk.Group
 
 	// Total number of policies in the report
-	node.Properties["numInsightPolicies"] = len(pr.Results)
+	node.Properties["numRuleViolations"] = len(pr.Results)
 	// Extract the properties specific to this type
 	categoryMap := make(map[string]struct{})
 	policies := make([]string, 0, len(pr.Results))
+	var critical = 0
+	var important = 0
+	var moderate = 0
+	var low = 0
+
 	for _, result := range pr.Results {
 		for _, category := range strings.Split(result.Category, ",") {
 			categoryMap[category] = struct{}{}
 		}
 		policies = append(policies, result.Policy)
+		switch result.Properties.TotalRisk {
+		case "4":
+			critical++
+		case "3":
+			important++
+		case "2":
+			moderate++
+		case "1":
+			low++
+		}
 	}
 	categories := make([]string, 0, len(categoryMap))
 	for k := range categoryMap {
 		categories = append(categories, k)
 	}
-	node.Properties["insightPolicies"] = policies
+	node.Properties["rules"] = policies
 	node.Properties["category"] = categories
+	node.Properties["critical"] = critical
+	node.Properties["important"] = important
+	node.Properties["moderate"] = moderate
+	node.Properties["low"] = low
+	// extract the cluster scope from the PolicyReport resource
+	node.Properties["scope"] = string(pr.Scope.Name)
 	return &PolicyReportResource{node: node}
 }
 

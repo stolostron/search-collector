@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-cluster-management/search-collector/pkg/config"
 	inform "github.com/open-cluster-management/search-collector/pkg/informer"
+	lease "github.com/open-cluster-management/search-collector/pkg/lease"
 	rec "github.com/open-cluster-management/search-collector/pkg/reconciler"
 	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 
@@ -29,7 +30,13 @@ import (
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
+)
+
+const (
+	AddonName            = "search-collector"
+	LeaseDurationSeconds = 60
 )
 
 func main() {
@@ -51,6 +58,16 @@ func main() {
 	glog.Info("Starting Search Collector")
 	if commit, ok := os.LookupEnv("VCS_REF"); ok {
 		glog.Info("Built from git commit: ", commit)
+	}
+
+	if !config.Cfg.DeployedInHub {
+		leaseReconciler := lease.LeaseReconciler{
+			KubeClient:           config.GetKubeClient(),
+			LeaseName:            AddonName,
+			LeaseDurationSeconds: int32(LeaseDurationSeconds),
+		}
+		glog.Info("Create/Update lease for search on managed cluster")
+		go wait.Forever(leaseReconciler.Reconcile, time.Duration(leaseReconciler.LeaseDurationSeconds)*time.Second)
 	}
 
 	// Create input channel

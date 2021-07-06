@@ -25,10 +25,9 @@ require (
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/stretchr/testify v1.7.0
 	github.com/tkanos/gonfig v0.0.0-20181112185242-896f3d81fadf
-	golang.org/x/mod v0.4.0 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	honnef.co/go/tools v0.1.2 // indirect
 	k8s.io/api v0.18.6
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v13.0.0+incompatible
@@ -41,6 +40,7 @@ replace (
 	github.com/deislabs/oras => github.com/deislabs/oras v0.11.1
 	github.com/docker/docker => github.com/docker/docker v1.13.1
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200527184302-a843dc3262a0
+	github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.8
 	golang.org/x/text => golang.org/x/text v0.3.5
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4

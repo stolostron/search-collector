@@ -73,6 +73,9 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 	node.Properties["chart"] = a.Spec.Source.Chart
 	node.Properties["repoURL"] = a.Spec.Source.RepoURL
 	node.Properties["targetRevision"] = a.Spec.Source.TargetRevision
+	if a.Spec.Source.TargetRevision == "" {
+		node.Properties["targetRevision"] = "HEAD"
+	}
 
 	// Status properties
 	node.Properties["status"] = a.Status.Health.Status
