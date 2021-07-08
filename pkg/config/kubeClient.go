@@ -69,7 +69,8 @@ func GetKubeClient(config *rest.Config) *kubernetes.Clientset {
 		if err != nil {
 			glog.Fatal("Cannot Construct Kube Client from Config: ", err)
 		}
+	} else {
+	  glog.Error("Cannot Construct Kube Client as input Config is nil")
 	}
-	glog.Error("Cannot Construct Kube Client as input Config is nil")
 	return kubeClient
 }
