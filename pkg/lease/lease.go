@@ -13,9 +13,11 @@ import (
 
 // LeaseReconciler reconciles a Secret object
 type LeaseReconciler struct {
+	HubKubeClient        kubernetes.Interface
 	KubeClient           kubernetes.Interface
 	LeaseName            string
 	LeaseDurationSeconds int32
+	ClusterName          string
 	componentNamespace   string
 }
 
@@ -23,7 +25,28 @@ func (r *LeaseReconciler) Reconcile() {
 	if len(r.componentNamespace) == 0 {
 		r.componentNamespace = getPodNamespace()
 	}
-	lease, err := r.KubeClient.CoordinationV1().Leases(r.componentNamespace).Get(r.LeaseName, metav1.GetOptions{})
+	// Create/update lease on managed cluster first. If it fails, it could mean lease resource kind
+	// is not supported on the managed cluster. Create/update lease on the hub then.
+	err := r.updateLease(r.componentNamespace, r.KubeClient)
+
+	if err != nil {
+		glog.Errorf("Failed to update lease %s/%s: %v on managed cluster", r.LeaseName, r.componentNamespace, err)
+
+		// Try to create or update the lease on in the managed cluster's namespace on the hub cluster.
+		if r.HubKubeClient != nil {
+			glog.Errorf("Trying to update lease on the hub")
+
+			if err := r.updateLease(r.ClusterName, r.HubKubeClient); err != nil {
+				glog.Errorf("Failed to update lease %s/%s: %v on hub cluster", r.LeaseName, r.ClusterName, err)
+			}
+		}
+	}
+}
+
+func (r *LeaseReconciler) updateLease(namespace string, client kubernetes.Interface) error {
+	glog.Infof("Trying to update lease %q/%q", namespace, r.LeaseName)
+
+	lease, err := client.CoordinationV1().Leases(namespace).Get(r.LeaseName, metav1.GetOptions{})
 
 	switch {
 	case errors.IsNotFound(err):
@@ -31,7 +54,7 @@ func (r *LeaseReconciler) Reconcile() {
 		lease := &coordinationv1.Lease{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      r.LeaseName,
-				Namespace: r.componentNamespace,
+				Namespace: namespace,
 			},
 			Spec: coordinationv1.LeaseSpec{
 				LeaseDurationSeconds: &r.LeaseDurationSeconds,
@@ -40,28 +63,31 @@ func (r *LeaseReconciler) Reconcile() {
 				},
 			},
 		}
-		if _, err := r.KubeClient.CoordinationV1().Leases(r.componentNamespace).Create(lease); err != nil {
-			glog.Errorf("Unable to create addon lease %q/%q on managed cluster. error:%v",
-				r.componentNamespace, r.LeaseName, err)
-		} else {
-			glog.Infof("Addon lease %q/%q on managed cluster created for Search", r.componentNamespace, r.LeaseName)
+		if _, err := client.CoordinationV1().Leases(namespace).Create(lease); err != nil {
+			glog.Errorf("Unable to create addon lease %q/%q . error:%v", namespace, r.LeaseName, err)
+
+			return err
 		}
 
-		return
-	case err != nil:
-		glog.Errorf("Unable to get addon lease %q/%q on managed cluster. error:%v", r.componentNamespace, r.LeaseName, err)
+		glog.Infof("Addon lease %q/%q created", namespace, r.LeaseName)
 
-		return
+		return nil
+	case err != nil:
+		glog.Errorf("Unable to get addon lease %q/%q . error:%v", namespace, r.LeaseName, err)
+
+		return err
 	default:
 		// update lease
 		lease.Spec.RenewTime = &metav1.MicroTime{Time: time.Now()}
-		if _, err = r.KubeClient.CoordinationV1().Leases(r.componentNamespace).Update(lease); err != nil {
-			glog.Errorf("Unable to update cluster lease %q/%q on managed cluster. error:%v",
-				r.componentNamespace, r.LeaseName, err)
-		} else {
-			glog.V(2).Infof("Addon lease %q/%q on managed cluster updated for Search", r.componentNamespace, r.LeaseName)
+		if _, err = client.CoordinationV1().Leases(namespace).Update(lease); err != nil {
+			glog.Errorf("unable to update cluster lease %q/%q . error:%v", namespace, r.LeaseName, err)
+
+			return err
 		}
-		return
+
+		glog.Infof("addon lease %q/%q updated", namespace, r.LeaseName)
+
+		return nil
 	}
 }
 
