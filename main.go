@@ -62,11 +62,13 @@ func main() {
 
 	if !config.Cfg.DeployedInHub {
 		leaseReconciler := lease.LeaseReconciler{
-			KubeClient:           config.GetKubeClient(),
+			HubKubeClient:        config.GetKubeClient(config.Cfg.AggregatorConfig),
+			KubeClient:           config.GetKubeClient(config.GetKubeConfig()),
 			LeaseName:            AddonName,
+			ClusterName:          config.Cfg.ClusterName,
 			LeaseDurationSeconds: int32(LeaseDurationSeconds),
 		}
-		glog.Info("Create/Update lease for search on managed cluster")
+		glog.Info("Create/Update lease for search")
 		go wait.Forever(leaseReconciler.Reconcile, time.Duration(leaseReconciler.LeaseDurationSeconds)*time.Second)
 	}
 
