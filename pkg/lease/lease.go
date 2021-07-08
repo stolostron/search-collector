@@ -33,7 +33,7 @@ func (r *LeaseReconciler) Reconcile() {
 		glog.Errorf("Failed to update lease %s/%s: %v on managed cluster", r.LeaseName, r.componentNamespace, err)
 
 		// Try to create or update the lease on in the managed cluster's namespace on the hub cluster.
-		if r.HubKubeClient != nil {
+		if errors.IsNotFound(err) && r.HubKubeClient != nil {
 			glog.Errorf("Trying to update lease on the hub")
 
 			if err := r.updateLease(r.ClusterName, r.HubKubeClient); err != nil {
