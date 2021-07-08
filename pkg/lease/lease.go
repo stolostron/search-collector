@@ -42,7 +42,7 @@ func (r *LeaseReconciler) Reconcile() {
 		}
 	}
 	glog.Info("Creating lease in hub default namespace")
-	if err := r.updateLease("default", r.HubKubeClient); err != nil {
+	if err := r.updateLease(r.ClusterName, r.HubKubeClient); err != nil {
 		glog.Errorf("Failed to update lease %s/%s: %v on hub cluster", r.LeaseName, r.ClusterName, err)
 	}
 }
