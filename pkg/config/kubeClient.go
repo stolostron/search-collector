@@ -24,7 +24,7 @@ func GetDynamicClient() dynamic.Interface {
 	if dynamicClient != nil {
 		return dynamicClient
 	}
-	newDynamicClient, err := dynamic.NewForConfig(getKubeConfig())
+	newDynamicClient, err := dynamic.NewForConfig(GetKubeConfig())
 	if err != nil {
 		glog.Fatal("Cannot Construct Dynamic Client ", err)
 	}
@@ -33,7 +33,7 @@ func GetDynamicClient() dynamic.Interface {
 	return dynamicClient
 }
 
-func getKubeConfig() *rest.Config {
+func GetKubeConfig() *rest.Config {
 	var clientConfig *rest.Config
 	var clientConfigError error
 
@@ -54,17 +54,23 @@ func getKubeConfig() *rest.Config {
 
 // Get kubernetes client for discovering resource types.
 func GetDiscoveryClient() *discovery.DiscoveryClient {
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(getKubeConfig())
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(GetKubeConfig())
 	if err != nil {
 		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 	return discoveryClient
 }
 
-func GetKubeClient() *kubernetes.Clientset {
-	kubeClient, err := kubernetes.NewForConfig(getKubeConfig())
-	if err != nil {
-		glog.Fatal("Cannot Construct Kube Client from Config: ", err)
+func GetKubeClient(config *rest.Config) *kubernetes.Clientset {
+	var kubeClient *kubernetes.Clientset
+	var err error
+	if config != nil {
+		kubeClient, err = kubernetes.NewForConfig(config)
+		if err != nil {
+			glog.Fatal("Cannot Construct Kube Client from Config: ", err)
+		}
+	} else {
+		glog.Error("Cannot Construct Kube Client as input Config is nil")
 	}
 	return kubeClient
 }
