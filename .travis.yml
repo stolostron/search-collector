@@ -68,7 +68,6 @@ jobs:
       script:
         # Run lint and unit tests.
         - make component/test/unit
-        - make sonar/go 
         - make security/scans
 
     - stage: test-e2e
