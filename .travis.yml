@@ -40,8 +40,6 @@ stages:
   - build
   - unit-test
   - test-e2e
-  - release-ff
-  - publish
 
 before_script:
   # Bootstrap the build harness.
