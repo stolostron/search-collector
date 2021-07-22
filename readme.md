@@ -62,3 +62,5 @@ When you make contributions to this project, fork the project then merge your ch
 4. Make your edits. Test locally with `make test` before creating a pull request to ensure smooth merging :smile:
 5. Push your new commits to your personal fork with the following command: `git push origin`
 6. Create a pull request from your personal fork again the upstream `search-collector` main branch
+
+Rebuild: 2021-07-22
