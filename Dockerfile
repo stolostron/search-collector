@@ -6,7 +6,7 @@ WORKDIR /go/src/github.com/open-cluster-management/search-collector
 COPY . .
 RUN CGO_ENABLED=0 GOGC=25 go build -trimpath -o main main.go
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.3
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
 
 ARG VCS_REF
 ARG VCS_URL
