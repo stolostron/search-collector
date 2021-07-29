@@ -59,8 +59,8 @@ When you make contributions to this project, fork the project then merge your ch
 1. Fork the `search-collector` repository.
 2. Clone your fork.
 3. Set upstream origin with the following command: `git remote add upstream git@github.com:open-cluster-management/search-collector.git`
-4. Make your edits. Test locally with `make test` before creating a pull request to ensure smooth merging
+4. Make your edits. Test locally with `make test` before creating a pull request to ensure smooth merging :smile:
 5. Push your new commits to your personal fork with the following command: `git push origin`
 6. Create a pull request from your personal fork again the upstream `search-collector` main branch
 
-Rebuild: 2021-07-22
+Rebuild: 2021-07-29
