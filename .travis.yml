@@ -13,8 +13,9 @@ services:
 
 branches:
   only:
-    - main
-    - /^release-[0-9]+\..*$/
+    - tmp-runs-in-no-branch
+    # - main
+    # - /^release-[0-9]+\..*$/
 
 env:
   global:
