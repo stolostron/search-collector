@@ -6,6 +6,16 @@
 build:
 	CGO_ENABLED=0 GOGC=25 go build -o $(BINDIR)/search-collector ./
 
+.PHONY: lint
+lint:
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.38.0
+	# Flag GOGC=25 needed to run garbage collection more often and avoid out of memory issue.
+	GOGC=25 golangci-lint run --timeout=3m
+
 .PHONY: unit-test
 unit-test:
 	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
+
+.PHONY: test-e2e
+test-e2e:
+	sh tests/e2e/runTests.sh $1
