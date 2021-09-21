@@ -6,42 +6,33 @@ module github.com/open-cluster-management/search-collector
 go 1.16
 
 require (
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
-	github.com/golang/protobuf v1.4.2
-	github.com/google/go-cmp v0.5.4 // indirect
+	github.com/golang/glog v1.0.0
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+	github.com/golang/protobuf v1.5.2
 	github.com/kennygrant/sanitize v1.2.4
-	github.com/kr/text v0.2.0 // indirect
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
-	github.com/onsi/ginkgo v1.14.2 // indirect
-	github.com/onsi/gomega v1.10.4 // indirect
-	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20200602150427-d0f4af8aba9d
-	github.com/open-cluster-management/multicloud-operators-channel v1.0.1-0.20200930214554-fa55cf642642
-	github.com/open-cluster-management/multicloud-operators-deployable v0.0.0-20200925154205-fc4ec3e30a4d
-	github.com/open-cluster-management/multicloud-operators-foundation v0.0.0-20200629084830-3965fdd47134
-	github.com/open-cluster-management/multicloud-operators-placementrule v1.0.1-2020-06-08-14-28-27.0.20200927053545-8e131abcf13c
-	github.com/open-cluster-management/multicloud-operators-subscription v1.0.0-2020-05-12-21-17-19.0.20201009005738-cbe273a045ab
-	github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.1-2020-06-08-14-28-27.0.20200819124024-818f01d780ff //Use 2.0 when available
+	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20210920144343-d0d1645714eb
+	github.com/open-cluster-management/multicloud-operators-channel v1.2.4-0-20210817-0d8714a
+	github.com/open-cluster-management/multicloud-operators-deployable v1.2.4-0-20210816-f9fe854
+	github.com/open-cluster-management/multicloud-operators-foundation v1.0.0
+	github.com/open-cluster-management/multicloud-operators-placementrule v1.2.4-0-20210816-699e5
+	github.com/open-cluster-management/multicloud-operators-subscription v1.2.4-0-20210915-3eda062
+	github.com/open-cluster-management/multicloud-operators-subscription-release v1.2.4-0-20210823-3c187e8 //Use 2.0 when available
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/stretchr/testify v1.7.0
-	github.com/tkanos/gonfig v0.0.0-20181112185242-896f3d81fadf
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
+	github.com/tkanos/gonfig v0.0.0-20210106201359-53e13348de2f
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.18.6
-	k8s.io/apimachinery v0.18.6
+	k8s.io/api v0.21.3
+	k8s.io/apimachinery v0.21.3
 	k8s.io/client-go v13.0.0+incompatible
-	k8s.io/helm v2.16.7+incompatible
+	k8s.io/helm v2.17.0+incompatible
 	sigs.k8s.io/application v0.8.3
 )
 
 replace (
 	github.com/buger/jsonparser => github.com/buger/jsonparser v1.1.1
-	github.com/deislabs/oras => github.com/deislabs/oras v0.11.1
 	github.com/docker/docker => github.com/docker/docker v1.13.1
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200527184302-a843dc3262a0
-	github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.8
-	golang.org/x/text => golang.org/x/text v0.3.5
+	golang.org/x/text => golang.org/x/text v0.3.7
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
