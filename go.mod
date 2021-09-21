@@ -11,12 +11,12 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20210920144343-d0d1645714eb
-	github.com/open-cluster-management/multicloud-operators-channel v1.2.4-0-20210817-0d8714a
-	github.com/open-cluster-management/multicloud-operators-deployable v1.2.4-0-20210816-f9fe854
+	github.com/open-cluster-management/multicloud-operators-channel v1.0.0
+	github.com/open-cluster-management/multicloud-operators-deployable v1.0.0
 	github.com/open-cluster-management/multicloud-operators-foundation v1.0.0
-	github.com/open-cluster-management/multicloud-operators-placementrule v1.2.4-0-20210816-699e5
-	github.com/open-cluster-management/multicloud-operators-subscription v1.2.4-0-20210915-3eda062
-	github.com/open-cluster-management/multicloud-operators-subscription-release v1.2.4-0-20210823-3c187e8 //Use 2.0 when available
+	github.com/open-cluster-management/multicloud-operators-placementrule v1.0.0
+	github.com/open-cluster-management/multicloud-operators-subscription v1.0.0
+	github.com/open-cluster-management/multicloud-operators-subscription-release v1.2.4-0-20210823-3c187e8
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/stretchr/testify v1.7.0
 	github.com/tkanos/gonfig v0.0.0-20210106201359-53e13348de2f
@@ -29,11 +29,9 @@ require (
 )
 
 replace (
-	github.com/buger/jsonparser => github.com/buger/jsonparser v1.1.1
+	bitbucket.org/ww/goautoneg => github.com/markusthoemmes/goautoneg v0.0.0-20190713162725-c6008fefa5b1
 	github.com/docker/docker => github.com/docker/docker v1.13.1
-	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.4.0
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200527184302-a843dc3262a0
-	golang.org/x/text => golang.org/x/text v0.3.7
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
