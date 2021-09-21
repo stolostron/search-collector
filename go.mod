@@ -9,6 +9,7 @@ require (
 	github.com/golang/glog v1.0.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/golang/protobuf v1.5.2
+	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20210920144343-d0d1645714eb
 	github.com/open-cluster-management/multicloud-operators-channel v1.2.4-0-20210817-0d8714a
