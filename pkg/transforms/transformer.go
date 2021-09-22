@@ -23,7 +23,7 @@ import (
 	subscription "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1"
 	application "sigs.k8s.io/application/api/v1beta1"
 
-	policy "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policies/v1"
+	policy "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policy/v1"
 	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
 
 	apps "k8s.io/api/apps/v1"

@@ -9,3 +9,4 @@ search-collector
 !vbh/.build-harness-vendorized
 !vbh/build-harness
 !vbh/build-harness-extensions
+.DS_Store
