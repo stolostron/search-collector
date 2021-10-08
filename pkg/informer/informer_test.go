@@ -109,7 +109,10 @@ func Test_listAndResync_syncWithPrevState(t *testing.T) {
 	informer.resourceIndex["id-001"] = "some-resource-version"   // This resource won't get deleted.
 
 	// Execute function
-	informer.listAndResync()
+	err := informer.listAndResync()
+	if err != nil {
+		t.Error(err)
+	}
 
 	// Verify that informer.DeleteFunc is called once for resource with "fake-uid"
 	if *deleteFuncCount != 1 {
