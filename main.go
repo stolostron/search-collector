@@ -152,8 +152,8 @@ func main() {
 						delete(gvrList, gvr)
 						continue
 					} else { // if it's in the old and NOT in the new, stop the informer
-						close(stopper)
 						glog.V(2).Infof("Resource %s no longer exists or no longer supports watch, stopping its informer\n", gvr.String())
+						close(stopper)
 						delete(stoppers, gvr)
 					}
 				}
