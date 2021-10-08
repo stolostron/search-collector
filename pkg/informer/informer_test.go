@@ -208,8 +208,6 @@ func Test_watch(t *testing.T) {
 	// Simulate that the informer has been stopped successfully.
 	close(stopper)
 	time.Sleep(10 * time.Millisecond)
-
-	// FIXME: Need to validate.
 }
 
 // Verify that WaitUntilInitialized(timeout) times out after passed time duration.
