@@ -193,21 +193,30 @@ func Test_min(t *testing.T) {
 	}
 }
 
-// Verify that the informer is able to watch resources and process the events.
+// Verify that Informer.watch() can be stopped.
 func Test_watch(t *testing.T) {
 	// Create informer instance to test.
 	informer, _, _, _ := initInformer()
 
 	stopper := make(chan struct{})
-	go informer.watch(stopper)
-	time.Sleep(10 * time.Millisecond)
+	done := make(chan struct{})
 
-	generateSimpleEvent(informer, t)
-	time.Sleep(10 * time.Millisecond)
-
-	// Simulate that the informer has been stopped successfully.
+	// Start the watch() and wait until it is stopped.
+	go func() {
+		informer.watch(stopper)
+		close(done)
+	}()
+	// Wait 5 ms and send the signal to stop the watch()
+	time.Sleep(5 * time.Millisecond)
 	close(stopper)
-	time.Sleep(10 * time.Millisecond)
+
+	// Validate that the watch() stopped.
+	select {
+	case <-done:
+		// Informer watch() was stopped. Test passes.
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Informer.watch() did not exit 100ms after stopper channel was closed.")
+	}
 }
 
 // Verify that WaitUntilInitialized(timeout) times out after passed time duration.

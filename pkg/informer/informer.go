@@ -46,7 +46,7 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 	for {
 		select {
 		case <-stopper:
-			glog.V(2).Info("Informer was stopped. ", inform.gvr.String())
+			glog.Info("Informer stopped. ", inform.gvr.String())
 			return
 		default:
 			if inform.retries > 0 {
@@ -60,9 +60,11 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 				inform.client = config.GetDynamicClient()
 			}
 
-			inform.listAndResync()
-			inform.initialized = true
-			inform.watch(stopper)
+			err := inform.listAndResync()
+			if err == nil {
+				inform.initialized = true
+				inform.watch(stopper)
+			}
 		}
 	}
 }
@@ -89,7 +91,7 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 
 // List current resources and fires ADDED events. Then sync the current state with the previous
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
-func (inform *GenericInformer) listAndResync() {
+func (inform *GenericInformer) listAndResync() error {
 
 	// Keep track of new resources added to consolidate against the previous state.
 	newResourceIndex := make(map[string]string)
@@ -101,7 +103,7 @@ func (inform *GenericInformer) listAndResync() {
 		if listError != nil {
 			glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
 			inform.retries++
-			return
+			return listError
 		}
 
 		// Add all resources.
@@ -133,6 +135,7 @@ func (inform *GenericInformer) listAndResync() {
 			delete(inform.resourceIndex, key) // Thread safe?
 		}
 	}
+	return nil
 }
 
 // Watch resources and process events.
