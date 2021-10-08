@@ -91,7 +91,10 @@ func Test_listAndResync(t *testing.T) {
 	informer, addFuncCount, _, _ := initInformer()
 
 	// Execute function
-	informer.listAndResync()
+	err := informer.listAndResync()
+	if err != nil {
+		t.Error(err)
+	}
 
 	// Verify that informer.AddFunc is called for each of the mocked resources (5 times).
 	if *addFuncCount != 5 {
