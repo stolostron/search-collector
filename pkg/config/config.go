@@ -33,7 +33,7 @@ const (
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
 	DEFAULT_HEARTBEAT_MS       = 300000 // 5 min
 	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
-	DEFAULT_REDISCOVER_RATE_MS = 120000 // 2 min
+	DEFAULT_REDISCOVER_RATE_MS = 6000   // 2 min
 	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE       = "production"
 )

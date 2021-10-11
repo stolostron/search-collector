@@ -135,6 +135,7 @@ func main() {
 		// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
 		stoppers := make(map[schema.GroupVersionResource]chan struct{})
 		for {
+			glog.Info("Fetching supported resources")
 			gvrList, err := supportedResources(discoveryClient)
 			if err != nil {
 				glog.Error("Failed to get complete list of supported resources: ", err)
@@ -146,20 +147,27 @@ func main() {
 				// Loop through the previous list of resources. If we find the entry in the new list we delete it so
 				// that we don't end up with 2 informers. If we don't find it, we stop the informer that's currently
 				// running because the resource no longer exists (or no longer supports watch).
+				glog.Info("Size of Stopper ", len(stoppers))
+				glog.Info("Size of GVrList ", len(gvrList))
 				for gvr, stopper := range stoppers {
 					// If this still exists in the new list, delete it from there as we don't want to recreate an informer
 					if _, ok := gvrList[gvr]; ok {
+						fmt.Println("Deleting of Stopper has  ", gvr.String())
 						delete(gvrList, gvr)
 						continue
 					} else { // if it's in the old and NOT in the new, stop the informer
+						glog.Infof("Stopping channel")
 						stopper <- struct{}{}
 						glog.Infof("Resource %s no longer exists or no longer supports watch, stopping its informer\n", gvr.String())
 						delete(stoppers, gvr)
 					}
 				}
+				glog.Info("Size of Stopper after removing", len(stoppers))
+				glog.Info("Size of GVrList after removing ", len(gvrList))
 				// Now, loop through the new list, which after the above deletions, contains only stuff that needs to
 				// have a new informer created for it.
 				for gvr := range gvrList {
+					glog.Infof("Found new resource %s, creating informer\n", gvr.String())
 					glog.V(2).Infof("Found new resource %s, creating informer\n", gvr.String())
 					// Using our custom informer.
 					informer, _ := inform.InformerForResource(gvr)
@@ -174,8 +182,10 @@ func main() {
 					go informer.Run(stopper)
 					informer.WaitUntilInitialized(time.Duration(10) * time.Second) // Times out after 10 seconds.
 				}
-				glog.V(2).Info("Total informers running: ", len(stoppers))
+				glog.Info("Total informers running: ", len(stoppers))
 				informersStarted = true
+			} else {
+				glog.Info("Gvr list is empty")
 			}
 
 			time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
@@ -234,6 +244,7 @@ func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 			}
 			for _, verb := range apiResource.Verbs {
 				if verb == "watch" {
+					fmt.Println("Watching", apiResource)
 					watchResources = append(watchResources, apiResource)
 				}
 			}

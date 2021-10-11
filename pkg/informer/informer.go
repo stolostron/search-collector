@@ -4,6 +4,7 @@
 package informer
 
 import (
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -61,7 +62,7 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		inform.watch(stopper)
 
 	}
-	glog.V(2).Info("Informer was stopped. ", inform.gvr.String())
+	glog.Info("Informer was stopped. ", inform.gvr.String())
 }
 
 // Helper function that returns the smaller of two integers.
@@ -103,6 +104,10 @@ func (inform *GenericInformer) listAndResync() {
 
 		// Add all resources.
 		for i := range resources.Items {
+			if strings.Contains(inform.gvr.Resource, "application") {
+				glog.Infof("KIND: %s UUID: %s, ResourceVersion: %s",
+					inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
+			}
 			glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
 				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 			inform.AddFunc(&resources.Items[i])
@@ -124,7 +129,7 @@ func (inform *GenericInformer) listAndResync() {
 	// Delete resources from previous state that no longer exist in the new state.
 	for key := range inform.resourceIndex {
 		if _, exist := newResourceIndex[key]; !exist {
-			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
+			glog.Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
 			obj := newUnstructured(inform.gvr.Resource, key)
 			inform.DeleteFunc(obj)
 			delete(inform.resourceIndex, key) // Thread safe?
@@ -140,6 +145,11 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
 		inform.retries++
 		return
+	} else {
+		if strings.Contains(inform.gvr.String(), "application") {
+			glog.Infof("Success watching resources for %s.  ", inform.gvr.String())
+		}
+
 	}
 	defer watch.Stop()
 
@@ -151,6 +161,7 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 	for {
 		select {
 		case <-stopper:
+			glog.Infof("Stopping from informe,%s", inform.gvr.String())
 			inform.stopped = true
 			return
 
@@ -159,6 +170,9 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 			switch event.Type {
 			case "ADDED":
 				glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
+				if strings.Contains(inform.gvr.Resource, "application") {
+					glog.Infof("Received ADDED event. Kind: %s -> %s ", inform.gvr.Resource, inform.gvr.GroupVersion())
+				}
 				o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
 				if error != nil {
 					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s",
