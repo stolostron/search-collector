@@ -25,7 +25,6 @@ type GenericInformer struct {
 	initialized   bool
 	resourceIndex map[string]string // Index of curr resources [key=UUID value=resourceVersion]
 	retries       int64             // Counts times we have tried without establishing a watch.
-	stopped       bool              // Tracks when the informer is stopped, used to exit cleanly
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
@@ -44,24 +43,30 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 
 // Run runs the informer.
 func (inform *GenericInformer) Run(stopper chan struct{}) {
-	for !inform.stopped {
-		if inform.retries > 0 {
-			// Backoff strategy: Adds 2 seconds each retry, up to 2 mins.
-			wait := time.Duration(min(inform.retries*2, 120)) * time.Second
-			glog.V(3).Infof("Waiting %s before retrying listAndWatch for %s", wait, inform.gvr.String())
-			time.Sleep(wait)
-		}
-		glog.V(3).Info("(Re)starting informer: ", inform.gvr.String())
-		if inform.client == nil {
-			inform.client = config.GetDynamicClient()
-		}
+	for {
+		select {
+		case <-stopper:
+			glog.Info("Informer stopped. ", inform.gvr.String())
+			return
+		default:
+			if inform.retries > 0 {
+				// Backoff strategy: Adds 2 seconds each retry, up to 2 mins.
+				wait := time.Duration(min(inform.retries*2, 120)) * time.Second
+				glog.V(3).Infof("Waiting %s before retrying listAndWatch for %s", wait, inform.gvr.String())
+				time.Sleep(wait)
+			}
+			glog.V(3).Info("(Re)starting informer: ", inform.gvr.String())
+			if inform.client == nil {
+				inform.client = config.GetDynamicClient()
+			}
 
-		inform.listAndResync()
-		inform.initialized = true
-		inform.watch(stopper)
-
+			err := inform.listAndResync()
+			if err == nil {
+				inform.initialized = true
+				inform.watch(stopper)
+			}
+		}
 	}
-	glog.V(2).Info("Informer was stopped. ", inform.gvr.String())
 }
 
 // Helper function that returns the smaller of two integers.
@@ -86,7 +91,7 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 
 // List current resources and fires ADDED events. Then sync the current state with the previous
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
-func (inform *GenericInformer) listAndResync() {
+func (inform *GenericInformer) listAndResync() error {
 
 	// Keep track of new resources added to consolidate against the previous state.
 	newResourceIndex := make(map[string]string)
@@ -98,7 +103,7 @@ func (inform *GenericInformer) listAndResync() {
 		if listError != nil {
 			glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
 			inform.retries++
-			return
+			return listError
 		}
 
 		// Add all resources.
@@ -130,6 +135,7 @@ func (inform *GenericInformer) listAndResync() {
 			delete(inform.resourceIndex, key) // Thread safe?
 		}
 	}
+	return nil
 }
 
 // Watch resources and process events.
@@ -151,7 +157,7 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 	for {
 		select {
 		case <-stopper:
-			inform.stopped = true
+			glog.V(2).Info("Informer watch() was stopped. ", inform.gvr.String())
 			return
 
 		case event := <-watchEvents: // Read events from the watch channel.
