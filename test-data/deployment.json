@@ -98,9 +98,7 @@
                     }
                 ],
                 "dnsPolicy": "ClusterFirst",
-                "nodeSelector": {
-                    "master": "true"
-                },
+                "nodeSelector": {},
                 "restartPolicy": "Always",
                 "schedulerName": "default-scheduler",
                 "securityContext": {},
