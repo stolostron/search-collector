@@ -61,9 +61,7 @@
                     }
                 ],
                 "dnsPolicy": "ClusterFirst",
-                "nodeSelector": {
-                    "master": "true"
-                },
+                "nodeSelector": {},
                 "priorityClassName": "system-cluster-critical",
                 "restartPolicy": "OnFailure",
                 "schedulerName": "default-scheduler",

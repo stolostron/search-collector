@@ -107,9 +107,7 @@
                     }
                 ],
                 "dnsPolicy": "Default",
-                "nodeSelector": {
-                    "master": "true"
-                },
+                "nodeSelector": {},
                 "restartPolicy": "Always",
                 "schedulerName": "default-scheduler",
                 "securityContext": {},

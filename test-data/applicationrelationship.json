@@ -11,22 +11,22 @@
             "app": "test",
             "chart": "test-0.1.0",
             "destinationKind": "Deployable",
-            "destinationName": "test-test-redismaster",
+            "destinationName": "test-test-redis",
             "heritage": "Tiller",
             "release": "test",
             "sourceKind": "Application",
             "sourceName": "test-test"
         },
-        "name": "test-test-appmaster",
+        "name": "test-test-app",
         "namespace": "default",
         "resourceVersion": "169",
-        "selfLink": "/apis/mcm.ibm.com/v1alpha1/namespaces/default/applicationrelationships/test-test-appmaster",
+        "selfLink": "/apis/mcm.ibm.com/v1alpha1/namespaces/default/applicationrelationships/test-test-app",
         "uid": "68bc48e9-475a-11e9-9bcb-c64602ce8a55"
     },
     "spec": {
         "destination": {
             "kind": "Deployable",
-            "name": "test-test-redismaster"
+            "name": "test-test-redis"
         },
         "livenessProbe": {},
         "source": {

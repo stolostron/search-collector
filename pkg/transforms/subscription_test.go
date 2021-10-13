@@ -35,7 +35,7 @@ func TestTransformSubscriptionWithTimeWindow(t *testing.T) {
 
 	// Test optional fields that exist in subscription - the common test will test the other bits
 	AssertEqual("timeWindow", node.Properties["timeWindow"], "active", t)
-	AssertEqual("_gitbranch", node.Properties["_gitbranch"], "master", t)
+	AssertEqual("_gitbranch", node.Properties["_gitbranch"], "main", t)
 	AssertEqual("_gitpath", node.Properties["_gitpath"], "helloworld", t)
 	AssertEqual("_gitcommit", node.Properties["_gitcommit"], "d67d8e10dcfa41dddcac14952e9872e1dfece06f", t)
 }
