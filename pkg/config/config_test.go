@@ -15,7 +15,7 @@ func Test_SetDefault_01(t *testing.T) {
 	setDefault(&property, "ENV_VARIABLE_NOT_DEFINED", "default-value")
 
 	if property != "default-value" {
-		t.Errorf("Failed testing setDefault()  Expected: %s  Got: %s", "default-value", property)
+		t.Errorf("Failed testing setDefault() Expected: %s  Got: %s", "default-value", property)
 	}
 }
 
@@ -27,7 +27,7 @@ func Test_SetDefault_02(t *testing.T) {
 	setDefault(&property, "TEST_ENV_VARIABLE", "default-value")
 
 	if property != "value-from-env" {
-		t.Errorf("Failed testing setDefault()  Expected: %s  Got: %s", "value-from-env", property)
+		t.Errorf("Failed testing setDefault() Expected: %s  Got: %s", "value-from-env", property)
 	}
 }
 
@@ -37,7 +37,7 @@ func Test_SetDefaultInt_01(t *testing.T) {
 	setDefaultInt(&property, "ENV_VARIABLE_NOT_DEFINED", 1234)
 
 	if property != 1234 {
-		t.Errorf("Failed testing setDefault()  Expected: %d  Got: %d", 1234, property)
+		t.Errorf("Failed testing setDefault() Expected: %d  Got: %d", 1234, property)
 	}
 }
 
@@ -49,6 +49,6 @@ func Test_SetDefaultInt_02(t *testing.T) {
 	setDefaultInt(&property, "TEST_ENV_VARIABLE", 0000)
 
 	if property != 9999 {
-		t.Errorf("Failed testing setDefault()  Expected: %d  Got: %d", 9999, property)
+		t.Errorf("Failed testing setDefault() Expected: %d  Got: %d", 9999, property)
 	}
 }
