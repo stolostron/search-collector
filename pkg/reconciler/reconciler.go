@@ -382,5 +382,3 @@ func (r *Reconciler) resetDiffs() {
 		r.previousNodes[uid] = node
 	}
 }
-
-// Rebuild: 2021-10-26
