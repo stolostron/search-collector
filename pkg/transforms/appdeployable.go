@@ -69,3 +69,5 @@ func (d AppDeployableResource) BuildEdges(ns NodeStore) []Edge {
 	}
 	return ret
 }
+
+// Rebuild: 2021-10-26

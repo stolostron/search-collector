@@ -67,4 +67,4 @@ When you make contributions to this project, fork the project then merge your ch
 5. Push your new commits to your personal fork with the following command: `git push origin`
 6. Create a pull request from your personal fork again the upstream `search-collector` main branch
 
-Rebuild: 2021-10-21
+Rebuild: 2021-10-26
