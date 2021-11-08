@@ -13,22 +13,21 @@ package transforms
 import (
 	"fmt"
 
-	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
+	policy "github.com/open-cluster-management/governance-policy-propagator/api/v1"
 )
 
 // PlacementBindingResource ...
 type PlacementBindingResource struct {
-	node               Node
-	PlacementPolicyRef mcm.PlacementPolicyRef
+	node Node
 }
 
 // PlacementBindingResourceBuilder ...
-func PlacementBindingResourceBuilder(p *mcm.PlacementBinding) *PlacementBindingResource {
+func PlacementBindingResourceBuilder(p *policy.PlacementBinding) *PlacementBindingResource {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	name := p.PlacementPolicyRef.Name
-	kind := p.PlacementPolicyRef.Kind
+	name := p.PlacementRef.Name
+	kind := p.PlacementRef.Kind
 	node.Properties["placementpolicy"] = fmt.Sprintf("%s (%s)", name, kind)
 
 	l := len(p.Subjects)
@@ -40,7 +39,7 @@ func PlacementBindingResourceBuilder(p *mcm.PlacementBinding) *PlacementBindingR
 	}
 	node.Properties["subject"] = subjects
 
-	return &PlacementBindingResource{node: node, PlacementPolicyRef: p.PlacementPolicyRef}
+	return &PlacementBindingResource{node: node}
 }
 
 // BuildNode construct the node for the PlacementBindingResource Resources
@@ -50,23 +49,6 @@ func (p PlacementBindingResource) BuildNode() Node {
 
 // BuildEdges construct the edges for the PlacementBindingResource Resources
 func (p PlacementBindingResource) BuildEdges(ns NodeStore) []Edge {
-	ret := []Edge{}
-	UID := p.node.UID
-
-	// refersTo edges
-	// Builds edges between placement binding and placement policy.
-
-	nodeInfo := NodeInfo{
-		NameSpace: p.node.Properties["namespace"].(string),
-		UID:       UID,
-		EdgeType:  "refersTo",
-		Kind:      p.node.Properties["kind"].(string),
-		Name:      p.node.Properties["name"].(string)}
-
-	if p.PlacementPolicyRef.Name != "" {
-		placementPolicyMap := make(map[string]struct{})
-		placementPolicyMap[p.PlacementPolicyRef.Name] = struct{}{}
-		ret = append(ret, edgesByDestinationName(placementPolicyMap, "PlacementPolicy", nodeInfo, ns, []string{})...)
-	}
-	return ret
+	//no op for now to implement interface
+	return []Edge{}
 }

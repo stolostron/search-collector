@@ -12,6 +12,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -19,19 +20,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/open-cluster-management/search-collector/pkg/config"
 	inform "github.com/open-cluster-management/search-collector/pkg/informer"
 	lease "github.com/open-cluster-management/search-collector/pkg/lease"
 	rec "github.com/open-cluster-management/search-collector/pkg/reconciler"
-	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
-
-	"github.com/golang/glog"
 	"github.com/open-cluster-management/search-collector/pkg/send"
+	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
+	addonutils "open-cluster-management.io/addon-framework/pkg/utils"
 )
 
 const (
@@ -50,6 +51,7 @@ func main() {
 	}
 	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
 
+	context := context.TODO()
 	// determine number of CPUs available.
 	// We make that many goroutines for transformation and reconciliation,
 	// so that we take maximum advantage of whatever hardware we're on
@@ -61,6 +63,28 @@ func main() {
 	}
 
 	if !config.Cfg.DeployedInHub {
+
+		cc, err := addonutils.NewConfigChecker("policy-spec-sync", config.Cfg.AggregatorConfigFile)
+		if err != nil {
+			glog.Error(err, "unable to setup a configChecker")
+			os.Exit(1)
+		}
+
+		go lease.ServeHealthProbes(context.Done(), ":8000", cc.Check)
+
+		if err != nil {
+			glog.Error(err, "unable to set up health check")
+			os.Exit(1)
+		}
+		// if err := mgr.AddHealthzCheck("healthz", cc.Check); err != nil {
+		// 	glog.Error(err, "unable to set up health check")
+		// 	os.Exit(1)
+		// }
+		// if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		// 	glog.Error(err, "unable to set up ready check")
+		// 	os.Exit(1)
+		// }
+
 		leaseReconciler := lease.LeaseReconciler{
 			HubKubeClient:        config.GetKubeClient(config.Cfg.AggregatorConfig),
 			KubeClient:           config.GetKubeClient(config.GetKubeConfig()),

@@ -1,6 +1,7 @@
 package lease
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,8 @@ const (
 	namespace            = "open-cluster-management-agent-addon"
 )
 
+var contextVar = context.TODO()
+
 func TestCreateLeaseAddon(t *testing.T) {
 	client := fake.NewSimpleClientset()
 
@@ -23,7 +26,7 @@ func TestCreateLeaseAddon(t *testing.T) {
 		LeaseDurationSeconds: int32(LeaseDurationSeconds),
 	}
 	leaseReconciler.Reconcile()
-	lease, err := client.CoordinationV1().Leases(namespace).Get(AddonName, metav1.GetOptions{})
+	lease, err := client.CoordinationV1().Leases(namespace).Get(contextVar, AddonName, metav1.GetOptions{})
 
 	assert.Equal(t, lease.Name, AddonName, "Expected created lease to have name search-collector: Got %s", lease.Name)
 	assert.Nil(t, err, "Expected no error: Got %v", err)
@@ -39,13 +42,13 @@ func TestUpdateLeaseAddon(t *testing.T) {
 		LeaseDurationSeconds: int32(LeaseDurationSeconds),
 	}
 	leaseReconciler.Reconcile()
-	lease, err := client.CoordinationV1().Leases(namespace).Get(AddonName, metav1.GetOptions{})
+	lease, err := client.CoordinationV1().Leases(namespace).Get(contextVar, AddonName, metav1.GetOptions{})
 
 	assert.Equal(t, lease.Name, AddonName, "Expected created lease to have name search-collector: Got %s", lease.Name)
 	assert.Nil(t, err, "Expected no error: Got %v", err)
 	createdTime := lease.Spec.RenewTime
 	leaseReconciler.Reconcile()
-	lease, err = client.CoordinationV1().Leases(namespace).Get(AddonName, metav1.GetOptions{})
+	lease, err = client.CoordinationV1().Leases(namespace).Get(contextVar, AddonName, metav1.GetOptions{})
 	assert.Nil(t, err, "Expected no error: Got %v", err)
 
 	updatedTime := lease.Spec.RenewTime
