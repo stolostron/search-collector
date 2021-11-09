@@ -8,7 +8,6 @@ go 1.16
 require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
-	github.com/golang/protobuf v1.5.2
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20211012174109-95c3b77cce09
 	github.com/open-cluster-management/multicloud-operators-channel v1.0.1-0.20200930214554-fa55cf642642
