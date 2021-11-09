@@ -18,14 +18,18 @@ import (
 var gvr = schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
 
 func fakeDynamicClient() *fake.FakeDynamicClient {
+	var gvrMapToKind = map[schema.GroupVersionResource]string{}
+	gvrMapToKind[gvr] = "thekindsList"
 	scheme := runtime.NewScheme()
-	return fake.NewSimpleDynamicClient(scheme,
-		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-foo", "id-001"),
+	scheme.AddKnownTypes(gvr.GroupVersion())
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "open-cluster-management.io", Version: "v1", Kind: "TheKind"},
+		&unstructured.UnstructuredList{})
+
+	return fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrMapToKind, newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-foo", "id-001"),
 		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-foo2", "id-002"),
 		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-bar", "id-003"),
 		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-bar2", "id-004"),
-		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-bar3", "id-005"),
-	)
+		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-bar3", "id-005"))
 }
 
 func generateSimpleEvent(informer GenericInformer, t *testing.T) {
