@@ -5,7 +5,7 @@ import (
 	"net"
 	"net/http"
 
-	"k8s.io/klog"
+	"github.com/golang/glog"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
 
@@ -29,21 +29,21 @@ func ServeHealthProbes(stop <-chan struct{}, healthProbeBindAddress string, conf
 
 	ln, err := net.Listen("tcp", healthProbeBindAddress)
 	if err != nil {
-		klog.Errorf("error listening on %s: %v", ":8000", err)
+		glog.Errorf("error listening on %s: %v", ":8000", err)
 		return
 	}
 
-	klog.Infof("heath probes server is running...")
+	glog.Infof("health probes server is running...")
 	// Run server
 	go func() {
 		if err := server.Serve(ln); err != nil && err != http.ErrServerClosed {
-			klog.Fatal(err)
+			glog.Fatal(err)
 		}
 	}()
 
 	// Shutdown the server when stop is closed
 	<-stop
 	if err := server.Shutdown(context.Background()); err != nil {
-		klog.Fatal(err)
+		glog.Fatal(err)
 	}
 }
