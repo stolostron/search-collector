@@ -64,18 +64,13 @@ func main() {
 
 	if !config.Cfg.DeployedInHub {
 
-		cc, err := addonutils.NewConfigChecker("policy-spec-sync", config.Cfg.AggregatorConfigFile)
+		cc, err := addonutils.NewConfigChecker("search-collector-sync", config.Cfg.AggregatorConfigFile)
 		if err != nil {
-			glog.Error(err, "unable to setup a configChecker")
+			glog.Error(err, "Unable to setup a configChecker")
 			os.Exit(1)
 		}
 
 		go lease.ServeHealthProbes(context.Done(), ":8000", cc.Check)
-
-		if err != nil {
-			glog.Error(err, "unable to set up health check")
-			os.Exit(1)
-		}
 
 		leaseReconciler := lease.LeaseReconciler{
 			HubKubeClient:        config.GetKubeClient(config.Cfg.AggregatorConfig),
