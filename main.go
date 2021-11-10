@@ -67,7 +67,6 @@ func main() {
 		cc, err := addonutils.NewConfigChecker("search-collector-sync", config.Cfg.AggregatorConfigFile)
 		if err != nil {
 			glog.Error(err, "Unable to setup a configChecker")
-			os.Exit(1)
 		}
 
 		go lease.ServeHealthProbes(context.Done(), ":8000", cc.Check)
