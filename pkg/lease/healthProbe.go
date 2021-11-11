@@ -1,7 +1,6 @@
 package lease
 
 import (
-	"context"
 	"crypto/tls"
 	"net"
 	"net/http"
@@ -11,7 +10,7 @@ import (
 )
 
 // ServeHealthProbes starts a server to check healthz and readyz probes
-func ServeHealthProbes(stop <-chan struct{}, healthProbeBindAddress string, configCheck healthz.Checker) {
+func ServeHealthProbes(healthProbeBindAddress string, configCheck healthz.Checker) {
 	healthzHandler := &healthz.Handler{Checks: map[string]healthz.Checker{
 		"healthz-ping": healthz.Ping,
 		"configz-ping": configCheck,
@@ -51,12 +50,4 @@ func ServeHealthProbes(stop <-chan struct{}, healthProbeBindAddress string, conf
 			glog.Fatal(err, "health probe server not running due to error")
 		}
 	}()
-
-	// Shutdown the server when stop is closed
-	<-stop
-	if err := server.Shutdown(context.Background()); err != nil {
-		glog.Fatal("Channel closed. Health probes server shut down failed with error: ", err)
-	} else {
-		glog.Info("Channel closed. Health probes server shut down successfully")
-	}
 }

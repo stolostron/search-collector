@@ -12,7 +12,6 @@ Copyright (c) 2020 Red Hat, Inc.
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -51,7 +50,6 @@ func main() {
 	}
 	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
 
-	context := context.TODO()
 	// determine number of CPUs available.
 	// We make that many goroutines for transformation and reconciliation,
 	// so that we take maximum advantage of whatever hardware we're on
@@ -69,7 +67,7 @@ func main() {
 			glog.Error(err, "Unable to setup a configChecker")
 		}
 
-		go lease.ServeHealthProbes(context.Done(), ":8000", cc.Check)
+		go lease.ServeHealthProbes(":8000", cc.Check)
 
 		leaseReconciler := lease.LeaseReconciler{
 			HubKubeClient:        config.GetKubeClient(config.Cfg.AggregatorConfig),
