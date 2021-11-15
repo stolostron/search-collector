@@ -65,6 +65,7 @@ func init() {
 }
 
 func InitConfig() {
+	glog.Info("Loading config from environment.")
 	// Load default config from ./config.json.
 	// These can be overridden in the next step if environment variables are set.
 	if _, err := os.Stat(filepath.Join(".", "config.json")); !os.IsNotExist(err) {
@@ -155,7 +156,6 @@ func setDefault(field *string, env, defaultVal string) {
 	}
 }
 
-// TODO: Combine with function above.
 func setDefaultInt(field *int, env string, defaultVal int) {
 	if val := os.Getenv(env); val != "" {
 		glog.Infof("Using %s from environment: %s", env, val)
