@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/open-cluster-management/search-collector/pkg/config"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,7 +15,7 @@ import (
 // LeaseReconciler reconciles a Secret object
 type LeaseReconciler struct {
 	HubKubeClient        kubernetes.Interface
-	KubeClient           kubernetes.Interface
+	LocalKubeClient      kubernetes.Interface
 	LeaseName            string
 	LeaseDurationSeconds int32
 	ClusterName          string
@@ -27,15 +28,16 @@ func (r *LeaseReconciler) Reconcile() {
 	}
 	// Create/update lease on managed cluster first. If it fails, it could mean lease resource kind
 	// is not supported on the managed cluster. Create/update lease on the hub then.
-	err := r.updateLease(r.componentNamespace, r.KubeClient)
+	err := r.updateLease(r.componentNamespace, r.LocalKubeClient)
 
 	if err != nil {
 		// Try to create or update the lease on in the managed cluster's namespace on the hub cluster.
 		if errors.IsNotFound(err) && r.HubKubeClient != nil {
-			glog.V(2).Infof("Trying to update lease on the hub")
+			glog.V(2).Infof("Trying to update lease on the hub.")
 
 			if err := r.updateLease(r.ClusterName, r.HubKubeClient); err != nil {
 				glog.Errorf("Failed to update lease %s/%s: %v on hub cluster", r.LeaseName, r.ClusterName, err)
+				r.reloadClient() // Refresh the kube client to ensure the error was not caused by a stale config.
 			}
 		} else {
 			glog.Errorf("Failed to update lease %s/%s: %v on managed cluster", r.LeaseName, r.componentNamespace, err)
@@ -96,4 +98,10 @@ func getPodNamespace() string {
 		return collectorPodNamespace
 	}
 	return "open-cluster-management-agent-addon"
+}
+
+func (r *LeaseReconciler) reloadClient() {
+	config.InitConfig()
+	r.HubKubeClient = config.GetKubeClient(config.Cfg.AggregatorConfig)
+	r.LocalKubeClient = config.GetKubeClient(config.GetKubeConfig())
 }

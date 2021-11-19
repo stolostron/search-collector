@@ -18,7 +18,7 @@ func TestCreateLeaseAddon(t *testing.T) {
 	client := fake.NewSimpleClientset()
 
 	leaseReconciler := LeaseReconciler{
-		KubeClient:           client,
+		LocalKubeClient:      client,
 		LeaseName:            AddonName,
 		LeaseDurationSeconds: int32(LeaseDurationSeconds),
 	}
@@ -34,7 +34,7 @@ func TestUpdateLeaseAddon(t *testing.T) {
 	client := fake.NewSimpleClientset()
 
 	leaseReconciler := LeaseReconciler{
-		KubeClient:           client,
+		LocalKubeClient:      client,
 		LeaseName:            AddonName,
 		LeaseDurationSeconds: int32(LeaseDurationSeconds),
 	}
