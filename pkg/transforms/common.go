@@ -16,7 +16,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/open-cluster-management/search-collector/pkg/config"
-	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiTypes "k8s.io/apimachinery/pkg/types"
 )
@@ -29,7 +28,7 @@ type NodeStore struct {
 }
 
 // Extracts the common properties from a k8s resource of any type and returns a map ready to be put in a Node
-func commonProperties(resource machineryV1.Object) map[string]interface{} {
+func commonProperties(resource v1.Object) map[string]interface{} {
 	ret := make(map[string]interface{})
 
 	ret["name"] = resource.GetName()
@@ -56,7 +55,7 @@ func commonProperties(resource machineryV1.Object) map[string]interface{} {
 }
 
 // Transforms a resource of unknown type by simply pulling out the common properties.
-func transformCommon(resource machineryV1.Object) Node {
+func transformCommon(resource v1.Object) Node {
 	n := Node{
 		UID:        prefixedUID(resource.GetUID()),
 		Properties: commonProperties(resource),
@@ -126,7 +125,7 @@ func prefixedUID(uid apiTypes.UID) string {
 }
 
 // Prefixes the given UID with the cluster name from config and a /
-func ownerRefUID(ownerReferences []machineryV1.OwnerReference) string {
+func ownerRefUID(ownerReferences []v1.OwnerReference) string {
 	ownerUID := ""
 	for _, ref := range ownerReferences {
 		if ref.Controller != nil && *ref.Controller {
