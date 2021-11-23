@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
-	addonutils "open-cluster-management.io/addon-framework/pkg/utils"
 )
 
 const (
@@ -61,14 +60,6 @@ func main() {
 	}
 
 	if !config.Cfg.DeployedInHub {
-
-		cc, err := addonutils.NewConfigChecker("search-collector-sync", config.Cfg.AggregatorConfigFile)
-		if err != nil {
-			glog.Error(err, "Unable to setup a configChecker")
-		}
-
-		go lease.ServeHealthProbes(":8000", cc.Check)
-
 		leaseReconciler := lease.LeaseReconciler{
 			HubKubeClient:        config.GetKubeClient(config.Cfg.AggregatorConfig),
 			KubeClient:           config.GetKubeClient(config.GetKubeConfig()),
