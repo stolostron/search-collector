@@ -38,10 +38,10 @@ func GetKubeConfig() *rest.Config {
 	var clientConfigError error
 
 	if Cfg.KubeConfig != "" {
-		glog.Infof("Creating k8s client using path: %s", Cfg.KubeConfig)
+		glog.Infof("Creating k8s client using KubeConfig at: %s", Cfg.KubeConfig)
 		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", Cfg.KubeConfig)
 	} else {
-		glog.Info("Creating k8s client using InClusterlientConfig()")
+		glog.V(2).Info("Creating k8s client using InClusterClientConfig()")
 		clientConfig, clientConfigError = rest.InClusterConfig()
 	}
 

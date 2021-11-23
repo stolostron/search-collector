@@ -158,18 +158,16 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 	retry := 0
 	for {
 		sendError := s.send(payload, expectedTotalResources, expectedTotalEdges)
+		retry++
+		waitMS := int(math.Min(float64(retry*15*1000), float64(config.Cfg.MaxBackoffMS)))
 
 		if sendError != nil && sendError.Error() == "Aggregator busy" {
-			retry++
-			waitMS := int(math.Min(float64(retry*15*1000), float64(config.Cfg.MaxBackoffMS)))
 			glog.Warningf("Received busy response from Aggregator. Resending in %d ms.", waitMS)
 			time.Sleep(time.Duration(waitMS) * time.Millisecond)
 			continue
-		} else if sendError != nil && sendError.Error() == "401 Unauthorized" {
-			retry++
-			waitMS := int(math.Min(float64(retry*15*1000), float64(config.Cfg.MaxBackoffMS)))
-			glog.Warningf("Received Unauthorized response from Aggregator. Resending in %d ms after resetting config.",
-				waitMS)
+		} else if sendError != nil {
+			glog.Warningf("Received error response [%s] from Aggregator. Resending in %d ms after resetting config.",
+				sendError.Error(), waitMS)
 			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.httpClient = getHTTPSClient()
 			time.Sleep(time.Duration(waitMS) * time.Millisecond)
