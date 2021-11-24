@@ -16,25 +16,20 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
+	policy "github.com/open-cluster-management/governance-policy-propagator/api/v1"
 	acmapp "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
 	appDeployable "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1"
 	rule "github.com/open-cluster-management/multicloud-operators-placementrule/pkg/apis/apps/v1"
 	appHelmRelease "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
 	subscription "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1"
-	application "sigs.k8s.io/application/api/v1beta1"
-
-	policy "github.com/open-cluster-management/governance-policy-propagator/pkg/apis/policy/v1"
-	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
-
+	ocpapp "github.com/openshift/api/apps/v1"
 	apps "k8s.io/api/apps/v1"
-
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	ocpapp "github.com/openshift/api/apps/v1"
+	application "sigs.k8s.io/application/api/v1beta1"
 )
 
 // Operation is the event operation
@@ -329,22 +324,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = PersistentVolumeClaimResourceBuilder(&typedResource)
 
 		case [2]string{"PlacementBinding", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
-			typedResource := mcm.PlacementBinding{}
+			typedResource := policy.PlacementBinding{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PlacementBindingResourceBuilder(&typedResource)
-
-		case [2]string{"PlacementPolicy", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
-			typedResource := mcm.PlacementPolicy{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = PlacementPolicyResourceBuilder(&typedResource)
 
 		case [2]string{"PlacementRule", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := rule.PlacementRule{}
