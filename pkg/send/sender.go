@@ -171,7 +171,7 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.httpClient = getHTTPSClient()
 			time.Sleep(time.Duration(waitMS) * time.Millisecond)
-			continue
+			return sendError
 		}
 		return sendError
 	}
