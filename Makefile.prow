@@ -9,3 +9,7 @@ build:
 .PHONY: unit-test
 unit-test:
 	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
+
+.PHONY: test-e2e
+test-e2e:
+	sh tests/e2e/runTests.sh $1
