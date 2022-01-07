@@ -13,7 +13,7 @@ package transforms
 import (
 	"testing"
 
-	policy "github.com/open-cluster-management/governance-policy-propagator/api/v1"
+	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 )
 
 func TestTransformPolicy(t *testing.T) {

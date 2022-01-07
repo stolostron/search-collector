@@ -9,13 +9,12 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/kennygrant/sanitize v1.2.4
-	github.com/open-cluster-management/governance-policy-propagator v0.0.0-20211012174109-95c3b77cce09
-	github.com/open-cluster-management/multicloud-operators-channel v1.0.1-0.20200930214554-fa55cf642642
-	github.com/open-cluster-management/multicloud-operators-deployable v0.0.0-20200925154205-fc4ec3e30a4d
-	github.com/open-cluster-management/multicloud-operators-placementrule v1.2.4-0-20210816-699e5
-	github.com/open-cluster-management/multicloud-operators-subscription v1.0.0-2020-05-12-21-17-19.0.20201009005738-cbe273a045ab
-	github.com/open-cluster-management/multicloud-operators-subscription-release v1.0.1-2020-06-08-14-28-27.0.20200819124024-818f01d780ff //Use 2.0 when available
+	github.com/open-cluster-management/multicloud-operators-channel v1.2.5-0-20211122-79abb30
+	github.com/open-cluster-management/multicloud-operators-deployable v1.2.4-0-20211122-24ac963
+	github.com/open-cluster-management/multicloud-operators-placementrule v1.2.4-0-20211122-be034
+	github.com/open-cluster-management/multicloud-operators-subscription-release v1.2.4-0-20211122-8309641 //Use 2.0 when available
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
+	github.com/stolostron/governance-policy-propagator v0.0.0-20220106234408-4675151f7b90
 	github.com/stretchr/testify v1.7.0
 	github.com/tkanos/gonfig v0.0.0-20181112185242-896f3d81fadf
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
@@ -27,6 +26,7 @@ require (
 	k8s.io/helm v2.16.7+incompatible
 	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9 // indirect
+	open-cluster-management.io/multicloud-operators-subscription v0.5.0
 	sigs.k8s.io/application v0.8.3
 )
 
@@ -44,7 +44,7 @@ require (
 	github.com/go-openapi/swag v0.19.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.5 // indirect
+	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
@@ -60,10 +60,11 @@ require (
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.26.0 // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
+	open-cluster-management.io/multicloud-operators-channel v0.4.1-0.20211019174739-f906eb7328a6 // indirect
 	sigs.k8s.io/controller-runtime v0.9.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
