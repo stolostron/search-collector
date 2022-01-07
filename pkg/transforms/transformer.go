@@ -23,7 +23,6 @@ import (
 	subscription "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
 	application "sigs.k8s.io/application/api/v1beta1"
 
-	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 
 	apps "k8s.io/api/apps/v1"
@@ -329,22 +328,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = PersistentVolumeClaimResourceBuilder(&typedResource)
 
 		case [2]string{"PlacementBinding", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
-			typedResource := mcm.PlacementBinding{}
+			typedResource := policy.PlacementBinding{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PlacementBindingResourceBuilder(&typedResource)
-
-		case [2]string{"PlacementPolicy", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
-			typedResource := mcm.PlacementPolicy{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = PlacementPolicyResourceBuilder(&typedResource)
 
 		case [2]string{"PlacementRule", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := rule.PlacementRule{}
