@@ -16,19 +16,19 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
-	policy "github.com/open-cluster-management/governance-policy-propagator/api/v1"
 	acmapp "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
 	appDeployable "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1"
 	rule "github.com/open-cluster-management/multicloud-operators-placementrule/pkg/apis/apps/v1"
 	appHelmRelease "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
-	subscription "github.com/open-cluster-management/multicloud-operators-subscription/pkg/apis/apps/v1"
 	ocpapp "github.com/openshift/api/apps/v1"
+	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	subscription "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
 	application "sigs.k8s.io/application/api/v1beta1"
 )
 

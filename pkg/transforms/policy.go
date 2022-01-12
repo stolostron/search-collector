@@ -11,7 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
-	p "github.com/open-cluster-management/governance-policy-propagator/api/v1"
+	p "github.com/stolostron/governance-policy-propagator/api/v1"
 )
 
 // PolicyResource ...
