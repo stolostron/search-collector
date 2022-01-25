@@ -13,7 +13,7 @@ package transforms
 import (
 	"strings"
 
-	app "github.com/open-cluster-management/multicloud-operators-subscription-release/pkg/apis/apps/v1"
+	app "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
 )
 
 // AppHelmCRResource ...

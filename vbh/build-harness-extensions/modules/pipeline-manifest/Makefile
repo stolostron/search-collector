@@ -5,7 +5,7 @@ GITHUB_TOKEN ?=
 # May or may not be in github enterprise
 PIPELINE_MANIFEST_SITE ?= github.com
 # May be in RedHat main org or in some ACM specific org
-PIPELINE_MANIFEST_ORG ?= open-cluster-management
+PIPELINE_MANIFEST_ORG ?= stolostron
 # Repo name not yet confirmed
 PIPELINE_MANIFEST_REPO?= pipeline
 # The URL for the pipeline repo
@@ -28,7 +28,7 @@ PIPELINE_MANIFEST_SNAPSHOT_FOLDER ?= snapshots
 # The branch of the pipeline to use for quay retagging (typically quay-retag vs. quay-retag-test)
 PIPELINE_MANIFEST_RETAG_BRANCH ?= quay-retag
 
-PIPELINE_MANIFEST_REMOTE_REPO ?= quay.io/open-cluster-management
+PIPELINE_MANIFEST_REMOTE_REPO ?= quay.io/stolostron
 
 PIPELINE_MANIFEST_COMPONENT_SUFFIX ?= $(PIPELINE_MANIFEST_COMPONENT_SHA256)
 
