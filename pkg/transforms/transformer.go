@@ -20,8 +20,6 @@ import (
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 	appDeployable "github.com/stolostron/multicloud-operators-deployable/pkg/apis/apps/v1"
 	rule "github.com/stolostron/multicloud-operators-placementrule/pkg/apis/apps/v1"
-	appHelmRelease "github.com/stolostron/
-open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
@@ -29,6 +27,7 @@ open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	acmapp "open-cluster-management.io/multicloud-operators-channel/pkg/apis/apps/v1"
+	appHelmRelease "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/helmrelease/v1"
 	subscription "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
 	application "sigs.k8s.io/application/api/v1beta1"
 )
