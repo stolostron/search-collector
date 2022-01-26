@@ -1,8 +1,8 @@
 # Copyright Contributors to the Open Cluster Management project
 
-FROM registry.ci.openshift.org/open-cluster-management/builder:go1.17-linux AS builder
+FROM registry.ci.openshift.org/stolostron/builder:go1.17-linux AS builder
 
-WORKDIR /go/src/github.com/open-cluster-management/search-collector
+WORKDIR /go/src/github.com/stolostron/search-collector
 COPY . .
 RUN CGO_ENABLED=0 GOGC=25 go build -trimpath -o main main.go
 
@@ -44,7 +44,7 @@ RUN microdnf update &&\
     mkdir /licenses &&\
     microdnf clean all
 
-COPY --from=builder /go/src/github.com/open-cluster-management/search-collector/main /bin/main
+COPY --from=builder /go/src/github.com/stolostron/search-collector/main /bin/main
 
 ENV VCS_REF="$VCS_REF" \
     USER_UID=1001 \

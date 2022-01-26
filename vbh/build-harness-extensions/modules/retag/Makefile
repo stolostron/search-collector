@@ -7,7 +7,7 @@ RETAG_QUAY_COMPONENT_TAG ?=
 RETAG_SNAPSHOT_NAME ?=
 RETAG_GITHUB_SHA ?=
 RETAG_REPO ?=
-PIPELINE_MANIFEST_ORG ?= open-cluster-management
+PIPELINE_MANIFEST_ORG ?= stolostron
 
 # Retag needs to do the following steps:
 #  1. Find an image in quay based on what we would call the team's docker tag, and pull out and assign 'RETAG_QUAY_SHA' from that
