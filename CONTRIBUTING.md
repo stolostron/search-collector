@@ -36,7 +36,7 @@ contribution. See the [DCO](DCO) file for details.
 
 Anyone may comment on issues and submit reviews for pull requests. However, in
 order to be assigned an issue or pull request, you must be a member of the
-[open-cluster-management](https://github.com/open-cluster-management) GitHub organization.
+[stolostron](https://github.com/stolostron) GitHub organization.
 
 Repo maintainers can assign you an issue or pull request by leaving a
 `/assign <your Github ID>` comment on the issue or pull request.
@@ -58,4 +58,4 @@ Make sure your code build passed.
 make docker-build ## Ensure build succeeds
 ```
 
-Now, you can follow the [README](./README.md) to work with the open-cluster-management/search-collector repository.
+Now, you can follow the [README](./README.md) to work with the stolostron/search-collector repository.
