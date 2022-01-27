@@ -10,7 +10,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
-	mcm "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1"
+	mcm "github.com/stolostron/multicloud-operators-deployable/pkg/apis/apps/v1"
 )
 
 // DeployableResource ...

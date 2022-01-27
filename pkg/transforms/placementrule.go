@@ -10,7 +10,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
-	app "github.com/open-cluster-management/multicloud-operators-placementrule/pkg/apis/apps/v1"
+	app "github.com/stolostron/multicloud-operators-placementrule/pkg/apis/apps/v1"
 )
 
 // PlacementRuleResource ...

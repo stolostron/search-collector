@@ -12,7 +12,7 @@ package transforms
 import (
 	"testing"
 
-	app "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
+	app "open-cluster-management.io/multicloud-operators-channel/pkg/apis/apps/v1"
 )
 
 func TestTransformChannel(t *testing.T) {

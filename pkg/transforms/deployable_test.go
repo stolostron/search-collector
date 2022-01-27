@@ -12,7 +12,7 @@ package transforms
 import (
 	"testing"
 
-	mcm "github.com/open-cluster-management/multicloud-operators-deployable/pkg/apis/apps/v1"
+	mcm "github.com/stolostron/multicloud-operators-deployable/pkg/apis/apps/v1"
 )
 
 func TestTransformDeployable(t *testing.T) {

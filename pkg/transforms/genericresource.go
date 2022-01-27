@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/open-cluster-management/search-collector/pkg/config"
+	"github.com/stolostron/search-collector/pkg/config"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
