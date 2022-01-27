@@ -9,6 +9,7 @@ irrespective of what has been deposited with the U.S. Copyright Office.
 package transforms
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -101,7 +102,7 @@ func RetryNecessary() bool {
 	if err != nil {
 		glog.Warning("Cannot construct kubernetes Client From Config: ", err)
 	} else {
-		tillerSvc, err := clientset.CoreV1().Services("kube-system").Get("tiller-deploy", options)
+		tillerSvc, err := clientset.CoreV1().Services("kube-system").Get(context.TODO(), "tiller-deploy", options)
 		if tillerSvc != nil && err == nil {
 			tillerPresent = true
 		} else {
