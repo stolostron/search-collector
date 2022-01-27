@@ -8,7 +8,6 @@ go 1.17
 require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
-	github.com/golang/protobuf v1.5.2
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/kr/text v0.2.0 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
@@ -41,8 +40,9 @@ require (
 	github.com/go-openapi/spec v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
-	github.com/googleapis/gnostic v0.5.5 // indirect
+	github.com/googleapis/gnostic v0.6.6 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/mailru/easyjson v0.7.0 // indirect
@@ -73,6 +73,7 @@ replace (
 	github.com/buger/jsonparser => github.com/buger/jsonparser v1.1.1
 	github.com/deislabs/oras => github.com/deislabs/oras v0.11.1
 	github.com/docker/docker => github.com/docker/docker v1.13.1
+	github.com/googleapis/gnostic => github.com/google/gnostic v0.5.5
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20200527184302-a843dc3262a0
 	github.com/stolostron/governance-policy-propagator => github.com/stolostron/governance-policy-propagator v0.0.0-20220114175018-b3080255bf45
 	github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.8

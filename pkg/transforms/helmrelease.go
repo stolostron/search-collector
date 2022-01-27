@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/stolostron/search-collector/pkg/config"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
@@ -60,7 +59,7 @@ func (h HelmReleaseResource) BuildNode() Node {
 
 	if h.Release != nil {
 		lastDeployed := h.Release.GetInfo().GetLastDeployed()
-		timestamp, _ := ptypes.Timestamp(lastDeployed)
+		timestamp := lastDeployed.AsTime()
 		node.Properties["chartName"] = h.Release.GetChart().GetMetadata().GetName()
 		node.Properties["chartVersion"] = h.Release.GetChart().GetMetadata().GetVersion()
 		node.Properties["namespace"] = h.Release.GetNamespace()
