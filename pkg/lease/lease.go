@@ -1,6 +1,7 @@
 package lease
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+var contextVar = context.TODO()
 
 // LeaseReconciler reconciles a Secret object
 type LeaseReconciler struct {
@@ -46,7 +49,7 @@ func (r *LeaseReconciler) Reconcile() {
 func (r *LeaseReconciler) updateLease(namespace string, client kubernetes.Interface) error {
 	glog.V(2).Infof("Trying to update lease %q/%q", namespace, r.LeaseName)
 
-	lease, err := client.CoordinationV1().Leases(namespace).Get(r.LeaseName, metav1.GetOptions{})
+	lease, err := client.CoordinationV1().Leases(namespace).Get(contextVar, r.LeaseName, metav1.GetOptions{})
 
 	switch {
 	case errors.IsNotFound(err):
@@ -63,7 +66,7 @@ func (r *LeaseReconciler) updateLease(namespace string, client kubernetes.Interf
 				},
 			},
 		}
-		if _, err := client.CoordinationV1().Leases(namespace).Create(lease); err != nil {
+		if _, err := client.CoordinationV1().Leases(namespace).Create(contextVar, lease, metav1.CreateOptions{}); err != nil {
 			glog.Errorf("Unable to create addon lease %q/%q . error:%v", namespace, r.LeaseName, err)
 
 			return err
@@ -79,7 +82,7 @@ func (r *LeaseReconciler) updateLease(namespace string, client kubernetes.Interf
 	default:
 		// update lease
 		lease.Spec.RenewTime = &metav1.MicroTime{Time: time.Now()}
-		if _, err = client.CoordinationV1().Leases(namespace).Update(lease); err != nil {
+		if _, err = client.CoordinationV1().Leases(namespace).Update(contextVar, lease, metav1.UpdateOptions{}); err != nil {
 			glog.Errorf("Unable to update cluster lease %q/%q . error:%v", namespace, r.LeaseName, err)
 
 			return err
