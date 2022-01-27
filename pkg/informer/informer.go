@@ -15,6 +15,8 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
+var contextVar = context.TODO()
+
 // GenericInformer ...
 type GenericInformer struct {
 	client        dynamic.Interface
@@ -94,7 +96,7 @@ func (inform *GenericInformer) listAndResync() {
 	// List resources.
 	opts := metav1.ListOptions{Limit: 250}
 	for {
-		resources, listError := inform.client.Resource(inform.gvr).List(context.TODO(), opts)
+		resources, listError := inform.client.Resource(inform.gvr).List(contextVar, opts)
 		if listError != nil {
 			glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
 			inform.retries++
@@ -135,7 +137,7 @@ func (inform *GenericInformer) listAndResync() {
 // Watch resources and process events.
 func (inform *GenericInformer) watch(stopper chan struct{}) {
 
-	watch, watchError := inform.client.Resource(inform.gvr).Watch(context.TODO(), metav1.ListOptions{})
+	watch, watchError := inform.client.Resource(inform.gvr).Watch(contextVar, metav1.ListOptions{})
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
 		inform.retries++
