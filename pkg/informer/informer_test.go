@@ -18,8 +18,14 @@ import (
 var gvr = schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
 
 func fakeDynamicClient() *fake.FakeDynamicClient {
+	var gvrMapToKind = map[schema.GroupVersionResource]string{}
+	gvrMapToKind[gvr] = "thekindsList"
 	scheme := runtime.NewScheme()
-	return fake.NewSimpleDynamicClient(scheme,
+	scheme.AddKnownTypes(gvr.GroupVersion())
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "open-cluster-management.io", Version: "v1", Kind: "TheKind"},
+		&unstructured.UnstructuredList{})
+
+	return fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrMapToKind,
 		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-foo", "id-001"),
 		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-foo2", "id-002"),
 		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-bar", "id-003"),
@@ -31,13 +37,13 @@ func fakeDynamicClient() *fake.FakeDynamicClient {
 func generateSimpleEvent(informer GenericInformer, t *testing.T) {
 	// Add resource. Generates ADDED event.
 	newResource := newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-new", "id-999")
-	_, err1 := informer.client.Resource(gvr).Namespace("ns-foo").Create(newResource, v1.CreateOptions{})
+	_, err1 := informer.client.Resource(gvr).Namespace("ns-foo").Create(contextVar, newResource, v1.CreateOptions{})
 
 	// Update resource. Generates MODIFIED event.
-	_, err2 := informer.client.Resource(gvr).Namespace("ns-foo").Update(newResource, v1.UpdateOptions{})
+	_, err2 := informer.client.Resource(gvr).Namespace("ns-foo").Update(contextVar, newResource, v1.UpdateOptions{})
 
 	// Delete resource. Generated DELETED event.
-	err3 := informer.client.Resource(gvr).Namespace("ns-foo").Delete("name-bar2", &v1.DeleteOptions{})
+	err3 := informer.client.Resource(gvr).Namespace("ns-foo").Delete(contextVar, "name-bar2", v1.DeleteOptions{})
 
 	if err1 != nil || err2 != nil || err3 != nil {
 		t.Error("Error generating mocked events.")

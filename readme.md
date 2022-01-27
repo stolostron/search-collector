@@ -5,13 +5,13 @@ We are in the process of enabling this repo for community contribution. See wiki
 
 # Open cluster management - Search collector
 
-The `search-collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/open-cluster-management/search/blob/master/feature-spec/search.md) has an overview of all the search components.
+The `search-collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/stolostron/search/blob/main/feature-spec/search.md) has an overview of all the search components.
 
-This process targets any kubernetes cluster to collect data about its configuration resources and computes relationships between those resources. Then this data is sent to the [search-aggregator](https://github.com/open-cluster-management/search-aggregator), where it gets indexed in graph format.
+This process targets any kubernetes cluster to collect data about its configuration resources and computes relationships between those resources. Then this data is sent to the [search-aggregator](https://github.com/stolostron/search-aggregator), where it gets indexed in graph format.
 
 ## Data model
 
-See the [Data model documentation](https://github.com/open-cluster-management/search-collector/blob/pkg/transforms/README.md) for more information. 
+See the [Data model documentation](https://github.com/stolostron/search-collector/blob/pkg/transforms/README.md) for more information. 
 
 
 ## Usage and configuration
@@ -58,7 +58,7 @@ When you make contributions to this project, fork the project then merge your ch
 
 1. Fork the `search-collector` repository.
 2. Clone your fork.
-3. Set upstream origin with the following command: `git remote add upstream git@github.com:open-cluster-management/search-collector.git`
+3. Set upstream origin with the following command: `git remote add upstream git@github.com:stolostron/search-collector.git`
 4. Make your edits. Test locally with `make test` before creating a pull request to ensure smooth merging :smile:
 5. Push your new commits to your personal fork with the following command: `git push origin`
 6. Create a pull request from your personal fork again the upstream `search-collector` main branch
