@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/open-cluster-management/search-collector/pkg/config"
+	"github.com/stolostron/search-collector/pkg/config"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

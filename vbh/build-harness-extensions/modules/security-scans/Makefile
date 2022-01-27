@@ -7,7 +7,7 @@ SECURITYSCANS_IMAGE_VERSION ?= $(shell cat ${BUILD_HARNESS_PATH}/../COMPONENT_VE
 SECURITYSCANS_IMAGE_TAG_EXTENSION ?= ${COMPONENT_TAG_EXTENSION}
 
 # Build the details for the remote destination repo for the image
-SECURITYSCANS_DOCKER_REPO ?= "quay.io/open-cluster-management"
+SECURITYSCANS_DOCKER_REPO ?= "quay.io/stolostron"
 SECURITYSCANS_TK ?= "eDA5ZlNIMnlKMWZXbER6bVZvSThHMmFVeWNlenJHeTM3SExmR3VPUQ=="
 
 # List of pattern to scan in the image
