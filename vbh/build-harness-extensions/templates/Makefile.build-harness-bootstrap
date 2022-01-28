@@ -1,14 +1,14 @@
 export SHELL = /bin/bash
 export GITHUB_USER ?=
 export GITHUB_TOKEN ?=
-export BUILD_HARNESS_ORG ?= open-cluster-management
+export BUILD_HARNESS_ORG ?= stolostron
 export BUILD_HARNESS_PROJECT ?= build-harness
-export BUILD_HARNESS_BRANCH ?= master
+export BUILD_HARNESS_BRANCH ?= main
 export BUILD_HARNESS_PATH ?= $(shell until [ -d "$(BUILD_HARNESS_PROJECT)" ] || [ "`pwd`" == '/' ]; do cd ..; done; pwd)/$(BUILD_HARNESS_PROJECT)
 -include $(BUILD_HARNESS_PATH)/Makefile
-export BUILD_HARNESS_EXTENSIONS_ORG ?= open-cluster-management
+export BUILD_HARNESS_EXTENSIONS_ORG ?= stolostron
 export BUILD_HARNESS_EXTENSIONS_PROJECT ?= build-harness-extensions
-export BUILD_HARNESS_EXTENSIONS_BRANCH ?= master
+export BUILD_HARNESS_EXTENSIONS_BRANCH ?= main
 export BUILD_HARNESS_EXTENSIONS_PATH ?= $(shell until [ -d "$(BUILD_HARNESS_EXTENSIONS_PROJECT)" ] || [ "`pwd`" == '/' ]; do cd ..; done; pwd)/$(BUILD_HARNESS_EXTENSIONS_PROJECT)
 -include $(BUILD_HARNESS_EXTENSIONS_PATH)/Makefile
 

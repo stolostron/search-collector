@@ -12,11 +12,11 @@ package transforms
 import (
 	"testing"
 
-	mcm "github.com/open-cluster-management/multicloud-operators-foundation/pkg/apis/mcm/v1alpha1"
+	policy "github.com/stolostron/governance-policy-propagator/pkg/apis/policies/v1"
 )
 
 func TestTransformPlacementBinding(t *testing.T) {
-	var p mcm.PlacementBinding
+	var p policy.PlacementBinding
 	UnmarshalFile("placementbinding.json", &p, t)
 	node := PlacementBindingResourceBuilder(&p).BuildNode()
 

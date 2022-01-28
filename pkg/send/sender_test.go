@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/open-cluster-management/search-collector/pkg/transforms"
+	"github.com/stolostron/search-collector/pkg/transforms"
 )
 
 func TestSenderWrongCount(t *testing.T) {

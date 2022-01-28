@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/open-cluster-management/search-collector/pkg/config"
-	"github.com/open-cluster-management/search-collector/pkg/reconciler"
-	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
+	"github.com/stolostron/search-collector/pkg/config"
+	"github.com/stolostron/search-collector/pkg/reconciler"
+	tr "github.com/stolostron/search-collector/pkg/transforms"
 )
 
 // A UID of a node to be deleted, and the time at which it was deleted.

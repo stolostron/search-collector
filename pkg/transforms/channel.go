@@ -10,7 +10,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
-	app "github.com/open-cluster-management/multicloud-operators-channel/pkg/apis/apps/v1"
+	app "open-cluster-management.io/multicloud-operators-channel/pkg/apis/apps/v1"
 )
 
 // ChannelResource ...

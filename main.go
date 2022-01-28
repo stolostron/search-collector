@@ -18,13 +18,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/open-cluster-management/search-collector/pkg/config"
-	inform "github.com/open-cluster-management/search-collector/pkg/informer"
-	rec "github.com/open-cluster-management/search-collector/pkg/reconciler"
-	tr "github.com/open-cluster-management/search-collector/pkg/transforms"
+	"github.com/stolostron/search-collector/pkg/config"
+	inform "github.com/stolostron/search-collector/pkg/informer"
+	rec "github.com/stolostron/search-collector/pkg/reconciler"
+	tr "github.com/stolostron/search-collector/pkg/transforms"
 
 	"github.com/golang/glog"
-	"github.com/open-cluster-management/search-collector/pkg/send"
+	"github.com/stolostron/search-collector/pkg/send"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"

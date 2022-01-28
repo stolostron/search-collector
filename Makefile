@@ -6,9 +6,21 @@ BINDIR ?= output
 USE_VENDORIZED_BUILD_HARNESS ?=
 
 ifndef USE_VENDORIZED_BUILD_HARNESS
--include $(shell curl -s -H 'Authorization: token ${GITHUB_TOKEN}' -H 'Accept: application/vnd.github.v4.raw' -L https://api.github.com/repos/open-cluster-management/build-harness-extensions/contents/templates/Makefile.build-harness-bootstrap -o .build-harness-bootstrap; echo .build-harness-bootstrap)
+-include $(shell curl -s -H 'Authorization: token ${GITHUB_TOKEN}' -H 'Accept: application/vnd.github.v4.raw' -L https://api.github.com/repos/stolostron/build-harness-extensions/contents/templates/Makefile.build-harness-bootstrap -o .build-harness-bootstrap; echo .build-harness-bootstrap)
 else
 -include vbh/.build-harness-vendorized
+endif
+
+.PHONY: deps fmt lint test coverage build build-images
+
+# GITHUB_USER containing '@' char must be escaped with '%40'
+GITHUB_USER:=$(shell echo $(GITHUB_USER) | sed 's/@/%40/g')
+GITHUB_TOKEN?=
+
+GOPRIVATE=github.com/stolostron
+
+ifdef GITHUB_TOKEN
+$(shell git config --global url."https://$(GITHUB_TOKEN):x-oauth-basic@github.com/".insteadOf "https://github.com/")
 endif
 
 default::
