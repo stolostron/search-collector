@@ -87,10 +87,10 @@ type Sender struct {
 func (s *Sender) reloadSender() {
 	s.aggregatorURL = config.Cfg.AggregatorURL
 	s.aggregatorSyncPath = strings.Join([]string{"/aggregator/clusters/", config.Cfg.ClusterName, "/sync"}, "")
-	s.httpClient = getHTTPSClient()
 	if !config.Cfg.DeployedInHub {
 		s.aggregatorSyncPath = strings.Join([]string{"/", config.Cfg.ClusterName, "/aggregator/sync"}, "")
 	}
+	s.httpClient = getHTTPSClient()
 }
 
 // Constructs a new Sender using the provided channels.
@@ -177,9 +177,9 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 		} else if sendError != nil {
 			glog.Warningf("Received error response [%s] from Aggregator. Resending in %d ms after resetting config.",
 				sendError.Error(), waitMS)
+			time.Sleep(time.Duration(waitMS) * time.Millisecond)
 			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.reloadSender()    // reload sender variables - Aggregator URL, path and client
-			time.Sleep(time.Duration(waitMS) * time.Millisecond)
 			return sendError
 		}
 		return sendError
