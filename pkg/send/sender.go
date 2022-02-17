@@ -84,6 +84,15 @@ type Sender struct {
 	rec                *reconciler.Reconciler
 }
 
+func (s *Sender) reloadSender() {
+	s.aggregatorURL = config.Cfg.AggregatorURL
+	s.aggregatorSyncPath = strings.Join([]string{"/aggregator/clusters/", config.Cfg.ClusterName, "/sync"}, "")
+	if !config.Cfg.DeployedInHub {
+		s.aggregatorSyncPath = strings.Join([]string{"/", config.Cfg.ClusterName, "/aggregator/sync"}, "")
+	}
+	s.httpClient = getHTTPSClient()
+}
+
 // Constructs a new Sender using the provided channels.
 // Sends to the URL provided by aggregatorURL, listing itself as clusterName.
 func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *Sender {
@@ -168,9 +177,9 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 		} else if sendError != nil {
 			glog.Warningf("Received error response [%s] from Aggregator. Resending in %d ms after resetting config.",
 				sendError.Error(), waitMS)
-			config.InitConfig() // re-initialize config to get the latest certificate.
-			s.httpClient = getHTTPSClient()
 			time.Sleep(time.Duration(waitMS) * time.Millisecond)
+			config.InitConfig() // re-initialize config to get the latest certificate.
+			s.reloadSender()    // reload sender variables - Aggregator URL, path and client
 			return sendError
 		}
 		return sendError
