@@ -5,14 +5,25 @@ package informer
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
+	"gopkg.in/yaml.v2"
+
+	tr "github.com/stolostron/search-collector/pkg/transforms"
+	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"k8s.io/client-go/discovery"
+
 	"k8s.io/client-go/dynamic"
 )
 
@@ -30,8 +41,82 @@ type GenericInformer struct {
 	retries       int64             // Counts times we have tried without establishing a watch.
 }
 
+///////////////////////////////////////////////////////////////////
+
+type Config struct {
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
+	Metadata   struct {
+		Name      string `yaml:"name"`
+		Namespace string `yaml:"namespace"`
+	} `yaml:"metadata"`
+	Data struct {
+		AllowedResources string `yaml:"AllowedResources"`
+		DeniedResources  string `yaml:"DeniedResources"`
+	}
+}
+
+//just testing yamla nd struct:
+func GetAllowDenyDataAgain() (map[string]interface{}, map[string]interface{}) {
+
+	var config Config
+	//first Unmarshal yaml to go struct Config:
+	bytes, _ := ioutil.ReadFile("controlresource.yaml")
+	if err := yaml.Unmarshal(bytes, &config); err != nil {
+		klog.Error("ERROR WITH MARSHALING ALLOW/DENY YAML ", err)
+	}
+
+	fmt.Println(config)
+
+	allowedResources := config.Data.AllowedResources
+	deniedResources := config.Data.DeniedResources
+
+	a := map[string]interface{}{}
+	d := map[string]interface{}{}
+
+	if err := yaml.Unmarshal([]byte(allowedResources), &a); err != nil {
+		panic(err)
+	}
+	fmt.Println("ALLOWED IS: ", a)
+
+	if err := yaml.Unmarshal([]byte(deniedResources), &d); err != nil {
+		panic(err)
+	}
+	fmt.Println("DENIED IS: ", d)
+
+	return a, d
+
+}
+
+//just testing yaml and struct:
+func GetResources() {
+
+	allowResources, denyResources := GetAllowDenyDataAgain()
+
+	for _, allowed := range allowResources {
+		allowedData := map[string]interface{}{
+			"apiGroups": allowed.(map[string]interface{})["apiGroups"],
+			"resources": allowed.(map[string]interface{})["resources"],
+		}
+
+		fmt.Println("allowedData", allowedData)
+	}
+
+	for _, denied := range denyResources {
+		deniedData := map[string]interface{}{
+			"apiGroups": denied.(map[string]interface{})["apiGroups"],
+			"resources": denied.(map[string]interface{})["resources"],
+		}
+		fmt.Println("deniedData", deniedData)
+	}
+
+}
+
+///////////////////////////////////////////////////////////////////
+
 // InformerForResource initialize a Generic Informer for a resource (GVR).
 func InformerForResource(res schema.GroupVersionResource) (GenericInformer, error) {
+	GetResources()
 	i := GenericInformer{
 		gvr:           res,
 		AddFunc:       (func(interface{}) { glog.Warning("AddFunc not initialized for ", res.String()) }),
@@ -42,6 +127,78 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 		resourceIndex: make(map[string]string),
 	}
 	return i, nil
+}
+
+// Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
+func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
+	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
+	supportedResources := []*machineryV1.APIResourceList{}
+
+	// List out all the preferred api-resources of this server.
+	apiResources, err := discoveryClient.ServerPreferredResources() //<--here we can look into this list and have preferred versions
+	if err != nil && apiResources == nil {                          // only return if the list is empty
+		return nil, err
+	} else if err != nil {
+		glog.Warning("ServerPreferredResources could not list all available resources: ", err)
+	}
+	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
+	// Filter down to only resources which support WATCH operations <--AND WERE WE HAVE ALLOWED ON CONFIGMAP:
+
+	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
+		// This is a copy of apiList but we only insert resources for which GET is supported.
+		watchList := machineryV1.APIResourceList{}
+		watchList.GroupVersion = apiList.GroupVersion
+		watchResources := []machineryV1.APIResource{}      // All the resources for which GET works.
+		for _, apiResource := range apiList.APIResources { // Loop across inner list
+
+			if apiResource.Name == "clusters" ||
+				apiResource.Name == "clusterstatuses" ||
+				apiResource.Name == "oauthaccesstokens" ||
+				apiResource.Name == "events" ||
+				apiResource.Name == "projects" {
+				continue
+			}
+			// else if apiResource.Name == "allowdenylists" {
+			// 	fmt.Println("APIResource has name allowdenylists")
+			// 	allowResources, denyResources := GetAllowDenyData(apiResource)
+
+			// 	for _, allowed := range allowResources{
+			// 		allowedData := map[string]interface{}{
+			// 		"apiGroups": allowed.(map[string]interface{})["apiGroups"],
+			// 		"resources": allowed.(map[string]interface{})["resources"],
+			// 	}
+			// 	for _, denied := range denyResources{
+			// 		deniedData := map[string]interface{}{
+			// 		"apiGroups": allowed.(map[string]interface{})["apiGroups"],
+			// 		"resources": allowed.(map[string]interface{})["resources"],
+			// 		}
+			// 	}
+
+			// }
+			// add non-namespaced resource to NonNSResourceMap
+			if !apiResource.Namespaced {
+				tr.NonNSResMapMutex.Lock()
+				if _, ok := tr.NonNSResourceMap[apiResource.Kind]; !ok {
+					tr.NonNSResourceMap[apiResource.Kind] = struct{}{}
+				}
+				tr.NonNSResMapMutex.Unlock()
+
+			}
+			for _, verb := range apiResource.Verbs {
+				if verb == "watch" {
+					watchResources = append(watchResources, apiResource)
+				}
+			}
+		}
+		watchList.APIResources = watchResources
+		// Add the list to our list of lists that holds GET enabled resources.
+		supportedResources = append(supportedResources, &watchList)
+	}
+
+	// Use handy converter function to convert into GroupVersionResource objects, which we need in order to make informers
+	gvrList, err := discovery.GroupVersionResources(supportedResources)
+
+	return gvrList, err
 }
 
 // Run runs the informer.
@@ -109,7 +266,7 @@ func (inform *GenericInformer) listAndResync() error {
 			return listError
 		}
 
-		// Add all resources.
+		// Add all resources. <-- this is where we should change to only add resources in Allow list:
 		for i := range resources.Items {
 			glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
 				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
