@@ -6,7 +6,6 @@ package informer
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/golang/glog"
@@ -70,9 +69,6 @@ type DeniedResources struct {
 
 func GetAllowDenyData(cm *v1.ConfigMap) ([]AllowedResources, []DeniedResources) {
 
-	// fmt.Println(cm.Data["AllowedResources"])
-	// fmt.Printf("%T", cm.Data["AllowedResources"])
-
 	var allow []AllowedResources
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
 	if allowerr != nil {
@@ -84,27 +80,6 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]AllowedResources, []DeniedResources) 
 	if denyerr != nil {
 		klog.Fatalf("Unmarshal: %v", denyerr)
 	}
-
-	// var c Config
-	// var allow []AllowedResources
-	// var deny []DeniedResources
-	// yamlFile, err := ioutil.ReadFile(cm) ///this will be replaced by configmap file (will be passed parameter)
-	// if err != nil {
-	// 	fmt.Printf("yamlFile.Get err   #%v ", err)
-	// }
-	// unmarshalling file to config struct
-	// err = yaml.Unmarshal(cmData, &c)
-	// if err != nil {
-	// 	klog.Fatalf("Unmarshal: %v", err)
-	// }
-	// err = yaml.Unmarshal([]byte(c.Data.AllowedResources), &allow)
-	// if err != nil {
-	// 	klog.Fatalf("Unmarshal: %v", err)
-	// }
-	// err = yaml.Unmarshal([]byte(c.Data.DeniedResources), &deny)
-	// if err != nil {
-	// 	klog.Fatalf("Unmarshal: %v", err)
-	// }
 
 	return allow, deny
 }
@@ -123,6 +98,76 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 	return i, nil
 }
 
+func isResourceAllowed(group, kind string) bool {
+
+	// create client to get configmap
+	config := config.GetKubeConfig()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	clientset, err := kubernetes.NewForConfig(config)
+
+	var cm *v1.ConfigMap
+	if cm, err = clientset.CoreV1().ConfigMaps("open-cluster-management").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
+		fmt.Println("Can't Find")
+	} else {
+		fmt.Println("Found it!")
+	}
+
+	var deniedList []DeniedResources
+	var allowedList []AllowedResources
+
+	//parse config:
+	allowedList, deniedList = GetAllowDenyData(cm)
+	var boolVar bool
+
+	list := []string{"events", "projects", "clusters", "clusterstatuses", "oauthaccesstokens"}
+
+	for _, name := range list {
+		if kind == name {
+			boolVar = false
+		}
+	}
+
+	for i, deny := range deniedList {
+		for _, api := range deny.ApiGroups {
+			if api == "*" {
+				if kind == deny.Resources[i] {
+					boolVar = false
+				}
+
+			} else {
+				if group == api && kind == deny.Resources[i] {
+					fmt.Println("group check:", group, deny.ApiGroups[i])
+					fmt.Println("kind check:", kind, deny.Resources[i])
+					boolVar = false
+				}
+			}
+		}
+	}
+
+	if len(allowedList) == 0 {
+		boolVar = true
+	} else {
+		for i, allow := range allowedList {
+			for _, api := range allow.ApiGroups {
+				if api == "*" {
+					if kind == allow.Resources[i] {
+						boolVar = false
+					}
+				} else {
+					if group == api && kind == allow.Resources[i] {
+						boolVar = true
+
+					}
+				}
+			}
+		}
+	}
+
+	return boolVar
+}
+
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
 func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
@@ -138,51 +183,6 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	}
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 
-	// create client to get configmap
-	config := config.GetKubeConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-
-	var cm *v1.ConfigMap
-	if cm, err = clientset.CoreV1().ConfigMaps("open-cluster-management").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
-		fmt.Println("Can't Find")
-	} else {
-		fmt.Println("Found it!", cm.Data)
-	}
-
-	var deniedList []DeniedResources
-	var allowedList []AllowedResources
-
-	//parse config:
-	allowedList, deniedList = GetAllowDenyData(cm)
-
-	//iterate through resources that should be denied for all apiGroups:
-	var denyResourcesForAllGroups map[string]interface{}
-	for i, deny := range deniedList {
-		fmt.Println("Denied: ", deny)
-		for _, val := range deny.ApiGroups {
-			if val == "*" {
-				denyResourcesForAllGroups = map[string]interface{}{string(deny.Resources[i]): true}
-			}
-		}
-
-	}
-	fmt.Println("DenyList", denyResourcesForAllGroups)
-
-	//iterate through resources that should be allowed for all apiGroups:
-	var allowResourcesForAllGroups map[string]interface{}
-	for i, allow := range allowedList {
-		fmt.Println("Allowed: ", allow)
-		for _, val := range allow.ApiGroups {
-			if val == "*" {
-				allowResourcesForAllGroups = map[string]interface{}{string(allow.Resources[i]): true}
-			}
-		}
-	}
-	fmt.Println("AllowList", allowResourcesForAllGroups)
-
 	// Filter down to only resources which support WATCH operations
 	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
 		// This is a copy of apiList but we only insert resources for which GET is supported.
@@ -192,51 +192,8 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
 
-			if len(allowedList) > 0 {
-				for i, allowed := range allowedList {
-					fmt.Println("Allowed apigroups are", allowed.ApiGroups[i])
-					if allowed.ApiGroups[i] == "*" {
-						if apiResource.Name == allowed.Resources[i] {
-							for _, verb := range apiResource.Verbs {
-								if verb == "watch" {
-									watchResources = append(watchResources, apiResource)
-								}
-							}
-						}
-
-					} else {
-						fmt.Println("not *")
-						fmt.Println("specifc api", allowed.ApiGroups[i])
-						if apiResource.Group == allowed.ApiGroups[i] && apiResource.Name == allowed.Resources[i] {
-							for _, verb := range apiResource.Verbs {
-								if verb == "watch" {
-									watchResources = append(watchResources, apiResource)
-								}
-							}
-
-						}
-					}
-				}
-			}
-
-			for _, deny := range deniedList {
-				if apiResource.Group == string(deny.ApiGroups[0]) {
-					fmt.Println("value from apiResource.Group: ", apiResource.Group)
-				}
-			}
-
-			// check if apiResource.Name is in denylist if true exclude
-			if denyResourcesForAllGroups[apiResource.Name] == true {
-				fmt.Print(apiResource.Name)
-				continue
-			}
-
-			// exclude these
-			if apiResource.Name == "clusters" ||
-				apiResource.Name == "clusterstatuses" ||
-				apiResource.Name == "oauthaccesstokens" ||
-				apiResource.Name == "events" ||
-				apiResource.Name == "projects" {
+			if !isResourceAllowed(apiResource.Group, apiResource.Kind) {
+				fmt.Println(apiResource.Group, apiResource.Kind)
 				continue
 			}
 
@@ -446,8 +403,4 @@ func (inform *GenericInformer) WaitUntilInitialized(timeout time.Duration) {
 		}
 		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
-}
-
-func allowdeny(allow []AllowedResources, deny []DeniedResources) {
-
 }
