@@ -22,12 +22,14 @@ require (
 	k8s.io/apimachinery v0.21.3
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.16.7+incompatible
-	k8s.io/klog/v2 v2.9.0
+	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9 // indirect
 	open-cluster-management.io/multicloud-operators-channel v0.5.1-0.20211122200432-da1610291798
 	open-cluster-management.io/multicloud-operators-subscription v0.6.0 //Use 2.0 when available
 	sigs.k8s.io/application v0.8.3
 )
+
+require k8s.io/klog v1.0.0
 
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect

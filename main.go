@@ -39,7 +39,7 @@ const (
 
 func main() {
 	// init logs
-	inform.GetAllowDenyData()
+	// inform.GetAllowDenyData()
 	flag.Parse()
 	// Glog by default logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).
 	err := flag.Lookup("logtostderr").Value.Set("true")
@@ -133,9 +133,9 @@ func main() {
 	go func() {
 		// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
 		stoppers := make(map[schema.GroupVersionResource]chan struct{})
-		AllowedResources, DeniedResources := inform.GetAllowDenyData()
+		// inform.GetAllowDenyData(&v1.ConfigMap{})
 		for {
-			gvrList, err := inform.SupportedResources(discoveryClient, AllowedResources, DeniedResources)
+			gvrList, err := inform.SupportedResources(discoveryClient)
 			if err != nil {
 				glog.Error("Failed to get complete list of supported resources: ", err)
 			}

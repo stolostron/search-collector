@@ -6,7 +6,6 @@ package informer
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"time"
 
@@ -14,11 +13,10 @@ import (
 	"github.com/stolostron/search-collector/pkg/config"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 	"gopkg.in/yaml.v2"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,27 +68,43 @@ type DeniedResources struct {
 	Resources []string `yaml:"resources"`
 }
 
-func GetAllowDenyData() ([]AllowedResources, []DeniedResources) {
-	var c Config
+func GetAllowDenyData(cm *v1.ConfigMap) ([]AllowedResources, []DeniedResources) {
+
+	// fmt.Println(cm.Data["AllowedResources"])
+	// fmt.Printf("%T", cm.Data["AllowedResources"])
+
 	var allow []AllowedResources
+	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
+	if allowerr != nil {
+		klog.Fatalf("Unmarshal: %v", allowerr)
+	}
+
 	var deny []DeniedResources
-	yamlFile, err := ioutil.ReadFile("./pkg/informer/copy.yaml") ///this will be replaced by configmap file (will be passed parameter)
-	if err != nil {
-		fmt.Printf("yamlFile.Get err   #%v ", err)
+	denyerr := yaml.Unmarshal([]byte(cm.Data["DeniedResources"]), &deny)
+	if denyerr != nil {
+		klog.Fatalf("Unmarshal: %v", denyerr)
 	}
+
+	// var c Config
+	// var allow []AllowedResources
+	// var deny []DeniedResources
+	// yamlFile, err := ioutil.ReadFile(cm) ///this will be replaced by configmap file (will be passed parameter)
+	// if err != nil {
+	// 	fmt.Printf("yamlFile.Get err   #%v ", err)
+	// }
 	// unmarshalling file to config struct
-	err = yaml.Unmarshal(yamlFile, &c)
-	if err != nil {
-		klog.Fatalf("Unmarshal: %v", err)
-	}
-	err = yaml.Unmarshal([]byte(c.Data.AllowedResources), &allow)
-	if err != nil {
-		klog.Fatalf("Unmarshal: %v", err)
-	}
-	err = yaml.Unmarshal([]byte(c.Data.DeniedResources), &deny)
-	if err != nil {
-		klog.Fatalf("Unmarshal: %v", err)
-	}
+	// err = yaml.Unmarshal(cmData, &c)
+	// if err != nil {
+	// 	klog.Fatalf("Unmarshal: %v", err)
+	// }
+	// err = yaml.Unmarshal([]byte(c.Data.AllowedResources), &allow)
+	// if err != nil {
+	// 	klog.Fatalf("Unmarshal: %v", err)
+	// }
+	// err = yaml.Unmarshal([]byte(c.Data.DeniedResources), &deny)
+	// if err != nil {
+	// 	klog.Fatalf("Unmarshal: %v", err)
+	// }
 
 	return allow, deny
 }
@@ -110,7 +124,7 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
-func SupportedResources(discoveryClient *discovery.DiscoveryClient, allow []AllowedResources, deny []DeniedResources) (map[schema.GroupVersionResource]struct{}, error) {
+func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}
 	fmt.Println("hello")
@@ -123,82 +137,107 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient, allow []Allo
 		glog.Warning("ServerPreferredResources could not list all available resources: ", err)
 	}
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
-	// Filter down to only resources which support WATCH operations
 
-	// var ns, name, kind string
-	// flag.StringVar(&ns, "namespace", "", "namespace")
-	// flag.StringVar(&name, "n", "", "Name selector")
-	// flag.StringVar(&kind, "k", "", "Kind selector")
-
+	// create client to get configmap
 	config := config.GetKubeConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 
-	var cm *corev1.ConfigMap
-
-	if _, err := clientset.CoreV1().ConfigMaps("open-cluster-management").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); errors.IsNotFound(err) {
+	var cm *v1.ConfigMap
+	if cm, err = clientset.CoreV1().ConfigMaps("open-cluster-management").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
 		fmt.Println("Can't Find")
 	} else {
-		fmt.Printf("Found it! %T", cm)
+		fmt.Println("Found it!", cm.Data)
 	}
 
-	// api := clientset.CoreV1()
-	// listOptions := metav1.ListOptions{
-	// 	LabelSelector: name,
-	// 	FieldSelector: kind,
-	// }
-	// pvcs, err := api.PersistentVolumeClaims(ns).List(contextVar, listOptions)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println("PVCS: ", pvcs.Kind)
+	var deniedList []DeniedResources
+	var allowedList []AllowedResources
 
+	//parse config:
+	allowedList, deniedList = GetAllowDenyData(cm)
+
+	//iterate through resources that should be denied for all apiGroups:
+	var denyResourcesForAllGroups map[string]interface{}
+	for i, deny := range deniedList {
+		fmt.Println("Denied: ", deny)
+		for _, val := range deny.ApiGroups {
+			if val == "*" {
+				denyResourcesForAllGroups = map[string]interface{}{string(deny.Resources[i]): true}
+			}
+		}
+
+	}
+	fmt.Println("DenyList", denyResourcesForAllGroups)
+
+	//iterate through resources that should be allowed for all apiGroups:
+	var allowResourcesForAllGroups map[string]interface{}
+	for i, allow := range allowedList {
+		fmt.Println("Allowed: ", allow)
+		for _, val := range allow.ApiGroups {
+			if val == "*" {
+				allowResourcesForAllGroups = map[string]interface{}{string(allow.Resources[i]): true}
+			}
+		}
+	}
+	fmt.Println("AllowList", allowResourcesForAllGroups)
+
+	// Filter down to only resources which support WATCH operations
 	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
 		// This is a copy of apiList but we only insert resources for which GET is supported.
 		watchList := machineryV1.APIResourceList{}
 		watchList.GroupVersion = apiList.GroupVersion
-		watchResources := []machineryV1.APIResource{}      // All the resources for which GET works.
+		watchResources := []machineryV1.APIResource{} // All the resources for which GET works.
+
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
-			if apiResource.Name == "Config" {
-				fmt.Println("FOUND IT!!")
 
-				if apiResource.Name == "clusters" ||
-					apiResource.Name == "clusterstatuses" ||
-					apiResource.Name == "oauthaccesstokens" ||
-					apiResource.Name == "events" ||
-					apiResource.Name == "projects" {
-					continue
+			if len(allowedList) > 0 {
+				for i, allowed := range allowedList {
+					fmt.Println("Allowed apigroups are", allowed.ApiGroups[i])
+					if allowed.ApiGroups[i] == "*" {
+						if apiResource.Name == allowed.Resources[i] {
+							for _, verb := range apiResource.Verbs {
+								if verb == "watch" {
+									watchResources = append(watchResources, apiResource)
+								}
+							}
+						}
+
+					} else {
+						fmt.Println("not *")
+						fmt.Println("specifc api", allowed.ApiGroups[i])
+						if apiResource.Group == allowed.ApiGroups[i] && apiResource.Name == allowed.Resources[i] {
+							for _, verb := range apiResource.Verbs {
+								if verb == "watch" {
+									watchResources = append(watchResources, apiResource)
+								}
+							}
+
+						}
+					}
 				}
-				// err = yaml.Unmarshal([]byte(discoveryClient.LegacyPrefix), &c)
-				// if err != nil {
-				// 	klog.Fatalf("Unmarshal: %v", err)
-				// } else {
-				// 	fmt.Println("ALLOWED: ", c.Data.AllowedResources[1])
-				// 	fmt.Println("DENIED: ", c.Data.DeniedResources[1])
-				// }
+			}
 
-				// AllowedResources := c.Data.AllowedResources
-				// DeniedResources := c.Data.DeniedResources
+			for _, deny := range deniedList {
+				if apiResource.Group == string(deny.ApiGroups[0]) {
+					fmt.Println("value from apiResource.Group: ", apiResource.Group)
+				}
+			}
 
-				fmt.Println("APIGROUPS: ", apiResource.Group)
-				fmt.Println("Resources: ", apiResource.Group)
-				// 	fmt.Println("APIResource has name allowdenylists")
-				// 	allowResources, denyResources := GetAllowDenyData(apiResource)
+			// check if apiResource.Name is in denylist if true exclude
+			if denyResourcesForAllGroups[apiResource.Name] == true {
+				fmt.Print(apiResource.Name)
+				continue
+			}
 
-				// 	for _, allowed := range allowResources{
-				// 		allowedData := map[string]interface{}{
-				// 		"apiGroups": allowed.(map[string]interface{})["apiGroups"],
-				// 		"resources": allowed.(map[string]interface{})["resources"],
-				// 	}
-				// 	for _, denied := range denyResources{
-				// 		deniedData := map[string]interface{}{
-				// 		"apiGroups": allowed.(map[string]interface{})["apiGroups"],
-				// 		"resources": allowed.(map[string]interface{})["resources"],
-				// 		}
-				// 	}
-				// }
+			// exclude these
+			if apiResource.Name == "clusters" ||
+				apiResource.Name == "clusterstatuses" ||
+				apiResource.Name == "oauthaccesstokens" ||
+				apiResource.Name == "events" ||
+				apiResource.Name == "projects" {
+				continue
 			}
 
 			// add non-namespaced resource to NonNSResourceMap
@@ -216,8 +255,8 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient, allow []Allo
 				}
 			}
 		}
+
 		watchList.APIResources = watchResources
-		// Add the list to our list of lists that holds GET enabled resources.
 		supportedResources = append(supportedResources, &watchList)
 	}
 
@@ -407,4 +446,8 @@ func (inform *GenericInformer) WaitUntilInitialized(timeout time.Duration) {
 		}
 		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
+}
+
+func allowdeny(allow []AllowedResources, deny []DeniedResources) {
+
 }
