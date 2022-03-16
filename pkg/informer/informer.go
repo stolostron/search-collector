@@ -44,18 +44,21 @@ type GenericInformer struct {
 }
 
 ///////////////////////////////////////////////////////////////////
-type Config struct {
-	APIVersion string `yaml:"apiVersion"`
-	Kind       string `yaml:"kind"`
-	Metadata   struct {
-		Name      string `yaml:"name"`
-		Namespace string `yaml:"namespace"`
-	} `yaml:"metadata"`
-	Data struct {
-		AllowedResources string `yaml:"AllowedResources"`
-		DeniedResources  string `yaml:"DeniedResources"`
-	} `yaml:"data"`
-}
+
+//leaving this here incase we want it to use other fields in future:
+
+// type Config struct {
+// 	APIVersion string `yaml:"apiVersion"`
+// 	Kind       string `yaml:"kind"`
+// 	Metadata   struct {
+// 		Name      string `yaml:"name"`
+// 		Namespace string `yaml:"namespace"`
+// 	} `yaml:"metadata"`
+// 	Data struct {
+// 		AllowedResources string `yaml:"AllowedResources"`
+// 		DeniedResources  string `yaml:"DeniedResources"`
+// 	} `yaml:"data"`
+// }
 
 type AllowedResources struct {
 	ApiGroups []string `yaml:"apiGroups"`
@@ -98,21 +101,7 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 	return i, nil
 }
 
-func isResourceAllowed(group, kind string) bool {
-
-	// create client to get configmap
-	config := config.GetKubeConfig()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	clientset, err := kubernetes.NewForConfig(config)
-
-	var cm *v1.ConfigMap
-	if cm, err = clientset.CoreV1().ConfigMaps("open-cluster-management").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
-		fmt.Println("Can't Find")
-	} else {
-		fmt.Println("Found it!")
-	}
+func isResourceAllowed(cm *v1.ConfigMap, group, kind string) bool {
 
 	var deniedList []DeniedResources
 	var allowedList []AllowedResources
@@ -138,8 +127,6 @@ func isResourceAllowed(group, kind string) bool {
 
 			} else {
 				if group == api && kind == deny.Resources[i] {
-					fmt.Println("group check:", group, deny.ApiGroups[i])
-					fmt.Println("kind check:", kind, deny.Resources[i])
 					boolVar = false
 				}
 			}
@@ -172,7 +159,6 @@ func isResourceAllowed(group, kind string) bool {
 func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}
-	fmt.Println("hello")
 
 	// List out all the preferred api-resources of this server.
 	apiResources, err := discoveryClient.ServerPreferredResources() //<--here we can look into this list and have preferred versions
@@ -181,6 +167,16 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	} else if err != nil {
 		glog.Warning("ServerPreferredResources could not list all available resources: ", err)
 	}
+
+	// create client to get configmap
+	config := config.GetKubeConfig() //can't err here?
+	clientset, err := kubernetes.NewForConfig(config)
+
+	var cm *v1.ConfigMap
+	if cm, err = clientset.CoreV1().ConfigMaps("open-cluster-management").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
+		glog.Warning("Can't find allow/deny ConfigMap", err)
+	}
+
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 
 	// Filter down to only resources which support WATCH operations
@@ -192,9 +188,8 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
 
-			if !isResourceAllowed(apiResource.Group, apiResource.Kind) {
-				fmt.Println(apiResource.Group, apiResource.Kind)
-				continue
+			if !isResourceAllowed(cm, apiResource.Group, apiResource.Kind) {
+				continue // Skip the resource before starting the informer
 			}
 
 			// add non-namespaced resource to NonNSResourceMap
@@ -215,6 +210,8 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		watchList.APIResources = watchResources
 		supportedResources = append(supportedResources, &watchList)
+		fmt.Println(watchResources)
+
 	}
 
 	// Use handy converter function to convert into GroupVersionResource objects, which we need in order to make informers
