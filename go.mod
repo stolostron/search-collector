@@ -22,7 +22,7 @@ require (
 	k8s.io/apimachinery v0.21.3
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.16.7+incompatible
-	k8s.io/klog/v2 v2.9.0 // indirect
+	k8s.io/klog/v2 v2.9.0
 	k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9 // indirect
 	open-cluster-management.io/multicloud-operators-channel v0.5.1-0.20211122200432-da1610291798
 	open-cluster-management.io/multicloud-operators-subscription v0.6.0 //Use 2.0 when available
@@ -55,7 +55,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e //indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
