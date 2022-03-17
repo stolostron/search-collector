@@ -84,15 +84,6 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]AllowedResources, []DeniedResources) 
 		klog.Fatalf("Unmarshal: %v", denyerr)
 	}
 
-	// var allowdeny map[string]string
-
-	// // allowdenyerror := yaml.Unmarshal([]byte(cm.Data), &allowdeny)
-	// // if allowdenyerror != nil {
-	// // 	klog.Fatalf("Unmarshal: %v", allowdenyerror)
-	// // }
-
-	// // fmt.Println("Finished getting allow,deny")
-
 	return allow, deny
 }
 
@@ -129,48 +120,55 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Allow
 	for i, deny := range deniedList {
 		for _, api := range deny.ApiGroups {
 			if api == "*" && deny.Resources[i] != "*" {
-				if kind == deny.Resources[i] {
+				if deny.Resources[i] == kind {
+					// fmt.Println("deny group, api, kind, resources", group, api, kind, deny.Resources[i])
+
 					boolVar = false
 				} else {
-					if deny.Resources[i] == "*" {
+					if api != "*" && deny.Resources[i] == "*" {
+						// fmt.Println("deny group, api, kind, resources", group, api, kind, deny.Resources[i])
 						boolVar = false
 					}
 
 				}
 			} else {
+				// if api != "*" && deny.Resources[i] != "*" {
 				if group == api && kind == deny.Resources[i] {
+					// fmt.Println("deny group, api, kind, resources", group, api, kind, deny.Resources[i])
 					boolVar = false
 				}
+				// }
 			}
 		}
 	}
 
-	// if allowedlist is empty allow all resources, otherwise if * allow all groups specific resources if not * allow specific resources to specific groups:
+	// if allowedlist is empty allow all resources, otherwise if * allow all groups specific
+	// resources if not * allow specific resources to specific groups:
 	if len(allowedList) == 0 {
 		boolVar = true
 	} else {
 		// fmt.Println("In-coming ApiResource", kind)
 		for i, allow := range allowedList {
 			for _, api := range allow.ApiGroups {
-				if api == "*" && allow.Resources[i] != "*" {
-					// fmt.Println(api)
-					if kind == allow.Resources[i] {
-						// fmt.Println("Resource kind, allow kind", kind, allow.Resources[i])
+				if api == "*" && allow.Resources[i] != "*" { //all apigroups & specific resources
+					if allow.Resources[i] == kind {
+						// fmt.Println("allow group, api, kind, resources", group, api, kind, allow.Resources[i])
 						boolVar = true
 
 					} else {
-						if allow.Resources[i] == "*" {
+						if api != "*" && allow.Resources[i] == "*" { // specific apigroups & all resources
+							// fmt.Println("allow group, api, kind, resources", group, api, kind, allow.Resources[i])
 							boolVar = true
 						}
 					}
 
 				} else {
-					// fmt.Println("", api)
+					// if api != "*" && allow.Resources[i] != "*" { //specific apigroups and resources
 					if group == api && kind == allow.Resources[i] {
-						// fmt.Println("Resource group, allow group, resource kind, allow kind", group, api, kind, allow.Resources[i])
+						// fmt.Println("allow group, api, kind, resources", group, api, kind, allow.Resources[i])
 						boolVar = true
-
 					}
+					// }
 				}
 			}
 		}

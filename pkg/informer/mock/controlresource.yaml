@@ -5,12 +5,12 @@ metadata:
   namespace: open-cluster-management
 data: 
   AllowedResources: |
-    - apiGroups: ["*"]
-      resources: ["pods", "alertmanager"]
-    - apiGroups: ["open-cluster-management.io", "tuned.openshift.io"]
-      resources: ["*"] 
+    apiGroups: ["*"]
+    resources: ["pods", "alertmanager"]
+    apiGroups: ["open-cluster-management.io", "tuned.openshift.io"]
+    resources: ["*"] 
   DeniedResources: |
-    - apiGroups: ["*"]
-      resources: ["secrets"]
-    - apiGroups: ["open-cluster-management.io"]
-      resources: ["policies", "iampolicies", "certificatepolicies"]
+    apiGroups: ["*"]
+    resources: ["secrets"]
+    apiGroups: ["open-cluster-management.io"]
+    resources: ["policies", "iampolicies", "certificatepolicies"]
