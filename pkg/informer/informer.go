@@ -84,6 +84,15 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]AllowedResources, []DeniedResources) 
 		klog.Fatalf("Unmarshal: %v", denyerr)
 	}
 
+	// var allowdeny map[string]string
+
+	// // allowdenyerror := yaml.Unmarshal([]byte(cm.Data), &allowdeny)
+	// // if allowdenyerror != nil {
+	// // 	klog.Fatalf("Unmarshal: %v", allowdenyerror)
+	// // }
+
+	// // fmt.Println("Finished getting allow,deny")
+
 	return allow, deny
 }
 
@@ -101,30 +110,33 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 	return i, nil
 }
 
-func isResourceAllowed(cm *v1.ConfigMap, group, kind string) bool {
+func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []AllowedResources, deniedList []DeniedResources) bool {
 
-	var deniedList []DeniedResources
-	var allowedList []AllowedResources
-
-	//parse config:
-	allowedList, deniedList = GetAllowDenyData(cm)
+	// fmt.Println(kind, group)
 	var boolVar bool
 
 	list := []string{"events", "projects", "clusters", "clusterstatuses", "oauthaccesstokens"}
 
+	//remove all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
+			fmt.Println("list of names, resource kind:", name, kind)
 			boolVar = false
 		}
 	}
 
+	// remove denied resources from all apigroups if * otherwise remove from specific apigroups.
 	for i, deny := range deniedList {
 		for _, api := range deny.ApiGroups {
-			if api == "*" {
+			if api == "*" && deny.Resources[i] != "*" {
 				if kind == deny.Resources[i] {
 					boolVar = false
-				}
+				} else {
+					if deny.Resources[i] == "*" {
+						boolVar = false
+					}
 
+				}
 			} else {
 				if group == api && kind == deny.Resources[i] {
 					boolVar = false
@@ -133,17 +145,29 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string) bool {
 		}
 	}
 
+	// if allowedlist is empty allow all resources, otherwise if * allow all groups specific resources if not * allow specific resources to specific groups:
 	if len(allowedList) == 0 {
 		boolVar = true
 	} else {
+		// fmt.Println("In-coming ApiResource", kind)
 		for i, allow := range allowedList {
 			for _, api := range allow.ApiGroups {
-				if api == "*" {
+				if api == "*" && allow.Resources[i] != "*" {
+					// fmt.Println(api)
 					if kind == allow.Resources[i] {
-						boolVar = false
+						// fmt.Println("Resource kind, allow kind", kind, allow.Resources[i])
+						boolVar = true
+
+					} else {
+						if allow.Resources[i] == "*" {
+							boolVar = true
+						}
 					}
+
 				} else {
+					// fmt.Println("", api)
 					if group == api && kind == allow.Resources[i] {
+						// fmt.Println("Resource group, allow group, resource kind, allow kind", group, api, kind, allow.Resources[i])
 						boolVar = true
 
 					}
@@ -172,10 +196,17 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	config := config.GetKubeConfig() //can't err here?
 	clientset, err := kubernetes.NewForConfig(config)
 
+	//locate the allow-deny ConfigMap:
 	var cm *v1.ConfigMap
 	if cm, err = clientset.CoreV1().ConfigMaps("open-cluster-management").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
 		glog.Warning("Can't find allow/deny ConfigMap", err)
 	}
+
+	var deniedList []DeniedResources
+	var allowedList []AllowedResources
+
+	//parse config:
+	allowedList, deniedList = GetAllowDenyData(cm)
 
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 
@@ -188,7 +219,7 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
 
-			if !isResourceAllowed(cm, apiResource.Group, apiResource.Kind) {
+			if !isResourceAllowed(cm, apiResource.Group, apiResource.Name, allowedList, deniedList) {
 				continue // Skip the resource before starting the informer
 			}
 
@@ -210,7 +241,7 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		watchList.APIResources = watchResources
 		supportedResources = append(supportedResources, &watchList)
-		fmt.Println(watchResources)
+		// fmt.Println(supportedResources)
 
 	}
 
