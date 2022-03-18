@@ -49,13 +49,13 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
 	var allow []Resource
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
 	if allowerr != nil {
-		klog.Errorf("Unmarshal: %v", allowerr)
+		klog.Errorf("Error while parsing allowed resources from ConfigMap. Can't use configured value, defaulting to allow all resources. %v", allowerr)
 	}
 
 	var deny []Resource
 	denyerr := yaml.Unmarshal([]byte(cm.Data["DeniedResources"]), &deny)
 	if denyerr != nil {
-		klog.Errorf("Unmarshal: %v", denyerr)
+		klog.Errorf("Error while parsing allowed resources from ConfigMap. Can't use configured value, defaulting to deny all resources. %v", denyerr)
 	}
 
 	return allow, deny
@@ -179,8 +179,8 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 	//locate the allow-deny ConfigMap:
 	var cm *v1.ConfigMap
-	if cm, _ = clientset.CoreV1().ConfigMaps("POD_NAMESPACE").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
-		glog.Warning("Can't find allowdeny-config ConfigMap", err)
+	if cm, _ = clientset.CoreV1().ConfigMaps("POD_NAMESPACE").Get(contextVar, "search-collector-config", metav1.GetOptions{}); err != nil {
+		glog.Info("Didn't find ConfigMap with name allowdeny-config. Will collect all resources. ", err)
 	}
 
 	//parse config:
@@ -219,7 +219,6 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		watchList.APIResources = watchResources
 		supportedResources = append(supportedResources, &watchList)
-		// fmt.Println(supportedResources)
 
 	}
 
@@ -294,7 +293,6 @@ func (inform *GenericInformer) listAndResync() error {
 			return listError
 		}
 
-		// Add all resources. <-- this is where we should change to only add resources in Allow list:
 		for i := range resources.Items {
 			glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
 				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
