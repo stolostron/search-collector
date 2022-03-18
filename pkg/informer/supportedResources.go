@@ -141,9 +141,9 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	clientset, err := kubernetes.NewForConfig(config)
 
 	//locate the allow-deny ConfigMap:
-	var cm *v1.ConfigMap
-	if cm, _ = clientset.CoreV1().ConfigMaps("POD_NAMESPACE").Get(contextVar, "search-collector-config", metav1.GetOptions{}); err != nil {
-		glog.Info("Didn't find ConfigMap with name allowdeny-config. Will collect all resources. ", err)
+	cm, err2 := clientset.CoreV1().ConfigMaps("POD_NAMESPACE").Get(contextVar, "search-collector-config", metav1.GetOptions{})
+	if err2 != nil {
+		glog.Info("Didn't find ConfigMap with name search-collector-config. Will collect all resources. ", err2)
 	}
 
 	//parse config:

@@ -31,6 +31,7 @@ const (
 	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
 	DEFAULT_AGGREGATOR_PORT    = "3010"
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
+	DEFAULT_POD_NAMESPACE      = "open-cluster-management"
 	DEFAULT_HEARTBEAT_MS       = 300000 // 5 min
 	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
 	DEFAULT_REDISCOVER_RATE_MS = 120000 // 2 min
@@ -83,7 +84,7 @@ func InitConfig() {
 	setDefault(&Cfg.RuntimeMode, "RUNTIME_MODE", DEFAULT_RUNTIME_MODE)
 	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
 	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
-	setDefault(&Cfg.PodNamespace, "POD_NAMESPACE", "")
+	setDefault(&Cfg.PodNamespace, "POD_NAMESPACE", DEFAULT_POD_NAMESPACE)
 
 	setDefault(&Cfg.AggregatorHost, "AGGREGATOR_HOST", DEFAULT_AGGREGATOR_HOST)
 	setDefault(&Cfg.AggregatorPort, "AGGREGATOR_PORT", DEFAULT_AGGREGATOR_PORT)
