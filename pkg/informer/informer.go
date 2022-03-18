@@ -79,7 +79,6 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resou
 
 	var boolVar bool
 
-	// TODO: Use env variable for ignored resource kinds.
 	// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
 	// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
 	// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
@@ -182,8 +181,8 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 	//locate the allow-deny ConfigMap:
 	var cm *v1.ConfigMap
-	if cm, err = clientset.CoreV1().ConfigMaps("open-cluster-management").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
-		glog.Warning("Can't find allow/deny ConfigMap", err)
+	if cm, err = clientset.CoreV1().ConfigMaps("POD_NAMESPACE").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
+		glog.Warning("Can't find allowdeny-config ConfigMap", err)
 	}
 
 	//parse config:
