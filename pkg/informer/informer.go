@@ -49,13 +49,13 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
 	var allow []Resource
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
 	if allowerr != nil {
-		klog.Error("Unmarshal: %v", allowerr)
+		klog.Errorf("Unmarshal: %v", allowerr)
 	}
 
 	var deny []Resource
 	denyerr := yaml.Unmarshal([]byte(cm.Data["DeniedResources"]), &deny)
 	if denyerr != nil {
-		klog.Error("Unmarshal: %v", denyerr)
+		klog.Errorf("Unmarshal: %v", denyerr)
 	}
 
 	return allow, deny
@@ -179,7 +179,7 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 	//locate the allow-deny ConfigMap:
 	var cm *v1.ConfigMap
-	if cm, err = clientset.CoreV1().ConfigMaps("POD_NAMESPACE").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
+	if cm, _ = clientset.CoreV1().ConfigMaps("POD_NAMESPACE").Get(contextVar, "allowdeny-config", metav1.GetOptions{}); err != nil {
 		glog.Warning("Can't find allowdeny-config ConfigMap", err)
 	}
 
