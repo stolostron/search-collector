@@ -75,9 +75,7 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 	return i, nil
 }
 
-func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resource, deniedList []Resource) bool {
-
-	var boolVar bool
+func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []Resource) bool {
 
 	// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
 	// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
@@ -88,7 +86,6 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resou
 	//remove all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
-			// klog.Info("list of names, resource kind:", name, kind)
 			return false
 		}
 	}
@@ -99,13 +96,13 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resou
 			for _, rec := range deny.Resources {
 				if api == "*" && rec != "*" {
 					if rec == kind {
-						klog.Info("deny all group, specific resource", group, api, kind, rec)
+						klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
 
 						return false
 					} else {
 						if api != "*" && rec == "*" {
 							if group == api {
-								klog.Info("deny specific group all resources", group, api, kind, rec)
+								klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
 								return false
 							}
 						}
@@ -114,7 +111,7 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resou
 				} else {
 					// if api != "*" && deny.Resources[i] != "*" {
 					if group == api && kind == rec {
-						klog.Info("deny specific group specific resources", group, api, kind, rec)
+						klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
 						return false
 					}
 					// }
@@ -128,19 +125,18 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resou
 	if len(allowedList) == 0 {
 		return true
 	} else {
-		// klog.Info("In-coming ApiResource", kind)
 		for _, allow := range allowedList {
 			for _, api := range allow.ApiGroups {
 				for _, rec := range allow.Resources {
 					if api == "*" && rec != "*" { //all apigroups & specific resources
 						if rec == kind {
-							klog.Info("allow all group specific resources:", group, api, kind, rec)
+							klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
 							return true
 
 						} else {
 							if api != "*" && rec == "*" { // specific apigroups & all resources
 								if group == api {
-									klog.Info("allow specific groups all resources:", group, api, kind, rec)
+									klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
 									return true
 								}
 							}
@@ -149,7 +145,7 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resou
 					} else {
 						// if api != "*" && allow.Resources[i] != "*" { //specific apigroups and resources
 						if group == api && kind == rec {
-							klog.Info("allow specific group specific resources", group, api, kind, rec)
+							klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
 							return true
 						}
 						// }
@@ -159,7 +155,9 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resou
 		}
 	}
 
-	return boolVar
+	klog.Warningf("Resource %s %s missing case.", kind, group)
+
+	return true
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
@@ -199,7 +197,7 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
 
-			if !isResourceAllowed(cm, apiResource.Group, apiResource.Name, allowedList, deniedList) {
+			if !isResourceAllowed(apiResource.Group, apiResource.Name, allowedList, deniedList) {
 				continue // Skip the resource before starting the informer
 			}
 
