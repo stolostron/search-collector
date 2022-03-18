@@ -171,7 +171,7 @@ func main() {
 
 					stopper := make(chan struct{})
 					stoppers[gvr] = stopper
-					// go informer.Run(stopper)
+					go informer.Run(stopper)
 					informer.WaitUntilInitialized(time.Duration(10) * time.Second) // Times out after 10 seconds.
 				}
 				glog.V(2).Info("Total informers running: ", len(stoppers))
