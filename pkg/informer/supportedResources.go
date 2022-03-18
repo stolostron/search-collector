@@ -83,15 +83,17 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 			for _, api := range allow.ApiGroups {
 				for _, rec := range allow.Resources {
 
-					if api == "*" && rec != "*" && rec == kind {
+					if api == "*" && rec != "*" && rec == kind { //all api, specific resources
 						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
 						return true
-					} else if api != "*" && rec != "*" && rec == kind && group == api {
+					} else if api != "*" && rec != "*" && rec == kind && group == api { //specific api, specific resources
 						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
 						return true
-					} else if api != "*" && rec == "*" && group == api {
+					} else if api != "*" && rec == "*" && group == api { //specific api, all resoruces
 						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
 						return true
+					} else if kind != rec && group != api {
+						return false
 					}
 				}
 
