@@ -5,7 +5,6 @@ package informer
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/golang/glog"
@@ -22,11 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
-
-	// "k8s.io/client-go/rest"
-
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 )
 
 var contextVar = context.TODO()
@@ -43,45 +39,23 @@ type GenericInformer struct {
 	retries       int64             // Counts times we have tried without establishing a watch.
 }
 
-///////////////////////////////////////////////////////////////////
-
-//leaving this here incase we want it to use other fields in future:
-
-// type Config struct {
-// 	APIVersion string `yaml:"apiVersion"`
-// 	Kind       string `yaml:"kind"`
-// 	Metadata   struct {
-// 		Name      string `yaml:"name"`
-// 		Namespace string `yaml:"namespace"`
-// 	} `yaml:"metadata"`
-// 	Data struct {
-// 		AllowedResources string `yaml:"AllowedResources"`
-// 		DeniedResources  string `yaml:"DeniedResources"`
-// 	} `yaml:"data"`
-// }
-
-type AllowedResources struct {
+type Resource struct {
 	ApiGroups []string `yaml:"apiGroups"`
 	Resources []string `yaml:"resources"`
 }
 
-type DeniedResources struct {
-	ApiGroups []string `yaml:"apiGroups"`
-	Resources []string `yaml:"resources"`
-}
+func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
 
-func GetAllowDenyData(cm *v1.ConfigMap) ([]AllowedResources, []DeniedResources) {
-
-	var allow []AllowedResources
+	var allow []Resource
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
 	if allowerr != nil {
-		klog.Fatalf("Unmarshal: %v", allowerr)
+		klog.Error("Unmarshal: %v", allowerr)
 	}
 
-	var deny []DeniedResources
+	var deny []Resource
 	denyerr := yaml.Unmarshal([]byte(cm.Data["DeniedResources"]), &deny)
 	if denyerr != nil {
-		klog.Fatalf("Unmarshal: %v", denyerr)
+		klog.Error("Unmarshal: %v", denyerr)
 	}
 
 	return allow, deny
@@ -101,43 +75,51 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 	return i, nil
 }
 
-func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []AllowedResources, deniedList []DeniedResources) bool {
+func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Resource, deniedList []Resource) bool {
 
-	// fmt.Println(kind, group)
 	var boolVar bool
 
+	// TODO: Use env variable for ignored resource kinds.
+	// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
+	// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
+	// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
+	// the same uid.
 	list := []string{"events", "projects", "clusters", "clusterstatuses", "oauthaccesstokens"}
 
 	//remove all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
-			fmt.Println("list of names, resource kind:", name, kind)
-			boolVar = false
+			// klog.Info("list of names, resource kind:", name, kind)
+			return false
 		}
 	}
 
 	// remove denied resources from all apigroups if * otherwise remove from specific apigroups.
-	for i, deny := range deniedList {
+	for _, deny := range deniedList {
 		for _, api := range deny.ApiGroups {
-			if api == "*" && deny.Resources[i] != "*" {
-				if deny.Resources[i] == kind {
-					// fmt.Println("deny group, api, kind, resources", group, api, kind, deny.Resources[i])
+			for _, rec := range deny.Resources {
+				if api == "*" && rec != "*" {
+					if rec == kind {
+						klog.Info("deny all group, specific resource", group, api, kind, rec)
 
-					boolVar = false
-				} else {
-					if api != "*" && deny.Resources[i] == "*" {
-						// fmt.Println("deny group, api, kind, resources", group, api, kind, deny.Resources[i])
-						boolVar = false
+						return false
+					} else {
+						if api != "*" && rec == "*" {
+							if group == api {
+								klog.Info("deny specific group all resources", group, api, kind, rec)
+								return false
+							}
+						}
+
 					}
-
+				} else {
+					// if api != "*" && deny.Resources[i] != "*" {
+					if group == api && kind == rec {
+						klog.Info("deny specific group specific resources", group, api, kind, rec)
+						return false
+					}
+					// }
 				}
-			} else {
-				// if api != "*" && deny.Resources[i] != "*" {
-				if group == api && kind == deny.Resources[i] {
-					// fmt.Println("deny group, api, kind, resources", group, api, kind, deny.Resources[i])
-					boolVar = false
-				}
-				// }
 			}
 		}
 	}
@@ -145,30 +127,34 @@ func isResourceAllowed(cm *v1.ConfigMap, group, kind string, allowedList []Allow
 	// if allowedlist is empty allow all resources, otherwise if * allow all groups specific
 	// resources if not * allow specific resources to specific groups:
 	if len(allowedList) == 0 {
-		boolVar = true
+		return true
 	} else {
-		// fmt.Println("In-coming ApiResource", kind)
-		for i, allow := range allowedList {
+		// klog.Info("In-coming ApiResource", kind)
+		for _, allow := range allowedList {
 			for _, api := range allow.ApiGroups {
-				if api == "*" && allow.Resources[i] != "*" { //all apigroups & specific resources
-					if allow.Resources[i] == kind {
-						// fmt.Println("allow group, api, kind, resources", group, api, kind, allow.Resources[i])
-						boolVar = true
+				for _, rec := range allow.Resources {
+					if api == "*" && rec != "*" { //all apigroups & specific resources
+						if rec == kind {
+							klog.Info("allow all group specific resources:", group, api, kind, rec)
+							return true
+
+						} else {
+							if api != "*" && rec == "*" { // specific apigroups & all resources
+								if group == api {
+									klog.Info("allow specific groups all resources:", group, api, kind, rec)
+									return true
+								}
+							}
+						}
 
 					} else {
-						if api != "*" && allow.Resources[i] == "*" { // specific apigroups & all resources
-							// fmt.Println("allow group, api, kind, resources", group, api, kind, allow.Resources[i])
-							boolVar = true
+						// if api != "*" && allow.Resources[i] != "*" { //specific apigroups and resources
+						if group == api && kind == rec {
+							klog.Info("allow specific group specific resources", group, api, kind, rec)
+							return true
 						}
+						// }
 					}
-
-				} else {
-					// if api != "*" && allow.Resources[i] != "*" { //specific apigroups and resources
-					if group == api && kind == allow.Resources[i] {
-						// fmt.Println("allow group, api, kind, resources", group, api, kind, allow.Resources[i])
-						boolVar = true
-					}
-					// }
 				}
 			}
 		}
@@ -200,11 +186,8 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 		glog.Warning("Can't find allow/deny ConfigMap", err)
 	}
 
-	var deniedList []DeniedResources
-	var allowedList []AllowedResources
-
 	//parse config:
-	allowedList, deniedList = GetAllowDenyData(cm)
+	allowedList, deniedList := GetAllowDenyData(cm)
 
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 
