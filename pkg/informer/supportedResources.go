@@ -57,30 +57,21 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	for _, deny := range deniedList {
 		for _, api := range deny.ApiGroups {
 			for _, rec := range deny.Resources {
-				if api == "*" && rec != "*" {
-					if rec == kind {
-						klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
 
-						return false
-					} else {
-						if api != "*" && rec == "*" {
-							if group == api {
-								klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
-								return false
-							}
-						}
-
-					}
-				} else {
-					// if api != "*" && deny.Resources[i] != "*" {
-					if group == api && kind == rec {
-						klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
-						return false
-					}
-					// }
+				if api == "*" && rec != "*" && rec == kind {
+					klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
+					return false
+				} else if api != "*" && rec != "*" && rec == kind && group == api {
+					klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
+					return false
+				} else if api != "*" && rec == "*" && group == api {
+					klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
+					return false
 				}
 			}
+
 		}
+
 	}
 
 	// if allowedlist is empty allow all resources, otherwise if * allow all groups specific
@@ -91,31 +82,23 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		for _, allow := range allowedList {
 			for _, api := range allow.ApiGroups {
 				for _, rec := range allow.Resources {
-					if api == "*" && rec != "*" { //all apigroups & specific resources
-						if rec == kind {
-							klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
-							return true
 
-						} else {
-							if api != "*" && rec == "*" { // specific apigroups & all resources
-								if group == api {
-									klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
-									return true
-								}
-							}
-						}
-
-					} else {
-						// if api != "*" && allow.Resources[i] != "*" { //specific apigroups and resources
-						if group == api && kind == rec {
-							klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
-							return true
-						}
-						// }
+					if api == "*" && rec != "*" && rec == kind {
+						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
+						return false
+					} else if api != "*" && rec != "*" && rec == kind && group == api {
+						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
+						return false
+					} else if api != "*" && rec == "*" && group == api {
+						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
+						return false
 					}
 				}
+
 			}
+
 		}
+
 	}
 
 	klog.Warningf("Resource %s %s missing case.", kind, group)
