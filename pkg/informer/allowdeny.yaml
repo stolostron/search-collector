@@ -24,6 +24,6 @@ data:
     - apiGroups:
         - open-cluster-management.io
       resources:
-        - templates
-        - subscriptions
+        - policies
+        - iampolicies
         - certificatepolicies
