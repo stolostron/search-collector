@@ -40,21 +40,21 @@ const (
 
 // Configuration options for the search-collector.
 type Config struct {
-	AggregatorConfig *rest.Config // Config object for hub. Used to get TLS credentials.
-
-	AggregatorConfigFile string `env:"HUB_CONFIG"`         // Config file for hub. Will be mounted in a secret.
-	AggregatorURL        string `env:"AGGREGATOR_URL"`     // URL of the Aggregator, includes port but not any path
-	AggregatorHost       string `env:"AGGREGATOR_HOST"`    // Host of the Aggregator
-	AggregatorPort       string `env:"AGGREGATOR_PORT"`    // Port of the Aggregator
-	ClusterName          string `env:"CLUSTER_NAME"`       // The name of this cluster
-	ClusterNamespace     string `env:"CLUSTER_NAMESPACE"`  // The namespace of this cluster
-	DeployedInHub        bool   `env:"DEPLOYED_IN_HUB"`    // Tracks if deployed in the Hub or Managed cluster
-	HeartbeatMS          int    `env:"HEARTBEAT_MS"`       // Interval(ms) to send empty payload to ensure connection
-	KubeConfig           string `env:"KUBECONFIG"`         // Local kubeconfig path
-	MaxBackoffMS         int    `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
-	RediscoverRateMS     int    `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
-	ReportRateMS         int    `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
-	RuntimeMode          string `env:"RUNTIME_MODE"`       // Running mode (development or production)
+	AggregatorConfig     *rest.Config // Config object for hub. Used to get TLS credentials.
+	AggregatorConfigFile string       `env:"HUB_CONFIG"`         // Config file for hub. Will be mounted in a secret.
+	AggregatorURL        string       `env:"AGGREGATOR_URL"`     // URL of the Aggregator, includes port but not any path
+	AggregatorHost       string       `env:"AGGREGATOR_HOST"`    // Host of the Aggregator
+	AggregatorPort       string       `env:"AGGREGATOR_PORT"`    // Port of the Aggregator
+	ClusterName          string       `env:"CLUSTER_NAME"`       // The name of this cluster
+	ClusterNamespace     string       `env:"CLUSTER_NAMESPACE"`  // The namespace of this cluster
+	PodNamespace         string       `env:"POD_NAMESPACE"`      // The namespace of this pod
+	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`    // Tracks if deployed in the Hub or Managed cluster
+	HeartbeatMS          int          `env:"HEARTBEAT_MS"`       // Interval(ms) to send empty payload to ensure connection
+	KubeConfig           string       `env:"KUBECONFIG"`         // Local kubeconfig path
+	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
+	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
+	ReportRateMS         int          `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
+	RuntimeMode          string       `env:"RUNTIME_MODE"`       // Running mode (development or production)
 }
 
 var Cfg = Config{}
@@ -83,6 +83,7 @@ func InitConfig() {
 	setDefault(&Cfg.RuntimeMode, "RUNTIME_MODE", DEFAULT_RUNTIME_MODE)
 	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
 	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
+	setDefault(&Cfg.PodNamespace, "POD_NAMESPACE", "")
 
 	setDefault(&Cfg.AggregatorHost, "AGGREGATOR_HOST", DEFAULT_AGGREGATOR_HOST)
 	setDefault(&Cfg.AggregatorPort, "AGGREGATOR_PORT", DEFAULT_AGGREGATOR_PORT)
