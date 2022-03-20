@@ -44,6 +44,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
 	// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
 	// the same uid.
+
 	list := []string{"events", "projects", "clusters", "clusterstatuses", "oauthaccesstokens"}
 
 	//remove all apiResources with kind in list
@@ -53,55 +54,77 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		}
 	}
 
-	// remove denied resources from all apigroups if * otherwise remove from specific apigroups.
-	for _, deny := range deniedList {
-		for _, api := range deny.ApiGroups {
-			for _, rec := range deny.Resources {
+	denymap := make([]map[string]string, 0)
 
-				if api == "*" && rec != "*" && rec == kind {
-					klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
-					return false
-				} else if api != "*" && rec != "*" && rec == kind && group == api {
-					klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
-					return false
-				} else if api != "*" && rec == "*" && group == api {
-					klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
-					return false
+	for _, de := range deniedList {
+		for _, api := range de.ApiGroups {
+			for _, rec := range de.Resources {
+
+				denied := map[string]string{
+					api: rec,
 				}
+				denymap = append(denymap, denied)
+			}
+		}
+	}
+	// remove denied resources from all apigroups if * otherwise remove from specific apigroups.
+	for _, deny := range denymap {
+
+		if value, ok := deny["*"]; ok {
+			if value == kind {
+				klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
+				return false
+			}
+		} else if value, ok := deny[group]; ok {
+			if value == kind {
+				klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
+				return false
+			}
+			if value == "*" {
+				klog.V(1).Infof("Resource %s %s matched deny list. ", group, kind)
+				return false
 			}
 
 		}
-
 	}
 
-	// if allowedlist is empty allow all resources, otherwise if * allow all groups specific
-	// resources if not * allow specific resources to specific groups:
+	allowmap := make([]map[string]string, 0)
+
+	for _, al := range allowedList {
+		for _, api := range al.ApiGroups {
+			for _, rec := range al.Resources {
+
+				allowed := map[string]string{
+					api: rec,
+				}
+				allowmap = append(allowmap, allowed)
+			}
+		}
+	}
+
 	if len(allowedList) == 0 {
 		return true
 	} else {
-		for _, allow := range allowedList {
-			for _, api := range allow.ApiGroups {
-				for _, rec := range allow.Resources {
-
-					if api == "*" && rec != "*" && rec == kind { //all api, specific resources
-						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
-						return true
-					} else if api != "*" && rec != "*" && rec == kind && group == api { //specific api, specific resources
-						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
-						return true
-					} else if api != "*" && rec == "*" && group == api { //specific api, all resoruces
-						klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
-						return true
-					}
-					if kind != rec && group != api {
-						return false
-					}
+		for _, allow := range allowmap {
+			if value, ok := allow["*"]; ok {
+				if value == kind {
+					klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
+					return true
 				}
-
+			} else if value, ok := allow[group]; ok {
+				if value == kind {
+					klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
+					return true
+				}
+				if value == "*" {
+					klog.V(1).Infof("Resource %s %s matched allow list. ", group, kind)
+					return true
+				}
+			} else {
+				return false
 			}
 
 		}
-
 	}
 
 	klog.Warningf("Resource %s %s missing case.", kind, group)

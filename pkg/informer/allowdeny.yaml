@@ -9,11 +9,10 @@ data:
         - "*"
       resources: 
         - services
-        - pods 
-        - alertmanager
+        - pods
     - apiGroups:
-        - open-cluster-management.io
-        - tuned.openshift.io
+        - admission.k8s.io
+        - authentication.k8s.io
       resources:
         - "*"
   DeniedResources: |-
@@ -22,7 +21,7 @@ data:
       resources:
         - secrets
     - apiGroups:
-        - open-cluster-management.io
+        - admission.k8s.io
       resources:
         - policies
         - iampolicies
