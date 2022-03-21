@@ -58,8 +58,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 			if g == "*" || g == group { // Group matches, now we check if resource matches.
 				for _, k := range de.Resources { // Kind and Resource mean the same.
 					if k == "*" || k == kind {
-						glog.V(1).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].",
-							group, kind, g, k)
+						glog.V(1).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].", group, kind, g, k)
 						return false
 					}
 				}
@@ -72,23 +71,23 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	if len(allowedList) == 0 {
 		return true
 	} else {
-	for _, al := range allowedList {
-		for _, g := range al.ApiGroups {
-			if g == "*" || g == group { // Group matches, now we check if resource matches.
-			for _, k := range al.Resources {
-				if k == "*" || k == kind {
-					glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].",
-						group, kind, g, k)
-					return true
+		for _, al := range allowedList {
+			for _, g := range al.ApiGroups {
+				if g == "*" || g == group { // Group matches, now we check if resource matches.
+					for _, k := range al.Resources {
+						if k == "*" || k == kind {
+							glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].",
+								group, kind, g, k)
+							return true
+						}
+					}
 				}
 			}
 		}
-		glog.V(1).Infof("DDeny resource [group: '%s' kind: %s]. It doesn't match any allow rule.", group, kind)
-		return false
 	}
 
-	glog.Warningf("Resource %s %s missing case.", kind, group)
-	return true
+	glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
+	return false
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
