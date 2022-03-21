@@ -49,7 +49,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// the same uid.
 	list := []string{"events", "projects", "clusters", "clusterstatuses", "oauthaccesstokens"}
 
-	//remove all apiResources with kind in list
+	// Deny all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
 			return false
@@ -72,6 +72,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// If allowList not provided, interpret it as allow all resources.
 	// otherwise allow only the resources declared in allow list.
 	if len(allowedList) == 0 {
+		glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
 		return true
 	} else {
 		for _, al := range allowedList {
