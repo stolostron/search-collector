@@ -17,12 +17,11 @@ data:
         - "*"
   DeniedResources: |-
     - apiGroups:
-        - "*"
-      resources:
-        - secrets
-    - apiGroups:
         - admission.k8s.io
       resources:
-        - policies
-        - iampolicies
-        - certificatepolicies
+        - managedclustersetbindingvalidators
+        - clusterdeploymentvalidators
+    - apiGroups:
+        - ""
+      resources:
+        - "*"
