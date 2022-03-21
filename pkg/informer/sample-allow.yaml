@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: search-collector-config
+data: 
+  AllowedResources: |-
+    - apiGroups: 
+        - "*"
+      resources: 
+        - services
+        - pods
+        - nodes
+    - apiGroups:
+        - admission.k8s.io
+        - authentication.k8s.io
+      resources:
+        - "*"

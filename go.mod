@@ -29,8 +29,6 @@ require (
 	sigs.k8s.io/application v0.8.3
 )
 
-require k8s.io/klog v1.0.0
-
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect

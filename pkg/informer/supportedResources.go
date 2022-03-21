@@ -8,7 +8,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -26,13 +25,13 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
 	var allow []Resource
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
 	if allowerr != nil {
-		klog.Errorf("Error while parsing allowed resources from ConfigMap. Can't use configured value, defaulting to allow all resources. %v", allowerr)
+		glog.Errorf("Error while parsing allowed resources from ConfigMap. Can't use configured value, defaulting to allow all resources. %v", allowerr)
 	}
 
 	var deny []Resource
 	denyerr := yaml.Unmarshal([]byte(cm.Data["DeniedResources"]), &deny)
 	if denyerr != nil {
-		klog.Errorf("Error while parsing allowed resources from ConfigMap. Can't use configured value, defaulting to deny all resources. %v", denyerr)
+		glog.Errorf("Error while parsing allowed resources from ConfigMap. Can't use configured value, defaulting to deny all resources. %v", denyerr)
 	}
 
 	return allow, deny
@@ -53,44 +52,42 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		}
 	}
 
-	for _, deny := range deniedList {
-		for _, api := range deny.ApiGroups {
-			if api == "*" || api == group || api == "" { //Group matches, now we check if resouce matches.
-				for _, rec := range deny.Resources {
-					if rec == "*" || rec == kind {
-						glog.V(1).Infof("Resource [group: '%s' kind: %s] matched deny rule [group: '%s' kind: %s].",
-							group, kind, api, rec)
+	// Deny resources that match the deny list.
+	for _, de := range deniedList {
+		for _, g := range de.ApiGroups {
+			if g == "*" || g == group { // Group matches, now we check if resource matches.
+				for _, k := range de.Resources { // Kind and Resource mean the same.
+					if k == "*" || k == kind {
+						glog.V(1).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].",
+							group, kind, g, k)
 						return false
 					}
 				}
-
 			}
 		}
 	}
 
+	// If allowList not provided, interpret it as allow all resources.
+	// otherwise allow only the resources declared in allow list.
 	if len(allowedList) == 0 {
 		return true
 	} else {
-		for _, allow := range allowedList {
-			for _, api := range allow.ApiGroups {
-				if api == "*" || api == group || api == "" { //Group matches, now we check if resouce matches.
-					for _, rec := range allow.Resources {
-						if rec == "*" || rec == kind {
-							glog.V(1).Infof("Resource [group: '%s' kind: %s] matched deny rule [group: '%s' kind: %s].",
-								group, kind, api, rec)
-							return true
-						} else {
-							return false
-						}
-
-					}
+	for _, al := range allowedList {
+		for _, g := range al.ApiGroups {
+			if g == "*" || g == group { // Group matches, now we check if resource matches.
+			for _, k := range al.Resources {
+				if k == "*" || k == kind {
+					glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].",
+						group, kind, g, k)
+					return true
 				}
 			}
 		}
+		glog.V(1).Infof("DDeny resource [group: '%s' kind: %s]. It doesn't match any allow rule.", group, kind)
+		return false
 	}
 
-	klog.Warningf("Resource %s %s missing case.", kind, group)
-
+	glog.Warningf("Resource %s %s missing case.", kind, group)
 	return true
 }
 
