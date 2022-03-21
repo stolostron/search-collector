@@ -1,6 +1,8 @@
 package informer
 
 import (
+	"context"
+
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
@@ -25,13 +27,15 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
 	var allow []Resource
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
 	if allowerr != nil {
-		glog.Errorf("Error while parsing allowed resources from ConfigMap. Can't use configured value, defaulting to allow all resources. %v", allowerr)
+		glog.Errorf(`Error while parsing allowed resources from ConfigMap. 
+		Can't use configured value, defaulting to allow all resources. %v`, allowerr)
 	}
 
 	var deny []Resource
 	denyerr := yaml.Unmarshal([]byte(cm.Data["DeniedResources"]), &deny)
 	if denyerr != nil {
-		glog.Errorf("Error while parsing allowed resources from ConfigMap. Can't use configured value, defaulting to deny all resources. %v", denyerr)
+		glog.Errorf(`Error while parsing allowed resources from ConfigMap. 
+		Can't use configured value, defaulting to deny all resources. %v`, denyerr)
 	}
 
 	return allow, deny
@@ -55,12 +59,11 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// Deny resources that match the deny list.
 	for _, de := range deniedList {
 		for _, g := range de.ApiGroups {
-			if g == "*" || g == group { // Group matches, now we check if resource matches.
-				for _, k := range de.Resources { // Kind and Resource mean the same.
-					if k == "*" || k == kind {
-						glog.V(1).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].", group, kind, g, k)
-						return false
-					}
+			for _, k := range de.Resources {
+				if (g == "*" || g == group) && (k == "*" || k == kind) { // Group and kind matches
+					glog.V(1).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].",
+						group, kind, g, k)
+					return false
 				}
 			}
 		}
@@ -73,13 +76,11 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	} else {
 		for _, al := range allowedList {
 			for _, g := range al.ApiGroups {
-				if g == "*" || g == group { // Group matches, now we check if resource matches.
-					for _, k := range al.Resources {
-						if k == "*" || k == kind {
-							glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].",
-								group, kind, g, k)
-							return true
-						}
+				for _, k := range al.Resources { // Kind and Resource mean the same.
+					if (g == "*" || g == group) && (k == "*" || k == kind) { // Group and kind matches
+						glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].",
+							group, kind, g, k)
+						return true
 					}
 				}
 			}
@@ -87,7 +88,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	}
 
 	glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
-	return false
+	return true
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
@@ -96,7 +97,7 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	supportedResources := []*machineryV1.APIResourceList{}
 
 	// List out all the preferred api-resources of this server.
-	apiResources, err := discoveryClient.ServerPreferredResources() //<--here we can look into this list and have preferred versions
+	apiResources, err := discoveryClient.ServerPreferredResources() // here we get preferred api versions
 	if err != nil && apiResources == nil {                          // only return if the list is empty
 		return nil, err
 	} else if err != nil {
@@ -111,7 +112,8 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	}
 
 	//locate the allow-deny ConfigMap:
-	cm, err2 := clientset.CoreV1().ConfigMaps(config.Cfg.PodNamespace).Get(contextVar, "search-collector-config", metav1.GetOptions{})
+	cm, err2 := clientset.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
+		Get(context.TODO(), "search-collector-config", metav1.GetOptions{})
 	if err2 != nil {
 		glog.Info("Didn't find ConfigMap with name search-collector-config. Will collect all resources. ", err2)
 	}
