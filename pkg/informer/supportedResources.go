@@ -87,8 +87,8 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		}
 	}
 
-	glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
-	return true
+	glog.V(1).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
+	return false
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
