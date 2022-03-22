@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes"
 )
 
 type Resource struct {
@@ -52,6 +51,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// Deny all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
+			glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
 			return false
 		}
 	}
@@ -61,7 +61,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		for _, g := range de.ApiGroups {
 			for _, k := range de.Resources {
 				if (g == "*" || g == group) && (k == "*" || k == kind) { // Group and kind matches
-					glog.V(1).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].",
+					glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].",
 						group, kind, g, k)
 					return false
 				}
@@ -72,14 +72,14 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// If allowList not provided, interpret it as allow all resources.
 	// otherwise allow only the resources declared in allow list.
 	if len(allowedList) == 0 {
-		glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
+		glog.V(2).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
 		return true
 	} else {
 		for _, al := range allowedList {
 			for _, g := range al.ApiGroups {
 				for _, k := range al.Resources { // Kind and Resource mean the same.
 					if (g == "*" || g == group) && (k == "*" || k == kind) { // Group and kind matches
-						glog.V(1).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].",
+						glog.V(2).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].",
 							group, kind, g, k)
 						return true
 					}
@@ -88,7 +88,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		}
 	}
 
-	glog.V(1).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
+	glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
 	return false
 }
 
@@ -106,20 +106,16 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	}
 
 	// create client to get configmap
-	kubeClient := config.GetKubeConfig() //can't err here?
-	clientset, err := kubernetes.NewForConfig(kubeClient)
-	if err != nil {
-		glog.Info("Error when trying to create a clientset", err)
-	}
+	kubeClient := config.GetKubeClient(config.GetKubeConfig())
 
-	//locate the allow-deny ConfigMap:
-	cm, err2 := clientset.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
+	// locate the search-collector-config ConfigMap
+	cm, err2 := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
 		Get(context.TODO(), "search-collector-config", metav1.GetOptions{})
 	if err2 != nil {
 		glog.Info("Didn't find ConfigMap with name search-collector-config. Will collect all resources. ", err2)
 	}
 
-	//parse config:
+	// parse alloy/deny from config
 	allowedList, deniedList := GetAllowDenyData(cm)
 
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources

@@ -109,6 +109,7 @@ func (inform *GenericInformer) listAndResync() error {
 			return listError
 		}
 
+		// Add all resources.
 		for i := range resources.Items {
 			glog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
 				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
