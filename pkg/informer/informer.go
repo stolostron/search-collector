@@ -10,13 +10,13 @@ import (
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"k8s.io/client-go/dynamic"
 )
-
-var contextVar = context.TODO()
 
 // GenericInformer ...
 type GenericInformer struct {
@@ -102,7 +102,7 @@ func (inform *GenericInformer) listAndResync() error {
 	// List resources.
 	opts := metav1.ListOptions{Limit: 250}
 	for {
-		resources, listError := inform.client.Resource(inform.gvr).List(contextVar, opts)
+		resources, listError := inform.client.Resource(inform.gvr).List(context.TODO(), opts)
 		if listError != nil {
 			glog.Warningf("Error listing resources for %s.  Error: %s", inform.gvr.String(), listError)
 			inform.retries++
@@ -144,7 +144,7 @@ func (inform *GenericInformer) listAndResync() error {
 // Watch resources and process events.
 func (inform *GenericInformer) watch(stopper chan struct{}) {
 
-	watch, watchError := inform.client.Resource(inform.gvr).Watch(contextVar, metav1.ListOptions{})
+	watch, watchError := inform.client.Resource(inform.gvr).Watch(context.TODO(), metav1.ListOptions{})
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
 		inform.retries++

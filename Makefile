@@ -34,7 +34,7 @@ lint:
 	GOGC=25 golangci-lint run --timeout=3m
 
 run:
-	GOGC=25 go run main.go
+	GOGC=25 go run main.go --v=2
 
 .PHONY: test
 test:
