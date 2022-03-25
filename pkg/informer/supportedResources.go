@@ -21,7 +21,7 @@ type Resource struct {
 	Resources []string `yaml:"resources"`
 }
 
-func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
+func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource, error, error) {
 
 	var allow []Resource
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
@@ -37,7 +37,7 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
 		Can't use configured value, defaulting to deny all resources. %v`, denyerr)
 	}
 
-	return allow, deny
+	return allow, deny, allowerr, denyerr
 }
 
 func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []Resource) bool {
@@ -116,7 +116,7 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	}
 
 	// parse alloy/deny from config
-	allowedList, deniedList := GetAllowDenyData(cm)
+	allowedList, deniedList, _, _ := GetAllowDenyData(cm)
 
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 
