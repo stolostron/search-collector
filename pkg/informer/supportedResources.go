@@ -86,24 +86,17 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 				}
 			}
 		}
-		//case where same resources are in deny and allow list. expected behaviour is to exclude those resources (default to deny) but we need to add a warning case.
-		for _, al := range allowedList {
-			for _, ag := range al.ApiGroups {
-				for _, ar := range al.Resources {
-					for _, den := range deniedList {
-						for _, deng := range den.ApiGroups {
-							for _, denr := range den.Resources {
+		//case where same resources are in deny and allow list. expected behavior is to exclude those resources (default to deny) but we need to add a warning case.
 
-								if (ag == deng) && (ar == denr) || (ag == "*" && deng == "*") && (ar == denr) || (ag == deng) && (ar == "*" && denr == "*") {
+		allowMap := GetAllowDenyDataMap(allowedList)
+		denyMap := GetAllowDenyDataMap(deniedList)
 
-									glog.V(2).Infof("Deny Resource [group: '%s' kind: %s]. Contianed in both allow and deny rule.", group, kind)
-									return false
-								}
-
-							}
-						}
-					}
-
+		for _, allow := range allowMap {
+			for _, deny := range denyMap {
+				if (allow["group"] == deny["group"] && allow["rec"] == deny["rec"]) || (allow["group"] == "*" && deny["group"] == "*" && allow["rec"] == deny["rec"]) ||
+					(allow["rec"] == "*" && deny["rec"] == "*" && allow["group"] == deny["group"]) {
+					glog.V(2).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
+					return false
 				}
 			}
 		}
@@ -111,6 +104,28 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 
 	glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
 	return false
+}
+
+//helper funtion to get map of resource object
+func GetAllowDenyDataMap(ruleList []Resource) []map[string]interface{} {
+
+	ruleMap := make([]map[string]interface{}, 0)
+
+	for _, rule := range ruleList {
+		for _, group := range rule.ApiGroups {
+			for _, rec := range rule.Resources {
+
+				ruleData := map[string]interface{}{
+					"apigroup":  group,
+					"resources": rec,
+				}
+
+				ruleMap = append(ruleMap, ruleData)
+			}
+		}
+	}
+
+	return ruleMap
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
