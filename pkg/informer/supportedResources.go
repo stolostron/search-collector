@@ -42,6 +42,22 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource, error, error) {
 
 func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []Resource) bool {
 
+	allowMap := GetAllowDenyDataMap(allowedList)
+	denyMap := GetAllowDenyDataMap(deniedList)
+
+	//case where same resources are in deny and allow list. expected behavior is to exclude those resources
+	// (default to deny) but we need to add a warning case
+	for _, allow := range allowMap {
+		for _, deny := range denyMap {
+			if (allow["group"] == deny["group"] && allow["rec"] == deny["rec"]) ||
+				(allow["group"] == "*" && deny["group"] == "*" && allow["rec"] == deny["rec"]) ||
+				(allow["rec"] == "*" && deny["rec"] == "*" && allow["group"] == deny["group"]) {
+				glog.V(2).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
+				return false
+			}
+		}
+	}
+
 	// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
 	// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
 	// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
@@ -83,20 +99,6 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 							group, kind, g, k)
 						return true
 					}
-				}
-			}
-		}
-		//case where same resources are in deny and allow list. expected behavior is to exclude those resources (default to deny) but we need to add a warning case.
-
-		allowMap := GetAllowDenyDataMap(allowedList)
-		denyMap := GetAllowDenyDataMap(deniedList)
-
-		for _, allow := range allowMap {
-			for _, deny := range denyMap {
-				if (allow["group"] == deny["group"] && allow["rec"] == deny["rec"]) || (allow["group"] == "*" && deny["group"] == "*" && allow["rec"] == deny["rec"]) ||
-					(allow["rec"] == "*" && deny["rec"] == "*" && allow["group"] == deny["group"]) {
-					glog.V(2).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
-					return false
 				}
 			}
 		}
