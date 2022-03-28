@@ -86,6 +86,27 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 				}
 			}
 		}
+		//case where same resources are in deny and allow list. expected behaviour is to exclude those resources (default to deny) but we need to add a warning case.
+		for _, al := range allowedList {
+			for _, ag := range al.ApiGroups {
+				for _, ar := range al.Resources {
+					for _, den := range deniedList {
+						for _, deng := range den.ApiGroups {
+							for _, denr := range den.Resources {
+
+								if (ag == deng) && (ar == denr) || (ag == "*" && deng == "*") && (ar == denr) || (ag == deng) && (ar == "*" && denr == "*") {
+
+									glog.V(2).Infof("Deny Resource [group: '%s' kind: %s]. Contianed in both allow and deny rule.", group, kind)
+									return false
+								}
+
+							}
+						}
+					}
+
+				}
+			}
+		}
 	}
 
 	glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)

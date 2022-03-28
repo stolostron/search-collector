@@ -20,12 +20,7 @@ import (
 //generate fakeclient to get configmap
 //
 func Test_GetConfigMapByName(t *testing.T) {
-	//Test scenarios:
-	// Correct ConfigMap - clientset1
-	// No configmap. -
-	// Configmap without AllowResources or DenyResources keys.- clientset2
-	// Configmap with invalid yaml in AllowResources or DenyResources. clientset3
-	// Configmap with invalid Name - clientset
+
 	configmaps := []struct {
 		clientset kubernetes.Interface
 		name      string
@@ -108,7 +103,6 @@ func Test_GetConfigMapByName(t *testing.T) {
 			name:      "wrong-name",
 			err:       fmt.Errorf("configmaps \"search-collector-config\" not found")},
 	}
-	// errs := make([]error, 2)
 
 	for _, clientset := range configmaps {
 
@@ -120,8 +114,6 @@ func Test_GetConfigMapByName(t *testing.T) {
 			if !strings.EqualFold(clientset.err.Error(), err.Error()) { //if the errors don't match
 				t.Fatalf("expected err was %s but got err like %s", clientset.err, err)
 			}
-			// } else {
-			// 	glog.Info("Didn't find ConfigMap with name search-collector-config. Will collect all resources. ", err) //there is an error with config
 
 		}
 
@@ -143,18 +135,81 @@ func Test_GetConfigMapByName(t *testing.T) {
 				t.Fatalf("expected err was %s but got err like %s", clientset.err, denyerr)
 			}
 		}
-		// errs = append(errs, allowerr, denyerr)
 
-		// for _, err := range errs {
-		// if err != nil {
-		// 	if clientset.err == nil {
-		// 		t.Fatalf(err.Error())
-		// 	}
-		// 	if !strings.EqualFold(clientset.err.Error(), err.Error()) {
-		// 		t.Fatalf("expected err was %s but got err like %s", clientset.err, err)
-		// 	}
-		// }
-		// }
+	}
+
+}
+
+func Test_supportedResources(t *testing.T) {
+
+	clientset := fake.NewSimpleClientset(&v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "search-collector-config",
+			Namespace: "open-cluster-management",
+		},
+		Data: map[string]string{
+			"AllowedResources": "- apiGroups: \n    - \"*\"\n  resources: \n    - services\n    - pods\n- apiGroups:\n    - admission.k8s.io\n    - authentication.k8s.io\n  resources:\n    - \"*\"",
+			"DeniedResources":  "- apiGroups:\n    - \"*\"\n  resources:\n    - secrets\n- apiGroups:\n    - admission.k8s.io\n  resources:\n    - policies\n    - iampolicies\n    - certificatepolicies",
+		},
+	})
+
+	config, _ := clientset.CoreV1().ConfigMaps("open-cluster-management").Get(context.TODO(), "search-collector-config", metav1.GetOptions{})
+	allow, deny, _, _ := GetAllowDenyData(config)
+
+	//testing allowed:
+	incomingResources := make(map[string]string)
+	incomingGroup := make(map[string]string)
+
+	//testing for all groups:
+	incomingGroup["group"] = "authentication.k8s.io"
+	incomingResources["resource"] = "deployments"
+
+	//testing allowed == true
+	incomingGroup["group"] = "anygroup.io"
+	incomingResources["resource"] = "pods"
+
+	for _, rec := range incomingResources {
+		for _, group := range incomingGroup {
+			if rec != "" && group != "" {
+				if isResourceAllowed(group, rec, allow, deny) != true {
+
+					t.Error("Not expected. Error")
+				}
+			} else {
+				t.Error("Not expected. Error")
+			}
+
+		}
+
+	}
+	//testing denied:
+	denyIncomingResources := make(map[string]string)
+	denyIncomingGroup := make(map[string]string)
+
+	//testing denied == true
+	denyIncomingGroup["group"] = "admission.k8s.io"
+	denyIncomingResources["resource"] = "policies"
+
+	//tesing for all groups == true
+	denyIncomingGroup["group"] = "anygroup.io"
+	denyIncomingResources["resource"] = "secrets"
+
+	for _, rec := range denyIncomingResources {
+		for _, group := range denyIncomingGroup {
+			if rec != "" && group != "" {
+				if isResourceAllowed(group, rec, allow, deny) != false {
+
+					t.Error("Not expected. Error")
+				}
+			} else {
+				t.Error("Not expected. Error")
+			}
+
+		}
 
 	}
 }
