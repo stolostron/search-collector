@@ -56,6 +56,67 @@ RUNTIME_MODE       | no       | production               | Running mode (develop
 - Environment variables can also be set in the `./config.json` for development. If both provide a value for a specific property, the environment variable overrides the file. You can define your own `config.json` file and pass it to the application with the following command: `-c <config_file>`
 - The application can take any flags for [glog](https://github.com/golang/glog), which passes them straight into glog. The glog flag `--logtostderr` is set to true by default.
 
+### Dev Preview (Search Configurable Collection)
+
+Control resources that get collected from the Search-Collector by referencing an allow and deny list within search-collector-config configmap. Follow the following format in the sample template below:
+
+
+<pre><code>
+apiVersion: v1
+kind: ConfigMap
+metadata:
+ name: search-collector-config
+ namespace: Namespace where Search-Collector Pod is 
+data:
+ AllowedResources: |-
+   - apiGroups:
+       - "*"
+     resources:
+       - services
+       - pods
+   - apiGroups:
+       - admission.k8s.io
+       - authentication.k8s.io
+     resources:
+       - "*"
+ DeniedResources: |-
+   - apiGroups:
+       - "*"
+     resources:
+       - secrets
+   - apiGroups:
+       - admission.k8s.io
+     resources:
+       - policies
+       - iampolicies
+       - certificatepolicies
+</code></pre>
+
+Steps to create search-collector-config
+
+1. The <b>Namespace</b> value should be defined as the namespace where the Search-Collector pod lives.
+
+2. Use the <b>Name</b> `search-collector-config`
+
+3. Under <b>data</b> define `AllowedResources` and `DeniedResources` as key value pairs wrapped in a string block with `|-` to preserve linebreaks.
+
+    - The asterisk `"*"` represents <i>all</i>.
+
+    - Note that if you want to control resources for the current group then you should replace the `apiGroups` value with and empty string `""`. 
+    - If the same resources are featured in both lists, they will be excluded.
+4. Once you save your changes you can apply your changes by running `oc apply -f configMapFile.yaml`
+5. Add the following env variable to your Search-Collector deployment:
+
+    <pre><code> - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace</code></pre>
+6. Restart the Search-Collector pod
+
+
+
+
 ### Contribution
 
 When you make contributions to this project, fork the project then merge your changes by creating a pull request from your personal fork to the main project:
