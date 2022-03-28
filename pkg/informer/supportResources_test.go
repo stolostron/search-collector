@@ -152,8 +152,8 @@ func Test_supportedResources(t *testing.T) {
 			Namespace: "open-cluster-management",
 		},
 		Data: map[string]string{
-			"AllowedResources": "- apiGroups: \n    - \"*\"\n  resources: \n    - services\n    - pods\n- apiGroups:\n    - admission.k8s.io\n    - authentication.k8s.io\n  resources:\n    - \"*\"",
-			"DeniedResources":  "- apiGroups:\n    - \"*\"\n  resources:\n    - secrets\n- apiGroups:\n    - admission.k8s.io\n  resources:\n    - policies\n    - iampolicies\n    - certificatepolicies",
+			"AllowedResources": "- apiGroups: \n    - \"*\"\n  resources: \n    - services\n    - pods\n- apiGroups:\n    - authentication.k8s.io\n  resources:\n    - \"*\"",
+			"DeniedResources":  "- apiGroups:\n    - \"*\"\n  resources:\n    - secrets\n- apiGroups:\n    - admission.k8s.io\n  resources:\n    - policies\n    - iampolicies\n    - certificatepolicies\n- apiGroups:\n    - admission.k8s.io\n  resources:\n    - \"*\"",
 		},
 	})
 
@@ -164,20 +164,21 @@ func Test_supportedResources(t *testing.T) {
 	incomingResources := make(map[string]string)
 	incomingGroup := make(map[string]string)
 
-	//testing for all groups:
+	//testing for any resources:
 	incomingGroup["group"] = "authentication.k8s.io"
 	incomingResources["resource"] = "deployments"
 
-	//testing allowed == true
+	//testing for any apigroup:
 	incomingGroup["group"] = "anygroup.io"
-	incomingResources["resource"] = "pods"
+	incomingResources["resource"] = "services"
 
 	for _, rec := range incomingResources {
 		for _, group := range incomingGroup {
 			if rec != "" && group != "" {
+
 				if isResourceAllowed(group, rec, allow, deny) != true {
 
-					t.Error("Not expected. Error")
+					t.Error("Not expected. Error", group, rec)
 				}
 			} else {
 				t.Error("Not expected. Error")
@@ -190,11 +191,11 @@ func Test_supportedResources(t *testing.T) {
 	denyIncomingResources := make(map[string]string)
 	denyIncomingGroup := make(map[string]string)
 
-	//testing denied == true
+	//testing for any resources
 	denyIncomingGroup["group"] = "admission.k8s.io"
-	denyIncomingResources["resource"] = "policies"
+	denyIncomingResources["resource"] = "iampolicies"
 
-	//tesing for all groups == true
+	//tesing for any apigroup
 	denyIncomingGroup["group"] = "anygroup.io"
 	denyIncomingResources["resource"] = "secrets"
 
