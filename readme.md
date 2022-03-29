@@ -105,7 +105,7 @@ Steps to create search-collector-config
     - If the same resources are featured in both lists, they will be excluded.
 4. Once you save your changes you can apply your changes by running `oc apply -f configMapFile.yaml`
 
-
+5. Restart the Search-Collector pod.
 
 ### Contribution
 
