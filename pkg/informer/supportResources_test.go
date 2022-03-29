@@ -1,8 +1,6 @@
 package informer
 
 import (
-	// "fmt"
-
 	"context"
 	"fmt"
 	"strings"
@@ -11,14 +9,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	// "k8s.io/cli-runtime/pkg/genericclioptions"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
 //generate fakeclient to get configmap
-//
 func Test_GetConfigMapByName(t *testing.T) {
 
 	configmaps := []struct {
@@ -109,7 +104,7 @@ func Test_GetConfigMapByName(t *testing.T) {
 		config, err := clientset.clientset.CoreV1().ConfigMaps(clientset.namespace).Get(context.TODO(), clientset.name, metav1.GetOptions{})
 		if err != nil {
 			if clientset.err == nil { //if config has err but the clientset does not
-				t.Fatalf(err.Error())
+				t.Fatalf("Received unexpected error from client. Error: %s", err.Error())
 			}
 			if !strings.EqualFold(clientset.err.Error(), err.Error()) { //if the errors don't match
 				t.Fatalf("expected err was %s but got err like %s", clientset.err, err)
@@ -121,7 +116,7 @@ func Test_GetConfigMapByName(t *testing.T) {
 
 		if allowerr != nil {
 			if clientset.err == nil {
-				t.Fatalf(allowerr.Error())
+				t.Fatalf("Received unexpected error from client. Error: %s", err.Error())
 			}
 			if !strings.EqualFold(clientset.err.Error(), allowerr.Error()) {
 				t.Fatalf("expected err was %s but got err like %s", clientset.err, allowerr)
@@ -129,7 +124,7 @@ func Test_GetConfigMapByName(t *testing.T) {
 		}
 		if denyerr != nil {
 			if clientset.err == nil {
-				t.Fatalf(denyerr.Error())
+				t.Fatalf("Received unexpected error from client. Error: %s", err.Error())
 			}
 			if !strings.EqualFold(clientset.err.Error(), denyerr.Error()) {
 				t.Fatalf("expected err was %s but got err like %s", clientset.err, denyerr)
@@ -160,57 +155,21 @@ func Test_supportedResources(t *testing.T) {
 	config, _ := clientset.CoreV1().ConfigMaps("open-cluster-management").Get(context.TODO(), "search-collector-config", metav1.GetOptions{})
 	allow, deny, _, _ := GetAllowDenyData(config)
 
-	//testing allowed:
-	incomingResources := make(map[string]string)
-	incomingGroup := make(map[string]string)
+	allowData := [][]string{{"authentication.k8s.io", "deployments"}, {"services.anygroup.io", "services"}} // Test all resources allowed for group // Test resource matching any group
+	denyData := [][]string{{"admission.k8s.io", "iampolicies"}, {"secrets.anygroup.io", "secrets"}}         // Test all resources allowed for group // Test resource matching any group
 
-	//testing for any resources:
-	incomingGroup["group"] = "authentication.k8s.io"
-	incomingResources["resource"] = "deployments"
-
-	//testing for any apigroup:
-	incomingGroup["group"] = "anygroup.io"
-	incomingResources["resource"] = "services"
-
-	for _, rec := range incomingResources {
-		for _, group := range incomingGroup {
-			if rec != "" && group != "" {
-
-				if isResourceAllowed(group, rec, allow, deny) != true {
-
-					t.Error("Not expected. Error", group, rec)
-				}
-			} else {
-				t.Error("Not expected. Error")
-			}
-
+	for _, data := range allowData {
+		allowed := isResourceAllowed(data[0], data[1], allow, deny)
+		if !allowed {
+			t.Errorf("Expected group: %s resource: %s to be allowed, but got denied.", data[0], data[1])
+		}
+	}
+	for _, data := range denyData {
+		denied := isResourceAllowed(data[0], data[1], allow, deny)
+		if denied {
+			t.Errorf("Expected group: %s resource: %s to be denied, but got allowed.", data[0], data[1])
 		}
 
 	}
-	//testing denied:
-	denyIncomingResources := make(map[string]string)
-	denyIncomingGroup := make(map[string]string)
 
-	//testing for any resources
-	denyIncomingGroup["group"] = "admission.k8s.io"
-	denyIncomingResources["resource"] = "iampolicies"
-
-	//tesing for any apigroup
-	denyIncomingGroup["group"] = "anygroup.io"
-	denyIncomingResources["resource"] = "secrets"
-
-	for _, rec := range denyIncomingResources {
-		for _, group := range denyIncomingGroup {
-			if rec != "" && group != "" {
-				if isResourceAllowed(group, rec, allow, deny) != false {
-
-					t.Error("Not expected. Error")
-				}
-			} else {
-				t.Error("Not expected. Error")
-			}
-
-		}
-
-	}
 }
