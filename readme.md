@@ -58,15 +58,15 @@ RUNTIME_MODE       | no       | production               | Running mode (develop
 
 ### Dev Preview (Search Configurable Collection)
 
-Control resources that get collected from the Search-Collector by referencing an allow and deny list within search-collector-config configmap. Follow the following format in the sample template below:
+Control the Kubernetes resources that get collected from the cluster by referencing an allow and deny list within a configmap with the name search-collector-config. Create the configmap following the format in the sample template below:
 
 
-<pre><code>
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
  name: search-collector-config
- namespace: Namespace where Search-Collector Pod is 
+ namespace: <namespace where search-collector add-on is deployed>
 data:
  AllowedResources: |-
    - apiGroups:
@@ -90,30 +90,20 @@ data:
        - policies
        - iampolicies
        - certificatepolicies
-</code></pre>
-
+```
 Steps to create search-collector-config
 
-1. The <b>Namespace</b> value should be defined as the namespace where the Search-Collector pod lives.
+1. The **name** of the ConfigMap must be `search-collector-config`.
 
-2. Use the <b>Name</b> `search-collector-config`
+2. **namespace** is the Namespace where the Search-Collector add-on is deployed.
 
-3. Under <b>data</b> define `AllowedResources` and `DeniedResources` as key value pairs wrapped in a string block with `|-` to preserve linebreaks.
+3. Under **data** define `AllowedResources` and `DeniedResources` as key value pairs wrapped in a string block with `|-` to preserve linebreaks.
 
     - The asterisk `"*"` represents <i>all</i>.
 
-    - Note that if you want to control resources for the current group then you should replace the `apiGroups` value with and empty string `""`. 
+    - For resources that don't have apigroups, you should replace the `apiGroups` value with an empty string `""`.  You can check which resources don't have apigroups with `oc api-resources -o wide`
     - If the same resources are featured in both lists, they will be excluded.
 4. Once you save your changes you can apply your changes by running `oc apply -f configMapFile.yaml`
-5. Add the following env variable to your Search-Collector deployment:
-
-    <pre><code> - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace</code></pre>
-6. Restart the Search-Collector pod
-
 
 
 
