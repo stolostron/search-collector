@@ -21,7 +21,7 @@ type Resource struct {
 	Resources []string `yaml:"resources"`
 }
 
-func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
+func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource, error, error) {
 
 	var allow []Resource
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
@@ -37,17 +37,15 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource) {
 		Can't use configured value, defaulting to deny all resources. %v`, denyerr)
 	}
 
-	return allow, deny
+	return allow, deny, allowerr, denyerr
 }
 
 func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []Resource) bool {
-
 	// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
 	// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
 	// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
 	// the same uid.
 	list := []string{"events", "projects", "clusters", "clusterstatuses", "oauthaccesstokens"}
-
 	// Deny all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
@@ -57,16 +55,17 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	}
 
 	// Deny resources that match the deny list.
-	for _, de := range deniedList {
-		for _, g := range de.ApiGroups {
-			for _, k := range de.Resources {
-				if (g == "*" || g == group) && (k == "*" || k == kind) { // Group and kind matches
-					glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].",
-						group, kind, g, k)
-					return false
-				}
-			}
+	g, k, denied := isResourceMatchingList(deniedList, group, kind)
+	if denied {
+
+		// Check if resource is also in the allow list.
+		_, _, allowed := isResourceMatchingList(allowedList, group, kind)
+		if allowed {
+			glog.V(2).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
+		} else {
+			glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].", group, kind, g, k)
 		}
+		return false
 	}
 
 	// If allowList not provided, interpret it as allow all resources.
@@ -75,21 +74,28 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		glog.V(2).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
 		return true
 	} else {
-		for _, al := range allowedList {
-			for _, g := range al.ApiGroups {
-				for _, k := range al.Resources { // Kind and Resource mean the same.
-					if (g == "*" || g == group) && (k == "*" || k == kind) { // Group and kind matches
-						glog.V(2).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].",
-							group, kind, g, k)
-						return true
-					}
+		g, k, allowed := isResourceMatchingList(allowedList, group, kind)
+		if allowed {
+			glog.V(2).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].", group, kind, g, k)
+			return true
+		}
+	}
+	glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
+	return false
+}
+
+//helper funtion to get map of resource object
+func isResourceMatchingList(resourceList []Resource, group, kind string) (string, string, bool) {
+	for _, r := range resourceList {
+		for _, g := range r.ApiGroups {
+			for _, k := range r.Resources {
+				if (g == "*" || g == group) && (k == "*" || k == kind) { // Group and kind matches
+					return g, k, true
 				}
 			}
 		}
 	}
-
-	glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
-	return false
+	return "", "", false
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
@@ -116,7 +122,7 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	}
 
 	// parse alloy/deny from config
-	allowedList, deniedList := GetAllowDenyData(cm)
+	allowedList, deniedList, _, _ := GetAllowDenyData(cm)
 
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
 
