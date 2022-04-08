@@ -25,6 +25,7 @@ type ReportResults struct {
 	Category   string           `json:"category"`
 	Result     string           `json:"result"`
 	Properties ReportProperties `json:"properties"`
+	Source     string           `json:"source"`
 }
 
 // ReportProperties rule violation data
@@ -50,17 +51,26 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	node.Properties["apiversion"] = gvk.Version
 	node.Properties["apigroup"] = gvk.Group
 
+	// Filter GRC sourced policy violations from node results
+	// Policy details are displayed elsewhere in the UI, displaying them in the PR will result in double counts on pages
+	results := []ReportResults{}
+	for _, result := range pr.Results {
+		if result.Source == "insights" {
+			results = append(results, result)
+		}
+	}
+
 	// Total number of policies in the report
-	node.Properties["numRuleViolations"] = len(pr.Results)
+	node.Properties["numRuleViolations"] = len(results)
 	// Extract the properties specific to this type
 	categoryMap := make(map[string]struct{})
-	policies := make([]string, 0, len(pr.Results))
+	policies := make([]string, 0, len(results))
 	var critical = 0
 	var important = 0
 	var moderate = 0
 	var low = 0
 
-	for _, result := range pr.Results {
+	for _, result := range results {
 		for _, category := range strings.Split(result.Category, ",") {
 			categoryMap[category] = struct{}{}
 		}
