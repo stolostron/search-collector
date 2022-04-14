@@ -70,6 +70,6 @@ require (
 )
 
 replace (
-	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e
+	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	k8s.io/client-go => k8s.io/client-go v0.21.1
 )
