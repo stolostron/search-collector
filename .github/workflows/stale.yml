@@ -19,4 +19,4 @@ jobs:
           days-before-stale: 5
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-pr-label: 'stale'
-          stale-pr-message: "This pr has been automatically marked as stale because it has not had recent activity. It will be closed in 7 days (1 weeks), if no further activity occurs."
+          stale-pr-message: "This pr has been automatically marked as stale because it has not had recent activity. It will be closed in 7 days (1 week), if no further activity occurs."
