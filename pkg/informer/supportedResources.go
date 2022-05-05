@@ -128,10 +128,10 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 	// Filter down to only resources which support WATCH operations
 	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
-		// This is a copy of apiList but we only insert resources for which GET is supported.
+		// This is a copy of apiList but we only insert resources for which WATCH is supported.
 		watchList := machineryV1.APIResourceList{}
 		watchList.GroupVersion = apiList.GroupVersion
-		watchResources := []machineryV1.APIResource{} // All the resources for which GET works.
+		watchResources := []machineryV1.APIResource{} // All the resources for which WATCH works.
 
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
 
