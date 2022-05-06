@@ -27,11 +27,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/send"
-	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/discovery"
 )
 
 const (
@@ -135,7 +133,7 @@ func main() {
 		// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
 		stoppers := make(map[schema.GroupVersionResource]chan struct{})
 		for {
-			gvrList, err := supportedResources(discoveryClient)
+			gvrList, err := inform.SupportedResources(discoveryClient)
 			if err != nil {
 				glog.Error("Failed to get complete list of supported resources: ", err)
 			}
@@ -152,7 +150,8 @@ func main() {
 						delete(gvrList, gvr)
 						continue
 					} else { // if it's in the old and NOT in the new, stop the informer
-						glog.V(2).Infof("Resource %s no longer exists or no longer supports watch, stopping its informer\n", gvr.String())
+						glog.V(2).Infof("Resource %s no longer exists or no longer supports watch, stopping its informer\n",
+							gvr.String())
 						close(stopper)
 						delete(stoppers, gvr)
 					}
@@ -189,62 +188,4 @@ func main() {
 
 	glog.Info("Starting the sender.")
 	sender.StartSendLoop()
-}
-
-// Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
-func supportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
-	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
-	supportedResources := []*machineryV1.APIResourceList{}
-
-	// List out all the preferred api-resources of this server.
-	apiResources, err := discoveryClient.ServerPreferredResources()
-	if err != nil && apiResources == nil { // only return if the list is empty
-		return nil, err
-	} else if err != nil {
-		glog.Warning("ServerPreferredResources could not list all available resources: ", err)
-	}
-	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
-	// Filter down to only resources which support WATCH operations.
-	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
-		// This is a copy of apiList but we only insert resources for which GET is supported.
-		watchList := machineryV1.APIResourceList{}
-		watchList.GroupVersion = apiList.GroupVersion
-		watchResources := []machineryV1.APIResource{}      // All the resources for which GET works.
-		for _, apiResource := range apiList.APIResources { // Loop across inner list
-			// TODO: Use env variable for ignored resource kinds.
-			// Ignore clusters and clusterstatus resources because these are handled by the aggregator.
-			// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
-			// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
-			// the same uid.
-			if apiResource.Name == "clusters" ||
-				apiResource.Name == "clusterstatuses" ||
-				apiResource.Name == "oauthaccesstokens" ||
-				apiResource.Name == "events" ||
-				apiResource.Name == "projects" {
-				continue
-			}
-			// add non-namespaced resource to NonNSResourceMap
-			if !apiResource.Namespaced {
-				tr.NonNSResMapMutex.Lock()
-				if _, ok := tr.NonNSResourceMap[apiResource.Kind]; !ok {
-					tr.NonNSResourceMap[apiResource.Kind] = struct{}{}
-				}
-				tr.NonNSResMapMutex.Unlock()
-
-			}
-			for _, verb := range apiResource.Verbs {
-				if verb == "watch" {
-					watchResources = append(watchResources, apiResource)
-				}
-			}
-		}
-		watchList.APIResources = watchResources
-		// Add the list to our list of lists that holds GET enabled resources.
-		supportedResources = append(supportedResources, &watchList)
-	}
-
-	// Use handy converter function to convert into GroupVersionResource objects, which we need in order to make informers
-	gvrList, err := discovery.GroupVersionResources(supportedResources)
-
-	return gvrList, err
 }
