@@ -92,6 +92,8 @@ func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEven
 		ComputeEdges: trans.BuildEdges,
 	}
 	ne.ResourceString = resourceString
+	// Search v-2 , types is expected part of properties
+	ne.Node.Properties["kind_plural"] = resourceString
 	return ne
 }
 
