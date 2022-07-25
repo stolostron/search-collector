@@ -29,7 +29,7 @@ func TestTransformRoutine(t *testing.T) {
 	UnmarshalFile("application.json", &appTyped, t)
 	UnmarshalFile("application.json", &appInput, t)
 	appNode := ApplicationResourceBuilder(&appTyped).BuildNode()
-
+	appNode.ResourceString = "applications"
 	unstructuredInput := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"kind": "foobar",
@@ -39,7 +39,7 @@ func TestTransformRoutine(t *testing.T) {
 		},
 	}
 	unstructuredNode := GenericResourceBuilder(&unstructuredInput).BuildNode()
-
+	unstructuredNode.ResourceString = "unstructured"
 	var tests = []struct {
 		name     string
 		in       *Event
@@ -48,9 +48,10 @@ func TestTransformRoutine(t *testing.T) {
 		{
 			"Application create",
 			&Event{
-				Time:      ts,
-				Operation: Create,
-				Resource:  &appInput,
+				Time:           ts,
+				Operation:      Create,
+				Resource:       &appInput,
+				ResourceString: "applications",
 			},
 			NodeEvent{
 				Node:      appNode,
@@ -61,9 +62,10 @@ func TestTransformRoutine(t *testing.T) {
 		{
 			"Application delete",
 			&Event{
-				Time:      ts,
-				Operation: Delete,
-				Resource:  &appInput,
+				Time:           ts,
+				Operation:      Delete,
+				Resource:       &appInput,
+				ResourceString: "applications",
 			},
 			NodeEvent{
 				Node:      appNode,
@@ -74,9 +76,10 @@ func TestTransformRoutine(t *testing.T) {
 		{
 			"Unknown type create",
 			&Event{
-				Time:      ts,
-				Operation: Create,
-				Resource:  &unstructuredInput,
+				Time:           ts,
+				Operation:      Create,
+				Resource:       &unstructuredInput,
+				ResourceString: "unstructured",
 			},
 			NodeEvent{
 				Node:      unstructuredNode,
@@ -91,7 +94,7 @@ func TestTransformRoutine(t *testing.T) {
 	for _, test := range tests {
 		input <- test.in
 		actual := <-output
-
+		test.expected.Node.Properties["kind_plural"] = test.in.ResourceString
 		AssertDeepEqual(test.name, actual.Node, test.expected.Node, t)
 		AssertEqual(test.name, actual.Time, test.expected.Time, t)
 		AssertEqual(test.name, actual.Operation, test.expected.Operation, t)
