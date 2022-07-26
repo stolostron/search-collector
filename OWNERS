@@ -1,14 +1,9 @@
 approvers:
-  - jlpadilla
-  - xrajesh
-  - SherinV
-  - mqhackett
-reviewers:
-  - jlpadilla
-  - xrajesh
-  - SherinV
-  - mqhackett
+  - Anxhela21
   - dislbenn
-  - RobDolares
-  - zlayne 
-  - mark-nc
+  - jlpadilla
+  - SherinV
+  - xrajesh
+  - zlayne
+reviewers:
+  - atifshafi
