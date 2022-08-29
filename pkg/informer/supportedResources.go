@@ -50,7 +50,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// Deny all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
-			glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
+			glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
 			return false
 		}
 	}
@@ -62,7 +62,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		// Check if resource is also in the allow list.
 		_, _, allowed := isResourceMatchingList(allowedList, group, kind)
 		if allowed {
-			glog.V(2).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
+			glog.V(3).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
 		} else {
 			glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].", group, kind, g, k)
 		}
@@ -72,7 +72,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// If allowList not provided, interpret it as allow all resources.
 	// otherwise allow only the resources declared in allow list.
 	if len(allowedList) == 0 {
-		glog.V(2).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
+		glog.V(3).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
 		return true
 	} else {
 		g, k, allowed := isResourceMatchingList(allowedList, group, kind)
@@ -81,7 +81,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 			return true
 		}
 	}
-	glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
+	glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
 	return false
 }
 
@@ -126,7 +126,6 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	allowedList, deniedList, _, _ := GetAllowDenyData(cm)
 
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
-
 	// Filter down to only resources which support WATCH operations
 	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
 		// This is a copy of apiList but we only insert resources for which WATCH is supported.
