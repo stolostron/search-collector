@@ -2,6 +2,7 @@ package informer
 
 import (
 	"context"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
@@ -135,7 +136,9 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		for _, apiResource := range apiList.APIResources { // Loop across inner list
 
-			if !isResourceAllowed(apiResource.Group, apiResource.Name, allowedList, deniedList) {
+			groupVersion := strings.Split(apiList.GroupVersion, "/")
+			group := groupVersion[0]
+			if !isResourceAllowed(group, apiResource.Name, allowedList, deniedList) {
 				continue // Skip the resource before starting the informer
 			}
 
