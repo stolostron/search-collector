@@ -18,7 +18,7 @@ See the [Data model documentation](https://github.com/stolostron/search-collecto
 
 ### Running Locally
 
-> **Pre-requisite:** Go v1.15
+> **Pre-requisite:** Go v1.18
 
 1. Fetch Dependencies: `make deps`
     > **TIP 1:** You may need to install mercurial. `brew install mercurial`
@@ -118,4 +118,4 @@ When you make contributions to this project, fork the project then merge your ch
 5. Push your new commits to your personal fork with the following command: `git push origin`
 6. Create a pull request from your personal fork again the upstream `search-collector` main branch
 
-Rebuild: 2022-08-16
+Rebuild: 2022-09-16
