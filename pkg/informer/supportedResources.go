@@ -101,6 +101,8 @@ func isResourceMatchingList(resourceList []Resource, group, kind string) (string
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
 func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
+
+	ctx := context.TODO()
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}
 
@@ -117,11 +119,18 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 	// locate the search-collector-config ConfigMap
 	cm, err2 := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
-		Get(context.TODO(), "search-collector-config", metav1.GetOptions{})
+		Get(ctx, "search-collector-config", metav1.GetOptions{})
 	if err2 != nil {
 		glog.Info("Didn't find ConfigMap with name search-collector-config. Will collect all resources. ", err2)
 	}
 
+	// //we want the watch to check the resourceversion and if it changed we want to inform
+	watch, err := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).Watch(ctx, metav1.SingleObject(cm.ObjectMeta))
+	if err != nil {
+		glog.Info("Error watching search-collector-config Configmap object. Releasing any resources used by the watch.", err.Error())
+	} else {
+		watch.ResultChan()
+	}
 	// parse alloy/deny from config
 	allowedList, deniedList, _, _ := GetAllowDenyData(cm)
 

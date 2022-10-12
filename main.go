@@ -158,6 +158,10 @@ func main() {
 				// Now, loop through the new list, which after the above deletions, contains only stuff that needs to
 				// have a new informer created for it.
 				for gvr := range gvrList {
+					fmt.Println("Found new resource %s, creating informer\n", gvr.String())
+					if gvr.Resource == "configmaps" {
+						fmt.Println("FOUND CONFIGMAP RESOURCE", gvr.String())
+					}
 					glog.V(2).Infof("Found new resource %s, creating informer\n", gvr.String())
 					// Using our custom informer.
 					informer, _ := inform.InformerForResource(gvr)

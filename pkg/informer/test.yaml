@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: search-collector-config
+  namespace: open-cluster-management
+data: 
+  AllowedResources: |-
+    - apiGroups: 
+        - "*"
+      resources: 
+        - services
+        - pods
+    - apiGroups:
+        - "*"
+  DeniedResources: |-
+    - apiGroups:
+        - "*"
+      resources:
+        - secrets
