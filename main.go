@@ -158,10 +158,7 @@ func main() {
 				// Now, loop through the new list, which after the above deletions, contains only stuff that needs to
 				// have a new informer created for it.
 				for gvr := range gvrList {
-					// fmt.Println("Found new resource %s, creating informer\n", gvr.String())
-					if gvr.Resource == "configmaps" {
-						fmt.Println("FOUND CONFIGMAP RESOURCE", gvr.String())
-					}
+
 					glog.V(2).Infof("Found new resource %s, creating informer\n", gvr.String())
 					// Using our custom informer.
 					informer, _ := inform.InformerForResource(gvr)
@@ -173,8 +170,9 @@ func main() {
 
 					stopper := make(chan struct{})
 					stoppers[gvr] = stopper
+
 					go informer.Run(stopper)
-					informer.WaitUntilInitialized(time.Duration(10) * time.Second) // Times out after 10 seconds.
+					informer.WaitUntilInitialized(time.Duration(1) * time.Second) // Times out after 10 seconds.
 				}
 				glog.V(2).Info("Total informers running: ", len(stoppers))
 				informersStarted = true
@@ -186,7 +184,7 @@ func main() {
 
 	glog.Info("Waiting for informers to load initial state...")
 	for !informersStarted {
-		time.Sleep(time.Duration(100) * time.Millisecond)
+		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
 
 	glog.Info("Starting the sender.")
