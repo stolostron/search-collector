@@ -5,7 +5,6 @@ package informer
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/golang/glog"
@@ -51,13 +50,14 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		select {
 		case <-stopper:
 			glog.Info("Informer stopped. ", inform.gvr.String())
-			for k, res := range inform.resourceIndex {
-				fmt.Printf("UUID: %s and ResourceIndex: %s ", k, res)
-				delete(inform.resourceIndex, k)
-			}
-			delete(inform.resourceIndex, inform.gvr.Resource)
 
-			// inform.DeleteFunc(inform.resourceIndex)
+			for key := range inform.resourceIndex {
+				glog.V(3).Infof("Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
+				obj := newUnstructured(inform.gvr.Resource, key)
+				inform.DeleteFunc(obj)
+				delete(inform.resourceIndex, key)
+			}
+
 			return
 		default:
 			if inform.retries > 0 {
