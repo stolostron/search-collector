@@ -62,7 +62,7 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		default:
 			if inform.retries > 0 {
 				// Backoff strategy: Adds 2 seconds each retry, up to 2 mins.
-				wait := time.Duration(min(inform.retries*1, 0)) * time.Second
+				wait := time.Duration(min(inform.retries*2, 120)) * time.Second
 				glog.V(3).Infof("Waiting %s before retrying listAndWatch for %s", wait, inform.gvr.String())
 				time.Sleep(wait)
 			}

@@ -172,7 +172,7 @@ func main() {
 					stoppers[gvr] = stopper
 
 					go informer.Run(stopper)
-					informer.WaitUntilInitialized(time.Duration(1) * time.Second) // Times out after 10 seconds.
+					informer.WaitUntilInitialized(time.Duration(10) * time.Second) // Times out after 10 seconds.
 				}
 				glog.V(2).Info("Total informers running: ", len(stoppers))
 				informersStarted = true
@@ -184,7 +184,7 @@ func main() {
 
 	glog.Info("Waiting for informers to load initial state...")
 	for !informersStarted {
-		time.Sleep(time.Duration(10) * time.Millisecond)
+		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
 
 	glog.Info("Starting the sender.")
