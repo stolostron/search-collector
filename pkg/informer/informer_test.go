@@ -126,6 +126,10 @@ func Test_listAndResync_syncWithPrevState(t *testing.T) {
 	if *deleteFuncCount != 1 {
 		t.Errorf("Expected informer.DeleteFunc to be called 1 time, but got %d.", *deleteFuncCount)
 	}
+	// Verify the resources no longer exist in informer.resourceIndex:
+	if _, ok := informer.resourceIndex["fake-uid"]; ok {
+		t.Errorf("Expected informer.resourceIndex to be empty")
+	}
 }
 
 // Verify the informer's Run function.
