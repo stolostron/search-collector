@@ -8,11 +8,11 @@ We are in the process of enabling this repo for community contribution. See wiki
 
 The `search-collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/stolostron/search/blob/main/feature-spec/search.md) has an overview of all the search components.
 
-This process targets any kubernetes cluster to collect data about its configuration resources and computes relationships between those resources. Then this data is sent to the [search-aggregator](https://github.com/stolostron/search-aggregator), where it gets indexed in graph format.
+This process targets any kubernetes cluster to collect data about its configuration resources and computes relationships between those resources. Then this data is sent to the [search-indexer](https://github.com/stolostron/search-indexer), where it is inserted into a relational database.
 
 ## Data model
 
-See the [Data model documentation](https://github.com/stolostron/search-collector/blob/pkg/transforms/README.md) for more information.
+See the [Data model documentation](https://github.com/stolostron/search-collector/blob/main/pkg/transforms/README.md) for more information.
 
 ## Usage and configuration
 
