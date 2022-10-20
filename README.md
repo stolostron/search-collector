@@ -56,8 +56,8 @@ RUNTIME_MODE       | no       | production               | Running mode (develop
 - Environment variables can also be set in the `./config.json` for development. If both provide a value for a specific property, the environment variable overrides the file. You can define your own `config.json` file and pass it to the application with the following command: `-c <config_file>`
 - The application can take any flags for [glog](https://github.com/golang/glog), which passes them straight into glog. The glog flag `--logtostderr` is set to true by default.
 
-
 ### Dev Preview (Search Configurable Collection)
+
 Configurable collection is now fully supported. This topic has moved [here](https://github.com/stolostron/search-v2-operator/wiki/Search-Configurable-Collection).
 
 ### Contribution
