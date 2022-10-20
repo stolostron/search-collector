@@ -1,18 +1,23 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )
 
-# WORK IN PROGRESS
-
-We are in the process of enabling this repo for community contribution. See wiki [here](https://open-cluster-management.io/concepts/architecture/).
-
 # Open cluster management - Search collector
 
 The `search-collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/stolostron/search/blob/main/feature-spec/search.md) has an overview of all the search components.
 
-This process targets any kubernetes cluster to collect data about its configuration resources and computes relationships between those resources. Then this data is sent to the [search-indexer](https://github.com/stolostron/search-indexer), where it is inserted into a relational database.
+This process targets any kubernetes cluster to collect data about its configuration resources. Then this data is sent to the [search-indexer](https://github.com/stolostron/search-indexer), where it is inserted into a relational database.
 
 ## Data model
 
 See the [Data model documentation](https://github.com/stolostron/search-collector/blob/main/pkg/transforms/README.md) for more information.
+
+## Features
+
+Search-collector provides a similar solution as Kubernetes controllers and consists of four main components.
+ 
+* **Informer**: queries for resources and watches for updates
+* **Transformer**: applies updates to resources
+* **Sender**: sends quachanges to the search-indexer
+* **Reconciler**: merges changes to search-indexer
 
 ## Usage and configuration
 
