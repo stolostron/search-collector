@@ -6,13 +6,21 @@ metadata:
 data: 
   AllowedResources: |-
     - apiGroups: 
-        - "*"
+        - "apps.open-cluster-management.io"
       resources: 
-        - services
+        - channels
+    - apiGroups:
+        - "*"
+      resources:
         - pods
         - deployments
+        - subscriptions
   DeniedResources: |-
     - apiGroups:
         - "*"
       resources:
         - secrets
+    - apiGroups:
+        - "search.open-cluster-management.io"
+      resources:
+        - searches

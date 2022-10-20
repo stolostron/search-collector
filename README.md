@@ -57,6 +57,9 @@ RUNTIME_MODE       | no       | production               | Running mode (develop
 - The application can take any flags for [glog](https://github.com/golang/glog), which passes them straight into glog. The glog flag `--logtostderr` is set to true by default.
 
 
+### Dev Preview (Search Configurable Collection)
+Configurable collection is now fully supported. This topic has moved [here](https://github.com/stolostron/search-v2-operator/wiki/Search-Configurable-Collection).
+
 ### Contribution
 
 When you make contributions to this project, fork the project then merge your changes by creating a pull request from your personal fork to the main project:
