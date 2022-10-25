@@ -126,10 +126,24 @@ func Test_listAndResync_syncWithPrevState(t *testing.T) {
 	if *deleteFuncCount != 1 {
 		t.Errorf("Expected informer.DeleteFunc to be called 1 time, but got %d.", *deleteFuncCount)
 	}
+
+}
+
+func Test_StoppedInformer_ValidateDeleteFunc(t *testing.T) {
+	//create informer for mock resource
+	informer, _, _, _ := initInformer()
+	// // stop informer..
+	informer.resourceIndex["id-999"] = "12345"
+
+	informer.DeleteFunc = func(interface{}) { informer.resourceIndex["id-999"] = "12345" }
+	go informer.Run(make(chan struct{}))
+	time.Sleep(2010 * time.Millisecond)
+
 	// Verify the resources no longer exist in informer.resourceIndex:
-	if _, ok := informer.resourceIndex["fake-uid"]; ok {
+	if _, ok := informer.resourceIndex["id-999"]; ok {
 		t.Errorf("Expected informer.resourceIndex to be empty")
 	}
+
 }
 
 // Verify the informer's Run function.
