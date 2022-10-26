@@ -130,15 +130,13 @@ func Test_listAndResync_syncWithPrevState(t *testing.T) {
 }
 
 func Test_StoppedInformer_ValidateDeleteFunc(t *testing.T) {
-	var uid string
-
 	//create informer for mock resource
 	informer, _, _, _ := initInformer()
 
 	//mock informer state
-	informer.resourceIndex["id-999"] = "12345"
-	informer.resourceIndex["id-100"] = "54321"
+	resources := map[string]string{"id-999": "12345", "id-100": "54321"}
 
+	informer.resourceIndex = resources
 	//keep track of calls made to mock informer.DeleteFunc below
 	deleteFuncCalls := make([]string, 0)
 
@@ -146,7 +144,7 @@ func Test_StoppedInformer_ValidateDeleteFunc(t *testing.T) {
 	informer.DeleteFunc = func(obj interface{}) {
 		for key := range informer.resourceIndex {
 			obj := newUnstructured(informer.gvr.Resource, key)
-			uid = string(obj.GetUID())
+			uid := string(obj.GetUID())
 			deleteFuncCalls = append(deleteFuncCalls, uid)
 		}
 	}
@@ -163,13 +161,11 @@ func Test_StoppedInformer_ValidateDeleteFunc(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Verify that the informer.DeleteFunc was called with uid=id-999 and uid=id-100
-	valid := map[string]bool{"id-999": true, "id-100": true}
-	for i := range deleteFuncCalls {
-		if !valid[deleteFuncCalls[i]] {
-			t.Errorf("Expected uid id-999, but got %s", uid)
+	for _, uid := range deleteFuncCalls {
+		if _, ok := resources[uid]; ok {
+			t.Errorf("Expected uid id-999, but got %s", resources[uid])
 		}
 	}
-
 }
 
 // Verify the informer's Run function.
