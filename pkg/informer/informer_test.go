@@ -130,18 +130,35 @@ func Test_listAndResync_syncWithPrevState(t *testing.T) {
 }
 
 func Test_StoppedInformer_ValidateDeleteFunc(t *testing.T) {
+	var uid string
+
 	//create informer for mock resource
 	informer, _, _, _ := initInformer()
+
 	informer.resourceIndex["id-999"] = "12345"
 
-	// stop informer
-	informer.DeleteFunc = func(interface{}) { informer.resourceIndex["id-999"] = "12345" }
-	go informer.Run(make(chan struct{}))
-	time.Sleep(2010 * time.Millisecond)
+	// create DeleteFunc
+	informer.DeleteFunc = func(obj interface{}) {
+		for key := range informer.resourceIndex {
+			obj := newUnstructured(informer.gvr.Resource, key)
+			uid = string(obj.GetUID())
+		}
+	}
 
-	// Verify the resources no longer exist in informer.resourceIndex:
-	if _, ok := informer.resourceIndex["id-999"]; ok {
-		t.Errorf("Expected informer.resourceIndex to be empty")
+	// create stopper
+	stopper := make(chan struct{})
+	go informer.Run(stopper)
+	time.Sleep(10 * time.Millisecond)
+
+	//exist informer to trigger DeleteFunc
+	close(stopper)
+
+	//allow test to process
+	time.Sleep(10 * time.Millisecond)
+
+	// Verify that the informer.DeleteFunc was called with obj containing uid=id-999
+	if uid != "id-999" {
+		t.Errorf("Expected uid id-999, but got %s", uid)
 	}
 
 }
