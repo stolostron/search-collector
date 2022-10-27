@@ -158,7 +158,6 @@ func main() {
 				// Now, loop through the new list, which after the above deletions, contains only stuff that needs to
 				// have a new informer created for it.
 				for gvr := range gvrList {
-
 					glog.V(2).Infof("Found new resource %s, creating informer\n", gvr.String())
 					// Using our custom informer.
 					informer, _ := inform.InformerForResource(gvr)
@@ -170,7 +169,6 @@ func main() {
 
 					stopper := make(chan struct{})
 					stoppers[gvr] = stopper
-
 					go informer.Run(stopper)
 					informer.WaitUntilInitialized(time.Duration(10) * time.Second) // Times out after 10 seconds.
 				}

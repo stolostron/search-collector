@@ -126,7 +126,6 @@ func Test_listAndResync_syncWithPrevState(t *testing.T) {
 	if *deleteFuncCount != 1 {
 		t.Errorf("Expected informer.DeleteFunc to be called 1 time, but got %d.", *deleteFuncCount)
 	}
-
 }
 
 func Test_StoppedInformer_ValidateDeleteFunc(t *testing.T) {
