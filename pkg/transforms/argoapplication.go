@@ -5,12 +5,14 @@ package transforms
 import (
 	"strings"
 
+	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ArgoApplicationResource ...
 type ArgoApplicationResource struct {
-	node Node
+	node      Node
+	resources []ResourceStatus
 }
 
 type ArgoApplication struct {
@@ -39,11 +41,31 @@ type ArgoApplicationDestination struct {
 }
 
 type ArgoApplicationStatus struct {
-	Health ArgoApplicationHealth `json:"health" protobuf:"bytes,1,opt,name=health"`
+	Resources  []ResourceStatus       `json:"resources,omitempty" protobuf:"bytes,1,opt,name=resources"`
+	Conditions []ApplicationCondition `json:"conditions,omitempty" protobuf:"bytes,5,opt,name=conditions"`
+	Health     HealthStatus           `json:"health" protobuf:"bytes,1,opt,name=health"`
+	Sync       SyncStatus             `json:"sync,omitempty" protobuf:"bytes,2,opt,name=sync"`
 }
 
-type ArgoApplicationHealth struct {
+type ResourceStatus struct {
+	Group     string `json:"group,omitempty" protobuf:"bytes,1,opt,name=group"`
+	Version   string `json:"version,omitempty" protobuf:"bytes,2,opt,name=version"`
+	Kind      string `json:"kind,omitempty" protobuf:"bytes,3,opt,name=kind"`
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,4,opt,name=namespace"`
+	Name      string `json:"name,omitempty" protobuf:"bytes,5,opt,name=name"`
+}
+
+type ApplicationCondition struct {
+	Type    string `json:"type" protobuf:"bytes,1,opt,name=type"`
+	Message string `json:"message" protobuf:"bytes,2,opt,name=message"`
+}
+
+type HealthStatus struct {
 	Status string `json:"status" protobuf:"bytes,1,opt,name=status"`
+}
+
+type SyncStatus struct {
+	Status string `json:"status" protobuf:"bytes,1,opt,name=status,casttype=SyncStatusCode"`
 }
 
 // ArgoApplicationResourceBuilder ...
@@ -53,14 +75,17 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 
 	// Extract the properties specific to this type
 
-	// ApplicationSet
+	// add its ApplicationSet owner
 	applicationSet := ""
+
 	for _, ref := range a.ObjectMeta.OwnerReferences {
 		if strings.Index(ref.APIVersion, "argoproj.io/") == 0 && ref.Kind == "ApplicationSet" {
 			applicationSet = ref.Name
+
 			break
 		}
 	}
+
 	node.Properties["applicationSet"] = applicationSet
 
 	// Destination properties
@@ -73,14 +98,43 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 	node.Properties["chart"] = a.Spec.Source.Chart
 	node.Properties["repoURL"] = a.Spec.Source.RepoURL
 	node.Properties["targetRevision"] = a.Spec.Source.TargetRevision
+
 	if a.Spec.Source.TargetRevision == "" {
 		node.Properties["targetRevision"] = "HEAD"
 	}
 
 	// Status properties
-	node.Properties["status"] = a.Status.Health.Status
+	node.Properties["healthStatus"] = a.Status.Health.Status
+	node.Properties["syncStatus"] = a.Status.Sync.Status
 
-	return &ArgoApplicationResource{node: node}
+	// conditions properties, each condition type is a property
+	for _, condition := range a.Status.Conditions {
+		truncatedMessage := TruncateText(condition.Message, 512)
+		if truncatedMessage > "" {
+			node.Properties["_internalCondition"+condition.Type] = truncatedMessage
+		}
+	}
+
+	// get resource list and it will be passed to edge
+	return &ArgoApplicationResource{node: node, resources: a.Status.Resources}
+}
+
+func TruncateText(text string, width int) string {
+	if width < 0 {
+		glog.Warningf("text truncation width is less than zero, width: %v", width)
+
+		return ""
+	}
+
+	res := []rune(text)
+
+	if len(res) > width {
+		res = res[:width]
+
+		return string(res) + "..."
+	}
+
+	return string(res)
 }
 
 // BuildNode construct the node for the Application Resources
@@ -92,5 +146,33 @@ func (a ArgoApplicationResource) BuildNode() Node {
 // See documentation at pkg/transforms/README.md
 func (a ArgoApplicationResource) BuildEdges(ns NodeStore) []Edge {
 	ret := []Edge{}
+
+	sourceUID := a.node.UID
+	sourceKind := a.node.Properties["kind"].(string)
+
+	if len(a.resources) > 0 {
+		for _, resource := range a.resources {
+			namespace := "_NONE"
+			if resource.Namespace > "" {
+				namespace = resource.Namespace
+			}
+
+			if destNode, ok := ns.ByKindNamespaceName[resource.Kind][namespace][resource.Name]; ok {
+				if sourceUID != destNode.UID { // avoid connecting node to itself
+					ret = append(ret, Edge{
+						EdgeType:   "subscribesTo",
+						SourceUID:  sourceUID,
+						SourceKind: sourceKind,
+						DestUID:    destNode.UID,
+						DestKind:   resource.Kind,
+					})
+				} else {
+					glog.Infof("For %s, subscribesTo edge not created as %s named %s not found",
+						resource.Kind+"/"+namespace+"/"+resource.Name, resource.Kind, namespace+"/"+resource.Name)
+				}
+			}
+		}
+	}
+
 	return ret
 }
