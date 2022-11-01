@@ -1,18 +1,23 @@
 [comment]: # ( Copyright Contributors to the Open Cluster Management project )
 
-# WORK IN PROGRESS
-
-We are in the process of enabling this repo for community contribution. See wiki [here](https://open-cluster-management.io/concepts/architecture/).
-
 # Open cluster management - Search collector
 
-The `search-collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/stolostron/search/blob/main/feature-spec/search.md) has an overview of all the search components.
+The `search-collector` is part of the search component in Open Cluster Management. The [search feature spec](https://github.com/stolostron/search-v2-operator/wiki/Feature-Spec) has an overview of all the search components.
 
-This process targets any kubernetes cluster to collect data about its configuration resources and computes relationships between those resources. Then this data is sent to the [search-aggregator](https://github.com/stolostron/search-aggregator), where it gets indexed in graph format.
+This process targets any kubernetes cluster to collect data about its configuration resources. Then this data is sent to the [search-indexer](https://github.com/stolostron/search-indexer), where it is inserted into a relational database.
 
 ## Data model
 
-See the [Data model documentation](https://github.com/stolostron/search-collector/blob/pkg/transforms/README.md) for more information.
+See the [Data model documentation](https://github.com/stolostron/search-collector/blob/main/pkg/transforms/README.md) for more information.
+
+## Features
+
+Search-collector provides a similar solution as Kubernetes controllers and consists of four main components.
+ 
+* **Informer**: queries for resources and watches for updates
+* **Transformer**: extracts data from resources to include in the search index and discovers relationships to other resources
+* **Sender**: syncs state and sends changes to the search-indexer
+* **Reconciler**: merges changes into search-collector internal state
 
 ## Usage and configuration
 
@@ -58,54 +63,7 @@ RUNTIME_MODE       | no       | production               | Running mode (develop
 
 ### Dev Preview (Search Configurable Collection)
 
-Control the Kubernetes resources that get collected from the cluster by referencing an allow and deny list within a configmap with the name search-collector-config. Create the configmap following the format in the sample template below:
-
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
- name: search-collector-config
- namespace: <namespace where search-collector add-on is deployed>
-data:
- AllowedResources: |-
-   - apiGroups:
-       - "*"
-     resources:
-       - services
-       - pods
-   - apiGroups:
-       - admission.k8s.io
-       - authentication.k8s.io
-     resources:
-       - "*"
- DeniedResources: |-
-   - apiGroups:
-       - "*"
-     resources:
-       - secrets
-   - apiGroups:
-       - admission.k8s.io
-     resources:
-       - policies
-       - iampolicies
-       - certificatepolicies
-```
-Steps to create search-collector-config
-
-1. The **name** of the ConfigMap must be `search-collector-config`.
-
-2. **namespace** is the Namespace where the Search-Collector add-on is deployed.
-
-3. Under **data** define `AllowedResources` and `DeniedResources` as key value pairs wrapped in a string block with `|-` to preserve linebreaks.
-
-    - The asterisk `"*"` represents <i>all</i>.
-
-    - For resources that don't have apigroups, you should replace the `apiGroups` value with an empty string `""`.  You can check which resources don't have apigroups with `oc api-resources -o wide`
-    - If the same resources are featured in both lists, they will be excluded.
-4. Once you save your changes you can apply your changes by running `oc apply -f configMapFile.yaml`
-
-5. Restart the Search-Collector pod.
+Configurable collection is now fully supported. This topic has moved [here](https://github.com/stolostron/search-v2-operator/wiki/Search-Configurable-Collection).
 
 ### Contribution
 

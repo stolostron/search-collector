@@ -101,6 +101,7 @@ func isResourceMatchingList(resourceList []Resource, group, kind string) (string
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
 func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
+	ctx := context.TODO()
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}
 
@@ -117,7 +118,7 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 	// locate the search-collector-config ConfigMap
 	cm, err2 := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
-		Get(context.TODO(), "search-collector-config", metav1.GetOptions{})
+		Get(ctx, "search-collector-config", metav1.GetOptions{})
 	if err2 != nil {
 		glog.Info("Didn't find ConfigMap with name search-collector-config. Will collect all resources. ", err2)
 	}

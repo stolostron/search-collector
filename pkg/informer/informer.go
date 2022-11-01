@@ -50,6 +50,12 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 		select {
 		case <-stopper:
 			glog.Info("Informer stopped. ", inform.gvr.String())
+			for key := range inform.resourceIndex {
+				glog.V(5).Infof("Stopping informer %s and removing resource with UID: %s", inform.gvr.Resource, key)
+				obj := newUnstructured(inform.gvr.Resource, key)
+				inform.DeleteFunc(obj)
+			}
+			glog.V(5).Info("Informer stopped. ", inform.gvr.String())
 			return
 		default:
 			if inform.retries > 0 {
