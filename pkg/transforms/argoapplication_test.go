@@ -9,7 +9,9 @@ import (
 func TestTransformArgoApplication(t *testing.T) {
 	var a ArgoApplication
 	UnmarshalFile("argoapplication.json", &a, t)
-	node := ArgoApplicationResourceBuilder(&a).BuildNode()
+	argoApplicationResource := ArgoApplicationResourceBuilder(&a)
+
+	node := argoApplicationResource.BuildNode()
 
 	// Test only the fields that exist in application - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Application", t)
@@ -21,5 +23,34 @@ func TestTransformArgoApplication(t *testing.T) {
 	AssertEqual("chart", node.Properties["chart"], "hello-chart", t)
 	AssertEqual("repoURL", node.Properties["repoURL"], "https://github.com/fxiang1/app-samples", t)
 	AssertEqual("targetRevision", node.Properties["targetRevision"], "HEAD", t)
-	AssertEqual("status", node.Properties["status"], "Healthy", t)
+	AssertEqual("healthStatus", node.Properties["healthStatus"], "Healthy", t)
+	AssertEqual("syncStatus", node.Properties["syncStatus"], "Synced", t)
+
+	// Test argocd application status conditions count
+	// message in SyncError is truncated to 512 + 3("...")
+	// message in InvalidSpecError is not truncated.
+	AssertEqual("syncStatus", len(node.Properties["_internalConditionSyncError"].(string)), 515, t)
+
+	AssertEqual("syncStatus", len(node.Properties["_internalConditionInvalidSpecError"].(string)), 38, t)
+
+	// Build a fake NodeStore with nodes needed to generate edges.
+	nodes := []Node{{
+		UID:        "uuid-123-namespace",
+		Properties: map[string]interface{}{"kind": "Namespace", "namespace": "_NONE", "name": "bgd"},
+	}, {
+		UID:        "uuid-123-service",
+		Properties: map[string]interface{}{"kind": "Service", "namespace": "bgd", "name": "bgd"},
+	}, {
+		UID:        "uuid-123-deployment",
+		Properties: map[string]interface{}{"kind": "Deployment", "namespace": "bgd", "name": "bgd"},
+	}, {
+		UID:        "uuid-123-route",
+		Properties: map[string]interface{}{"kind": "Route", "namespace": "bgd", "name": "bgd"},
+	}}
+
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	edges := argoApplicationResource.BuildEdges(nodeStore)
+
+	AssertEqual("edges", len(edges), 4, t)
 }
