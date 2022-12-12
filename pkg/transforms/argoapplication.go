@@ -88,6 +88,13 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 
 	node.Properties["applicationSet"] = applicationSet
 
+	// add its hosting applicationSet namespaced name, if the argocd app is propogated by ACM argocd pull integration controller
+	if a.Annotations != nil {
+		if a.Annotations["apps.open-cluster-management.io/hosting-applicationset"] != "" {
+			node.Properties["_hostingResource"] = "ApplicationSet/" + a.Annotations["apps.open-cluster-management.io/hosting-applicationset"]
+		}
+	}
+
 	// Destination properties
 	node.Properties["destinationName"] = a.Spec.Destination.Name
 	node.Properties["destinationNamespace"] = a.Spec.Destination.Namespace
