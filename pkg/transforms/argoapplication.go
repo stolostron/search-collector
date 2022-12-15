@@ -41,10 +41,11 @@ type ArgoApplicationDestination struct {
 }
 
 type ArgoApplicationStatus struct {
-	Resources  []ResourceStatus       `json:"resources,omitempty" protobuf:"bytes,1,opt,name=resources"`
-	Conditions []ApplicationCondition `json:"conditions,omitempty" protobuf:"bytes,5,opt,name=conditions"`
-	Health     HealthStatus           `json:"health" protobuf:"bytes,1,opt,name=health"`
-	Sync       SyncStatus             `json:"sync,omitempty" protobuf:"bytes,2,opt,name=sync"`
+	Resources      []ResourceStatus       `json:"resources,omitempty" protobuf:"bytes,1,opt,name=resources"`
+	Conditions     []ApplicationCondition `json:"conditions,omitempty" protobuf:"bytes,5,opt,name=conditions"`
+	OperationState *OperationState        `json:"operationState,omitempty" protobuf:"bytes,7,opt,name=operationState"`
+	Health         HealthStatus           `json:"health" protobuf:"bytes,1,opt,name=health"`
+	Sync           SyncStatus             `json:"sync,omitempty" protobuf:"bytes,2,opt,name=sync"`
 }
 
 type ResourceStatus struct {
@@ -58,6 +59,12 @@ type ResourceStatus struct {
 type ApplicationCondition struct {
 	Type    string `json:"type" protobuf:"bytes,1,opt,name=type"`
 	Message string `json:"message" protobuf:"bytes,2,opt,name=message"`
+}
+
+// OperationState contains information about state of a running operation
+type OperationState struct {
+	// Message holds any pertinent messages when attempting to perform operation (typically errors).
+	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
 }
 
 type HealthStatus struct {
@@ -118,7 +125,17 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 	for _, condition := range a.Status.Conditions {
 		truncatedMessage := TruncateText(condition.Message, 512)
 		if truncatedMessage > "" {
-			node.Properties["_internalCondition"+condition.Type] = truncatedMessage
+			node.Properties["_condition"+condition.Type] = truncatedMessage
+		}
+	}
+
+	// if there is operationState.message, append it to the error condition property
+	if a.Status.Health.Status != "Healthy" || a.Status.Sync.Status != "Synced" {
+		if a.Status.OperationState != nil && a.Status.OperationState.Message != "" {
+			truncatedMessage := TruncateText(a.Status.OperationState.Message, 512)
+			if truncatedMessage > "" {
+				node.Properties["_condition"+"OperationError"] = truncatedMessage
+			}
 		}
 	}
 

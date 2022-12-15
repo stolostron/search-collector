@@ -24,15 +24,17 @@ func TestTransformArgoApplication(t *testing.T) {
 	AssertEqual("chart", node.Properties["chart"], "hello-chart", t)
 	AssertEqual("repoURL", node.Properties["repoURL"], "https://github.com/fxiang1/app-samples", t)
 	AssertEqual("targetRevision", node.Properties["targetRevision"], "HEAD", t)
-	AssertEqual("healthStatus", node.Properties["healthStatus"], "Healthy", t)
-	AssertEqual("syncStatus", node.Properties["syncStatus"], "Synced", t)
+	AssertEqual("healthStatus", node.Properties["healthStatus"], "Missing", t)
+	AssertEqual("syncStatus", node.Properties["syncStatus"], "OutOfSync", t)
 
 	// Test argocd application status conditions count
 	// message in SyncError is truncated to 512 + 3("...")
 	// message in InvalidSpecError is not truncated.
-	AssertEqual("syncStatus", len(node.Properties["_internalConditionSyncError"].(string)), 515, t)
+	AssertEqual("ConditionSyncError", len(node.Properties["_conditionSyncError"].(string)), 515, t)
 
-	AssertEqual("syncStatus", len(node.Properties["_internalConditionInvalidSpecError"].(string)), 38, t)
+	AssertEqual("ConditionInvalidSpecError", len(node.Properties["_conditionInvalidSpecError"].(string)), 38, t)
+
+	AssertEqual("ConditionOperationError", len(node.Properties["_conditionOperationError"].(string)), 515, t)
 
 	// Build a fake NodeStore with nodes needed to generate edges.
 	nodes := []Node{{
