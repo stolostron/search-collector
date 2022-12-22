@@ -18,6 +18,7 @@ import (
 	"github.com/golang/glog"
 	ocpapp "github.com/openshift/api/apps/v1"
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
+	klusterletaddon "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	appDeployable "github.com/stolostron/multicloud-operators-deployable/pkg/apis/apps/v1"
 	rule "github.com/stolostron/multicloud-operators-placementrule/pkg/apis/apps/v1"
 	apps "k8s.io/api/apps/v1"
@@ -279,6 +280,15 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = AppHelmCRResourceBuilder(&typedResource)
+
+		case [2]string{"KlusterletAddonConfig", "agent.open-cluster-management.io"}:
+			typedResource := klusterletaddon.KlusterletAddonConfig{}
+			err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
+			if err != nil {
+				panic(err) // Will be caught by handleRoutineExit
+			}
+			trans = KlusterletAddonConfigResourceBuilder(&typedResource)
 
 		case [2]string{"Job", "batch"}:
 			typedResource := batch.Job{}
