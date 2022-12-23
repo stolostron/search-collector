@@ -89,8 +89,8 @@
         }
     ],
     "operationState": {
+        "phase": "Failed",
         "message": "one or more objects failed to apply, reason: deployments.apps is forbidden: User 'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller' cannot create resource 'deployments' in API group 'apps' in the namespace 'helm-nginx',serviceaccounts is forbidden: User 'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller' cannot create resource 'serviceaccounts' in API group '' in the namespace 'helm-nginx',services is forbidden: User 'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller' cannot create resource 'services' in API group '' in the namespace 'helm-nginx'. Retrying attempt #2 at 2:35AM."
     }
-
   }
 }

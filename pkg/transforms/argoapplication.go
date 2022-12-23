@@ -63,6 +63,8 @@ type ApplicationCondition struct {
 
 // OperationState contains information about state of a running operation
 type OperationState struct {
+	// Phase is the current phase of the operation
+	Phase string `json:"phase" protobuf:"bytes,2,opt,name=phase"`
 	// Message holds any pertinent messages when attempting to perform operation (typically errors).
 	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
 }
@@ -131,7 +133,7 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 
 	// if there is operationState.message, append it to the error condition property
 	if a.Status.Health.Status != "Healthy" || a.Status.Sync.Status != "Synced" {
-		if a.Status.OperationState != nil && a.Status.OperationState.Message != "" {
+		if a.Status.OperationState != nil && a.Status.OperationState.Message != "" && a.Status.OperationState.Phase != "Succeeded" {
 			truncatedMessage := TruncateText(a.Status.OperationState.Message, 512)
 			if truncatedMessage > "" {
 				node.Properties["_condition"+"OperationError"] = truncatedMessage
