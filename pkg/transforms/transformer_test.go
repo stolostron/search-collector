@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	app "sigs.k8s.io/application/api/v1beta1"
 )
@@ -40,6 +41,15 @@ func TestTransformRoutine(t *testing.T) {
 	}
 	unstructuredNode := GenericResourceBuilder(&unstructuredInput).BuildNode()
 	unstructuredNode.ResourceString = "unstructured"
+
+	var addonTyped agentv1.KlusterletAddonConfig
+	var addonInput unstructured.Unstructured
+	UnmarshalFile("klusterletaddonconfig.json", &addonInput, t)
+	UnmarshalFile("klusterletaddonconfig.json", &addonTyped, t)
+
+	addonNode := KlusterletAddonConfigResourceBuilder(&addonTyped).BuildNode()
+	addonNode.ResourceString = "klusterletaddonconfigs"
+
 	var tests = []struct {
 		name     string
 		in       *Event
@@ -83,6 +93,20 @@ func TestTransformRoutine(t *testing.T) {
 			},
 			NodeEvent{
 				Node:      unstructuredNode,
+				Time:      ts,
+				Operation: Create,
+			},
+		},
+		{
+			"KlusterletAddonConfig type create",
+			&Event{
+				Time:           ts,
+				Operation:      Create,
+				Resource:       &addonInput,
+				ResourceString: "klusterletaddonconfigs",
+			},
+			NodeEvent{
+				Node:      addonNode,
 				Time:      ts,
 				Operation: Create,
 			},

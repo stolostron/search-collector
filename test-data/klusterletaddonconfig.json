@@ -1,0 +1,44 @@
+{
+    "apiVersion": "agent.open-cluster-management.io/v1",
+    "kind": "KlusterletAddonConfig",
+    "metadata": {
+        "annotations": {
+            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"agent.open-cluster-management.io/v1\",\"kind\":\"KlusterletAddonConfig\",\"metadata\":{\"annotations\":{},\"name\":\"sample-kac\",\"namespace\":\"sample-kac\"},\"spec\":{\"applicationManager\":{\"enabled\":true},\"certPolicyController\":{\"enabled\":true},\"iamPolicyController\":{\"enabled\":true},\"policyController\":{\"enabled\":true},\"searchCollector\":{\"enabled\":true}}}\n"
+        },
+        "creationTimestamp": "2022-12-15T01:59:10Z",
+        "generation": 1,
+        "name": "sample-kac",
+        "namespace": "sample-kac",
+        "resourceVersion": "3845757",
+        "uid": "784ba1c3-a556-4e91-aff6-87de6913d4d0"
+    },
+    "spec": {
+        "applicationManager": {
+            "enabled": true
+        },
+        "certPolicyController": {
+            "enabled": true
+        },
+        "iamPolicyController": {
+            "enabled": true
+        },
+        "policyController": {
+            "enabled": true
+        },
+        "searchCollector": {
+            "enabled": false
+        }
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2022-12-15T01:59:10Z",
+                "message": "The cluster is not provisioned by ACM.",
+                "reason": "OCPGlobalProxyNotDetected",
+                "status": "False",
+                "type": "OCPGlobalProxyDetected"
+            }
+        ],
+        "ocpGlobalProxy": {}
+    }
+}
