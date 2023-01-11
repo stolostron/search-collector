@@ -26,6 +26,6 @@ func TestTransformKlusterletAddonConfig(t *testing.T) {
 	AssertEqual("name", node.Properties["name"], "sample-kac", t)
 	AssertEqual("namespace", node.Properties["namespace"], "sample-kac", t)
 	AssertEqual("addon", len(addons), len(enabledAddons), t)
-	AssertEqual("searchAddon", addons["search-collector"], false, t)
-	AssertEqual("policyControllerAddon", addons["policy-controller"], true, t)
+	AssertEqual("searchAddon", addons["search-collector"], "false", t)
+	AssertEqual("policyControllerAddon", addons["policy-controller"], "true", t)
 }
