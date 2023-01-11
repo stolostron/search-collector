@@ -3,6 +3,8 @@
 package transforms
 
 import (
+	"strconv"
+
 	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 )
 
@@ -18,11 +20,11 @@ func KlusterletAddonConfigResourceBuilder(p *agentv1.KlusterletAddonConfig) *Klu
 
 	// Extract the properties specific to this type
 	enabledAddons := map[string]interface{}{}
-	enabledAddons["search-collector"] = p.Spec.SearchCollectorConfig.Enabled
-	enabledAddons["policy-controller"] = p.Spec.PolicyController.Enabled
-	enabledAddons["cert-policy-controller"] = p.Spec.CertPolicyControllerConfig.Enabled
-	enabledAddons["application-manager"] = p.Spec.ApplicationManagerConfig.Enabled
-	enabledAddons["iam-policy-controller"] = p.Spec.IAMPolicyControllerConfig.Enabled
+	enabledAddons["search-collector"] = strconv.FormatBool(p.Spec.SearchCollectorConfig.Enabled)
+	enabledAddons["policy-controller"] = strconv.FormatBool(p.Spec.PolicyController.Enabled)
+	enabledAddons["cert-policy-controller"] = strconv.FormatBool(p.Spec.CertPolicyControllerConfig.Enabled)
+	enabledAddons["application-manager"] = strconv.FormatBool(p.Spec.ApplicationManagerConfig.Enabled)
+	enabledAddons["iam-policy-controller"] = strconv.FormatBool(p.Spec.IAMPolicyControllerConfig.Enabled)
 	node.Properties["addon"] = enabledAddons // maps to the enabled addons on the cluster
 
 	return &KlusterletAddonConfigResource{node: node}
