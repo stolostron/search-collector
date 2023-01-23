@@ -12,7 +12,6 @@ Copyright (c) 2020 Red Hat, Inc.
 package reconciler
 
 import (
-	"reflect"
 	"sync"
 
 	"github.com/golang/glog"
@@ -334,11 +333,18 @@ func (r *Reconciler) reconcileNode() {
 			// the Metadata is only used to compute the edges and not sent with the node data.
 			// If the node is an application or subscription, it might have changes to its metadata we
 			// need to account for so don't skip updates on those
-			if reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) &&
-				ne.Node.Properties["kind"] != "Application" &&
-				ne.Node.Properties["kind"] != "Subscription" {
-				return
-			}
+
+			//For whatchanged we want all the updates , we need to be smart on picking up
+			//updates , for now I have removed the following 5 lines.
+			//The removal will avoid skipping of Nodes, when the Proerties are Equal
+
+			//if reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) &&
+			//	ne.Node.Properties["kind"] != "Application" &&
+			//	ne.Node.Properties["kind"] != "Subscription" {
+			//	return
+			//}
+
+			// End changes for whatchanged
 		}
 		// Each configmap for a helm release triggers a releases tranformation . If there are N configmaps
 		// we are processing the same helm release N times. Since the order which the configmap gets this point

@@ -58,6 +58,7 @@ type Node struct {
 	ResourceString string                 `json:"resourceString"`
 	Properties     map[string]interface{} `json:"properties"`
 	Metadata       map[string]string
+	Time           int64
 }
 
 func (n Node) hasMetadata(md string) bool {
@@ -95,6 +96,7 @@ func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEven
 	ne.ResourceString = resourceString
 	// Search v-2 , types is expected part of properties
 	ne.Node.Properties["kind_plural"] = resourceString
+	ne.Node.Time = ne.Time
 	return ne
 }
 
