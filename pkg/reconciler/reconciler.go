@@ -119,7 +119,7 @@ func (r *Reconciler) Diff() Diff {
 		} else if ne.Operation == tr.Update {
 			ret.UpdateNodes = append(ret.UpdateNodes, ne.Node)
 		} else if ne.Operation == tr.Delete {
-			ret.DeleteNodes = append(ret.DeleteNodes, tr.Deletion{UID: ne.UID})
+			ret.DeleteNodes = append(ret.DeleteNodes, tr.Deletion{UID: ne.UID, Time: ne.Node.Time})
 		}
 	}
 

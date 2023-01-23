@@ -82,7 +82,8 @@ type NodeEvent struct {
 }
 
 type Deletion struct {
-	UID string `json:"uid,omitempty"`
+	UID  string `json:"uid,omitempty"`
+	Time int64
 }
 
 // make new constructor here.
