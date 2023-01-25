@@ -120,7 +120,8 @@ func main() {
 			Time:      time.Now().Unix(),
 			Operation: tr.Delete,
 			Node: tr.Node{
-				UID: strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
+				UID:  strings.Join([]string{config.Cfg.ClusterName, string(resource.GetUID())}, "/"),
+				Time: time.Now().Unix(),
 			},
 		}
 		reconciler.Input <- ne
