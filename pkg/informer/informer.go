@@ -106,7 +106,7 @@ func (inform *GenericInformer) listAndResync() error {
 	newResourceIndex := make(map[string]string)
 
 	// We need this limit to avoid a memory spike. Smaller chunks allows us to release memory faster, however
-	// it generates more requests to he kube api server.
+	// it generates more requests to the kube api server.
 	opts := metav1.ListOptions{Limit: 250}
 	for {
 		resources, listError := inform.client.Resource(inform.gvr).List(context.TODO(), opts)
