@@ -76,6 +76,9 @@ func main() {
 	// Start a routine to keep our informers up to date.
 	go informer.RunInformers(informersInitialized, upsertTransformer, reconciler)
 
+	// Wait here until informers have collected the full state of the cluster.
+	// The initial payload must have the complete state to avoid unecessary deletion
+	// and recreate of existing rows in the database during the resync.
 	glog.Info("Waiting for informers to load initial state.")
 	<-informersInitialized
 
