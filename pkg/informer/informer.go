@@ -105,7 +105,8 @@ func (inform *GenericInformer) listAndResync() error {
 	// Keep track of new resources added to consolidate against the previous state.
 	newResourceIndex := make(map[string]string)
 
-	// List resources.
+	// We need this limit to avoid a memory spike. Smaller chunks allows us to release memory faster, however
+	// it generates more requests to the kube api server.
 	opts := metav1.ListOptions{Limit: 250}
 	for {
 		resources, listError := inform.client.Resource(inform.gvr).List(context.TODO(), opts)
@@ -141,7 +142,7 @@ func (inform *GenericInformer) listAndResync() error {
 			glog.V(3).Infof("Resource does not exist. Deleting resource: %s with UID: %s", inform.gvr.Resource, key)
 			obj := newUnstructured(inform.gvr.Resource, key)
 			inform.DeleteFunc(obj)
-			delete(inform.resourceIndex, key) // Thread safe?
+			delete(inform.resourceIndex, key)
 		}
 	}
 	return nil
