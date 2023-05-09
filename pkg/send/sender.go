@@ -190,7 +190,7 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it
 // doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
-	glog.Infof("Sending Resources { request: %08d, add: %d, update: %d, delete: %d edge add: %d edge delete: %d }",
+	glog.Infof("Sending Resources { request: %6d, add: %2d, update: %2d, delete: %2d, edge add: %2d, edge delete: %2d }",
 		payload.RequestId, len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources),
 		len(payload.AddEdges), len(payload.DeleteEdges))
 
@@ -296,7 +296,7 @@ func (s *Sender) Sync() error {
 func (s *Sender) StartSendLoop() {
 
 	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
-	backoffFactor := float64(0)
+	backoffFactor := float64(1) // Note: must be 1. Using 0 will send the next payload immediately.
 
 	for {
 		glog.V(3).Info("Beginning Send Cycle")
@@ -311,11 +311,11 @@ func (s *Sender) StartSendLoop() {
 			}
 		} else {
 			glog.V(2).Info("Send Cycle Completed Successfully")
-			backoffFactor = float64(0) // Reset backoff to 0 because we had a sucessful send.
+			backoffFactor = float64(1) // Reset backoff to 1 because we had a sucessful send.
 		}
 		nextSleepInterval := config.Cfg.ReportRateMS * int(math.Exp2(backoffFactor))
 		timeToSleep := time.Duration(min(nextSleepInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
-		if backoffFactor > 0 {
+		if backoffFactor > 1 {
 			glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
 		}
 		// Sleep either for the current backed off interval, or the maximum time defined in the config
