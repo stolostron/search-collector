@@ -190,7 +190,7 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it
 // doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
-	glog.Infof("Sending Resources { request: %d, add: %d, update: %d, delete: %d edge add: %d edge delete: %d }",
+	glog.Infof("Sending Resources { request: %08d, add: %d, update: %d, delete: %d edge add: %d edge delete: %d }",
 		payload.RequestId, len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources),
 		len(payload.AddEdges), len(payload.DeleteEdges))
 
