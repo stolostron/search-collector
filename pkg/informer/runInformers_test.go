@@ -4,7 +4,6 @@ package informer
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,14 +40,13 @@ func fakeDiscoveryClient() (*httptest.Server, discovery.DiscoveryClient) {
 		}
 		output, err := json.Marshal(obj)
 		if err != nil {
-			// t.Fatalf("unexpected encoding error: %v", err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, writeErr := w.Write(output)
 		if writeErr != nil {
-			fmt.Println("error", err)
+			return
 		}
 	}))
 	client := discovery.NewDiscoveryClientForConfigOrDie(&restclient.Config{Host: server.URL})
@@ -56,20 +54,46 @@ func fakeDiscoveryClient() (*httptest.Server, discovery.DiscoveryClient) {
 	return server, *client
 }
 
+var mockAddFn = func(s string) func(interface{}) {
+	return func(o interface{}) {}
+}
+var mockUpdateFn = func(s string) func(interface{}, interface{}) {
+	return func(old interface{}, new interface{}) {}
+}
+
+var mockDeleteHandler = func(obj interface{}) {}
+
 func Test_syncInformers(t *testing.T) {
 
 	mockStoppers := make(map[schema.GroupVersionResource]chan struct{})
-	mockAddFn := func(s string) func(interface{}) {
-		return func(o interface{}) {}
-	}
-	mockUpdateFn := func(s string) func(interface{}, interface{}) {
-		return func(old interface{}, new interface{}) {}
-	}
-	mockDeleteHandler := func(obj interface{}) {}
+
 	fakeServer, fakeClient := fakeDiscoveryClient()
 	defer fakeServer.Close()
 
 	syncInformers(fakeClient, mockStoppers, mockAddFn, mockUpdateFn, mockDeleteHandler)
 
 	assert.Equal(t, 3, len(mockStoppers))
+
+	podInformStopper, exists := mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}]
+	assert.True(t, exists)
+	assert.NotNil(t, podInformStopper)
+}
+
+// Validate that informer is stopped when resource no longer exists.
+func Test_syncInformers_removeInformers(t *testing.T) {
+	mockStoppers := make(map[schema.GroupVersionResource]chan struct{})
+	stopper := make(chan struct{})
+	mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}] = stopper
+
+	fakeServer, fakeClient := fakeDiscoveryClient()
+	defer fakeServer.Close()
+
+	syncInformers(fakeClient, mockStoppers, mockAddFn, mockUpdateFn, mockDeleteHandler)
+
+	assert.Equal(t, 3, len(mockStoppers))
+
+	// Validate that informer is stopped when resource no longer exists.
+	informStopper, exists := mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}]
+	assert.False(t, exists)
+	assert.Nil(t, informStopper)
 }
