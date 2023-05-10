@@ -50,7 +50,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// Deny all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
-			glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
+			glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
 			return false
 		}
 	}
@@ -62,9 +62,9 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		// Check if resource is also in the allow list.
 		_, _, allowed := isResourceMatchingList(allowedList, group, kind)
 		if allowed {
-			glog.V(2).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
+			glog.V(3).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
 		} else {
-			glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].", group, kind, g, k)
+			glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].", group, kind, g, k)
 		}
 		return false
 	}
@@ -72,20 +72,20 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// If allowList not provided, interpret it as allow all resources.
 	// otherwise allow only the resources declared in allow list.
 	if len(allowedList) == 0 {
-		glog.V(2).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
+		glog.V(3).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
 		return true
 	} else {
 		g, k, allowed := isResourceMatchingList(allowedList, group, kind)
 		if allowed {
-			glog.V(2).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].", group, kind, g, k)
+			glog.V(3).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].", group, kind, g, k)
 			return true
 		}
 	}
-	glog.V(2).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
+	glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
 	return false
 }
 
-//helper funtion to get map of resource object
+// Helper function to get map of resource object
 func isResourceMatchingList(resourceList []Resource, group, kind string) (string, string, bool) {
 	for _, r := range resourceList {
 		for _, g := range r.ApiGroups {
@@ -100,7 +100,7 @@ func isResourceMatchingList(resourceList []Resource, group, kind string) (string
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
-func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
+func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
 	ctx := context.TODO()
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}
@@ -117,10 +117,10 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 	kubeClient := config.GetKubeClient(config.GetKubeConfig())
 
 	// locate the search-collector-config ConfigMap
-	cm, err2 := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
+	cm, cmErr := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
 		Get(ctx, "search-collector-config", metav1.GetOptions{})
-	if err2 != nil {
-		glog.Info("Didn't find ConfigMap with name search-collector-config. Will collect all resources. ", err2)
+	if cmErr != nil {
+		glog.Info("Collecting all resources. ConfigMap search-collector-config is not present.", cmErr)
 	}
 
 	// parse alloy/deny from config
@@ -161,7 +161,6 @@ func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.
 
 		watchList.APIResources = watchResources
 		supportedResources = append(supportedResources, &watchList)
-
 	}
 
 	// Use handy converter function to convert into GroupVersionResource objects, which we need in order to make informers
