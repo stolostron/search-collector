@@ -15,6 +15,15 @@ import (
 	restclient "k8s.io/client-go/rest"
 )
 
+var mockAddFn = func(s string) func(interface{}) {
+	return func(o interface{}) {}
+}
+var mockUpdateFn = func(s string) func(interface{}, interface{}) {
+	return func(old interface{}, new interface{}) {}
+}
+
+var mockDeleteHandler = func(obj interface{}) {}
+
 func fakeDiscoveryClient() (*httptest.Server, discovery.DiscoveryClient) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var obj interface{}
@@ -53,15 +62,6 @@ func fakeDiscoveryClient() (*httptest.Server, discovery.DiscoveryClient) {
 
 	return server, *client
 }
-
-var mockAddFn = func(s string) func(interface{}) {
-	return func(o interface{}) {}
-}
-var mockUpdateFn = func(s string) func(interface{}, interface{}) {
-	return func(old interface{}, new interface{}) {}
-}
-
-var mockDeleteHandler = func(obj interface{}) {}
 
 func Test_syncInformers(t *testing.T) {
 
