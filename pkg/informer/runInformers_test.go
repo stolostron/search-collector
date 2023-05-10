@@ -9,26 +9,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	restclient "k8s.io/client-go/rest"
 )
 
-// func fakeDiscoveryClient() *fake.FakeDiscovery {
-// 	client := fakeclientset.NewSimpleClientset()
-// 	fakeDiscovery := client.Discovery().(*fake.FakeDiscovery)
-
-// 	// fakeDiscovery.Fake.Resources = fakeclientset.
-
-// 	resources, _ := fakeDiscovery.ServerPreferredResources()
-// 	fmt.Printf("fake resources: %+v\n", resources)
-
-// 	return fakeDiscovery
-
-// }
-
-func fakeDiscoveryClient2() discovery.DiscoveryClient {
+func fakeDiscoveryClient() (*httptest.Server, discovery.DiscoveryClient) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var obj interface{}
 		switch req.URL.Path {
@@ -38,15 +26,13 @@ func fakeDiscoveryClient2() discovery.DiscoveryClient {
 					"v1",
 				},
 			}
-		case "/apis":
-			obj = &metav1.APIGroupList{
-				Groups: []metav1.APIGroup{
-					{
-						Name: "extensions",
-						Versions: []metav1.GroupVersionForDiscovery{
-							{GroupVersion: "extensions/v1beta1"},
-						},
-					},
+		case "/api/v1":
+			obj = metav1.APIResourceList{
+				GroupVersion: "v1",
+				APIResources: []metav1.APIResource{
+					{Name: "pods", Namespaced: true, Kind: "Pod", Verbs: []string{"list", "watch"}},
+					{Name: "services", Namespaced: true, Kind: "Service", Verbs: []string{"list", "watch"}},
+					{Name: "namespaces", Namespaced: false, Kind: "Namespace", Verbs: []string{"list", "watch"}},
 				},
 			}
 		default:
@@ -65,32 +51,25 @@ func fakeDiscoveryClient2() discovery.DiscoveryClient {
 			fmt.Println("error", err)
 		}
 	}))
-	defer server.Close()
 	client := discovery.NewDiscoveryClientForConfigOrDie(&restclient.Config{Host: server.URL})
 
-	resources, _ := client.ServerPreferredResources()
-	fmt.Printf("\n>>>fake resources: %+v\n", resources)
-
-	return *client //.(*discovery.DiscoveryInterface)
+	return server, *client
 }
 
 func Test_syncInformers(t *testing.T) {
 
 	mockStoppers := make(map[schema.GroupVersionResource]chan struct{})
 	mockAddFn := func(s string) func(interface{}) {
-		return func(o interface{}) {
-			t.Log("Procesing add...")
-		}
+		return func(o interface{}) {}
 	}
 	mockUpdateFn := func(s string) func(interface{}, interface{}) {
-		return func(old interface{}, new interface{}) {
-			t.Log("Procesing update...")
-		}
+		return func(old interface{}, new interface{}) {}
 	}
-	mockDeleteHandler := func(obj interface{}) {
-		t.Log("Procesing delete...")
-	}
-	fakeClient := fakeDiscoveryClient2()
+	mockDeleteHandler := func(obj interface{}) {}
+	fakeServer, fakeClient := fakeDiscoveryClient()
+	defer fakeServer.Close()
 
 	syncInformers(fakeClient, mockStoppers, mockAddFn, mockUpdateFn, mockDeleteHandler)
+
+	assert.Equal(t, 3, len(mockStoppers))
 }
