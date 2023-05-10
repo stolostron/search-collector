@@ -60,7 +60,10 @@ func fakeDiscoveryClient2() discovery.DiscoveryClient {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(output)
+		_, writeErr := w.Write(output)
+		if writeErr != nil {
+			fmt.Println("error", err)
+		}
 	}))
 	defer server.Close()
 	client := discovery.NewDiscoveryClientForConfigOrDie(&restclient.Config{Host: server.URL})
