@@ -85,7 +85,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	return false
 }
 
-// Helper funtion to get map of resource object
+// Helper function to get map of resource object
 func isResourceMatchingList(resourceList []Resource, group, kind string) (string, string, bool) {
 	for _, r := range resourceList {
 		for _, g := range r.ApiGroups {
@@ -100,7 +100,7 @@ func isResourceMatchingList(resourceList []Resource, group, kind string) (string
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
-func SupportedResources(discoveryClient *discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
+func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
 	ctx := context.TODO()
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}

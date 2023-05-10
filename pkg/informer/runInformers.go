@@ -12,6 +12,7 @@ import (
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 )
 
 // Start and manages informers for resources in the cluster.
@@ -57,32 +58,33 @@ func RunInformers(initialized chan interface{}, upsertTransformer tr.Transformer
 		reconciler.Input <- ne
 	}
 
+	// Get kubernetes client for discovering resource types
+	discoveryClient := config.GetDiscoveryClient()
+
 	// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
 	stoppers := make(map[schema.GroupVersionResource]chan struct{})
 
 	// Initialize the informers
-	syncInformers(stoppers, createInformerAddHandler, createInformerUpdateHandler, informerDeleteHandler)
+	syncInformers(*discoveryClient, stoppers, createInformerAddHandler, createInformerUpdateHandler, informerDeleteHandler)
 	// Close the initialized channel so that we can start the sender.
 	close(initialized)
 	// Continue polling to keep the informers synchronized when CRDs are added or deleted in the cluster.
 	for {
 		time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
-		syncInformers(stoppers, createInformerAddHandler, createInformerUpdateHandler, informerDeleteHandler)
+		syncInformers(*discoveryClient, stoppers, createInformerAddHandler, createInformerUpdateHandler, informerDeleteHandler)
 	}
 }
 
 // Start or stop informers to match the resources (CRDs) available in the cluster.
-func syncInformers(stoppers map[schema.GroupVersionResource]chan struct{},
+func syncInformers(client discovery.DiscoveryClient,
+	stoppers map[schema.GroupVersionResource]chan struct{},
 	createInformerAddHandler func(string) func(interface{}),
 	createInformerUpdateHandler func(string) func(interface{}, interface{}),
 	informerDeleteHandler func(obj interface{})) {
 
 	glog.V(2).Infof("Synchronizing informers. Informers running: %d", len(stoppers))
 
-	// Get kubernetes client for discovering resource types
-	discoveryClient := config.GetDiscoveryClient()
-
-	gvrList, err := SupportedResources(discoveryClient)
+	gvrList, err := SupportedResources(client)
 	if err != nil {
 		glog.Error("Failed to get complete list of supported resources: ", err)
 	}
