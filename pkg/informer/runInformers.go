@@ -19,7 +19,7 @@ import (
 func RunInformers(initialized chan interface{}, upsertTransformer tr.Transformer, reconciler *rec.Reconciler) {
 
 	// These functions return handler functions, which are then used in creation of the informers.
-	createInformerAddHandler := func(resourceName string) func(interface{}) {
+	createInformAddHandler := func(resourceName string) func(interface{}) {
 		return func(obj interface{}) {
 			resource := obj.(*unstructured.Unstructured)
 			upsert := tr.Event{
@@ -32,7 +32,7 @@ func RunInformers(initialized chan interface{}, upsertTransformer tr.Transformer
 		}
 	}
 
-	createInformerUpdateHandler := func(resourceName string) func(interface{}, interface{}) {
+	createInformUpdateHandler := func(resourceName string) func(interface{}, interface{}) {
 		return func(oldObj, newObj interface{}) {
 			resource := newObj.(*unstructured.Unstructured)
 			upsert := tr.Event{
@@ -45,7 +45,7 @@ func RunInformers(initialized chan interface{}, upsertTransformer tr.Transformer
 		}
 	}
 
-	informerDeleteHandler := func(obj interface{}) {
+	informDeleteHandler := func(obj interface{}) {
 		resource := obj.(*unstructured.Unstructured)
 		// We don't actually have anything to transform in the case of a deletion, so we manually construct the NodeEvent
 		ne := tr.NodeEvent{
@@ -65,13 +65,13 @@ func RunInformers(initialized chan interface{}, upsertTransformer tr.Transformer
 	stoppers := make(map[schema.GroupVersionResource]chan struct{})
 
 	// Initialize the informers
-	syncInformers(*discoveryClient, stoppers, createInformerAddHandler, createInformerUpdateHandler, informerDeleteHandler)
+	syncInformers(*discoveryClient, stoppers, createInformAddHandler, createInformUpdateHandler, informDeleteHandler)
 	// Close the initialized channel so that we can start the sender.
 	close(initialized)
 	// Continue polling to keep the informers synchronized when CRDs are added or deleted in the cluster.
 	for {
 		time.Sleep(time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond)
-		syncInformers(*discoveryClient, stoppers, createInformerAddHandler, createInformerUpdateHandler, informerDeleteHandler)
+		syncInformers(*discoveryClient, stoppers, createInformAddHandler, createInformUpdateHandler, informDeleteHandler)
 	}
 }
 
