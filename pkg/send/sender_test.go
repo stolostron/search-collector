@@ -129,14 +129,18 @@ func Test_minIsA(t *testing.T) {
 }
 
 func Test_sendInterval(t *testing.T) {
-
 	wait := sendInterval(1)
 	assert.GreaterOrEqual(t, wait.Milliseconds(), int64(1000))
 	assert.LessOrEqual(t, wait.Milliseconds(), int64(7000))
 }
 
 func Test_sendInterval_maxBackoff(t *testing.T) {
+	wait := sendInterval(50)
+	assert.Equal(t, int64(600000), wait.Milliseconds())
+}
 
-	wait := sendInterval(100)
-	assert.LessOrEqual(t, wait.Milliseconds(), int64(600000))
+func Test_sendInterval_minBackoff(t *testing.T) {
+	wait := sendInterval(0)
+	assert.GreaterOrEqual(t, wait.Milliseconds(), int64(0))
+	assert.LessOrEqual(t, wait.Milliseconds(), int64(5000))
 }

@@ -339,7 +339,6 @@ func sendInterval(retry int) time.Duration {
 // Generate a random jitter to randomize the backoff retry interval.
 func addJitter() int {
 	max := big.NewInt(int64(config.Cfg.RetryJitterMS))
-	fmt.Println("MAX: ", max)
 	j, err := rand.Int(rand.Reader, max)
 	if err != nil {
 		return 0
