@@ -332,7 +332,7 @@ func min(a, b int) int {
 
 // Compute the time interval to wait before next send or retry (backoff).
 func sendInterval(retry int) time.Duration {
-	nextInterval := config.Cfg.ReportRateMS*int(math.Exp2(float64(retry))) + addJitter()
+	nextInterval := int(1000*math.Exp2(float64(retry))) + addJitter()
 	return time.Duration(min(nextInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
 }
 
