@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stolostron/search-collector/pkg/transforms"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSenderWrongCount(t *testing.T) {
@@ -116,4 +117,12 @@ func TestSenderSuccessful(t *testing.T) {
 	if err != nil {
 		t.Fatal("send function reports error:", err)
 	}
+}
+
+func Test_sendInterval(t *testing.T) {
+
+	next := sendInterval(1)
+
+	assert.GreaterOrEqual(t, next.Milliseconds(), int64(5000))
+	assert.LessOrEqual(t, next.Milliseconds(), int64(15000))
 }
