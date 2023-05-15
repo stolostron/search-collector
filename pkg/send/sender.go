@@ -336,7 +336,7 @@ func sendInterval(retry int) time.Duration {
 	return time.Duration(min(nextInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
 }
 
-// Generate a random jitter to randomize the backoff retry interval.
+// Generate a random jitter to add to the backoff retry to prevent clients from retrying at the same interval.
 func addJitter() int {
 	max := big.NewInt(int64(config.Cfg.RetryJitterMS))
 	j, err := rand.Int(rand.Reader, max)
