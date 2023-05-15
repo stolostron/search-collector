@@ -180,7 +180,7 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 			time.Sleep(nextRetryWait)
 			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.reloadSender()    // reload sender variables - Aggregator URL, path and client
-			return sendError
+			continue
 		}
 		return sendError
 	}

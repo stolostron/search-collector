@@ -55,7 +55,7 @@ type Config struct {
 	KubeConfig           string       `env:"KUBECONFIG"`         // Local kubeconfig path
 	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
 	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
-	RetryJitterMS        int          `env:"RETRY_JITTER_MS"`    // Random for jitter added on error backoff
+	RetryJitterMS        int          `env:"RETRY_JITTER_MS"`    // Random jitter added to backoff wait.
 	ReportRateMS         int          `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
 	RuntimeMode          string       `env:"RUNTIME_MODE"`       // Running mode (development or production)
 }
