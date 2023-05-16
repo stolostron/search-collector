@@ -36,6 +36,7 @@ const (
 	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
 	DEFAULT_REDISCOVER_RATE_MS = 120000 // 2 min
 	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
+	DEFAULT_RETRY_JITTER_MS    = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE       = "production"
 )
 
@@ -54,6 +55,7 @@ type Config struct {
 	KubeConfig           string       `env:"KUBECONFIG"`         // Local kubeconfig path
 	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
 	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
+	RetryJitterMS        int          `env:"RETRY_JITTER_MS"`    // Random jitter added to backoff wait.
 	ReportRateMS         int          `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
 	RuntimeMode          string       `env:"RUNTIME_MODE"`       // Running mode (development or production)
 }
@@ -103,6 +105,7 @@ func InitConfig() {
 	setDefaultInt(&Cfg.MaxBackoffMS, "MAX_BACKOFF_MS", DEFAULT_MAX_BACKOFF_MS)
 	setDefaultInt(&Cfg.RediscoverRateMS, "REDISCOVER_RATE_MS", DEFAULT_REDISCOVER_RATE_MS)
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
+	setDefaultInt(&Cfg.RetryJitterMS, "RETRY_JITTER_MS", DEFAULT_RETRY_JITTER_MS)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) {
