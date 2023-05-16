@@ -200,7 +200,8 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	}
 	payloadBuffer := bytes.NewBuffer(payloadBytes)
 	resp, err := s.httpClient.Post(s.aggregatorURL+s.aggregatorSyncPath, "application/json", payloadBuffer)
-	if resp != nil {
+	if resp != nil && resp.Body != nil {
+		// #nosec G307
 		defer resp.Body.Close()
 	}
 	if err != nil {
