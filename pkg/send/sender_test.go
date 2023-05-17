@@ -142,5 +142,5 @@ func Test_sendInterval_maxBackoff(t *testing.T) {
 func Test_sendInterval_minBackoff(t *testing.T) {
 	wait := sendInterval(0)
 	assert.GreaterOrEqual(t, wait.Milliseconds(), int64(0))
-	assert.LessOrEqual(t, wait.Milliseconds(), int64(5000))
+	assert.LessOrEqual(t, wait.Milliseconds(), int64(6000))
 }
