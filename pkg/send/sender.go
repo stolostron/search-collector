@@ -168,19 +168,19 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 	for {
 		sendError := s.send(payload, expectedTotalResources, expectedTotalEdges)
 		retry++
-		waitMS := int(math.Min(float64(retry*15*1000), float64(config.Cfg.MaxBackoffMS)))
+		nextRetryWait := sendInterval(retry)
 
 		if sendError != nil && sendError.Error() == "Aggregator busy" {
-			glog.Warningf("Received busy response from Aggregator. Resending in %d ms.", waitMS)
-			time.Sleep(time.Duration(waitMS) * time.Millisecond)
+			glog.Warningf("Received busy response from Indexer. Resending in %s.", nextRetryWait)
+			time.Sleep(nextRetryWait)
 			continue
 		} else if sendError != nil {
-			glog.Warningf("Received error response [%s] from Aggregator. Resending in %d ms after resetting config.",
-				sendError.Error(), waitMS)
-			time.Sleep(time.Duration(waitMS) * time.Millisecond)
+			glog.Warningf("Received error response [%s] from Indexer. Resetting config and resending in %s.",
+				sendError.Error(), nextRetryWait)
+			time.Sleep(nextRetryWait)
 			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.reloadSender()    // reload sender variables - Aggregator URL, path and client
-			return sendError
+			continue
 		}
 		return sendError
 	}
@@ -297,30 +297,29 @@ func (s *Sender) Sync() error {
 func (s *Sender) StartSendLoop() {
 
 	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
-	backoffFactor := float64(1) // Note: must be 1. Using 0 will send the next payload immediately.
+	backoffFactor := 1 // Note: must be 1. Using 0 will send the next payload immediately.
 
 	for {
 		glog.V(3).Info("Beginning Send Cycle")
 		err := s.Sync()
 		if err != nil {
 			glog.Error("SEND ERROR: ", err)
-			// Increase the backoffFactor, doubling the wait time. Stops doubling it after it passes the max
+			// Increase the backoffFactor, doubling the wait time. Stops increasing after it passes the max
 			// wait time so that we don't overflow int. Can be changed with env:MAX_BACKOFF_MS
-			if time.Duration(config.Cfg.ReportRateMS)*time.Duration(math.Exp2(backoffFactor))*time.Millisecond <
-				time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
+			if sendInterval(backoffFactor) < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
 				backoffFactor++
 			}
 		} else {
 			glog.V(2).Info("Send Cycle Completed Successfully")
-			backoffFactor = float64(1) // Reset backoff to 1 because we had a sucessful send.
+			backoffFactor = 1 // Reset backoff to 1 because we had a sucessful send.
 		}
-		nextSleepInterval := config.Cfg.ReportRateMS * int(math.Exp2(backoffFactor))
-		timeToSleep := time.Duration(min(nextSleepInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
+
+		nextSendWait := sendInterval(backoffFactor)
 		if backoffFactor > 1 {
-			glog.Warning("Backing off send interval because of error response from aggregator. Sleeping for ", timeToSleep)
+			glog.Warningf("Error during last sync. Resending in %s.", nextSendWait)
 		}
 		// Sleep either for the current backed off interval, or the maximum time defined in the config
-		time.Sleep(timeToSleep)
+		time.Sleep(nextSendWait)
 	}
 }
 
@@ -330,4 +329,20 @@ func min(a, b int) int {
 		return b
 	}
 	return a
+}
+
+// Compute the time interval to wait before next send or retry (backoff).
+func sendInterval(retry int) time.Duration {
+	nextInterval := int(1000*math.Exp2(float64(retry))) + addJitter()
+	return time.Duration(min(nextInterval, config.Cfg.MaxBackoffMS)) * time.Millisecond
+}
+
+// Generate a random jitter to add to the backoff retry to prevent clients from retrying at the same interval.
+func addJitter() int {
+	max := big.NewInt(int64(config.Cfg.RetryJitterMS))
+	j, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return 0
+	}
+	return int(j.Int64())
 }
