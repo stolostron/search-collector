@@ -32,7 +32,6 @@ require (
 require github.com/stolostron/klusterlet-addon-controller v0.0.0-20230516071309-44dc1d3c2748
 
 require (
-	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
@@ -77,6 +76,6 @@ require (
 )
 
 replace (
-	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
-	k8s.io/client-go => k8s.io/client-go v0.24.3
+	golang.org/x/crypto => golang.org/x/crypto v0.9.0
+	k8s.io/client-go => k8s.io/client-go v0.27.2
 )
