@@ -170,17 +170,19 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 		retry++
 		nextRetryWait := sendInterval(retry)
 
+		// If indexer was busy, wait and retry with the same payload.
 		if sendError != nil && sendError.Error() == "Aggregator busy" {
 			glog.Warningf("Received busy response from Indexer. Resending in %s.", nextRetryWait)
 			time.Sleep(nextRetryWait)
 			continue
-		} else if sendError != nil {
+		}
+		// For other errors, wait, reload the config, and re-send the full state payload.
+		if sendError != nil {
 			glog.Warningf("Received error response [%s] from Indexer. Resetting config and resending in %s.",
 				sendError.Error(), nextRetryWait)
 			time.Sleep(nextRetryWait)
 			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.reloadSender()    // reload sender variables - Aggregator URL, path and client
-			continue
 		}
 		return sendError
 	}
