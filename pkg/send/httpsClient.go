@@ -13,8 +13,8 @@ package send
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured/unstructuredscheme"
@@ -49,7 +49,7 @@ func getHTTPSClient() (client http.Client) {
 			// RootCAs:      caCertPool,
 			// Certificates: []tls.Certificate{cert},
 		}
-		caCert, err := ioutil.ReadFile("./sslcert/tls.crt")
+		caCert, err := os.ReadFile("./sslcert/tls.crt")
 		cert, err2 := tls.LoadX509KeyPair("./sslcert/tls.crt", "./sslcert/tls.key")
 		if err != nil || err2 != nil {
 			glog.Error("WARNING: Using insecure TLS connection. Couldn't load certs ", err, err2)

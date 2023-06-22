@@ -13,7 +13,7 @@ package transforms
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -23,7 +23,7 @@ import (
 // UnmarshalFile takes a file path and unmarshals it into the given resource type.
 func UnmarshalFile(filepath string, resourceType interface{}, t *testing.T) {
 	// open given filepath string
-	rawBytes, err := ioutil.ReadFile("../../test-data/" + sanitize.Name(filepath))
+	rawBytes, err := os.ReadFile("../../test-data/" + sanitize.Name(filepath))
 	if err != nil {
 		t.Fatal("Unable to read test data", err)
 	}

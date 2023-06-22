@@ -11,8 +11,8 @@ Copyright (c) 2020 Red Hat, Inc.
 package reconciler
 
 import (
-	"io/ioutil"
 	"log"
+	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -308,7 +308,7 @@ func TestReconcilerComplete(t *testing.T) {
 	ts := time.Now().Unix()
 	//Read all files in test-data
 	dir := "../../test-data"
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
