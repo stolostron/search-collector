@@ -57,7 +57,7 @@ type Node struct {
 	UID            string                 `json:"uid"`
 	ResourceString string                 `json:"resourceString"`
 	Properties     map[string]interface{} `json:"properties"`
-	Metadata       map[string]string
+	Metadata       map[string]string      `json:"-"` // This won't be sent to the indexer.
 }
 
 func (n Node) hasMetadata(md string) bool {

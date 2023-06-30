@@ -201,6 +201,10 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		return err
 	}
 	payloadBuffer := bytes.NewBuffer(payloadBytes)
+
+	// When sending 4886 the payload size is reduced by 210472 bytes (2742099 - 2530627) when removing the metadata.
+	// JSON payload size: 2742099 (BEFORE removing Metadata)
+	// JSON payload size: 2530627 (AFTER removing Metadata)
 	resp, err := s.httpClient.Post(s.aggregatorURL+s.aggregatorSyncPath, "application/json", payloadBuffer)
 	if resp != nil && resp.Body != nil {
 		// #nosec G307
