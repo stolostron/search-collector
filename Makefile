@@ -11,7 +11,7 @@ deps:
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 GOGC=25 go build -o $(BINDIR)/search-collector ./
+	CGO_ENABLED=1 GOGC=25 go build -o $(BINDIR)/search-collector ./
 
 .PHONY: build-linux
 build-linux:
@@ -21,7 +21,7 @@ build-linux:
 lint:
 	GOPATH=$(go env GOPATH)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "${GOPATH}/bin" v1.52.2
-	CGO_ENABLED=0 GOGC=25 golangci-lint run --timeout=3m
+	CGO_ENABLED=1 GOGC=25 golangci-lint run --timeout=3m
 	gosec ./...
 	
 run:
