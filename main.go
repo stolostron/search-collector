@@ -12,12 +12,13 @@ import (
 	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stolostron/search-collector/pkg/informer"
 	lease "github.com/stolostron/search-collector/pkg/lease"
+	"github.com/stolostron/search-collector/pkg/mq"
 	rec "github.com/stolostron/search-collector/pkg/reconciler"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 
 	"github.com/golang/glog"
-	"github.com/stolostron/search-collector/pkg/send"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -66,13 +67,13 @@ func main() {
 
 	// Init reconciler
 	reconciler := rec.NewReconciler()
-	reconciler.Input = upsertTransformer.Output
-
+	reconciler.Input = make(chan tr.NodeEvent) // upsertTransformer.Output
 	// Create Sender, attached to transformer
-	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
+	// sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
+
+	go mq.MQReconciler(upsertTransformer.Output)
 
 	informersInitialized := make(chan interface{})
-
 	// Start a routine to keep our informers up to date.
 	go informer.RunInformers(informersInitialized, upsertTransformer, reconciler)
 
@@ -82,6 +83,10 @@ func main() {
 	glog.Info("Waiting for informers to load initial state.")
 	<-informersInitialized
 
+
+	wait.Forever(func() {
+		klog.Info("Done")
+	}, time.Hour)
 	glog.Info("Starting the sender.")
-	sender.StartSendLoop()
+	// sender.StartSendLoop()
 }
