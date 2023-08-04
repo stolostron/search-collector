@@ -74,6 +74,8 @@ require (
 )
 
 replace (
+	github.com/elazarl/goproxy => github.com/elazarl/goproxy v0.0.0-20230731152917-f99041a5c027
+	github.com/elazarl/goproxy/ext => github.com/elazarl/goproxy/ext v0.0.0-20230731152917-f99041a5c027
 	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 	k8s.io/client-go => k8s.io/client-go v0.24.3
 )
