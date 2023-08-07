@@ -9,13 +9,6 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var (
-	brokerList = []string{""}
-	topic      = "cluster.E"
-	maxRetry   = 3
-	partition  = int32(0)
-)
-
 func SendMessage(uid string, msgJSON string) error {
 	config := sarama.NewConfig()
 	config.Net.TLS.Enable = true
