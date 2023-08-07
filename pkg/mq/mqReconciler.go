@@ -36,7 +36,7 @@ func MQReconciler(resources chan (tr.NodeEvent)) {
 					Hash:       newHash,
 				}
 
-				klog.Infof("Sending UPDATE message to mq. Kind: %s\t Name: %s\n", newMqResource.Properties["kind"], newMqResource.Properties["name"])
+				klog.Infof("Sending UPDATE event to mq. Kind: %s\t Name: %s\n", newMqResource.Properties["kind"], newMqResource.Properties["name"])
 				// TODO: send only the changed bits to mq.
 
 				jsonBytes, jsonErr := json.Marshal(newMqResource)
@@ -49,7 +49,7 @@ func MQReconciler(resources chan (tr.NodeEvent)) {
 					// Update store
 					store.resources[res.Node.UID] = &newMqResource
 				} else {
-					klog.Errorf("Error sending UPDATE message to mq: %s", err)
+					klog.Errorf("Error sending UPDATE event to mq: %s", err)
 				}
 			}
 		} else {
@@ -59,7 +59,7 @@ func MQReconciler(resources chan (tr.NodeEvent)) {
 				Properties: res.Node.Properties,
 				Hash:       newHash,
 			}
-			klog.Infof("Sending CREATE to mq. Kind: %s\t Name: %s\n", newMqResource.Properties["kind"], newMqResource.Properties["name"])
+			klog.Infof("Sending CREATE event to mq. Kind: %s\t Name: %s\n", newMqResource.Properties["kind"], newMqResource.Properties["name"])
 
 			jsonBytes, jsonErr := json.Marshal(newMqResource)
 			if jsonErr != nil {
@@ -70,7 +70,7 @@ func MQReconciler(resources chan (tr.NodeEvent)) {
 			if err := SendMessage(res.Node.UID, string(jsonBytes)); err == nil {
 				store.resources[res.Node.UID] = &newMqResource
 			} else {
-				klog.Errorf("Error sending NEW message to mq: %s", err)
+				klog.Errorf("Error sending CREATE event to mq: %s", err)
 			}
 		}
 
