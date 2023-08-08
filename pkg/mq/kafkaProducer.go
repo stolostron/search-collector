@@ -3,13 +3,14 @@ package mq
 
 import (
 	"crypto/tls"
-	"log"
 
 	"github.com/stolostron/search-collector/pkg/config"
 
 	"github.com/IBM/sarama"
 	"k8s.io/klog/v2"
 )
+
+var producer sarama.SyncProducer
 
 func SendMessage(uid string, msgJSON string) error {
 	saramaConfig := sarama.NewConfig()
@@ -20,17 +21,19 @@ func SendMessage(uid string, msgJSON string) error {
 	saramaConfig.Producer.Return.Successes = true
 	saramaConfig.Producer.Return.Errors = true
 
-	// TODO: Use Async Producer.
-	producer, err := sarama.NewSyncProducer(config.Cfg.KafkaBrokerList, saramaConfig)
-	if err != nil {
-		return err
+	if producer == nil {
+		var err error
+		producer, err = sarama.NewSyncProducer(config.Cfg.KafkaBrokerList, saramaConfig)
+		if err != nil {
+			return err
+		}
 	}
 
-	defer func() {
-		if err := producer.Close(); err != nil {
-			log.Panic(err)
-		}
-	}()
+	// defer func() {
+	// 	if err := producer.Close(); err != nil {
+	// 		log.Panic(err)
+	// 	}
+	// }()
 
 	msg := &sarama.ProducerMessage{
 		Topic:   config.Cfg.KafkaTopic,
