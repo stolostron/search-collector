@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/stolostron/search-collector/pkg/config"
+
 	"github.com/IBM/sarama"
 	"k8s.io/klog/v2"
 )
@@ -17,13 +19,13 @@ func initializeStoreFromKafka() {
 		resources: make(map[string]*MqMessage),
 	}
 
-	config := sarama.NewConfig()
-	config.Net.TLS.Enable = true
-	config.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true}
-	config.Consumer.Return.Errors = true
-	config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.Net.TLS.Enable = true
+	saramaConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true}
+	saramaConfig.Consumer.Return.Errors = true
+	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-	main, err := sarama.NewConsumer(brokerList, config)
+	main, err := sarama.NewConsumer(config.Cfg.KafkaBrokerList, saramaConfig)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -34,19 +36,19 @@ func initializeStoreFromKafka() {
 		}
 	}()
 
-	consumer, err := main.ConsumePartition(topic, partition, sarama.OffsetOldest)
+	consumer, err := main.ConsumePartition(config.Cfg.KafkaTopic, config.Cfg.KafkaPartition, sarama.OffsetOldest)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	klog.Info(">>> Read existing messages from mq to initialize state. <<<\n")
 
-	client, clientErr := sarama.NewClient(brokerList, config)
+	client, clientErr := sarama.NewClient(config.Cfg.KafkaBrokerList, saramaConfig)
 	if clientErr != nil {
 		log.Panic(clientErr)
 	}
 
-	offset, offsetErr := client.GetOffset(topic, partition, sarama.OffsetNewest)
+	offset, offsetErr := client.GetOffset(config.Cfg.KafkaTopic, config.Cfg.KafkaPartition, sarama.OffsetNewest)
 	klog.Infof("Existing messages offset: %+v \toffsetErr:%+v\n", offset, offsetErr)
 
 	for readMsgCount := 0; readMsgCount < int(offset); {

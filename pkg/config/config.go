@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/tkanos/gonfig"
@@ -58,6 +59,11 @@ type Config struct {
 	RetryJitterMS        int          `env:"RETRY_JITTER_MS"`    // Random jitter added to backoff wait.
 	ReportRateMS         int          `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
 	RuntimeMode          string       `env:"RUNTIME_MODE"`       // Running mode (development or production)
+	KafkaBrokerList      []string     `env:"KAFKA_BROKER_LIST"`  // Kafka brokers
+	KafkaMaxRetry        int          `env:"KAFKA_MAX_RETRY"`    // Kafka retries. Default: 3
+	KafkaPartition       int32        `env:"KAFKA_PARTITION"`    // Kafka partition. Default: 0
+	KafkaTopic           string       `env:"KAFKA_TOPIC"`        // Kafka topic. Default: "cluster.{clusterName}"
+
 }
 
 var Cfg = Config{}
@@ -147,6 +153,15 @@ func InitConfig() {
 
 		glog.Info("Running inside klusterlet. Aggregator URL: ", Cfg.AggregatorURL)
 	}
+
+	// Kafka config settings
+	Cfg.KafkaTopic = "cluster." + Cfg.ClusterName
+	Cfg.KafkaPartition = int32(0)
+	brokersString := ""
+	setDefault(&brokersString, "KAFKA_BROKER_LIST", "")
+	Cfg.KafkaBrokerList = strings.Split(brokersString, ",")
+	setDefaultInt(&Cfg.KafkaMaxRetry, "KAFKA_MAX_RETRY", 3)
+
 }
 
 // Sets config field to perfer the env over config file

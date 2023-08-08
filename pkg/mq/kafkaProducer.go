@@ -5,21 +5,23 @@ import (
 	"crypto/tls"
 	"log"
 
+	"github.com/stolostron/search-collector/pkg/config"
+
 	"github.com/IBM/sarama"
 	"k8s.io/klog/v2"
 )
 
 func SendMessage(uid string, msgJSON string) error {
-	config := sarama.NewConfig()
-	config.Net.TLS.Enable = true
-	config.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true}
-	config.Producer.RequiredAcks = sarama.WaitForLocal // This affects time to send message. Options: NoResponse, WaitForLocal, NoResponse
-	config.Producer.Retry.Max = maxRetry
-	config.Producer.Return.Successes = true
-	config.Producer.Return.Errors = true
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.Net.TLS.Enable = true
+	saramaConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true}
+	saramaConfig.Producer.RequiredAcks = sarama.WaitForLocal // This affects time to send message. Options: NoResponse, WaitForLocal, NoResponse
+	saramaConfig.Producer.Retry.Max = config.Cfg.KafkaMaxRetry
+	saramaConfig.Producer.Return.Successes = true
+	saramaConfig.Producer.Return.Errors = true
 
 	// TODO: Use Async Producer.
-	producer, err := sarama.NewSyncProducer(brokerList, config)
+	producer, err := sarama.NewSyncProducer(config.Cfg.KafkaBrokerList, saramaConfig)
 	if err != nil {
 		return err
 	}
@@ -31,7 +33,7 @@ func SendMessage(uid string, msgJSON string) error {
 	}()
 
 	msg := &sarama.ProducerMessage{
-		Topic:   topic,
+		Topic:   config.Cfg.KafkaTopic,
 		Value:   sarama.StringEncoder(msgJSON),
 		Headers: []sarama.RecordHeader{sarama.RecordHeader{Key: []byte("clusterUID"), Value: []byte("TODO-CLUSTER-UID")}},
 	}
@@ -39,7 +41,7 @@ func SendMessage(uid string, msgJSON string) error {
 	if err != nil {
 		return err
 	}
-	klog.Infof("Message is stored in topic(%s)/partition(%d)/offset(%d)\n", topic, partition, offset)
+	klog.Infof("Message is stored in topic(%s)/partition(%d)/offset(%d)\n", msg.Topic, partition, offset)
 
 	return nil
 }
