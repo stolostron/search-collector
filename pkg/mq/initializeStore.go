@@ -12,11 +12,7 @@ import (
 
 var store Store
 
-func init() {
-	initializeStoreFromMQ()
-}
-
-func initializeStoreFromMQ() {
+func initializeStoreFromKafka() {
 	store = Store{
 		resources: make(map[string]*MqMessage),
 	}
