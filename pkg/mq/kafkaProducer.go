@@ -12,7 +12,11 @@ import (
 
 var producer sarama.SyncProducer
 
-func SendMessage(uid string, msgJSON string) error {
+func getProducerClient() (sarama.SyncProducer, error) {
+	if producer != nil {
+		return producer, nil
+	}
+
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Net.TLS.Enable = true
 	saramaConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true}
@@ -21,19 +25,22 @@ func SendMessage(uid string, msgJSON string) error {
 	saramaConfig.Producer.Return.Successes = true
 	saramaConfig.Producer.Return.Errors = true
 
-	if producer == nil {
-		var err error
-		producer, err = sarama.NewSyncProducer(config.Cfg.KafkaBrokerList, saramaConfig)
-		if err != nil {
-			return err
-		}
+	var err error
+	producer, err = sarama.NewSyncProducer(config.Cfg.KafkaBrokerList, saramaConfig)
+	if err != nil {
+		klog.Error(err)
+		return nil, err
 	}
 
-	// defer func() {
-	// 	if err := producer.Close(); err != nil {
-	// 		log.Panic(err)
-	// 	}
-	// }()
+	return producer, nil
+}
+
+func SendMessage(uid string, msgJSON string) error {
+
+	producer, err := getProducerClient()
+	if err != nil {
+		return err
+	}
 
 	msg := &sarama.ProducerMessage{
 		Topic:   config.Cfg.KafkaTopic,

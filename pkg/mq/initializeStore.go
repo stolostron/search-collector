@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"log"
+	"sync"
 
 	"github.com/stolostron/search-collector/pkg/config"
 
@@ -13,11 +14,13 @@ import (
 )
 
 var store Store
+var lock sync.Mutex
 
 func initializeStoreFromKafka() {
 	store = Store{
 		resources: make(map[string]*MqMessage),
 	}
+	lock = sync.Mutex{}
 
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Net.TLS.Enable = true

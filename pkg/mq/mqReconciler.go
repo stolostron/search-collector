@@ -20,10 +20,13 @@ func MQReconciler(resources chan (tr.NodeEvent)) {
 		newChecksum := checksum(res.Node.Properties)
 
 		// Check if resource is in store
-		if r, ok := store.resources[res.Node.UID]; ok {
+		lock.Lock()
+		r, exist := store.resources[res.Node.UID]
+		lock.Unlock()
+
+		if exist {
 			// Skip if resource is in the store and has the same checksum hash.
 			if r.Checksum == newChecksum {
-				// klog.Infof("Skipping NodeEvent because checksum hash matches. %x\n", newHash)
 				continue
 			} else {
 				// Resource is in the store but needs to be updated because checksum hash didn't match.
@@ -33,10 +36,12 @@ func MQReconciler(resources chan (tr.NodeEvent)) {
 					Checksum:   newChecksum,
 				}
 
-				klog.Infof("Sending UPDATE event to mq. Kind: %s\t Name: %s\n", newMqResource.Properties["kind"], newMqResource.Properties["name"])
+				// klog.Infof("Sending UPDATE event to mq. Kind: %s\t Name: %s\n",
+				// 	newMqResource.Properties["kind"], newMqResource.Properties["name"])
+
 				// TODO: send only the changed bits to mq.
 				// Data for delta message should look like this:
-				// { 
+				// {
 				//   properties: {
 				// 	   newProp: "newValue",
 				//     changedProp": "updatedValue",
@@ -46,18 +51,8 @@ func MQReconciler(resources chan (tr.NodeEvent)) {
 				//   checksum: "The checksum hash of the entire object after updates."
 				// }
 
-				jsonBytes, jsonErr := json.Marshal(newMqResource)
-				if jsonErr != nil {
-					klog.Errorf("Error marshalling resource to json: %s", jsonErr)
-					continue
-				}
-				if err := SendMessage(res.Node.UID, string(jsonBytes)); err == nil {
+				go sendMessageAndUpdateStore(res.Node.UID, &newMqResource)
 
-					// Update store
-					store.resources[res.Node.UID] = &newMqResource
-				} else {
-					klog.Errorf("Error sending UPDATE event to mq: %s", err)
-				}
 			}
 		} else {
 			// Resource doesn't exist in store. Send message to mq and add to the store.
@@ -66,22 +61,30 @@ func MQReconciler(resources chan (tr.NodeEvent)) {
 				Properties: res.Node.Properties,
 				Checksum:   newChecksum,
 			}
-			klog.Infof("Sending CREATE event to mq. Kind: %s\t Name: %s\n", newMqResource.Properties["kind"], newMqResource.Properties["name"])
+			// klog.Infof("Sending CREATE event to mq. Kind: %s\t Name: %s\n",
+			// 	newMqResource.Properties["kind"], newMqResource.Properties["name"])
 
-			jsonBytes, jsonErr := json.Marshal(newMqResource)
-			if jsonErr != nil {
-				klog.Errorf("Error marshalling resource to json: %s", jsonErr)
-				continue
-			}
+			go sendMessageAndUpdateStore(res.Node.UID, &newMqResource)
 
-			if err := SendMessage(res.Node.UID, string(jsonBytes)); err == nil {
-				store.resources[res.Node.UID] = &newMqResource
-			} else {
-				klog.Errorf("Error sending CREATE event to mq: %s", err)
-			}
 		}
+	}
+}
 
-		// klog.Infof("Done processing NodeEvent.")
+func sendMessageAndUpdateStore(uid string, mqResource *MqMessage) {
+	jsonBytes, jsonErr := json.Marshal(mqResource)
+	if jsonErr != nil {
+		klog.Errorf("Error marshalling resource to json: %s", jsonErr)
+		return
+	}
+
+	if err := SendMessage(uid, string(jsonBytes)); err == nil {
+		// Update store
+		lock.Lock()
+		store.resources[uid] = mqResource
+		lock.Unlock()
+		klog.Infof("Done synchronizing. kind: %s\t name: %s\n", mqResource.Properties["kind"], mqResource.Properties["name"])
+	} else {
+		klog.Errorf("Error sending event to mq: %s", err)
 	}
 }
 
