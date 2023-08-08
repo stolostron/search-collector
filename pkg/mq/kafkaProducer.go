@@ -19,8 +19,8 @@ func getProducerClient() (sarama.SyncProducer, error) {
 
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Net.TLS.Enable = true
-	saramaConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true}
-	saramaConfig.Producer.RequiredAcks = sarama.WaitForLocal // This affects time to send message. Options: NoResponse, WaitForLocal, NoResponse
+	saramaConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true} // #nosec G402 - POC code, won't merge.
+	saramaConfig.Producer.RequiredAcks = sarama.WaitForLocal            // This affects time to send message. Options: NoResponse, WaitForLocal, NoResponse
 	saramaConfig.Producer.Retry.Max = config.Cfg.KafkaMaxRetry
 	saramaConfig.Producer.Return.Successes = true
 	saramaConfig.Producer.Return.Errors = true

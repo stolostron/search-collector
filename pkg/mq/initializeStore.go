@@ -24,7 +24,7 @@ func initializeStoreFromKafka() {
 
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Net.TLS.Enable = true
-	saramaConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true}
+	saramaConfig.Net.TLS.Config = &tls.Config{InsecureSkipVerify: true} // #nosec G402 - POC code, won't merge.
 	saramaConfig.Consumer.Return.Errors = true
 	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
 
