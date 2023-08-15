@@ -76,6 +76,12 @@
             "namespace": "bgd",
             "version": "v1",
             "group": "route.openshift.io"
+        },
+        {
+            "kind": "Configmap",
+            "name": "missingConfigmap",
+            "namespace": "bgd",
+            "version": "v1"            
         }
     ],
     "conditions": [
