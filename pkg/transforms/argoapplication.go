@@ -3,6 +3,7 @@
 package transforms
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/golang/glog"
@@ -49,11 +50,12 @@ type ArgoApplicationStatus struct {
 }
 
 type ResourceStatus struct {
-	Group     string `json:"group,omitempty" protobuf:"bytes,1,opt,name=group"`
-	Version   string `json:"version,omitempty" protobuf:"bytes,2,opt,name=version"`
-	Kind      string `json:"kind,omitempty" protobuf:"bytes,3,opt,name=kind"`
-	Namespace string `json:"namespace,omitempty" protobuf:"bytes,4,opt,name=namespace"`
-	Name      string `json:"name,omitempty" protobuf:"bytes,5,opt,name=name"`
+	Group     string        `json:"group,omitempty" protobuf:"bytes,1,opt,name=group"`
+	Version   string        `json:"version,omitempty" protobuf:"bytes,2,opt,name=version"`
+	Kind      string        `json:"kind,omitempty" protobuf:"bytes,3,opt,name=kind"`
+	Namespace string        `json:"namespace,omitempty" protobuf:"bytes,4,opt,name=namespace"`
+	Name      string        `json:"name,omitempty" protobuf:"bytes,5,opt,name=name"`
+	Health    *HealthStatus `json:"health,omitempty" protobuf:"bytes,7,opt,name=health"`
 }
 
 type ApplicationCondition struct {
@@ -176,6 +178,8 @@ func (a ArgoApplicationResource) BuildEdges(ns NodeStore) []Edge {
 	sourceUID := a.node.UID
 	sourceKind := a.node.Properties["kind"].(string)
 
+	missingResc := []ResourceStatus{}
+
 	if len(a.resources) > 0 {
 		for _, resource := range a.resources {
 			namespace := "_NONE"
@@ -192,12 +196,27 @@ func (a ArgoApplicationResource) BuildEdges(ns NodeStore) []Edge {
 						DestUID:    destNode.UID,
 						DestKind:   resource.Kind,
 					})
-				} else {
-					glog.Infof("For %s, subscribesTo edge not created as %s named %s not found",
-						resource.Kind+"/"+namespace+"/"+resource.Name, resource.Kind, namespace+"/"+resource.Name)
 				}
+			} else {
+				glog.Warningf("For %s, subscribesTo edge not created as %s named %s not found",
+					resource.Kind+"/"+namespace+"/"+resource.Name, resource.Kind, namespace+"/"+resource.Name)
+
+				missingResc = append(missingResc, resource)
 			}
 		}
+	}
+
+	// add missing application resource as a property
+	if len(missingResc) != 0 {
+		rescb, err := json.Marshal(missingResc)
+
+		if err != nil {
+			glog.Error("ArgoApplication transform failed to marshal missingResc", err)
+		} else {
+			a.node.Properties["_missingResources"] = string(rescb)
+		}
+	} else {
+		delete(a.node.Properties, "_missingResources") // no-op in delete if property doesn't exist
 	}
 
 	return ret

@@ -56,4 +56,15 @@ func TestTransformArgoApplication(t *testing.T) {
 	edges := argoApplicationResource.BuildEdges(nodeStore)
 
 	AssertEqual("edges", len(edges), 4, t)
+	AssertEqual("missingResources", node.Properties["_missingResources"], "[{\"version\":\"v1\",\"kind\":\"Configmap\",\"namespace\":\"bgd\",\"name\":\"missingConfigmap\"}]", t)
+
+	// Add missing resource and build edge again
+	nodes = append(nodes, Node{UID: "uuid-123-configmap", Properties: map[string]interface{}{"kind": "Configmap", "namespace": "bgd", "name": "missingConfigmap"}})
+
+	nodeStore = BuildFakeNodeStore(nodes)
+
+	edges = argoApplicationResource.BuildEdges(nodeStore)
+
+	AssertEqual("edges", len(edges), 5, t)
+	AssertEqual("missingResources", node.Properties["_missingResources"], nil, t)
 }
