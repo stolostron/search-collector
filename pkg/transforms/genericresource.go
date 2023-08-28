@@ -22,14 +22,7 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 	n := Node{
 		UID:        prefixedUID(r.GetUID()),
 		Properties: unstructuredProperties(r),
-		Metadata:   make(map[string]string),
-	}
-	n.Metadata["OwnerUID"] = ownerRefUID(r.GetOwnerReferences())
-	//Adding OwnerReleaseName and Namespace for the resources that doesn't have ownerRef, but are deployed by a release
-	if n.Metadata["OwnerUID"] == "" && r.GetAnnotations()["meta.helm.sh/release-name"] != "" &&
-		r.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
-		n.Metadata["OwnerReleaseName"] = r.GetAnnotations()["meta.helm.sh/release-name"]
-		n.Metadata["OwnerReleaseNamespace"] = r.GetAnnotations()["meta.helm.sh/release-namespace"]
+		Metadata:   unstructuredMetadata(r),
 	}
 	return &GenericResource{node: n}
 }
@@ -82,4 +75,17 @@ func unstructuredProperties(r *unstructured.Unstructured) map[string]interface{}
 	}
 	return ret
 
+}
+
+func unstructuredMetadata(r *unstructured.Unstructured) map[string]string {
+	metadata := make(map[string]string)
+	metadata["OwnerUID"] = ownerRefUID(r.GetOwnerReferences())
+	//Adding OwnerReleaseName and Namespace for the resources that doesn't have ownerRef, but are deployed by a release
+	if metadata["OwnerUID"] == "" && r.GetAnnotations()["meta.helm.sh/release-name"] != "" &&
+		r.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
+		metadata["OwnerReleaseName"] = r.GetAnnotations()["meta.helm.sh/release-name"]
+		metadata["OwnerReleaseNamespace"] = r.GetAnnotations()["meta.helm.sh/release-namespace"]
+	}
+
+	return metadata
 }
