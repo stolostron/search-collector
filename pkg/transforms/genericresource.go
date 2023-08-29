@@ -9,6 +9,7 @@ import (
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/klog/v2"
 )
 
 // GenericResource ...
@@ -24,6 +25,36 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 		Properties: unstructuredProperties(r),
 		Metadata:   unstructuredMetadata(r),
 	}
+
+	// Check if a transform config exists for this resource and extract the additional properties.
+	transformConfig, found := getTransformConfig(r.GroupVersionKind().Group, r.GetKind())
+	if found {
+		for _, prop := range transformConfig.properties {
+			if prop.propType != "string" {
+				klog.Errorf("Property %s has unsupported type %s", prop.name, prop.propType)
+				continue
+			}
+
+			switch prop.propType {
+			case "string":
+				val, found, err := unstructured.NestedString(r.Object, prop.path...)
+				if err != nil {
+					klog.Errorf("Error extracting property %s from resource %s: %v", prop.name, r.GetName(), err)
+					continue
+				} else if !found {
+					klog.Errorf("Property %s not found in resource %s", prop.name, r.GetName())
+					continue
+				}
+				n.Properties[prop.name] = val
+
+			default:
+				klog.Errorf("Property %s has unsupported type %s", prop.name, prop.propType)
+				continue
+			}
+		}
+		klog.V(5).Infof("Generic resource [%s.%s] node built using transform config.\n%+v\n\n", r.GetKind(), r.GroupVersionKind().Group, n)
+	}
+
 	return &GenericResource{node: n}
 }
 

@@ -426,13 +426,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PolicyReportResourceBuilder(&typedResource)
 
-		// TODO: move this into GenericResourceBuilder to make it scalable.
-		case [2]string{"ClusterServiceVersion", "operators.coreos.com"}:
-			trans = ConfigurableResourceBuilder(event.Resource, "clusterserviceversion", "operators.coreos.com")
-
-		case [2]string{"Subscription", "operators.coreos.com"}:
-			trans = ConfigurableResourceBuilder(event.Resource, "subscription.operators", "coreos.com")
-
 		default:
 			trans = GenericResourceBuilder(event.Resource)
 		}
