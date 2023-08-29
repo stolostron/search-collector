@@ -46,7 +46,7 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 			}
 			n.Properties[prop.name] = fmt.Sprintf("%s", result[0][0])
 		}
-		klog.V(5).Infof("Generic resource [%s.%s] built using transform config.\n%+v\n\n", r.GetKind(), r.GroupVersionKind().Group, n)
+		klog.V(5).Infof("Built [%s.%s] using transform config.\n%+v\n", r.GetKind(), r.GroupVersionKind().Group, n)
 	}
 	return &GenericResource{node: n}
 }
