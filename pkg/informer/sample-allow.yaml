@@ -8,11 +8,5 @@ data:
     - apiGroups: 
         - "*"
       resources: 
-        - services
-        - pods
-        - nodes
-    - apiGroups:
-        - admission.k8s.io
-        - authentication.k8s.io
-      resources:
-        - "*"
+        - ClusterOperator
+        - clusteroperators

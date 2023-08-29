@@ -9,6 +9,7 @@ import (
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/util/jsonpath"
 	"k8s.io/klog/v2"
 )
 
@@ -17,42 +18,35 @@ type GenericResource struct {
 	node Node
 }
 
-// GenericResourceBuilder ...
-// Builds a GenericResource node. Extract the useful properties from unstructured resource.
+// Builds a GenericResource node.
+// Extract default properties from unstructured resource.
+// Supports extracting additional properties defined by the transform config.
 func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 	n := Node{
 		UID:        prefixedUID(r.GetUID()),
-		Properties: unstructuredProperties(r),
-		Metadata:   unstructuredMetadata(r),
+		Properties: genericProperties(r),
+		Metadata:   genericMetadata(r),
 	}
 
 	// Check if a transform config exists for this resource and extract the additional properties.
 	transformConfig, found := getTransformConfig(r.GroupVersionKind().Group, r.GetKind())
 	if found {
 		for _, prop := range transformConfig.properties {
-			if prop.propType != "string" {
-				klog.Errorf("Property %s has unsupported type %s", prop.name, prop.propType)
+			jp := jsonpath.New(prop.name)
+			parseErr := jp.Parse(prop.jsonpath)
+			if parseErr != nil {
+				klog.Errorf("Error parsing jsonpath %s for property %s: %v", prop.jsonpath, prop.name, parseErr)
 				continue
 			}
-
-			switch prop.propType {
-			case "string":
-				val, found, err := unstructured.NestedString(r.Object, prop.path...)
-				if err != nil {
-					klog.Errorf("Error extracting property %s from resource %s: %v", prop.name, r.GetName(), err)
-					continue
-				} else if !found {
-					klog.Errorf("Property %s not found in resource %s", prop.name, r.GetName())
-					continue
-				}
-				n.Properties[prop.name] = val
-
-			default:
-				klog.Errorf("Property %s has unsupported type %s", prop.name, prop.propType)
+			result, err := jp.FindResults(r.Object)
+			if err != nil {
+				klog.Errorf("Error extracting property %s from resource %s: %v", prop.name, r.GetName(), err)
 				continue
 			}
+			// klog.Infof("%s\t=> %s\t%s", r.GroupVersionKind(), prop.name, result[0][0])
+			n.Properties[prop.name] = result[0][0]
 		}
-		klog.V(5).Infof("Generic resource [%s.%s] node built using transform config.\n%+v\n\n", r.GetKind(), r.GroupVersionKind().Group, n)
+		klog.V(5).Infof("Generic resource [%s.%s] built using transform config.\n%+v\n\n", r.GetKind(), r.GroupVersionKind().Group, n)
 	}
 
 	return &GenericResource{node: n}
@@ -71,7 +65,7 @@ func (r GenericResource) BuildEdges(ns NodeStore) []Edge {
 
 // TODO: Consolidate with commonProperties() in common.go
 // Extracts the common properties from any k8s resource and returns them in a map ready to be put in an Node
-func unstructuredProperties(r *unstructured.Unstructured) map[string]interface{} {
+func genericProperties(r *unstructured.Unstructured) map[string]interface{} {
 	ret := make(map[string]interface{})
 
 	ret["kind"] = r.GetKind()
@@ -108,7 +102,7 @@ func unstructuredProperties(r *unstructured.Unstructured) map[string]interface{}
 
 }
 
-func unstructuredMetadata(r *unstructured.Unstructured) map[string]string {
+func genericMetadata(r *unstructured.Unstructured) map[string]string {
 	metadata := make(map[string]string)
 	metadata["OwnerUID"] = ownerRefUID(r.GetOwnerReferences())
 	//Adding OwnerReleaseName and Namespace for the resources that doesn't have ownerRef, but are deployed by a release
