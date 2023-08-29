@@ -4,6 +4,7 @@
 package transforms
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -44,7 +45,7 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 				continue
 			}
 			// klog.Infof("%s\t=> %s\t%s", r.GroupVersionKind(), prop.name, result[0][0])
-			n.Properties[prop.name] = result[0][0]
+			n.Properties[prop.name] = fmt.Sprintf("%s", result[0][0])
 		}
 		klog.V(5).Infof("Generic resource [%s.%s] built using transform config.\n%+v\n\n", r.GetKind(), r.GroupVersionKind().Group, n)
 	}

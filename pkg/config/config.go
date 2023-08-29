@@ -126,6 +126,7 @@ func InitConfig() {
 	} else if !Cfg.DeployedInHub {
 		glog.Info("No DEPLOY_IN_HUB from file or environment, assuming it is a Klusterlet")
 	}
+	Cfg.DeployedInHub = true
 	setDefault(&Cfg.AggregatorConfigFile, "HUB_CONFIG", "")
 
 	if Cfg.DeployedInHub && Cfg.AggregatorConfigFile != "" {
