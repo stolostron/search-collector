@@ -8,8 +8,6 @@ type ExtractProperty struct {
 
 // Declares properties to extract from a given resource.
 type ResourceConfig struct {
-	// apigroup   string                         // `json:"apigroup,omitempty"`
-	// kind       string                         // `json:"kind,omitempty"`
 	properties []ExtractProperty // `json:"properties,omitempty"`
 }
 
@@ -17,9 +15,6 @@ type ResourceConfig struct {
 var defaultTransformConfig = map[string]ResourceConfig{
 	"ClusterServiceVersion.operators.coreos.com": ResourceConfig{
 		properties: []ExtractProperty{
-			// ExtractProperty{propType: "string", name: "version", path: []string{"spec", "version"}},
-			// ExtractProperty{propType: "string", name: "display", path: []string{"spec", "displayName"}},
-			// ExtractProperty{propType: "string", name: "phase", path: []string{"status", "phase"}},
 			ExtractProperty{name: "version", jsonpath: "{.spec.version}"},
 			ExtractProperty{name: "display", jsonpath: "{.spec.displayName}"},
 			ExtractProperty{name: "phase", jsonpath: "{.status.phase}"},
@@ -27,11 +22,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"Subscription.operators.coreos.com": ResourceConfig{
 		properties: []ExtractProperty{
-			// ExtractProperty{propType: "string", name: "source", path: []string{"spec", "source"}},
-			// ExtractProperty{propType: "string", name: "package", path: []string{"spec", "name"}},
-			// ExtractProperty{propType: "string", name: "channel", path: []string{"spec", "channel"}},
-			// ExtractProperty{propType: "string", name: "installplan", path: []string{"status", "installedCSV"}},
-			// ExtractProperty{propType: "string", name: "phase", path: []string{"status", "state"}},
 			ExtractProperty{name: "source", jsonpath: "{.spec.source}"},
 			ExtractProperty{name: "package", jsonpath: "{.spec.name}"},
 			ExtractProperty{name: "channel", jsonpath: "{.spec.channel}"},
@@ -49,7 +39,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 }
 
-// Get which properties to extract from a resource.
+// Get the properties to extract from a resource.
 func getTransformConfig(group, kind string) (ResourceConfig, bool) {
 	transformConfig := defaultTransformConfig
 
