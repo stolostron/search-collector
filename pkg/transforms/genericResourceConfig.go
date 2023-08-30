@@ -1,12 +1,12 @@
 package transforms
 
-// Declares a property to extract from a resource using a json path.
+// Declares a property to extract from a resource using jsonpath.
 type ExtractProperty struct {
 	name     string // `json:"name,omitempty"`
 	jsonpath string // `json:"jsonpath,omitempty"`
 }
 
-// Declares properties to extract from a given resource.
+// Declares the properties to extract from a given resource.
 type ResourceConfig struct {
 	properties []ExtractProperty // `json:"properties,omitempty"`
 }

@@ -30,23 +30,33 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 	}
 
 	// Check if a transform config exists for this resource and extract the additional properties.
-	transformConfig, found := getTransformConfig(r.GroupVersionKind().Group, r.GetKind())
+	group := r.GroupVersionKind().Group
+	kind := r.GetKind()
+	transformConfig, found := getTransformConfig(group, kind)
 	if found {
 		for _, prop := range transformConfig.properties {
 			jp := jsonpath.New(prop.name)
 			parseErr := jp.Parse(prop.jsonpath)
 			if parseErr != nil {
-				klog.Errorf("Error parsing jsonpath %s for property %s: %v", prop.jsonpath, prop.name, parseErr)
+				klog.Errorf("Error parsing jsonpath [%s] for [%s.%s] Property: [%s] Error: %v",
+					prop.jsonpath, kind, group, prop.name, parseErr)
 				continue
 			}
 			result, err := jp.FindResults(r.Object)
 			if err != nil {
-				klog.Errorf("Error extracting property %s from resource %s: %v", prop.name, r.GetName(), err)
+				klog.Errorf("Error extracting prop [%s] from [%s.%s] Name: [%s] Error: %v",
+					prop.name, kind, group, r.GetName(), err)
 				continue
 			}
-			n.Properties[prop.name] = fmt.Sprintf("%s", result[0][0])
+			if len(result) > 0 && len(result[0]) > 0 {
+				n.Properties[prop.name] = fmt.Sprintf("%s", result[0][0])
+			} else {
+				klog.Errorf("Unexpected error extracting [%s] from [%s.%s] Name: [%s]. Result object is empty.",
+					prop.name, kind, group, r.GetName())
+				continue
+			}
 		}
-		klog.V(5).Infof("Built [%s.%s] using transform config.\n%+v\n", r.GetKind(), r.GroupVersionKind().Group, n)
+		klog.V(5).Infof("Built [%s.%s] using transform config.\nNode: %+v\n", kind, group, n)
 	}
 	return &GenericResource{node: n}
 }
@@ -104,7 +114,7 @@ func genericProperties(r *unstructured.Unstructured) map[string]interface{} {
 func genericMetadata(r *unstructured.Unstructured) map[string]string {
 	metadata := make(map[string]string)
 	metadata["OwnerUID"] = ownerRefUID(r.GetOwnerReferences())
-	//Adding OwnerReleaseName and Namespace for the resources that doesn't have ownerRef, but are deployed by a release
+	// Adds OwnerReleaseName and Namespace to resources that don't have ownerRef, but are deployed by a release.
 	if metadata["OwnerUID"] == "" && r.GetAnnotations()["meta.helm.sh/release-name"] != "" &&
 		r.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
 		metadata["OwnerReleaseName"] = r.GetAnnotations()["meta.helm.sh/release-name"]
