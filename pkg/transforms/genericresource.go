@@ -80,7 +80,6 @@ func genericProperties(r *unstructured.Unstructured) map[string]interface{} {
 	ret["kind"] = r.GetKind()
 	ret["name"] = r.GetName()
 	ret["created"] = r.GetCreationTimestamp().UTC().Format(time.RFC3339)
-	ret["_clusterNamespace"] = config.Cfg.ClusterNamespace
 	if config.Cfg.DeployedInHub {
 		ret["_hubClusterResource"] = true
 	}

@@ -53,8 +53,6 @@ func (h HelmReleaseResource) BuildNode() Node {
 
 	if config.Cfg.DeployedInHub {
 		node.Properties["_hubClusterResource"] = true
-	} else {
-		node.Properties["_clusterNamespace"] = config.Cfg.ClusterNamespace
 	}
 
 	if h.Release != nil {

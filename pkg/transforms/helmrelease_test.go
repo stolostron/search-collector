@@ -36,6 +36,5 @@ func TestTransformHelmRelease(t *testing.T) {
 	AssertEqual("namespace", node.Properties["namespace"], "default", t)
 	AssertEqual("updated", node.Properties["updated"], "2019-07-18T14:58:37Z", t)
 	AssertEqual("_hubClusterResource", node.Properties["_hubClusterResource"], true, t)
-	AssertEqual("_clusterNamespace", node.Properties["_clusterNamespace"], nil, t)
 
 }

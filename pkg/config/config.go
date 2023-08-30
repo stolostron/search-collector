@@ -47,8 +47,7 @@ type Config struct {
 	AggregatorURL        string       `env:"AGGREGATOR_URL"`     // URL of the Aggregator, includes port but not any path
 	AggregatorHost       string       `env:"AGGREGATOR_HOST"`    // Host of the Aggregator
 	AggregatorPort       string       `env:"AGGREGATOR_PORT"`    // Port of the Aggregator
-	ClusterName          string       `env:"CLUSTER_NAME"`       // The name of this cluster
-	ClusterNamespace     string       `env:"CLUSTER_NAMESPACE"`  // The namespace of this cluster
+	ClusterName          string       `env:"CLUSTER_NAME"`       // The name of of the cluster where this pod is running
 	PodNamespace         string       `env:"POD_NAMESPACE"`      // The namespace of this pod
 	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`    // Tracks if deployed in the Hub or Managed cluster
 	HeartbeatMS          int          `env:"HEARTBEAT_MS"`       // Interval(ms) to send empty payload to ensure connection
@@ -85,7 +84,6 @@ func InitConfig() {
 	// Simply put, the order of preference is env -> config.json -> default constants (from left to right)
 	setDefault(&Cfg.RuntimeMode, "RUNTIME_MODE", DEFAULT_RUNTIME_MODE)
 	setDefault(&Cfg.ClusterName, "CLUSTER_NAME", DEFAULT_CLUSTER_NAME)
-	setDefault(&Cfg.ClusterNamespace, "CLUSTER_NAMESPACE", "")
 	setDefault(&Cfg.PodNamespace, "POD_NAMESPACE", DEFAULT_POD_NAMESPACE)
 
 	setDefault(&Cfg.AggregatorHost, "AGGREGATOR_HOST", DEFAULT_AGGREGATOR_HOST)
@@ -142,7 +140,7 @@ func InitConfig() {
 		}
 
 		Cfg.AggregatorURL = hubConfig.Host + "/apis/proxy.open-cluster-management.io/v1beta1/namespaces/" +
-			Cfg.ClusterNamespace + "/clusterstatuses"
+			Cfg.ClusterName + "/clusterstatuses"
 		Cfg.AggregatorConfig = hubConfig
 
 		glog.Info("Running inside klusterlet. Aggregator URL: ", Cfg.AggregatorURL)
