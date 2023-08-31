@@ -216,16 +216,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = CronJobResourceBuilder(&typedResource)
 
-		case [2]string{"DaemonSet", "extensions"}:
-			typedResource := apps.DaemonSet{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = DaemonSetResourceBuilder(&typedResource)
-
-		case [2]string{"DaemonSet", "apps"}:
+		case [2]string{"DaemonSet", "extensions"},
+			[2]string{"DaemonSet", "apps"}:
 			typedResource := apps.DaemonSet{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -243,16 +235,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = AppDeployableResourceBuilder(&typedResource)
 
-		case [2]string{"Deployment", "apps"}:
-			typedResource := apps.Deployment{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = DeploymentResourceBuilder(&typedResource)
-
-		case [2]string{"Deployment", "extensions"}:
+		case [2]string{"Deployment", "apps"},
+			[2]string{"Deployment", "extensions"}:
 			typedResource := apps.Deployment{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -372,16 +356,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PolicyResourceBuilder(&typedResource)
 
-		case [2]string{"ReplicaSet", "apps"}:
-			typedResource := apps.ReplicaSet{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ReplicaSetResourceBuilder(&typedResource)
-
-		case [2]string{"ReplicaSet", "extensions"}:
+		case [2]string{"ReplicaSet", "apps"},
+			[2]string{"ReplicaSet", "extensions"}:
 			typedResource := apps.ReplicaSet{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
