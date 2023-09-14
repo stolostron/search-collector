@@ -70,6 +70,14 @@
                 "reason": "KubeletHasSufficientDisk",
                 "status": "False",
                 "type": "OutOfDisk"
+            },
+            {
+                "lastHeartbeatTime": "2023-09-14T19:31:24Z",
+                "lastTransitionTime": "2023-09-08T17:52:53Z",
+                "message": "kubelet is posting ready status",
+                "reason": "KubeletReady",
+                "status": "True",
+                "type": "Ready"
             }
         ],
         "config": {},

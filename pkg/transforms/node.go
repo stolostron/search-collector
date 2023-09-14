@@ -51,6 +51,14 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 	node.Properties["_systemUUID"] = strings.TrimRight(n.Status.NodeInfo.SystemUUID, "\000")
 	node.Properties["role"] = roles
 
+	conditions := n.Status.Conditions
+	for _, condition := range conditions {
+		if condition.Type == v1.NodeReady {
+			node.Properties["status"] = string(condition.Status)
+			break
+		}
+	}
+
 	return &NodeResource{node: node}
 }
 
