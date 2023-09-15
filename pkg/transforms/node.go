@@ -38,7 +38,7 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 		roles = append(roles, "worker")
 	}
 
-	// sort in alphabetical order to make the ui consistant
+	// sort in alphabetical order to make the ui consistent
 	sort.Strings(roles)
 
 	apiGroupVersion(n.TypeMeta, &node) // add kind, apigroup and version
@@ -51,13 +51,25 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 	node.Properties["_systemUUID"] = strings.TrimRight(n.Status.NodeInfo.SystemUUID, "\000")
 	node.Properties["role"] = roles
 
-	conditions := n.Status.Conditions
-	for _, condition := range conditions {
+	// Status logic is based on
+	// https://github.com/kubernetes/kubernetes/blob/master/pkg/printers/internalversion/printers.go#L1765
+	var status []string
+	for _, condition := range n.Status.Conditions {
 		if condition.Type == v1.NodeReady {
-			node.Properties["status"] = string(condition.Status)
-			break
+			if condition.Status == v1.ConditionTrue {
+				status = append(status, string(condition.Type))
+			} else {
+				status = append(status, "Not"+string(condition.Type))
+			}
 		}
 	}
+	if len(status) == 0 {
+		status = append(status, "Unknown")
+	}
+	if n.Spec.Unschedulable {
+		status = append(status, "SchedulingDisabled")
+	}
+	node.Properties["status"] = status
 
 	return &NodeResource{node: node}
 }
