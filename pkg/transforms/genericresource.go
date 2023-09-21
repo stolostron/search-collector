@@ -38,13 +38,15 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 			jp := jsonpath.New(prop.name)
 			parseErr := jp.Parse(prop.jsonpath)
 			if parseErr != nil {
-				klog.Errorf("Error parsing jsonpath [%s] for [%s.%s] Property: [%s] Error: %v",
+				klog.Errorf("Error parsing jsonpath [%s] for [%s.%s] prop: [%s]. Reason: %v",
 					prop.jsonpath, kind, group, prop.name, parseErr)
 				continue
 			}
 			result, err := jp.FindResults(r.Object)
 			if err != nil {
-				klog.Errorf("Error extracting prop [%s] from [%s.%s] Name: [%s] Error: %v",
+				// This error isn't always indicative of a problem, for example, when the object is created, it
+				// won't have a status yet, so the jsonpath returns an error until controller adds the status.
+				klog.V(1).Infof("Unable to extract prop [%s] from [%s.%s] Name: [%s]. Reason: %v",
 					prop.name, kind, group, r.GetName(), err)
 				continue
 			}
