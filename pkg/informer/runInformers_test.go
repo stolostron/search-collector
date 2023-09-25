@@ -28,7 +28,7 @@ func fakeDiscoveryClient() (*httptest.Server, discovery.DiscoveryClient) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var obj interface{}
 		switch req.URL.Path {
-		case "/api":
+		case "/api", "/apis":
 			obj = &metav1.APIVersions{
 				Versions: []string{
 					"v1",
