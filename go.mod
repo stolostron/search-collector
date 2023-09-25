@@ -18,8 +18,8 @@ require (
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.28.1
-	k8s.io/apimachinery v0.28.1
+	k8s.io/api v0.28.2
+	k8s.io/apimachinery v0.28.2
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.17.0+incompatible
 	k8s.io/klog/v2 v2.100.1
@@ -77,5 +77,5 @@ require (
 
 replace (
 	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
-	k8s.io/client-go => k8s.io/client-go v0.28.1
+	k8s.io/client-go => k8s.io/client-go v0.28.2
 )
