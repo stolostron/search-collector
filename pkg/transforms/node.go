@@ -53,21 +53,19 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 
 	// Status logic is based on
 	// https://github.com/kubernetes/kubernetes/blob/master/pkg/printers/internalversion/printers.go#L1765
-	var status []string
+	// Status must be a string to avoid issues with other resources that have a status field.
+	status := "Unknown"
 	for _, condition := range n.Status.Conditions {
 		if condition.Type == v1.NodeReady {
 			if condition.Status == v1.ConditionTrue {
-				status = append(status, string(condition.Type))
+				status = string(condition.Type)
 			} else {
-				status = append(status, "Not"+string(condition.Type))
+				status = "Not" + string(condition.Type)
 			}
 		}
 	}
-	if len(status) == 0 {
-		status = append(status, "Unknown")
-	}
 	if n.Spec.Unschedulable {
-		status = append(status, "SchedulingDisabled")
+		status += "-SchedulingDisabled" // Encoding to single string to work around limitations.
 	}
 	node.Properties["status"] = status
 
