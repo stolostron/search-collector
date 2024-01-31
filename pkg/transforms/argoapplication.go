@@ -198,9 +198,6 @@ func (a ArgoApplicationResource) BuildEdges(ns NodeStore) []Edge {
 					})
 				}
 			} else {
-				glog.Warningf("For %s, subscribesTo edge not created as %s named %s not found",
-					resource.Kind+"/"+namespace+"/"+resource.Name, resource.Kind, namespace+"/"+resource.Name)
-
 				missingResc = append(missingResc, resource)
 			}
 		}
@@ -208,6 +205,8 @@ func (a ArgoApplicationResource) BuildEdges(ns NodeStore) []Edge {
 
 	// add missing application resource as a property
 	if len(missingResc) != 0 {
+		glog.V(5).Infof("ArgoApplication [%s] has %d missing resources:\n%+v",
+			a.node.Properties["name"], len(missingResc), missingResc)
 		rescb, err := json.Marshal(missingResc)
 
 		if err != nil {
