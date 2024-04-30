@@ -25,3 +25,20 @@ func Test_genericResourceFromConfig(t *testing.T) {
 	AssertEqual("version", node.Properties["version"], "2.9.0", t)
 
 }
+
+func Test_genericResourceFromConfigVM(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachine.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "rhel9-gitops", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachine", t)
+	AssertEqual("namespace", node.Properties["namespace"], "openshift-cnv", t)
+	AssertEqual("created", node.Properties["created"], "2024-04-30T16:22:02Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("display", node.Properties["status"], "Running", t)
+	AssertEqual("phase", node.Properties["ready"], "True", t)
+
+}

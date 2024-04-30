@@ -37,6 +37,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			ExtractProperty{name: "degraded", jsonpath: `{.status.conditions[?(@.type=="Degraded")].status}`},
 		},
 	},
+	"VirtualMachine.kubevirt.io": ResourceConfig{
+		properties: []ExtractProperty{
+			ExtractProperty{name: "status", jsonpath: `{.status.printableStatus}`},
+			ExtractProperty{name: "ready", jsonpath: `{.status.conditions[?(@.type=='Ready')].status}`},
+		},
+	},
 }
 
 // Get the properties to extract from a resource.
