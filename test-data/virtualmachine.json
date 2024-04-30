@@ -3,7 +3,6 @@
     "kind": "VirtualMachine",
     "metadata": {
         "annotations": {
-            "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"kubevirt.io/v1\",\"kind\":\"VirtualMachine\",\"metadata\":{\"annotations\":{\"kubevirt.io/latest-observed-api-version\":\"v1\",\"kubevirt.io/storage-observed-api-version\":\"v1\",\"vm.kubevirt.io/validations\":\"[\\n  {\\n    \\\"name\\\": \\\"minimal-required-memory\\\",\\n    \\\"path\\\": \\\"jsonpath::.spec.domain.memory.guest\\\",\\n    \\\"rule\\\": \\\"integer\\\",\\n    \\\"message\\\": \\\"This VM requires more memory.\\\",\\n    \\\"min\\\": 1610612736\\n  }\\n]\\n\"},\"finalizers\":[\"kubevirt.io/virtualMachineControllerFinalize\"],\"labels\":{\"app\":\"rhel9-gitops\",\"app.kubernetes.io/instance\":\"test3-local-cluster\",\"kubevirt.io/dynamic-credentials-support\":\"true\",\"vm.kubevirt.io/template\":\"rhel9-server-small\",\"vm.kubevirt.io/template.namespace\":\"openshift\",\"vm.kubevirt.io/template.revision\":\"1\",\"vm.kubevirt.io/template.version\":\"v0.26.0\"},\"name\":\"rhel9-gitops\",\"namespace\":\"openshift-cnv\"},\"spec\":{\"dataVolumeTemplates\":[{\"apiVersion\":\"cdi.kubevirt.io/v1beta1\",\"kind\":\"DataVolume\",\"metadata\":{\"creationTimestamp\":null,\"name\":\"rhel9-gitops\"},\"spec\":{\"sourceRef\":{\"kind\":\"DataSource\",\"name\":\"rhel9\",\"namespace\":\"openshift-virtualization-os-images\"},\"storage\":{\"resources\":{\"requests\":{\"storage\":\"30Gi\"}}}}}],\"running\":true,\"template\":{\"metadata\":{\"annotations\":{\"vm.kubevirt.io/flavor\":\"small\",\"vm.kubevirt.io/os\":\"rhel9\",\"vm.kubevirt.io/workload\":\"server\"},\"creationTimestamp\":null,\"labels\":{\"kubevirt.io/domain\":\"rhel9-gitops\",\"kubevirt.io/size\":\"small\"}},\"spec\":{\"architecture\":\"amd64\",\"domain\":{\"cpu\":{\"cores\":1,\"sockets\":1,\"threads\":1},\"devices\":{\"disks\":[{\"disk\":{\"bus\":\"virtio\"},\"name\":\"rootdisk\"},{\"disk\":{\"bus\":\"virtio\"},\"name\":\"cloudinitdisk\"}],\"interfaces\":[{\"masquerade\":{},\"model\":\"virtio\",\"name\":\"default\"}],\"networkInterfaceMultiqueue\":true,\"rng\":{}},\"features\":{\"acpi\":{},\"smm\":{\"enabled\":true}},\"firmware\":{\"bootloader\":{\"efi\":{}}},\"machine\":{\"type\":\"pc-q35-rhel9.2.0\"},\"memory\":{\"guest\":\"2Gi\"},\"resources\":{}},\"networks\":[{\"name\":\"default\",\"pod\":{}}],\"terminationGracePeriodSeconds\":180,\"volumes\":[{\"dataVolume\":{\"name\":\"rhel9-gitops\"},\"name\":\"rootdisk\"},{\"cloudInitConfigDrive\":{\"userData\":\"#cloud-config\\nuser: clclc-user\\npassword: oooo-pppp-eeee\\nchpasswd: { expire: False }\"},\"name\":\"cloudinitdisk\"}]}}}}\n",
             "kubemacpool.io/transaction-timestamp": "2024-04-30T16:22:02.151446447Z",
             "kubevirt.io/latest-observed-api-version": "v1",
             "kubevirt.io/storage-observed-api-version": "v1",
@@ -136,7 +135,7 @@
                     },
                     {
                         "cloudInitConfigDrive": {
-                            "userData": "#cloud-config\nuser: clclc-user\npassword: oooo-pppp-eeee\nchpasswd: { expire: False }"
+                            "userData": "#cloud-config\nuser: clclc-user"
                         },
                         "name": "cloudinitdisk"
                     }
