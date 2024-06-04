@@ -4,9 +4,10 @@ FROM brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.21 AS bui
 
 WORKDIR /go/src/github.com/stolostron/search-collector
 COPY . .
+RUN go mod vendor
 RUN CGO_ENABLED=1 GOGC=25 go build -trimpath -o main main.go
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 ARG VCS_REF
 ARG VCS_URL
