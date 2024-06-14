@@ -15,14 +15,14 @@ require (
 	github.com/stolostron/multicloud-operators-placementrule v1.2.4-1-20220311-8eedb3f
 	github.com/stretchr/testify v1.8.2
 	github.com/tkanos/gonfig v0.0.0-20210106201359-53e13348de2f
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.2
 	k8s.io/apimachinery v0.28.2
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.17.0+incompatible
-	k8s.io/klog/v2 v2.100.1
+	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
 	open-cluster-management.io/multicloud-operators-channel v0.8.0
 	open-cluster-management.io/multicloud-operators-subscription v0.8.0 //Use 2.0 when available
@@ -44,7 +44,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
@@ -59,10 +59,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stolostron/cluster-lifecycle-api v0.0.0-20220621134646-8b67f2e6afed // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/term v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -77,6 +77,6 @@ require (
 
 replace (
 	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
-	golang.org/x/net => golang.org/x/net v0.17.0
+	golang.org/x/net => golang.org/x/net v0.26.0
 	k8s.io/client-go => k8s.io/client-go v0.28.2
 )
