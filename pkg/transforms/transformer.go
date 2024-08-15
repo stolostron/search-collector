@@ -36,7 +36,10 @@ import (
 // Operation is the event operation
 type Operation int
 
-var APPS_OPEN_CLUSTER_MANAGEMENT_IO = "apps.open-cluster-management.io"
+const (
+	APPS_OPEN_CLUSTER_MANAGEMENT_IO   = "apps.open-cluster-management.io"
+	POLICY_OPEN_CLUSTER_MANAGEMENT_IO = "policy.open-cluster-management.io"
+)
 
 const (
 	Create Operation = iota // 0
@@ -131,7 +134,7 @@ type Transformer struct {
 }
 
 var (
-	NonNSResourceMap map[string]struct{} //store non-namespaced resources in this map
+	NonNSResourceMap map[string]struct{} // store non-namespaced resources in this map
 	NonNSResMapMutex = sync.RWMutex{}
 )
 
@@ -151,7 +154,6 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 		Input:  inputChan,
 		Output: outputChan,
 	}
-
 }
 
 // This function processes k8s objects into Nodes, then pass them into the output channel.
@@ -245,7 +247,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeploymentResourceBuilder(&typedResource)
 
-			//This is an ocp specific resource
+			// This is an ocp specific resource
 		case [2]string{"DeploymentConfig", "apps.openshift.io"}:
 			typedResource := ocpapp.DeploymentConfig{}
 			err := runtime.DefaultUnstructuredConverter.
@@ -255,7 +257,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = DeploymentConfigResourceBuilder(&typedResource)
 
-			//This is the application's HelmCR of kind HelmRelease.
+			// This is the application's HelmCR of kind HelmRelease.
 		case [2]string{"HelmRelease", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := appHelmRelease.HelmRelease{}
 			err := runtime.DefaultUnstructuredConverter.
@@ -346,7 +348,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PodResourceBuilder(&typedResource)
 
-		case [2]string{"Policy", "policy.open-cluster-management.io"},
+		case [2]string{"Policy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO},
 			[2]string{"Policy", "policies.open-cluster-management.io"}:
 			typedResource := policy.Policy{}
 			err := runtime.DefaultUnstructuredConverter.
@@ -355,6 +357,13 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 				panic(err) // Will be caught by handleRoutineExit
 			}
 			trans = PolicyResourceBuilder(&typedResource)
+
+		case [2]string{"ConfigurationPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO},
+			[2]string{"CertificatePolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
+			trans = StandalonePolicyResourceBuilder(event.Resource)
+
+		case [2]string{"OperatorPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
+			trans = OperatorPolicyResourceBuilder(event.Resource)
 
 		case [2]string{"ReplicaSet", "apps"},
 			[2]string{"ReplicaSet", "extensions"}:

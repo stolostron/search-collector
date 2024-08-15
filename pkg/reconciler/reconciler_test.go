@@ -48,7 +48,7 @@ func initTestReconciler() *Reconciler {
 func createNodeEvents() []tr.NodeEvent {
 	events := NodeEdge{}
 	nodeEvents := []tr.NodeEvent{}
-	//First Node
+	// First Node
 	unstructuredInput := unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"kind": "testowner",
@@ -77,7 +77,7 @@ func createNodeEvents() []tr.NodeEvent {
 	events.BuildNode = append(events.BuildNode, podNode)
 	events.BuildEdges = append(events.BuildEdges, podEdges)
 
-	//Convert events to node events
+	// Convert events to node events
 	for i := range events.BuildNode {
 		ne := tr.NodeEvent{
 			Time:         time.Now().Unix(),
@@ -237,10 +237,10 @@ func TestReconcilerRedundant(t *testing.T) {
 
 func TestReconcilerAddEdges(t *testing.T) {
 	testReconciler := initTestReconciler()
-	//Add events
+	// Add events
 	events := createNodeEvents()
 
-	//Input node events to reconciler
+	// Input node events to reconciler
 	go func() {
 		for _, ne := range events {
 			testReconciler.Input <- ne
@@ -250,16 +250,16 @@ func TestReconcilerAddEdges(t *testing.T) {
 	for range events {
 		testReconciler.reconcileNode()
 	}
-	//Build edges
+	// Build edges
 	edgeMap1 := testReconciler.allEdges()
 
-	//Expected edge
+	// Expected edge
 	edgeMap2 := make(map[string]map[string]tr.Edge, 1)
 	edge := tr.Edge{EdgeType: "ownedBy", SourceUID: "local-cluster/5678", DestUID: "local-cluster/1234", SourceKind: "Pod", DestKind: "testowner"}
 	edgeMap2["local-cluster/5678"] = map[string]tr.Edge{}
 	edgeMap2["local-cluster/5678"]["local-cluster/1234"] = edge
 
-	//Check if the actual and expected edges are the same
+	// Check if the actual and expected edges are the same
 	if !reflect.DeepEqual(edgeMap1, edgeMap2) {
 		t.Fatal("Expected edges not found")
 	} else {
@@ -269,17 +269,17 @@ func TestReconcilerAddEdges(t *testing.T) {
 
 func TestReconcilerDiff(t *testing.T) {
 	testReconciler := initTestReconciler()
-	//Add a node to reconciler previous nodes
+	// Add a node to reconciler previous nodes
 	testReconciler.previousNodes["local-cluster/1234"] = tr.Node{
 		UID: "local-cluster/1234",
 		Properties: map[string]interface{}{
 			"very": "important",
 		},
 	}
-	//Add events
+	// Add events
 	events := createNodeEvents()
 
-	//Input node events to reconciler
+	// Input node events to reconciler
 	go func() {
 		for _, ne := range events {
 			testReconciler.Input <- ne
@@ -289,9 +289,9 @@ func TestReconcilerDiff(t *testing.T) {
 	for range events {
 		testReconciler.reconcileNode()
 	}
-	//Compute reconciler diff - this time there should be 1 node and edge to add, 1 node to update
+	// Compute reconciler diff - this time there should be 1 node and edge to add, 1 node to update
 	diff := testReconciler.Diff()
-	//Compute reconciler diff again - this time there shouldn't be any new edges or nodes to add/update
+	// Compute reconciler diff again - this time there shouldn't be any new edges or nodes to add/update
 	nextDiff := testReconciler.Diff()
 
 	if (len(diff.AddNodes) != 1 || len(diff.UpdateNodes) != 1 || len(diff.AddEdges) != 1) ||
@@ -306,7 +306,7 @@ func TestReconcilerComplete(t *testing.T) {
 	input := make(chan *tr.Event)
 	output := make(chan tr.NodeEvent)
 	ts := time.Now().Unix()
-	//Read all files in test-data
+	// Read all files in test-data
 	dir := "../../test-data"
 	files, err := os.ReadDir(dir)
 	if err != nil {
@@ -316,19 +316,19 @@ func TestReconcilerComplete(t *testing.T) {
 	events := make([]tr.Event, 0)
 	var appInput unstructured.Unstructured
 
-	//Variables to keep track of helm release object
+	// Variables to keep track of helm release object
 	var c v1.ConfigMap
 	var rls release.Release
 	rlsFileCount := 0
-	var rlsEvnt = &tr.Event{}
+	rlsEvnt := &tr.Event{}
 
-	//Convert to events
+	// Convert to events
 	for _, file := range files {
 		filePath := dir + "/" + file.Name()
 		if file.Name() != "helmrelease-release.json" {
 			tr.UnmarshalFile(filePath, &appInput, t)
 			appInputLocal := appInput
-			var in = &tr.Event{
+			in := &tr.Event{
 				Time:      ts,
 				Operation: tr.Create,
 				Resource:  &appInputLocal,
@@ -350,7 +350,7 @@ func TestReconcilerComplete(t *testing.T) {
 	testReconciler := initTestReconciler()
 	go tr.TransformRoutine(input, output)
 
-	//Convert events to Node events
+	// Convert events to Node events
 	go func() {
 		for _, ev := range events {
 			localEv := &ev
@@ -378,7 +378,7 @@ func TestReconcilerComplete(t *testing.T) {
 	// Checks the count of nodes and edges based on the JSON files in pkg/test-data
 	// Update counts when the test data is changed
 	// We don't create Nodes for kind = Event
-	const Nodes = 36
+	const Nodes = 39
 	const Edges = 51
 	if len(com.Edges) != Edges || com.TotalEdges != Edges || len(com.Nodes) != Nodes || com.TotalNodes != Nodes {
 		ns := tr.NodeStore{

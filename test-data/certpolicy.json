@@ -1,0 +1,53 @@
+{
+  "apiVersion": "policy.open-cluster-management.io/v1",
+  "kind": "CertificatePolicy",
+  "metadata": {
+    "creationTimestamp": "2024-08-15T19:21:44Z",
+    "generation": 1,
+    "labels": {
+      "cluster-name": "local-cluster",
+      "cluster-namespace": "local-cluster",
+      "policy.open-cluster-management.io/cluster-name": "local-cluster",
+      "policy.open-cluster-management.io/cluster-namespace": "local-cluster",
+      "policy.open-cluster-management.io/policy": "default.cert-policy-dd"
+    },
+    "managedFields": [
+      {
+        "apiVersion": "policy.open-cluster-management.io/v1",
+        "manager": "multicluster-operators-subscription"
+      }
+    ],
+    "name": "policy-certificate",
+    "namespace": "local-cluster",
+    "ownerReferences": [
+      {
+        "apiVersion": "policy.open-cluster-management.io/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "Policy",
+        "name": "default.cert-policy-dd",
+        "uid": "3104a97d-c42a-43de-b8fa-b8579d9d06b3"
+      }
+    ],
+    "resourceVersion": "395036",
+    "uid": "2fc12fad-80d4-4545-b9d5-bc329f12f4d1"
+  },
+  "spec": {
+    "disabled": false,
+    "minimumDuration": "300h",
+    "namespaceSelector": {
+      "exclude": ["kube-*"],
+      "include": ["default"]
+    },
+    "remediationAction": "inform",
+    "severity": "low"
+  },
+  "status": {
+    "compliancyDetails": {
+      "default": {
+        "message": "Found 0 non compliant certificates in the namespace default.\n"
+      }
+    },
+    "compliant": "Compliant"
+  }
+}
