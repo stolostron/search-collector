@@ -12,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"k8s.io/client-go/dynamic"
@@ -175,35 +174,35 @@ func (inform *GenericInformer) watch(stopper chan struct{}) {
 			switch event.Type {
 			case "ADDED":
 				glog.V(5).Infof("Received ADDED event. Kind: %s ", inform.gvr.Resource)
-				o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
-				if error != nil {
-					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event. %s",
-						inform.gvr.Resource, error)
+				obj, ok := event.Object.(*unstructured.Unstructured)
+				if !ok {
+					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on ADDED event.",
+						inform.gvr.Resource)
+					continue
 				}
-				obj := &unstructured.Unstructured{Object: o}
 				inform.AddFunc(obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
 			case "MODIFIED":
 				glog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
-				o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
-				if error != nil {
-					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event. %s",
-						inform.gvr.Resource, error)
+				obj, ok := event.Object.(*unstructured.Unstructured)
+				if !ok {
+					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on MODIFIED event",
+						inform.gvr.Resource)
+					continue
 				}
-				obj := &unstructured.Unstructured{Object: o}
 
 				inform.UpdateFunc(nil, obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
 			case "DELETED":
 				glog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
-				o, error := runtime.UnstructuredConverter.ToUnstructured(runtime.DefaultUnstructuredConverter, &event.Object)
-				if error != nil {
-					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event. %s",
-						inform.gvr.Resource, error)
+				obj, ok := event.Object.(*unstructured.Unstructured)
+				if !ok {
+					glog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event",
+						inform.gvr.Resource)
+					continue
 				}
-				obj := &unstructured.Unstructured{Object: o}
 
 				inform.DeleteFunc(obj)
 				delete(inform.resourceIndex, string(obj.GetUID()))
