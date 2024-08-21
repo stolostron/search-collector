@@ -50,7 +50,34 @@ func TestTransformRoutine(t *testing.T) {
 	addonNode := KlusterletAddonConfigResourceBuilder(&addonTyped).BuildNode()
 	addonNode.ResourceString = "klusterletaddonconfigs"
 
-	var tests = []struct {
+	unstructGatekeeperConstraint := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "constraints.gatekeeper.sh/v1beta1",
+			"kind":       "K8sRequiredLabels",
+			"metadata": map[string]interface{}{
+				"name": "ns-must-have-gk",
+				"uid":  "783472a78",
+			},
+			"spec": map[string]interface{}{
+				"enforcementAction": "dryrun",
+				"other":             "value",
+			},
+			"status": map[string]interface{}{
+				"auditTimestamp":  "2024-08-26T19:12:02Z",
+				"totalViolations": 84,
+			},
+		},
+	}
+	gatekeeperPrinterColumns := []ExtractProperty{
+		{Name: "enforcementAction", JSONPath: "{.spec.enforcementAction}"},
+		{Name: "totalViolations", JSONPath: "{.status.totalViolations}"},
+	}
+	gatekeeperConstraintNode := GenericResourceBuilder(
+		&unstructGatekeeperConstraint, gatekeeperPrinterColumns...,
+	).BuildNode()
+	gatekeeperConstraintNode.ResourceString = "k8srequiredlabels"
+
+	tests := []struct {
 		name     string
 		in       *Event
 		expected NodeEvent
@@ -107,6 +134,21 @@ func TestTransformRoutine(t *testing.T) {
 			},
 			NodeEvent{
 				Node:      addonNode,
+				Time:      ts,
+				Operation: Create,
+			},
+		},
+		{
+			"Gatekeeper constraint create",
+			&Event{
+				Time:                     ts,
+				Operation:                Create,
+				Resource:                 &unstructGatekeeperConstraint,
+				ResourceString:           "k8srequiredlabels",
+				AdditionalPrinterColumns: gatekeeperPrinterColumns,
+			},
+			NodeEvent{
+				Node:      gatekeeperConstraintNode,
 				Time:      ts,
 				Operation: Create,
 			},

@@ -3,10 +3,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/stolostron/search-collector/pkg/config"
@@ -24,6 +28,26 @@ const (
 	AddonName            = "search-collector"
 	LeaseDurationSeconds = 60
 )
+
+// getMainContext returns a context that is canceled on SIGINT or SIGTERM signals. If a second signal is received,
+// it exits directly.
+// This was inspired by controller-runtime.
+func getMainContext() context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := make(chan os.Signal, 2)
+
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-c
+		cancel()
+		<-c
+		os.Exit(1) // Second signal. Exit directly.
+	}()
+
+	return ctx
+}
 
 func main() {
 	// init logs
@@ -73,8 +97,22 @@ func main() {
 
 	informersInitialized := make(chan interface{})
 
+	mainCtx := getMainContext()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
 	// Start a routine to keep our informers up to date.
-	go informer.RunInformers(informersInitialized, upsertTransformer, reconciler)
+	go func() {
+		err := informer.RunInformers(mainCtx, informersInitialized, upsertTransformer, reconciler)
+		if err != nil {
+			glog.Errorf("Failed to run the informers: %v", err)
+
+			os.Exit(1)
+		}
+
+		wg.Done()
+	}()
 
 	// Wait here until informers have collected the full state of the cluster.
 	// The initial payload must have the complete state to avoid unecessary deletion
@@ -83,5 +121,12 @@ func main() {
 	<-informersInitialized
 
 	glog.Info("Starting the sender.")
-	sender.StartSendLoop()
+	wg.Add(1)
+
+	go func() {
+		sender.StartSendLoop(mainCtx)
+		wg.Done()
+	}()
+
+	wg.Wait()
 }

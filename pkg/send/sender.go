@@ -12,6 +12,7 @@ package send
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
@@ -296,12 +297,17 @@ func (s *Sender) Sync() error {
 
 // Starts the send loop to send data on an interval.
 // In case of error it backoffs and retries.
-func (s *Sender) StartSendLoop() {
-
+func (s *Sender) StartSendLoop(ctx context.Context) {
 	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
 	backoffFactor := 1 // Note: must be 1. Using 0 will send the next payload immediately.
 
 	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		glog.V(3).Info("Beginning Send Cycle")
 		err := s.Sync()
 		if err != nil {

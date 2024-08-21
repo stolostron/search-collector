@@ -4,7 +4,6 @@
 package transforms
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -22,7 +21,7 @@ type GenericResource struct {
 // Builds a GenericResource node.
 // Extract default properties from unstructured resource.
 // Supports extracting additional properties defined by the transform config.
-func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
+func GenericResourceBuilder(r *unstructured.Unstructured, additionalColumns ...ExtractProperty) *GenericResource {
 	n := Node{
 		UID:        prefixedUID(r.GetUID()),
 		Properties: genericProperties(r),
@@ -33,33 +32,65 @@ func GenericResourceBuilder(r *unstructured.Unstructured) *GenericResource {
 	group := r.GroupVersionKind().Group
 	kind := r.GetKind()
 	transformConfig, found := getTransformConfig(group, kind)
-	if found {
-		for _, prop := range transformConfig.properties {
-			jp := jsonpath.New(prop.name)
-			parseErr := jp.Parse(prop.jsonpath)
-			if parseErr != nil {
-				klog.Errorf("Error parsing jsonpath [%s] for [%s.%s] prop: [%s]. Reason: %v",
-					prop.jsonpath, kind, group, prop.name, parseErr)
-				continue
-			}
-			result, err := jp.FindResults(r.Object)
-			if err != nil {
-				// This error isn't always indicative of a problem, for example, when the object is created, it
-				// won't have a status yet, so the jsonpath returns an error until controller adds the status.
-				klog.V(1).Infof("Unable to extract prop [%s] from [%s.%s] Name: [%s]. Reason: %v",
-					prop.name, kind, group, r.GetName(), err)
-				continue
-			}
-			if len(result) > 0 && len(result[0]) > 0 {
-				n.Properties[prop.name] = fmt.Sprintf("%s", result[0][0])
-			} else {
-				klog.Errorf("Unexpected error extracting [%s] from [%s.%s] Name: [%s]. Result object is empty.",
-					prop.name, kind, group, r.GetName())
-				continue
-			}
+
+	// Currently, only pull in the additionalPrinterColumns listed in the CRD if it's a Gatekeeper
+	// constraint or globally enabled.
+	if !found && (config.Cfg.CollectCRDPrinterColumns || group == "constraints.gatekeeper.sh") {
+		transformConfig = ResourceConfig{properties: additionalColumns}
+	}
+
+	for _, prop := range transformConfig.properties {
+		// Skip properties that are already set. This could happen if additionalPrinterColumns
+		// is overriding a generic property.
+		if _, ok := n.Properties[prop.Name]; ok {
+			continue
 		}
+
+		// Skip additionalPrinterColumns that should be ignored.
+		if !found && defaultTransformIgnoredFields[prop.Name] {
+			continue
+		}
+
+		jp := jsonpath.New(prop.Name)
+		parseErr := jp.Parse(prop.JSONPath)
+		if parseErr != nil {
+			klog.Errorf("Error parsing jsonpath [%s] for [%s.%s] prop: [%s]. Reason: %v",
+				prop.JSONPath, kind, group, prop.Name, parseErr)
+			continue
+		}
+
+		result, err := jp.FindResults(r.Object)
+		if err != nil {
+			// This error isn't always indicative of a problem, for example, when the object is created, it
+			// won't have a status yet, so the jsonpath returns an error until controller adds the status.
+			klog.V(1).Infof("Unable to extract prop [%s] from [%s.%s] Name: [%s]. Reason: %v",
+				prop.Name, kind, group, r.GetName(), err)
+			continue
+		}
+
+		if len(result) > 0 && len(result[0]) > 0 {
+			val := result[0][0].Interface()
+
+			if knownStringArrays[prop.Name] {
+				if _, ok := val.([]string); !ok {
+					klog.V(1).Infof("Ignoring the property [%s] from [%s.%s] Name: [%s]. Reason: not a string slice",
+						prop.Name, kind, group, r.GetName())
+					continue
+				}
+			}
+
+			n.Properties[prop.Name] = val
+		} else {
+			klog.Errorf("Unexpected error extracting [%s] from [%s.%s] Name: [%s]. Result object is empty.",
+				prop.Name, kind, group, r.GetName())
+			continue
+		}
+	}
+
+	if found {
 		klog.V(5).Infof("Built [%s.%s] using transform config.\nNode: %+v\n", kind, group, n)
 	}
+
 	return &GenericResource{node: n}
 }
 

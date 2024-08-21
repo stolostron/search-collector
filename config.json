@@ -3,7 +3,6 @@
     "ClusterName": "local-cluster",
     "ClusterNamespace": "local-cluster-ns",
     "ReportRateMS": 5000,
-    "RediscoverRateMS": 60000,
     "RuntimeMode": "development",
     "DeployedInHub": true
 }

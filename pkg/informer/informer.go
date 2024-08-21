@@ -44,10 +44,10 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 }
 
 // Run runs the informer.
-func (inform *GenericInformer) Run(stopper chan struct{}) {
+func (inform *GenericInformer) Run(ctx context.Context) {
 	for {
 		select {
-		case <-stopper:
+		case <-ctx.Done():
 			glog.Info("Informer stopped. ", inform.gvr.String())
 			for key := range inform.resourceIndex {
 				glog.V(5).Infof("Stopping informer %s and removing resource with UID: %s", inform.gvr.Resource, key)
@@ -71,7 +71,7 @@ func (inform *GenericInformer) Run(stopper chan struct{}) {
 			err := inform.listAndResync()
 			if err == nil {
 				inform.initialized = true
-				inform.watch(stopper)
+				inform.watch(ctx.Done())
 			}
 		}
 	}
@@ -148,8 +148,7 @@ func (inform *GenericInformer) listAndResync() error {
 }
 
 // Watch resources and process events.
-func (inform *GenericInformer) watch(stopper chan struct{}) {
-
+func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 	watch, watchError := inform.client.Resource(inform.gvr).Watch(context.TODO(), metav1.ListOptions{})
 	if watchError != nil {
 		glog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
