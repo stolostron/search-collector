@@ -26,37 +26,39 @@ import (
 
 // Out of box defaults
 const (
-	COLLECTOR_API_VERSION      = "2.11.0"
-	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010" // this will be deprecated in the future
-	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
-	DEFAULT_AGGREGATOR_PORT    = "3010"
-	DEFAULT_CLUSTER_NAME       = "local-cluster"
-	DEFAULT_POD_NAMESPACE      = "open-cluster-management"
-	DEFAULT_HEARTBEAT_MS       = 300000 // 5 min
-	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
-	DEFAULT_REDISCOVER_RATE_MS = 120000 // 2 min
-	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
-	DEFAULT_RETRY_JITTER_MS    = 5000   // 5 seconds
-	DEFAULT_RUNTIME_MODE       = "production"
+	COLLECTOR_API_VERSION       = "2.11.0"
+	DEFAULT_AGGREGATOR_URL      = "https://localhost:3010" // this will be deprecated in the future
+	DEFAULT_AGGREGATOR_HOST     = "https://localhost"
+	DEFAULT_AGGREGATOR_PORT     = "3010"
+	DEFAULT_COLLECT_ANNOTATIONS = false
+	DEFAULT_CLUSTER_NAME        = "local-cluster"
+	DEFAULT_POD_NAMESPACE       = "open-cluster-management"
+	DEFAULT_HEARTBEAT_MS        = 300000 // 5 min
+	DEFAULT_MAX_BACKOFF_MS      = 600000 // 10 min
+	DEFAULT_REDISCOVER_RATE_MS  = 120000 // 2 min
+	DEFAULT_REPORT_RATE_MS      = 5000   // 5 seconds
+	DEFAULT_RETRY_JITTER_MS     = 5000   // 5 seconds
+	DEFAULT_RUNTIME_MODE        = "production"
 )
 
 // Configuration options for the search-collector.
 type Config struct {
 	AggregatorConfig     *rest.Config // Config object for hub. Used to get TLS credentials.
-	AggregatorConfigFile string       `env:"HUB_CONFIG"`         // Config file for hub. Will be mounted in a secret.
-	AggregatorURL        string       `env:"AGGREGATOR_URL"`     // URL of the Aggregator, includes port but not any path
-	AggregatorHost       string       `env:"AGGREGATOR_HOST"`    // Host of the Aggregator
-	AggregatorPort       string       `env:"AGGREGATOR_PORT"`    // Port of the Aggregator
-	ClusterName          string       `env:"CLUSTER_NAME"`       // The name of of the cluster where this pod is running
-	PodNamespace         string       `env:"POD_NAMESPACE"`      // The namespace of this pod
-	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`    // Tracks if deployed in the Hub or Managed cluster
-	HeartbeatMS          int          `env:"HEARTBEAT_MS"`       // Interval(ms) to send empty payload to ensure connection
-	KubeConfig           string       `env:"KUBECONFIG"`         // Local kubeconfig path
-	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
-	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
-	RetryJitterMS        int          `env:"RETRY_JITTER_MS"`    // Random jitter added to backoff wait.
-	ReportRateMS         int          `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
-	RuntimeMode          string       `env:"RUNTIME_MODE"`       // Running mode (development or production)
+	AggregatorConfigFile string       `env:"HUB_CONFIG"`          // Config file for hub. Will be mounted in a secret.
+	AggregatorURL        string       `env:"AGGREGATOR_URL"`      // URL of the Aggregator, includes port but not any path
+	AggregatorHost       string       `env:"AGGREGATOR_HOST"`     // Host of the Aggregator
+	AggregatorPort       string       `env:"AGGREGATOR_PORT"`     // Port of the Aggregator
+	CollectAnnotations   bool         `env:"COLLECT_ANNOTATIONS"` // Collect all annotations with values <=64 characters
+	ClusterName          string       `env:"CLUSTER_NAME"`        // The name of of the cluster where this pod is running
+	PodNamespace         string       `env:"POD_NAMESPACE"`       // The namespace of this pod
+	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`     // Tracks if deployed in the Hub or Managed cluster
+	HeartbeatMS          int          `env:"HEARTBEAT_MS"`        // Interval(ms) to send empty payload to ensure connection
+	KubeConfig           string       `env:"KUBECONFIG"`          // Local kubeconfig path
+	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`      // Maximum backoff in ms to wait after error
+	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"`  // Interval(ms) to poll for changes to CRDs
+	RetryJitterMS        int          `env:"RETRY_JITTER_MS"`     // Random jitter added to backoff wait.
+	ReportRateMS         int          `env:"REPORT_RATE_MS"`      // Interval(ms) to send changes to the aggregator
+	RuntimeMode          string       `env:"RUNTIME_MODE"`        // Running mode (development or production)
 }
 
 var Cfg = Config{}
@@ -111,6 +113,16 @@ func InitConfig() {
 		defaultKubePath = ""
 	}
 	setDefault(&Cfg.KubeConfig, "KUBECONFIG", defaultKubePath)
+
+	if collectAnnotations := os.Getenv("COLLECT_ANNOTATIONS"); collectAnnotations != "" {
+		glog.Infof("Using COLLECT_ANNOTATIONS from environment: %s", collectAnnotations)
+
+		var err error
+		Cfg.CollectAnnotations, err = strconv.ParseBool(collectAnnotations)
+		if err != nil {
+			glog.Errorf("Error parsing env COLLECT_ANNOTATIONS, defaulting to false: %v", err)
+		}
+	}
 
 	// Special logic for setting DEPLOYED_IN_HUB with default to false
 	if val := os.Getenv("DEPLOYED_IN_HUB"); val != "" {

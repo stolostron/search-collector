@@ -99,6 +99,13 @@ func genericProperties(r *unstructured.Unstructured) map[string]interface{} {
 	if r.GetLabels() != nil {
 		ret["label"] = r.GetLabels()
 	}
+
+	annotations := commonAnnotations(r)
+
+	if annotations != nil {
+		ret["annotation"] = annotations
+	}
+
 	if r.GetNamespace() != "" {
 		ret["namespace"] = r.GetNamespace()
 	}
