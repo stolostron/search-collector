@@ -413,7 +413,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = PolicyReportResourceBuilder(&typedResource)
 
 		default:
-			trans = GenericResourceBuilder(event.Resource, event.AdditionalPrinterColumns...)
+			generic := GenericResourceBuilder(event.Resource, event.AdditionalPrinterColumns...)
+
+			// Gatekeeper constraint kinds are user defined, so key on just the API group to add an additional property.
+			if apiGroup == "constraints.gatekeeper.sh" {
+				generic.node.Properties["_isExternal"] = getIsPolicyExternal(event.Resource)
+			}
+
+			trans = generic
 		}
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)

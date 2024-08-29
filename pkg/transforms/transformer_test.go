@@ -76,6 +76,7 @@ func TestTransformRoutine(t *testing.T) {
 		&unstructGatekeeperConstraint, gatekeeperPrinterColumns...,
 	).BuildNode()
 	gatekeeperConstraintNode.ResourceString = "k8srequiredlabels"
+	gatekeeperConstraintNode.Properties["_isExternal"] = false
 
 	tests := []struct {
 		name     string
