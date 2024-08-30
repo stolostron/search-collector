@@ -62,7 +62,7 @@ func Test_genericResourceFromConfig(t *testing.T) {
 func Test_allowListedForAnnotations(t *testing.T) {
 	obj := unstructured.Unstructured{}
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
-		Group: "policies.open-cluster-management.io", Kind: "Policy", Version: "v1",
+		Group: POLICY_OPEN_CLUSTER_MANAGEMENT_IO, Kind: "Policy", Version: "v1",
 	})
 	obj.SetAnnotations(map[string]string{"hello": "world"})
 
