@@ -18,6 +18,7 @@
             "operators.openshift.io/infrastructure-features": "[\"disconnected\", \"proxy-aware\", \"fips\"]",
             "operators.openshift.io/valid-subscription": "[\"OpenShift Platform Plus\", \"Red Hat Advanced Cluster Management for Kubernetes\"]",
             "operators.operatorframework.io/internal-objects": "[]",
+            "kubectl.kubernetes.io/last-applied-configuration": "something",
             "support": "Red Hat"
         },
         "creationTimestamp": "2023-08-23T15:54:22Z",

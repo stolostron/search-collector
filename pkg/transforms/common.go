@@ -13,10 +13,12 @@ package transforms
 import (
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiTypes "k8s.io/apimachinery/pkg/types"
 )
 
@@ -25,6 +27,43 @@ import (
 type NodeStore struct {
 	ByUID               map[string]Node
 	ByKindNamespaceName map[string]map[string]map[string]Node
+}
+
+// commonAnnotations returns the annotations with values <= 64 characters. It also removes the
+// last-applied-configuration annotation regardless of length.
+func commonAnnotations(object v1.Object) map[string]string {
+	// If CollectAnnotations is not true, then only collect annotations for allow listed resources.
+	if !config.Cfg.CollectAnnotations {
+		typeInfo, ok := object.(v1.Type)
+		if !ok {
+			return nil
+		}
+
+		gv, err := schema.ParseGroupVersion(typeInfo.GetAPIVersion())
+		if err != nil {
+			return nil
+		}
+
+		switch gv.Group {
+		case "policies.open-cluster-management.io":
+		case "constraints.gatekeeper.sh":
+		default:
+			return nil
+		}
+	}
+
+	annotations := object.GetAnnotations()
+
+	// This annotation is large and useless
+	delete(annotations, "kubectl.kubernetes.io/last-applied-configuration")
+
+	for key, val := range annotations {
+		if utf8.RuneCountInString(val) > 64 {
+			delete(annotations, key)
+		}
+	}
+
+	return annotations
 }
 
 // Extracts the common properties from a k8s resource of any type and returns a map ready to be put in a Node
@@ -40,6 +79,13 @@ func commonProperties(resource v1.Object) map[string]interface{} {
 	if resource.GetLabels() != nil {
 		ret["label"] = resource.GetLabels()
 	}
+
+	annotations := commonAnnotations(resource)
+
+	if annotations != nil {
+		ret["annotation"] = annotations
+	}
+
 	if resource.GetNamespace() != "" {
 		ret["namespace"] = resource.GetNamespace()
 	}

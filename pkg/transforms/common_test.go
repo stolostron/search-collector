@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stolostron/search-collector/pkg/config"
 	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,10 +33,16 @@ func CreateGenericResource() machineryV1.Object {
 	p.UID = "00aa0000-00aa-00a0-a000-00000a00a0a0"
 	p.CreationTimestamp = timestamp
 	p.Labels = labels
+	p.Annotations = map[string]string{"hello": "world"}
 	return &p
 }
 
 func TestCommonProperties(t *testing.T) {
+	config.Cfg.CollectAnnotations = true
+
+	defer func() {
+		config.Cfg.CollectAnnotations = false
+	}()
 
 	res := CreateGenericResource()
 	timeString := timestamp.UTC().Format(time.RFC3339)
@@ -46,6 +53,7 @@ func TestCommonProperties(t *testing.T) {
 	AssertEqual("name", cp["name"], interface{}("testpod"), t)
 	AssertEqual("namespace", cp["namespace"], interface{}("default"), t)
 	AssertEqual("created", cp["created"], interface{}(timeString), t)
+	AssertEqual("annotation", cp["annotation"].(map[string]string)["hello"], "world", t)
 
 	noLabels := true
 	for key, value := range cp["label"].(map[string]string) {
