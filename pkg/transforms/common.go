@@ -34,17 +34,12 @@ type NodeStore struct {
 func commonAnnotations(object v1.Object) map[string]string {
 	// If CollectAnnotations is not true, then only collect annotations for allow listed resources.
 	if !config.Cfg.CollectAnnotations {
-		typeInfo, ok := object.(v1.Type)
+		objKind, ok := object.(schema.ObjectKind)
 		if !ok {
 			return nil
 		}
 
-		gv, err := schema.ParseGroupVersion(typeInfo.GetAPIVersion())
-		if err != nil {
-			return nil
-		}
-
-		switch gv.Group {
+		switch objKind.GroupVersionKind().Group {
 		case POLICY_OPEN_CLUSTER_MANAGEMENT_IO:
 		case "constraints.gatekeeper.sh":
 		default:

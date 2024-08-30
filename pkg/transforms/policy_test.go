@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -26,6 +27,7 @@ func TestTransformPolicy(t *testing.T) {
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "enforce", t)
 	AssertEqual("disabled", node.Properties["disabled"], false, t)
 	AssertEqual("numRules", node.Properties["numRules"], 1, t)
+	assert.Len(t, node.Properties["annotation"], 3, "expected 3 annotations on the policy")
 }
 
 func TestTransformConfigPolicy(t *testing.T) {
