@@ -45,7 +45,7 @@ func commonAnnotations(object v1.Object) map[string]string {
 		}
 
 		switch gv.Group {
-		case "policies.open-cluster-management.io":
+		case POLICY_OPEN_CLUSTER_MANAGEMENT_IO:
 		case "constraints.gatekeeper.sh":
 		default:
 			return nil
