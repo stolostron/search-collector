@@ -49,10 +49,11 @@ const (
 
 // This type is used for add and update events.
 type Event struct {
-	Time           int64
-	Operation      Operation
-	Resource       *unstructured.Unstructured
-	ResourceString string // This is a plural identifier of the kind.
+	Time                     int64
+	Operation                Operation
+	Resource                 *unstructured.Unstructured
+	ResourceString           string            // This is a plural identifier of the kind.
+	AdditionalPrinterColumns []ExtractProperty // The entries from the additionalPrinterColumns array in the CRD.
 }
 
 // A generic node type that is passed to the aggregator to store in the database.
@@ -412,7 +413,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = PolicyReportResourceBuilder(&typedResource)
 
 		default:
-			trans = GenericResourceBuilder(event.Resource)
+			generic := GenericResourceBuilder(event.Resource, event.AdditionalPrinterColumns...)
+
+			// Gatekeeper constraint kinds are user defined, so key on just the API group to add an additional property.
+			if apiGroup == "constraints.gatekeeper.sh" {
+				generic.node.Properties["_isExternal"] = getIsPolicyExternal(event.Resource)
+			}
+
+			trans = generic
 		}
 
 		output <- NewNodeEvent(event, trans, event.ResourceString)

@@ -19,7 +19,7 @@ import (
 var gvr = schema.GroupVersionResource{Group: "open-cluster-management.io", Version: "v1", Resource: "thekinds"}
 
 func fakeDynamicClient() *fake.FakeDynamicClient {
-	var gvrMapToKind = map[schema.GroupVersionResource]string{}
+	gvrMapToKind := map[schema.GroupVersionResource]string{}
 	gvrMapToKind[gvr] = "thekindsList"
 	scheme := runtime.NewScheme()
 	scheme.AddKnownTypes(gvr.GroupVersion())
@@ -149,14 +149,14 @@ func Test_StoppedInformer_ValidateDeleteFunc(t *testing.T) {
 	}
 
 	// start informer
-	stopper := make(chan struct{})
-	go informer.Run(stopper)
+	ctx, cancel := context.WithCancel(context.Background())
+	go informer.Run(ctx)
 	time.Sleep(10 * time.Millisecond)
 
-	//exist informer to trigger DeleteFunc
-	close(stopper)
+	// exit informer to trigger DeleteFunc
+	cancel()
 
-	//allow test to process
+	// allow test to process
 	time.Sleep(10 * time.Millisecond)
 
 	// Verify that the informer.DeleteFunc was called with uid=id-999 and uid=id-100
@@ -173,14 +173,14 @@ func Test_Run(t *testing.T) {
 	informer, addFuncCount, deleteFuncCount, updateFuncCount := initInformer()
 
 	// Start informer routine
-	stopper := make(chan struct{})
-	go informer.Run(stopper)
+	ctx, cancel := context.WithCancel(context.Background())
+	go informer.Run(ctx)
 	time.Sleep(10 * time.Millisecond)
 
 	generateSimpleEvent(informer, t)
 	time.Sleep(10 * time.Millisecond)
 
-	close(stopper)
+	cancel()
 
 	// Verify that informer.AddFunc is called for each of the mocked resources (6 times).
 	if *addFuncCount != 6 {
@@ -207,7 +207,10 @@ func Test_Run_retryBackoff(t *testing.T) {
 	informer.AddFunc = func(interface{}) { retryTime = time.Now() }
 
 	// Execute function
-	go informer.Run(make(chan struct{}))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go informer.Run(ctx)
 	time.Sleep(2010 * time.Millisecond)
 
 	// Verify backoff logic waits 2 seconds before retrying.

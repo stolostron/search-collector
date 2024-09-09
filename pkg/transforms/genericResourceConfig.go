@@ -2,8 +2,8 @@ package transforms
 
 // Declares a property to extract from a resource using jsonpath.
 type ExtractProperty struct {
-	name     string // `json:"name,omitempty"`
-	jsonpath string // `json:"jsonpath,omitempty"`
+	Name     string // `json:"name,omitempty"`
+	JSONPath string // `json:"jsonpath,omitempty"`
 }
 
 // Declares the properties to extract from a given resource.
@@ -11,36 +11,53 @@ type ResourceConfig struct {
 	properties []ExtractProperty // `json:"properties,omitempty"`
 }
 
+var (
+	defaultTransformIgnoredFields = map[string]bool{
+		// Skip age since this likely duplicates "created" that is set by genericProperties.
+		"age": true,
+	}
+	knownStringArrays = map[string]bool{
+		"accessMode": true,
+		"category":   true,
+		"container":  true,
+		"image":      true,
+		"port":       true,
+		"role":       true,
+		"rules":      true,
+		"subject":    true,
+	}
+)
+
 // Declares properties to extract from the resource by default.
 var defaultTransformConfig = map[string]ResourceConfig{
-	"ClusterServiceVersion.operators.coreos.com": ResourceConfig{
+	"ClusterServiceVersion.operators.coreos.com": {
 		properties: []ExtractProperty{
-			ExtractProperty{name: "version", jsonpath: "{.spec.version}"},
-			ExtractProperty{name: "display", jsonpath: "{.spec.displayName}"},
-			ExtractProperty{name: "phase", jsonpath: "{.status.phase}"},
+			{Name: "version", JSONPath: "{.spec.version}"},
+			{Name: "display", JSONPath: "{.spec.displayName}"},
+			{Name: "phase", JSONPath: "{.status.phase}"},
 		},
 	},
-	"Subscription.operators.coreos.com": ResourceConfig{
+	"Subscription.operators.coreos.com": {
 		properties: []ExtractProperty{
-			ExtractProperty{name: "source", jsonpath: "{.spec.source}"},
-			ExtractProperty{name: "package", jsonpath: "{.spec.name}"},
-			ExtractProperty{name: "channel", jsonpath: "{.spec.channel}"},
-			ExtractProperty{name: "installplan", jsonpath: "{.status.installedCSV}"},
-			ExtractProperty{name: "phase", jsonpath: "{.status.state}"},
+			{Name: "source", JSONPath: "{.spec.source}"},
+			{Name: "package", JSONPath: "{.spec.name}"},
+			{Name: "channel", JSONPath: "{.spec.channel}"},
+			{Name: "installplan", JSONPath: "{.status.installedCSV}"},
+			{Name: "phase", JSONPath: "{.status.state}"},
 		},
 	},
-	"ClusterOperator.config.openshift.io": ResourceConfig{
+	"ClusterOperator.config.openshift.io": {
 		properties: []ExtractProperty{
-			ExtractProperty{name: "version", jsonpath: `{.status.versions[?(@.name=="operator")].version}`},
-			ExtractProperty{name: "available", jsonpath: `{.status.conditions[?(@.type=="Available")].status}`},
-			ExtractProperty{name: "progressing", jsonpath: `{.status.conditions[?(@.type=="Progressing")].status}`},
-			ExtractProperty{name: "degraded", jsonpath: `{.status.conditions[?(@.type=="Degraded")].status}`},
+			{Name: "version", JSONPath: `{.status.versions[?(@.name=="operator")].version}`},
+			{Name: "available", JSONPath: `{.status.conditions[?(@.type=="Available")].status}`},
+			{Name: "progressing", JSONPath: `{.status.conditions[?(@.type=="Progressing")].status}`},
+			{Name: "degraded", JSONPath: `{.status.conditions[?(@.type=="Degraded")].status}`},
 		},
 	},
-	"VirtualMachine.kubevirt.io": ResourceConfig{
+	"VirtualMachine.kubevirt.io": {
 		properties: []ExtractProperty{
-			ExtractProperty{name: "status", jsonpath: `{.status.printableStatus}`},
-			ExtractProperty{name: "ready", jsonpath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "status", JSONPath: `{.status.printableStatus}`},
+			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 		},
 	},
 }

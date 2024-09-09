@@ -45,20 +45,22 @@ func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
 	return &PolicyResource{node: node}
 }
 
+func getIsPolicyExternal(c *unstructured.Unstructured) bool {
+	for _, m := range c.GetManagedFields() {
+		if m.Manager == "multicluster-operators-subscription" ||
+			strings.Contains(m.Manager, "argocd") {
+			return true
+		}
+	}
+
+	return false
+}
+
 // For cert, config, operator policies.
 // This function returns `annotations`, `_isExternal` for `source`,
 // and `severity`, `compliant`, and `remediationAction`.
 func getPolicyCommonProperties(c *unstructured.Unstructured, node Node) Node {
-	node.Properties["_isExternal"] = false
-
-	for _, m := range c.GetManagedFields() {
-		if m.Manager == "multicluster-operators-subscription" ||
-			strings.Contains(m.Manager, "argocd") {
-			node.Properties["_isExternal"] = true
-
-			break
-		}
-	}
+	node.Properties["_isExternal"] = getIsPolicyExternal(c)
 
 	typeMeta := metav1.TypeMeta{
 		Kind:       c.GetKind(),

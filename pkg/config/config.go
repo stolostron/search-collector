@@ -26,39 +26,38 @@ import (
 
 // Out of box defaults
 const (
-	COLLECTOR_API_VERSION       = "2.11.0"
-	DEFAULT_AGGREGATOR_URL      = "https://localhost:3010" // this will be deprecated in the future
-	DEFAULT_AGGREGATOR_HOST     = "https://localhost"
-	DEFAULT_AGGREGATOR_PORT     = "3010"
-	DEFAULT_COLLECT_ANNOTATIONS = false
-	DEFAULT_CLUSTER_NAME        = "local-cluster"
-	DEFAULT_POD_NAMESPACE       = "open-cluster-management"
-	DEFAULT_HEARTBEAT_MS        = 300000 // 5 min
-	DEFAULT_MAX_BACKOFF_MS      = 600000 // 10 min
-	DEFAULT_REDISCOVER_RATE_MS  = 120000 // 2 min
-	DEFAULT_REPORT_RATE_MS      = 5000   // 5 seconds
-	DEFAULT_RETRY_JITTER_MS     = 5000   // 5 seconds
-	DEFAULT_RUNTIME_MODE        = "production"
+	COLLECTOR_API_VERSION      = "2.11.0"
+	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010" // this will be deprecated in the future
+	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
+	DEFAULT_AGGREGATOR_PORT    = "3010"
+	DEFAULT_CLUSTER_NAME       = "local-cluster"
+	DEFAULT_POD_NAMESPACE      = "open-cluster-management"
+	DEFAULT_HEARTBEAT_MS       = 300000 // 5 min
+	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
+	DEFAULT_REDISCOVER_RATE_MS = 120000 // 2 min
+	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
+	DEFAULT_RETRY_JITTER_MS    = 5000   // 5 seconds
+	DEFAULT_RUNTIME_MODE       = "production"
 )
 
 // Configuration options for the search-collector.
 type Config struct {
-	AggregatorConfig     *rest.Config // Config object for hub. Used to get TLS credentials.
-	AggregatorConfigFile string       `env:"HUB_CONFIG"`          // Config file for hub. Will be mounted in a secret.
-	AggregatorURL        string       `env:"AGGREGATOR_URL"`      // URL of the Aggregator, includes port but not any path
-	AggregatorHost       string       `env:"AGGREGATOR_HOST"`     // Host of the Aggregator
-	AggregatorPort       string       `env:"AGGREGATOR_PORT"`     // Port of the Aggregator
-	CollectAnnotations   bool         `env:"COLLECT_ANNOTATIONS"` // Collect all annotations with values <=64 characters
-	ClusterName          string       `env:"CLUSTER_NAME"`        // The name of of the cluster where this pod is running
-	PodNamespace         string       `env:"POD_NAMESPACE"`       // The namespace of this pod
-	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`     // Tracks if deployed in the Hub or Managed cluster
-	HeartbeatMS          int          `env:"HEARTBEAT_MS"`        // Interval(ms) to send empty payload to ensure connection
-	KubeConfig           string       `env:"KUBECONFIG"`          // Local kubeconfig path
-	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`      // Maximum backoff in ms to wait after error
-	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"`  // Interval(ms) to poll for changes to CRDs
-	RetryJitterMS        int          `env:"RETRY_JITTER_MS"`     // Random jitter added to backoff wait.
-	ReportRateMS         int          `env:"REPORT_RATE_MS"`      // Interval(ms) to send changes to the aggregator
-	RuntimeMode          string       `env:"RUNTIME_MODE"`        // Running mode (development or production)
+	AggregatorConfig         *rest.Config // Config object for hub. Used to get TLS credentials.
+	AggregatorConfigFile     string       `env:"HUB_CONFIG"`                  // Config file for hub. Will be mounted in a secret.
+	AggregatorURL            string       `env:"AGGREGATOR_URL"`              // URL of the Aggregator, includes port but not any path
+	AggregatorHost           string       `env:"AGGREGATOR_HOST"`             // Host of the Aggregator
+	AggregatorPort           string       `env:"AGGREGATOR_PORT"`             // Port of the Aggregator
+	CollectAnnotations       bool         `env:"COLLECT_ANNOTATIONS"`         // Collect all annotations with values <=64 characters
+	CollectCRDPrinterColumns bool         `env:"COLLECT_CRD_PRINTER_COLUMNS"` // Enable collecting additional printer columns in the CRD
+	ClusterName              string       `env:"CLUSTER_NAME"`                // The name of of the cluster where this pod is running
+	PodNamespace             string       `env:"POD_NAMESPACE"`               // The namespace of this pod
+	DeployedInHub            bool         `env:"DEPLOYED_IN_HUB"`             // Tracks if deployed in the Hub or Managed cluster
+	HeartbeatMS              int          `env:"HEARTBEAT_MS"`                // Interval(ms) to send empty payload to ensure connection
+	KubeConfig               string       `env:"KUBECONFIG"`                  // Local kubeconfig path
+	MaxBackoffMS             int          `env:"MAX_BACKOFF_MS"`              // Maximum backoff in ms to wait after error
+	RetryJitterMS            int          `env:"RETRY_JITTER_MS"`             // Random jitter added to backoff wait.
+	ReportRateMS             int          `env:"REPORT_RATE_MS"`              // Interval(ms) to send changes to the aggregator
+	RuntimeMode              string       `env:"RUNTIME_MODE"`                // Running mode (development or production)
 }
 
 var Cfg = Config{}
@@ -93,7 +92,7 @@ func InitConfig() {
 	aggHost, aggHostPresent := os.LookupEnv("AGGREGATOR_HOST")
 	aggPort, aggPortPresent := os.LookupEnv("AGGREGATOR_PORT")
 
-	//If environment variables are set for aggregator host and port, use those to set the AggregatorURL
+	// If environment variables are set for aggregator host and port, use those to set the AggregatorURL
 	if aggHostPresent && aggPortPresent && aggHost != "" && aggPort != "" {
 		Cfg.AggregatorURL = net.JoinHostPort(aggHost, aggPort)
 		setDefault(&Cfg.AggregatorURL, "", net.JoinHostPort(DEFAULT_AGGREGATOR_HOST, DEFAULT_AGGREGATOR_PORT))
@@ -103,7 +102,6 @@ func InitConfig() {
 
 	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
 	setDefaultInt(&Cfg.MaxBackoffMS, "MAX_BACKOFF_MS", DEFAULT_MAX_BACKOFF_MS)
-	setDefaultInt(&Cfg.RediscoverRateMS, "REDISCOVER_RATE_MS", DEFAULT_REDISCOVER_RATE_MS)
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 	setDefaultInt(&Cfg.RetryJitterMS, "RETRY_JITTER_MS", DEFAULT_RETRY_JITTER_MS)
 
@@ -137,6 +135,16 @@ func InitConfig() {
 		glog.Info("No DEPLOY_IN_HUB from file or environment, assuming it is a Klusterlet")
 	}
 	setDefault(&Cfg.AggregatorConfigFile, "HUB_CONFIG", "")
+
+	if collectCRDPrinterCols := os.Getenv("COLLECT_CRD_PRINTER_COLUMNS"); collectCRDPrinterCols != "" {
+		glog.Infof("Using COLLECT_CRD_PRINTER_COLUMNS from environment: %s", collectCRDPrinterCols)
+
+		var err error
+		Cfg.CollectCRDPrinterColumns, err = strconv.ParseBool(collectCRDPrinterCols)
+		if err != nil {
+			glog.Errorf("Error parsing env COLLECT_CRD_PRINTER_COLUMNS, defaulting to false: %v", err)
+		}
+	}
 
 	if Cfg.DeployedInHub && Cfg.AggregatorConfigFile != "" {
 		glog.Fatal("Config mismatch: DEPLOYED_IN_HUB is true, but HUB_CONFIG is set to connect to another hub")
