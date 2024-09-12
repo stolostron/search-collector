@@ -130,8 +130,61 @@ func getSimpleTransformedCRD() unstructured.Unstructured {
 					},
 				},
 			},
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"reason": "InitialNamesAccepted",
+						"status": "True",
+						"type":   "Established",
+					},
+				},
+			},
 		},
 	}
+}
+
+func Test_isCRDEstablished(t *testing.T) {
+	crd := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"status": map[string]interface{}{},
+		},
+	}
+	assert.False(t, isCRDEstablished(&crd))
+
+	crd = unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"reason": "InitialNamesAccepted",
+						"status": "False",
+						"type":   "Established",
+					},
+				},
+			},
+		},
+	}
+	assert.False(t, isCRDEstablished(&crd))
+
+	crd = unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"reason": "NoConflicts",
+						"status": "True",
+						"type":   "NamesAccepted",
+					},
+					map[string]interface{}{
+						"reason": "InitialNamesAccepted",
+						"status": "True",
+						"type":   "Established",
+					},
+				},
+			},
+		},
+	}
+	assert.True(t, isCRDEstablished(&crd))
 }
 
 func Test_transformCRD(t *testing.T) {
@@ -166,6 +219,15 @@ func Test_transformCRD(t *testing.T) {
 						"name":    "v1",
 						"storage": true,
 						"served":  true,
+					},
+				},
+			},
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"reason": "InitialNamesAccepted",
+						"status": "True",
+						"type":   "Established",
 					},
 				},
 			},

@@ -45,6 +45,7 @@ var crdGVR = schema.GroupVersionResource{
 //	    - name: ""
 //	      storage: true
 //	      additionalPrinterColumns: []
+//	status: {}
 func transformCRD(obj interface{}) (interface{}, error) {
 	typedObj, ok := obj.(*unstructured.Unstructured)
 	if !ok {
@@ -64,6 +65,16 @@ func transformCRD(obj interface{}) (interface{}, error) {
 	}
 
 	err = unstructured.SetNestedField(transformedObj.Object, group, "spec", "group")
+	if err != nil {
+		return nil, err
+	}
+
+	status, _, err := unstructured.NestedMap(typedObj.Object, "status")
+	if err != nil {
+		return nil, err
+	}
+
+	err = unstructured.SetNestedField(transformedObj.Object, status, "status")
 	if err != nil {
 		return nil, err
 	}
@@ -289,6 +300,29 @@ func (g *gvrToPrinterColumns) get(gvr schema.GroupVersionResource) []tr.ExtractP
 	return result
 }
 
+// isCRDEstablished determines if the CRD has the condition of Established set to True.
+func isCRDEstablished(crd *unstructured.Unstructured) bool {
+	conditions, _, _ := unstructured.NestedSlice(crd.Object, "status", "conditions")
+
+	for _, condition := range conditions {
+		conditionTyped, ok := condition.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		conditionType, ok := conditionTyped["type"].(string)
+		if !ok || conditionType != "Established" {
+			continue
+		}
+
+		conditionStatus, ok := conditionTyped["status"].(string)
+
+		return ok && conditionStatus == "True"
+	}
+
+	return false
+}
+
 // getCRDInformer returns a started and synced
 func getCRDInformer(
 	ctx context.Context, gvrToColumns *gvrToPrinterColumns, syncInformersQueue *workqueue.Type,
@@ -322,21 +356,17 @@ func getCRDInformer(
 				)
 			}
 
-			syncInformersQueue.Add(struct{}{})
+			if isCRDEstablished(objTyped) {
+				syncInformersQueue.Add(struct{}{})
+			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			oldObjTyped, ok := oldObj.(*unstructured.Unstructured)
-			if !ok {
-				return
-			}
-
 			newObjTyped, ok := newObj.(*unstructured.Unstructured)
 			if !ok {
 				return
 			}
 
-			// Only resync if the spec of the CRD changed
-			if oldObjTyped.GetGeneration() == newObjTyped.GetGeneration() {
+			if !isCRDEstablished(newObjTyped) {
 				return
 			}
 
