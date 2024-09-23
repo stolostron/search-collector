@@ -90,12 +90,6 @@
                     "name": "centos7-gray-owl-35"
                 },
                 "name": "rootdisk"
-            },
-            {
-                "cloudInitNoCloud": {
-                    "userData": "#cloud-config\nuser: centos\npassword: cns3-q375-41fe\nchpasswd: { expire: False }"
-                },
-                "name": "cloudinitdisk"
             }
         ]
     },
