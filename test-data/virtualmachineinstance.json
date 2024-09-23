@@ -1,0 +1,224 @@
+{
+    "apiVersion": "kubevirt.io/v1",
+    "kind": "VirtualMachineInstance",
+    "metadata": {
+        "resourceVersion": "11848215",
+        "name": "centos7-gray-owl-35",
+        "uid": "2e432308-e94c-4866-a86a-388ce0b6cbc1",
+        "creationTimestamp": "2024-09-18T19:43:53Z",
+        "generation": 36,
+        "namespace": "openshift-cnv",
+        "ownerReferences": [
+            {
+                "apiVersion": "kubevirt.io/v1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "VirtualMachine",
+                "name": "centos7-gray-owl-35",
+                "uid": "42634581-0cc1-4aa9-bec6-69f59049e2d3"
+            }
+        ],
+        "labels": {
+            "kubevirt.io/domain": "centos7-gray-owl-35",
+            "kubevirt.io/nodeName": "sno-0-0",
+            "kubevirt.io/size": "small"
+        }
+    },
+    "spec": {
+        "architecture": "amd64",
+        "domain": {
+            "cpu": {
+                "cores": 1,
+                "model": "host-model",
+                "sockets": 1,
+                "threads": 1
+            },
+            "devices": {
+                "disks": [
+                    {
+                        "disk": {
+                            "bus": "virtio"
+                        },
+                        "name": "rootdisk"
+                    },
+                    {
+                        "disk": {
+                            "bus": "virtio"
+                        },
+                        "name": "cloudinitdisk"
+                    }
+                ],
+                "interfaces": [
+                    {
+                        "macAddress": "02:b8:ac:00:00:01",
+                        "masquerade": {},
+                        "model": "virtio",
+                        "name": "default"
+                    }
+                ],
+                "networkInterfaceMultiqueue": true,
+                "rng": {}
+            },
+            "features": {
+                "acpi": {
+                    "enabled": true
+                }
+            },
+            "machine": {
+                "type": "pc-q35-rhel9.2.0"
+            },
+            "memory": {
+                "guest": "2Gi"
+            },
+            "resources": {
+                "requests": {
+                    "memory": "2Gi"
+                }
+            }
+        },
+        "evictionStrategy": "None",
+        "networks": [
+            {
+                "name": "default",
+                "pod": {}
+            }
+        ],
+        "terminationGracePeriodSeconds": 180,
+        "volumes": [
+            {
+                "dataVolume": {
+                    "name": "centos7-gray-owl-35"
+                },
+                "name": "rootdisk"
+            },
+            {
+                "cloudInitNoCloud": {
+                    "userData": "#cloud-config\nuser: centos\npassword: cns3-q375-41fe\nchpasswd: { expire: False }"
+                },
+                "name": "cloudinitdisk"
+            }
+        ]
+    },
+    "status": {
+        "memory": {
+            "guestAtBoot": "2Gi",
+            "guestCurrent": "2Gi",
+            "guestRequested": "2Gi"
+        },
+        "virtualMachineRevisionName": "revision-start-vm-42634581-0cc1-4aa9-bec6-69f59049e2d3-11",
+        "qosClass": "Burstable",
+        "runtimeUser": 107,
+        "machine": {
+            "type": "pc-q35-rhel9.2.0"
+        },
+        "guestOSInfo": {
+            "id": "centos",
+            "kernelRelease": "3.10.0-1160.el7.x86_64",
+            "kernelVersion": "#1 SMP Mon Oct 19 16:18:59 UTC 2020",
+            "machine": "x86_64",
+            "name": "CentOS Linux",
+            "prettyName": "CentOS Linux 7 (Core)",
+            "version": "7 (Core)",
+            "versionId": "7"
+        },
+        "volumeStatus": [
+            {
+                "name": "cloudinitdisk",
+                "size": 1048576,
+                "target": "vdb"
+            },
+            {
+                "name": "rootdisk",
+                "persistentVolumeClaimInfo": {
+                    "accessModes": [
+                        "ReadWriteOnce"
+                    ],
+                    "capacity": {
+                        "storage": "30Gi"
+                    },
+                    "filesystemOverhead": "0.055",
+                    "requests": {
+                        "storage": "22724694688"
+                    },
+                    "volumeMode": "Filesystem"
+                },
+                "target": "vda"
+            }
+        ],
+        "selinuxContext": "system_u:object_r:container_file_t:s0:c707,c898",
+        "phaseTransitionTimestamps": [
+            {
+                "phase": "Pending",
+                "phaseTransitionTimestamp": "2024-09-18T19:43:53Z"
+            },
+            {
+                "phase": "Scheduling",
+                "phaseTransitionTimestamp": "2024-09-18T19:43:53Z"
+            },
+            {
+                "phase": "Scheduled",
+                "phaseTransitionTimestamp": "2024-09-18T19:43:55Z"
+            },
+            {
+                "phase": "Running",
+                "phaseTransitionTimestamp": "2024-09-18T19:43:56Z"
+            }
+        ],
+        "nodeName": "sno-0-0",
+        "migrationMethod": "BlockMigration",
+        "activePods": {
+            "84b1b342-6411-4292-a7b4-f0e6bd6873c8": "sno-0-0"
+        },
+        "conditions": [
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2024-09-23T16:16:11Z",
+                "status": "True",
+                "type": "Ready"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": null,
+                "message": "All of the VMI's DVs are bound and not running",
+                "reason": "AllDVsReady",
+                "status": "True",
+                "type": "DataVolumesReady"
+            },
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": null,
+                "message": "cannot migrate VMI: PVC centos7-gray-owl-35 is not shared, live migration requires that all PVCs must be shared (using ReadWriteMany access mode)",
+                "reason": "DisksNotLiveMigratable",
+                "status": "False",
+                "type": "LiveMigratable"
+            },
+            {
+                "lastProbeTime": "2024-09-18T19:44:08Z",
+                "lastTransitionTime": null,
+                "status": "True",
+                "type": "AgentConnected"
+            }
+        ],
+        "interfaces": [
+            {
+                "infoSource": "domain, guest-agent",
+                "interfaceName": "eth0",
+                "ipAddress": "10.128.1.193",
+                "ipAddresses": [
+                    "10.128.1.193"
+                ],
+                "mac": "02:b8:ac:00:00:01",
+                "name": "default",
+                "queueCount": 1
+            }
+        ],
+        "phase": "Running",
+        "migrationTransport": "Unix",
+        "currentCPUTopology": {
+            "cores": 1,
+            "sockets": 1,
+            "threads": 1
+        },
+        "launcherContainerImageVersion": "registry.redhat.io/container-native-virtualization/virt-launcher-rhel9@sha256:29db41a0505a1d3295b0b4c8bc8e7b6b351b83bece05ee8050ca313a18f55dd8"
+    }
+}

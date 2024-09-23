@@ -60,6 +60,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 		},
 	},
+	"VirtualMachineInstance.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "node", JSONPath: `{.status.nodeName}`},
+			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
+		},
+	},
 }
 
 // Get the properties to extract from a resource.
