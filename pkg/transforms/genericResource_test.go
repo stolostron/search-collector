@@ -100,3 +100,20 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	AssertEqual("phase", node.Properties["ready"], "True", t)
 
 }
+
+func Test_genericResourceFromConfigVMI(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachineinstance.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "centos7-gray-owl-35", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineInstance", t)
+	AssertEqual("namespace", node.Properties["namespace"], "openshift-cnv", t)
+	AssertEqual("created", node.Properties["created"], "2024-09-18T19:43:53Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
+	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
+
+}
