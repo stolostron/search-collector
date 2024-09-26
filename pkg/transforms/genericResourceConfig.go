@@ -54,8 +54,16 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "degraded", JSONPath: `{.status.conditions[?(@.type=="Degraded")].status}`},
 		},
 	},
+	"DataVolume.cdi.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "size", JSONPath: `{.spec.storage.resources.requests.storage}`},
+			{Name: "storageClassName", JSONPath: `{.spec.storage.storageClassName}`},
+		},
+	},
 	"VirtualMachine.kubevirt.io": {
 		properties: []ExtractProperty{
+			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
+			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 		},
@@ -64,6 +72,9 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "node", JSONPath: `{.status.nodeName}`},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
+			{Name: "phase", JSONPath: `{.status.phase}`},
+			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 		},
 	},
 }

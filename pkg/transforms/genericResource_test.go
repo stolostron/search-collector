@@ -98,6 +98,8 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("display", node.Properties["status"], "Running", t)
 	AssertEqual("phase", node.Properties["ready"], "True", t)
+	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
+	AssertEqual("memory", node.Properties["memory"], "2Gi", t)
 
 }
 
@@ -115,5 +117,23 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
+	AssertEqual("phase", node.Properties["phase"], "Running", t)
+	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
+}
 
+func Test_genericResourceFromConfigDataVolume(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("datavolume.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "centos7-gray-owl-35", t)
+	AssertEqual("kind", node.Properties["kind"], "DataVolume", t)
+	AssertEqual("namespace", node.Properties["namespace"], "openshift-cnv", t)
+	AssertEqual("created", node.Properties["created"], "2024-09-09T20:00:42Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("size", node.Properties["size"], "20Gi", t)
+	AssertEqual("storageClassName", node.Properties["storageClassName"], nil, t)
 }
