@@ -96,11 +96,12 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-04-30T16:22:02Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("display", node.Properties["status"], "Running", t)
-	AssertEqual("phase", node.Properties["ready"], "True", t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
 	AssertEqual("memory", node.Properties["memory"], "2Gi", t)
-
+	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("status", node.Properties["status"], "Running", t)
+	AssertEqual("_specRunning", node.Properties["_specRunning"], true, t)
+	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], nil, t)
 }
 
 func Test_genericResourceFromConfigVMI(t *testing.T) {
@@ -115,11 +116,12 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-09-18T19:43:53Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
+	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
+	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
 	AssertEqual("phase", node.Properties["phase"], "Running", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
-	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
+
 }
 
 func Test_genericResourceFromConfigDataVolume(t *testing.T) {

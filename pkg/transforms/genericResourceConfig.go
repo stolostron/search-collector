@@ -64,17 +64,19 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`},
-			{Name: "status", JSONPath: `{.status.printableStatus}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "status", JSONPath: `{.status.printableStatus}`},
+			{Name: "_specRunning", JSONPath: `{.spec.running}`},
+			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
 		},
 	},
 	"VirtualMachineInstance.kubevirt.io": {
 		properties: []ExtractProperty{
-			{Name: "node", JSONPath: `{.status.nodeName}`},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
+			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
+			{Name: "node", JSONPath: `{.status.nodeName}`},
 			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
-			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 		},
 	},
 }
