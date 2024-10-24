@@ -412,6 +412,9 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PolicyReportResourceBuilder(&typedResource)
 
+		case [2]string{"ValidatingAdmissionPolicyBinding", "admissionregistration.k8s.io"}:
+			trans = VapBindingResourceBuilder(event.Resource)
+
 		default:
 			generic := GenericResourceBuilder(event.Resource, event.AdditionalPrinterColumns...)
 
