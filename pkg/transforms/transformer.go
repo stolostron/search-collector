@@ -403,7 +403,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = SubscriptionResourceBuilder(&typedResource)
 
-		case [2]string{"PolicyReport", "wgpolicyk8s.io"}:
+		case [2]string{"PolicyReport", "wgpolicyk8s.io"}, [2]string{"ClusterPolicyReport", "wgpolicyk8s.io"}:
 			typedResource := PolicyReport{}
 			err := runtime.DefaultUnstructuredConverter.
 				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
@@ -414,6 +414,9 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 
 		case [2]string{"ValidatingAdmissionPolicyBinding", "admissionregistration.k8s.io"}:
 			trans = VapBindingResourceBuilder(event.Resource)
+
+		case [2]string{"Policy", "kyverno.io"}, [2]string{"ClusterPolicy", "kyverno.io"}:
+			trans = KyvernoPolicyResourceBuilder(event.Resource)
 
 		default:
 			generic := GenericResourceBuilder(event.Resource, event.AdditionalPrinterColumns...)

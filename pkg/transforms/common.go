@@ -248,23 +248,15 @@ func edgesByDestinationName(
 
 	if len(propSet) > 0 {
 		for name := range propSet {
-			// For channels/subscriptions/deployables/applications, get the namespace and name from each string,
-			// if present. Else, assume it is in the node's namespace
-			if destKind == "Channel" || destKind == "Deployable" || destKind == "Subscription" ||
-				destKind == "Application" {
-				destKindInfo := strings.Split(name, "/")
-				if len(destKindInfo) == 2 {
-					nodeInfo.NameSpace = destKindInfo[0]
-					name = destKindInfo[1]
-				} else if len(destKindInfo) == 1 {
-					name = destKindInfo[0]
-				} else {
-					glog.V(4).Infof("For %s, %s edge not created as %s is not in namespace/name format",
-						nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind+"/"+name)
-					continue
-				}
+			namespace := nodeInfo.NameSpace
+
+			destKindInfo := strings.SplitN(name, "/", 2)
+			if len(destKindInfo) == 2 {
+				namespace = destKindInfo[0]
+				name = destKindInfo[1]
 			}
-			if destNode, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
+
+			if destNode, ok := ns.ByKindNamespaceName[destKind][namespace][name]; ok {
 				if nodeInfo.UID != destNode.UID { // avoid connecting node to itself
 					ret = append(ret, Edge{
 						SourceUID:  nodeInfo.UID,

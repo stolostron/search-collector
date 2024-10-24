@@ -1,0 +1,70 @@
+{
+    "apiVersion": "wgpolicyk8s.io/v1beta1",
+    "kind": "PolicyReport",
+    "metadata": {
+        "creationTimestamp": "2024-10-24T13:19:53Z",
+        "generation": 8,
+        "labels": {
+            "app.kubernetes.io/managed-by": "kyverno"
+        },
+        "name": "pol-require-kubecost-labels",
+        "namespace": "open-cluster-management-agent-addon",
+        "resourceVersion": "275735",
+        "uid": "a6c408fc-3e9d-477b-b5ca-c8fe9ec4f8e3"
+    },
+    "results": [
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost labels `owner`, `team`, `department`, `app`, and `env` are all required for Namespaces. rule autogen-require-labels failed at path /spec/template/metadata/labels/app/",
+            "policy": "open-cluster-management-agent-addon/require-kubecost-labels",
+            "resources": [
+                {
+                    "apiVersion": "apps/v1",
+                    "kind": "Deployment",
+                    "name": "klusterlet-addon-workmgr",
+                    "namespace": "open-cluster-management-agent-addon",
+                    "uid": "079417f7-10e5-487b-a5c9-4cdc2f5777c2"
+                }
+            ],
+            "result": "fail",
+            "rule": "autogen-require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729776036
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost labels `owner`, `team`, `department`, `app`, and `env` are all required for Namespaces. rule autogen-require-labels failed at path /spec/template/metadata/labels/department/",
+            "policy": "open-cluster-management-agent-addon/require-kubecost-labels",
+            "resources": [
+                {
+                    "apiVersion": "apps/v1",
+                    "kind": "Deployment",
+                    "name": "cert-policy-controller",
+                    "namespace": "open-cluster-management-agent-addon",
+                    "uid": "10df8481-daa4-465a-b6bc-d8bf01c75eb5"
+                }
+            ],
+            "result": "fail",
+            "rule": "autogen-require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729776036
+            }
+        }
+    ],
+    "summary": {
+        "error": 0,
+        "fail": 2,
+        "pass": 0,
+        "skip": 0,
+        "warn": 0
+    }
+}

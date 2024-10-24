@@ -1,0 +1,133 @@
+{
+    "apiVersion": "wgpolicyk8s.io/v1alpha2",
+    "kind": "ClusterPolicyReport",
+    "metadata": {
+        "creationTimestamp": "2024-10-24T13:19:12Z",
+        "generation": 1,
+        "labels": {
+            "app.kubernetes.io/managed-by": "kyverno"
+        },
+        "name": "cpol-require-kubecost-labels",
+        "resourceVersion": "127805",
+        "uid": "148ec5b8-892b-40da-8b92-af141c3772a3"
+    },
+    "results": [
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost label `owner` is required for Namespaces. rule require-labels failed at path /metadata/labels/owner/",
+            "policy": "require-kubecost-labels",
+            "resources": [
+                {
+                    "apiVersion": "v1",
+                    "kind": "Namespace",
+                    "name": "openshift-ingress-canary",
+                    "uid": "0035b16c-8e21-487a-905d-ea18a13687de"
+                }
+            ],
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729775943
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost label `owner` is required for Namespaces. rule require-labels failed at path /metadata/labels/owner/",
+            "policy": "require-kubecost-labels",
+            "resources": [
+                {
+                    "apiVersion": "v1",
+                    "kind": "Namespace",
+                    "name": "openshift-cloud-credential-operator",
+                    "uid": "0a731cf8-f92f-49a8-8907-9185bf27913a"
+                }
+            ],
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729775941
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost label `owner` is required for Namespaces. rule require-labels failed at path /metadata/labels/owner/",
+            "policy": "require-kubecost-labels",
+            "resources": [
+                {
+                    "apiVersion": "v1",
+                    "kind": "Namespace",
+                    "name": "openshift-ovirt-infra",
+                    "uid": "0d8429cd-2fb4-4359-8f6e-cb682b3ca998"
+                }
+            ],
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729775946
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost label `owner` is required for Namespaces. rule require-labels failed at path /metadata/labels/owner/",
+            "policy": "require-kubecost-labels",
+            "resources": [
+                {
+                    "apiVersion": "v1",
+                    "kind": "Namespace",
+                    "name": "openshift-ingress-operator",
+                    "uid": "12c316b9-7391-45ce-b1f8-fb1a0e28d2ad"
+                }
+            ],
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729775943
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "Some error",
+            "policy": "require-kubecost-labels",
+            "resources": [
+                {
+                    "apiVersion": "v1",
+                    "kind": "Namespace",
+                    "name": "some-operator",
+                    "uid": "1dc316b9-7391-45ce-b1f8-fb1a0e28d1af"
+                }
+            ],
+            "result": "error",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729775943
+            }
+        }
+    ],
+    "summary": {
+        "error": 1,
+        "fail": 4,
+        "pass": 0,
+        "skip": 0,
+        "warn": 0
+    }
+}
