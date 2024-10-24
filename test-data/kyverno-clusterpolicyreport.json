@@ -1,0 +1,65 @@
+{
+    "apiVersion": "wgpolicyk8s.io/v1alpha2",
+    "kind": "ClusterPolicyReport",
+    "metadata": {
+        "creationTimestamp": "2024-10-24T19:21:36Z",
+        "generation": 2,
+        "labels": {
+            "app.kubernetes.io/managed-by": "kyverno"
+        },
+        "name": "13967788-e842-4662-9630-a9e9c39fa199",
+        "ownerReferences": [
+            {
+                "apiVersion": "v1",
+                "kind": "Namespace",
+                "name": "kube-public",
+                "uid": "13967788-e842-4662-9630-a9e9c39fa199"
+            }
+        ],
+        "resourceVersion": "1540000",
+        "uid": "509de4c9-ed73-4309-9764-c88334781eae"
+    },
+    "results": [
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost label `owner` is required for Namespaces. rule require-labels failed at path /metadata/labels/owner/",
+            "policy": "require-kubecost-labels",
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797707
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "Some error",
+            "policy": "require-kubecost-labels",
+            "result": "error",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797707
+            }
+        }
+    ],
+    "scope": {
+        "apiVersion": "v1",
+        "kind": "Namespace",
+        "name": "kube-public",
+        "uid": "13967788-e842-4662-9630-a9e9c39fa199"
+    },
+    "summary": {
+        "error": 1,
+        "fail": 1,
+        "pass": 0,
+        "skip": 0,
+        "warn": 0
+    }
+}

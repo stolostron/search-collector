@@ -378,7 +378,7 @@ func TestReconcilerComplete(t *testing.T) {
 	// Checks the count of nodes and edges based on the JSON files in pkg/test-data
 	// Update counts when the test data is changed
 	// We don't create Nodes for kind = Event
-	const Nodes = 41
+	const Nodes = 43
 	const Edges = 51
 	if len(com.Edges) != Edges || com.TotalEdges != Edges || len(com.Nodes) != Nodes || com.TotalNodes != Nodes {
 		ns := tr.NodeStore{
