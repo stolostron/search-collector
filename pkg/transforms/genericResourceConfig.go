@@ -4,6 +4,8 @@ package transforms
 type ExtractProperty struct {
 	Name     string // `json:"name,omitempty"`
 	JSONPath string // `json:"jsonpath,omitempty"`
+	// An internal property to denote this property should be set on the node's metadata instead.
+	metadataOnly bool
 }
 
 // Declares the properties to extract from a given resource.
@@ -58,6 +60,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "size", JSONPath: `{.spec.storage.resources.requests.storage}`},
 			{Name: "storageClassName", JSONPath: `{.spec.storage.storageClassName}`},
+		},
+	},
+	"ValidatingAdmissionPolicy.admissionregistration.k8s.io": {
+		properties: []ExtractProperty{
+			{Name: "paramKind_kind", JSONPath: `{.spec.paramKind.kind}`, metadataOnly: true},
+			{Name: "paramKind_apiVersion", JSONPath: `{.spec.paramKind.apiVersion}`, metadataOnly: true},
 		},
 	},
 	"VirtualMachine.kubevirt.io": {

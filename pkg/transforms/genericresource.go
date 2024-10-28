@@ -79,7 +79,21 @@ func GenericResourceBuilder(r *unstructured.Unstructured, additionalColumns ...E
 				}
 			}
 
-			n.Properties[prop.Name] = val
+			if prop.metadataOnly {
+				strVal, ok := val.(string)
+
+				if !ok {
+					klog.V(1).Infof(
+						"Unable to extract metadata prop [%s] from [%s.%s] Name: [%s] since it's not a string: %v",
+						prop.Name, kind, group, r.GetName(),
+					)
+					continue
+				}
+
+				n.Metadata[prop.Name] = strVal
+			} else {
+				n.Properties[prop.Name] = val
+			}
 		} else {
 			klog.Errorf("Unexpected error extracting [%s] from [%s.%s] Name: [%s]. Result object is empty.",
 				prop.Name, kind, group, r.GetName())
