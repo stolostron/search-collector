@@ -51,6 +51,20 @@ func (v VapBindingResource) BuildNode() Node {
 
 // BuildEdges construct the edges for VapBindingResource
 func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
-	// no op for now to implement interface
-	return []Edge{}
+	policyName, ok := v.node.Properties["policyName"].(string)
+	if !ok {
+		return []Edge{}
+	}
+
+	nodeInfo := NodeInfo{
+		Name:      v.node.Properties["name"].(string),
+		NameSpace: "_NONE",
+		UID:       v.node.UID,
+		EdgeType:  "attachedTo",
+		Kind:      v.node.Properties["kind"].(string),
+	}
+
+	propSet := map[string]struct{}{policyName: {}}
+
+	return edgesByDestinationName(propSet, "ValidatingAdmissionPolicy", nodeInfo, ns, []string{})
 }

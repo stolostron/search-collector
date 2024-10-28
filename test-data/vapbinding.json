@@ -12,7 +12,8 @@
           "name": "all-must-have-owner",
           "uid": "dd427962-73e3-4484-8898-6b44ffe5256c"
         }
-      ]
+      ],
+      "uid": "7385bbe4-031d-4cbe-833a-afd784526e6a"
     },
     "spec": {
       "policyName": "demo-policy.example.com",
