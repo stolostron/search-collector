@@ -36,17 +36,20 @@ func VapBindingResourceBuilder(v *unstructured.Unstructured) *VapBindingResource
 	node.Properties["policyName"], _, _ = unstructured.NestedString(v.Object, "spec", "policyName")
 
 	owners := v.GetOwnerReferences()
-	fromGK := false
 
 	for _, o := range owners {
 		if strings.HasPrefix(o.APIVersion, "constraints.gatekeeper.sh") {
-			fromGK = true
+			node.Properties["_ownedBy"] = "Gatekeeper"
 
 			break
 		}
-	}
 
-	node.Properties["_ownedByGatekeeper"] = fromGK
+		if strings.HasPrefix(o.APIVersion, "kyverno.io") {
+			node.Properties["_ownedBy"] = "Kyverno"
+
+			break
+		}
+	} 
 
 	binding := &VapBindingResource{node: node}
 
