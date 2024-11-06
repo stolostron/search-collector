@@ -19,8 +19,10 @@ import (
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var labels = map[string]string{"app": "test", "fake": "true", "component": "testapp"}
-var timestamp = machineryV1.Now()
+var (
+	testLabels = map[string]string{"app": "test", "fake": "true", "component": "testapp"}
+	timestamp  = machineryV1.Now()
+)
 
 // Helper function for creating a k8s resource to pass in to tests.
 // In this case it's a pod.
@@ -32,7 +34,7 @@ func CreateGenericResource() machineryV1.Object {
 	p.Namespace = "default"
 	p.UID = "00aa0000-00aa-00a0-a000-00000a00a0a0"
 	p.CreationTimestamp = timestamp
-	p.Labels = labels
+	p.Labels = testLabels
 	p.Annotations = map[string]string{"hello": "world"}
 	return &p
 }
@@ -58,7 +60,7 @@ func TestCommonProperties(t *testing.T) {
 	noLabels := true
 	for key, value := range cp["label"].(map[string]string) {
 		noLabels = false
-		if labels[key] != value {
+		if testLabels[key] != value {
 			t.Error("Incorrect label: " + key)
 			t.Fail()
 		}

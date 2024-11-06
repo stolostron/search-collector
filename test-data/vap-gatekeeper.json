@@ -1,0 +1,93 @@
+{
+    "apiVersion": "admissionregistration.k8s.io/v1",
+    "kind": "ValidatingAdmissionPolicy",
+    "metadata": {
+        "creationTimestamp": "2024-10-29T13:53:21Z",
+        "generation": 1,
+        "name": "gatekeeper-k8srequiredlabels",
+        "ownerReferences": [
+            {
+                "apiVersion": "templates.gatekeeper.sh/v1beta1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "ConstraintTemplate",
+                "name": "k8srequiredlabels",
+                "uid": "cad04d17-def3-4974-a880-c1a0701be9b7"
+            }
+        ],
+        "resourceVersion": "127075",
+        "uid": "3d21ea2d-3582-4aa8-85ff-f8dd83382b4d"
+    },
+    "spec": {
+        "failurePolicy": "Ignore",
+        "matchConditions": [
+            {
+                "expression": "\n\t!has(params.spec) ? true: (\n\t\t!has(params.spec.match) ? true: (\n\t\t\t!has(params.spec.match.excludedNamespaces) ? true : (\n\t\t\t\t[object, oldObject].exists(obj,\n\t\t\t\t\tobj != null \u0026\u0026 (\n\t\t\t\t\t\t// cluster-scoped objects always match\n\t\t\t\t\t\t!has(obj.metadata.namespace) || obj.metadata.namespace == \"\" ? true : (\n\t\t\t\t\t\t\t!params.spec.match.excludedNamespaces.exists(nsMatcher,\n\t\t\t\t\t\t\t\t(string(obj.metadata.namespace).matches(\"^\" + string(nsMatcher).replace(\"*\", \".*\") + \"$\"))\n\t\t\t\t\t\t\t)\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)\n\t",
+                "name": "gatekeeper_internal_match_excluded_namespaces"
+            },
+            {
+                "expression": "\n\t!has(params.spec) ? true: (\n\t\t!has(params.spec.match) ? true: (\n\t\t\t!has(params.spec.match.namespaces) ? true : (\n\t\t\t\t[object, oldObject].exists(obj,\n\t\t\t\t\tobj != null \u0026\u0026 (\n\t\t\t\t\t\t// cluster-scoped objects always match\n\t\t\t\t\t\t!has(obj.metadata.namespace) || obj.metadata.namespace == \"\" ? true : (\n\t\t\t\t\t\t\tparams.spec.match.namespaces.exists(nsMatcher,\n\t\t\t\t\t\t\t\t(string(obj.metadata.namespace).matches(\"^\" + string(nsMatcher).replace(\"*\", \".*\") + \"$\"))\n\t\t\t\t\t\t\t)\n\t\t\t\t\t\t)\n\t\t\t\t\t)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)\n\t",
+                "name": "gatekeeper_internal_match_namespaces"
+            },
+            {
+                "expression": "\n\t!has(params.spec) ? true: (\n\t\t!has(params.spec.match) ? true: (\n\t\t\t!has(params.spec.match.name) ? true : (\n\t\t\t\t[object, oldObject].exists(obj,\n\t\t\t\t\tobj != null \u0026\u0026 (\n\t\t\t\t\t\t(has(obj.metadata.generateName) \u0026\u0026 obj.metadata.generateName != \"\" \u0026\u0026 params.spec.match.name.endsWith(\"*\") \u0026\u0026 string(obj.metadata.generateName).matches(\"^\" + string(params.spec.match.name).replace(\"*\", \".*\") + \"$\")) ||\n\t\t\t\t\t\t(has(obj.metadata.name) \u0026\u0026 string(obj.metadata.name).matches(\"^\" + string(params.spec.match.name).replace(\"*\", \".*\") + \"$\"))\n\t\t\t\t\t)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)\n\t",
+                "name": "gatekeeper_internal_match_name"
+            },
+            {
+                "expression": "\n\t!has(params.spec) ? true: (\n\t\t!has(params.spec.match) ? true: (\n\t\t\t!has(params.spec.match.kinds) ? true : (\n\t\t\t\tparams.spec.match.kinds.exists(groupskinds,\n\t\t\t\t\t(!has(groupskinds.kinds) || size(groupskinds.kinds) == 0 || \"*\" in groupskinds.kinds || request.kind.kind in groupskinds.kinds) \u0026\u0026\n\t\t\t\t\t(!has(groupskinds.apiGroups) || size(groupskinds.apiGroups) == 0 || \"*\" in groupskinds.apiGroups || request.kind.group in groupskinds.apiGroups)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n\t)\n\t",
+                "name": "gatekeeper_internal_match_kinds"
+            }
+        ],
+        "matchConstraints": {
+            "matchPolicy": "Equivalent",
+            "namespaceSelector": {},
+            "objectSelector": {},
+            "resourceRules": [
+                {
+                    "apiGroups": [
+                        "*"
+                    ],
+                    "apiVersions": [
+                        "*"
+                    ],
+                    "operations": [
+                        "CREATE",
+                        "UPDATE"
+                    ],
+                    "resources": [
+                        "*"
+                    ],
+                    "scope": "*"
+                }
+            ]
+        },
+        "paramKind": {
+            "apiVersion": "constraints.gatekeeper.sh/v1beta1",
+            "kind": "K8sRequiredLabels"
+        },
+        "validations": [
+            {
+                "expression": "[object, oldObject].exists(obj, obj != null \u0026\u0026 has(obj.metadata) \u0026\u0026 variables.params.labels.all(entry, has(obj.metadata.labels) \u0026\u0026 entry.key in obj.metadata.labels))",
+                "messageExpression": "\"missing required label, requires all of: \" + variables.params.labels.map(entry, entry.key).join(\", \") + \"  \" + variables.params.message"
+            },
+            {
+                "expression": "object.dd == null",
+                "messageExpression": "\"dd is null\""
+            }
+        ],
+        "variables": [
+            {
+                "expression": "has(request.operation) \u0026\u0026 request.operation == \"DELETE\" \u0026\u0026 object == null ? oldObject : object",
+                "name": "anyObject"
+            },
+            {
+                "expression": "!has(params.spec) ? null : !has(params.spec.parameters) ? null: params.spec.parameters",
+                "name": "params"
+            }
+        ]
+    },
+    "status": {
+        "observedGeneration": 1,
+        "typeChecking": {}
+    }
+}
