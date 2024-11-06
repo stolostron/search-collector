@@ -61,13 +61,19 @@ func BuildFakeNodeStore(nodes []Node) NodeStore {
 	for _, n := range nodes {
 		byUID[n.UID] = n
 		kind := n.Properties["kind"].(string)
-		var namespace = "_NONE"
+		namespace := "_NONE"
 		if n.Properties["namespace"] != nil {
 			namespace = n.Properties["namespace"].(string)
 		}
 
-		byKindNameNamespace[kind] = make(map[string]map[string]Node)
-		byKindNameNamespace[kind][namespace] = make(map[string]Node)
+		if byKindNameNamespace[kind] == nil {
+			byKindNameNamespace[kind] = map[string]map[string]Node{}
+		}
+
+		if byKindNameNamespace[kind][namespace] == nil {
+			byKindNameNamespace[kind][namespace] = map[string]Node{}
+		}
+
 		byKindNameNamespace[kind][namespace][n.Properties["name"].(string)] = n
 	}
 

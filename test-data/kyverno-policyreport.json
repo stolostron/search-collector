@@ -1,0 +1,67 @@
+{
+    "apiVersion": "wgpolicyk8s.io/v1beta1",
+    "kind": "PolicyReport",
+    "metadata": {
+        "creationTimestamp": "2024-10-24T18:49:30Z",
+        "generation": 3,
+        "labels": {
+            "app.kubernetes.io/managed-by": "kyverno"
+        },
+        "name": "019db722-d5c7-4085-9778-d8ebc33e95f2",
+        "namespace": "open-cluster-management-agent-addon",
+        "ownerReferences": [
+            {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "hypershift-install-job-9ct24-46dq9",
+                "uid": "019db722-d5c7-4085-9778-d8ebc33e95f2"
+            }
+        ],
+        "resourceVersion": "1539107",
+        "uid": "53cd0e2e-34e0-454b-a0c4-e4dbf9306470"
+    },
+    "results": [
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost labels `owner`, `team`, `department`, `app`, and `env` are all required for Namespaces. rule require-labels failed at path /metadata/labels/app/",
+            "policy": "open-cluster-management-agent-addon/require-kubecost-labels",
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "validation error: The Kubecost label `owner` is required for Namespaces. rule require-labels failed at path /metadata/labels/owner/",
+            "policy": "require-kubecost-labels",
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "kyverno",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729795789
+            }
+        }
+    ],
+    "scope": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "hypershift-install-job-9ct24-46dq9",
+        "namespace": "open-cluster-management-agent-addon",
+        "uid": "019db722-d5c7-4085-9778-d8ebc33e95f2"
+    },
+    "summary": {
+        "error": 0,
+        "fail": 2,
+        "pass": 0,
+        "skip": 0,
+        "warn": 0
+    }
+}
