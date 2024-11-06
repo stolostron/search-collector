@@ -20,7 +20,7 @@ func TestVapBinding(t *testing.T) {
 	node := VapBindingResourceBuilder(unstructured).BuildNode()
 
 	AssertDeepEqual("validationActions", node.Properties["validationActions"], []string{"Deny", "Warn", "Audit"}, t)
-	AssertEqual("_ownedByGatekeeper", node.Properties["_ownedByGatekeeper"], true, t)
+	AssertEqual("_ownedBy", node.Properties["_ownedBy"], "Gatekeeper", t)
 	AssertEqual("policyName", node.Properties["policyName"], "demo-policy.example.com", t)
 }
 
