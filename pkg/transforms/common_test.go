@@ -17,6 +17,7 @@ import (
 	"github.com/stolostron/search-collector/pkg/config"
 	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var (
@@ -70,4 +71,112 @@ func TestCommonProperties(t *testing.T) {
 		t.Error("No labels found on resource")
 		t.Fail()
 	}
+}
+
+func TestKyvernoPolicyEdges(t *testing.T) {
+	configmap := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "ConfigMap",
+		"metadata": map[string]interface{}{
+			"name":      "zk-kafka-address",
+			"uid":       "18b016fe-1931-4e80-95d1-d51d3b936e24",
+			"namespace": "test2",
+			"labels": map[string]interface{}{
+				"app.kubernetes.io/managed-by":          "kyverno",
+				"generate.kyverno.io/policy-name":       "zk-kafka-address",
+				"generate.kyverno.io/policy-namespace":  "",
+				"generate.kyverno.io/rule-name":         "k-kafka-address",
+				"generate.kyverno.io/trigger-group":     "",
+				"generate.kyverno.io/trigger-kind":      "Namespace",
+				"generate.kyverno.io/trigger-namespace": "",
+				"generate.kyverno.io/trigger-uid":       "12345",
+				"generate.kyverno.io/trigger-version":   "v1",
+				"somekey":                               "somevalue",
+			},
+		},
+	}}
+
+	configmapTwo := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "ConfigMap",
+		"metadata": map[string]interface{}{
+			"name":      "hello-cofigmap",
+			"uid":       "777016fe-1931-4e80-95d1-d51d3b936e24",
+			"namespace": "test2",
+			"labels": map[string]interface{}{
+				"app.kubernetes.io/managed-by":          "kyverno",
+				"generate.kyverno.io/policy-name":       "kyverno-policy-test",
+				"generate.kyverno.io/policy-namespace":  "test2",
+				"generate.kyverno.io/rule-name":         "k-kafka-address",
+				"generate.kyverno.io/trigger-group":     "",
+				"generate.kyverno.io/trigger-kind":      "Namespace",
+				"generate.kyverno.io/trigger-namespace": "",
+			},
+		},
+	}}
+
+	kyvernoPolicy := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "kyverno.io/v1",
+			"kind":       "Policy",
+			"metadata": map[string]interface{}{
+				"name":      "kyverno-policy-test",
+				"namespace": "test2",
+				"uid":       "777738fa-0591-44da-8a06-98ea7d74a7f7",
+			},
+		},
+	}
+
+	kyvernoClusterpolicy := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "kyverno.io/v1",
+			"kind":       "ClusterPolicy",
+			"metadata": map[string]interface{}{
+				"name": "zk-kafka-address",
+				"uid":  "8fc338fa-0591-44da-8a06-98ea7d74a7f7",
+			},
+		},
+	}
+
+	nodes := []Node{
+		KyvernoPolicyResourceBuilder(kyvernoPolicy).BuildNode(),
+		KyvernoPolicyResourceBuilder(kyvernoClusterpolicy).BuildNode(),
+		GenericResourceBuilder(configmap).BuildNode(),
+		GenericResourceBuilder(configmapTwo).BuildNode(),
+	}
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	t.Log("Test Kyverno Cluster Policy")
+	edges := CommonEdges("local-cluster/18b016fe-1931-4e80-95d1-d51d3b936e24", nodeStore)
+	if len(edges) != 1 {
+		t.Fatalf("Expected 1 edge but got %d", len(edges))
+	}
+
+	edge := edges[0]
+	expectedEdge := Edge{
+		EdgeType:   "generatedBy",
+		SourceUID:  "local-cluster/18b016fe-1931-4e80-95d1-d51d3b936e24",
+		DestUID:    "local-cluster/8fc338fa-0591-44da-8a06-98ea7d74a7f7",
+		SourceKind: "ConfigMap",
+		DestKind:   "ClusterPolicy",
+	}
+
+	AssertDeepEqual("edge", edge, expectedEdge, t)
+
+	t.Log("Test Kyverno Policy")
+	edges = CommonEdges("local-cluster/777016fe-1931-4e80-95d1-d51d3b936e24", nodeStore)
+	if len(edges) != 1 {
+		t.Fatalf("Expected 1 edge but got %d", len(edges))
+	}
+
+	edge = edges[0]
+	expectedEdge = Edge{
+		EdgeType:   "generatedBy",
+		SourceUID:  "local-cluster/777016fe-1931-4e80-95d1-d51d3b936e24",
+		DestUID:    "local-cluster/777738fa-0591-44da-8a06-98ea7d74a7f7",
+		SourceKind: "ConfigMap",
+		DestKind:   "Policy",
+	}
+
+	AssertDeepEqual("edge", edge, expectedEdge, t)
 }
