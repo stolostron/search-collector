@@ -49,7 +49,7 @@ func VapBindingResourceBuilder(v *unstructured.Unstructured) *VapBindingResource
 
 			break
 		}
-	} 
+	}
 
 	binding := &VapBindingResource{node: node}
 
@@ -80,6 +80,8 @@ func VapBindingResourceBuilder(v *unstructured.Unstructured) *VapBindingResource
 		return binding
 	}
 
+	// A property must be updated, otherwise the reconcile does not update the edges.
+	binding.node.Properties["_paramRef"] = string(paramRefBytes)
 	binding.paramRef = paramRef
 
 	return binding

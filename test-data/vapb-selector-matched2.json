@@ -1,0 +1,15 @@
+{
+    "apiVersion": "v1",
+    "data": {
+        "limit": "20"
+    },
+    "kind": "ConfigMap",
+    "metadata": {
+        "labels": {
+            "vap-config": "max-replicas"
+        },
+        "name": "replica-limit",
+        "namespace": "default",
+        "uid": "36615dfc-5ee3-48c7-b2e1-f42ba1506df3"
+    }
+}
