@@ -15,6 +15,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -325,11 +326,20 @@ func TestReconcilerComplete(t *testing.T) {
 	// Convert to events
 	for _, file := range files {
 		filePath := dir + "/" + file.Name()
-		if file.Name() != "helmrelease-release.json" {
+		if strings.HasSuffix(file.Name(), "updated.json") {
 			tr.UnmarshalFile(filePath, &appInput, t)
 			appInputLocal := appInput
 			in := &tr.Event{
 				Time:      ts,
+				Operation: tr.Update,
+				Resource:  &appInputLocal,
+			}
+			events = append(events, *in)
+		} else if file.Name() != "helmrelease-release.json" {
+			tr.UnmarshalFile(filePath, &appInput, t)
+			appInputLocal := appInput
+			in := &tr.Event{
+				Time:      ts - 1,
 				Operation: tr.Create,
 				Resource:  &appInputLocal,
 			}
@@ -360,7 +370,12 @@ func TestReconcilerComplete(t *testing.T) {
 		}
 	}()
 
-	for range events {
+	for _, ev := range events {
+		if ev.Operation == tr.Update {
+			testReconciler.mutex.Lock()
+			testReconciler.resetDiffs()
+			testReconciler.mutex.Unlock()
+		}
 		testReconciler.reconcileNode()
 	}
 	// The rlsFileCount will ensure that both the release configmap and the helm release files are read - so that the release event can be added to reconciler
@@ -378,8 +393,8 @@ func TestReconcilerComplete(t *testing.T) {
 	// Checks the count of nodes and edges based on the JSON files in pkg/test-data
 	// Update counts when the test data is changed
 	// We don't create Nodes for kind = Event
-	const Nodes = 49
-	const Edges = 55
+	const Nodes = 51
+	const Edges = 57
 	if len(com.Edges) != Edges || com.TotalEdges != Edges || len(com.Nodes) != Nodes || com.TotalNodes != Nodes {
 		ns := tr.NodeStore{
 			ByUID:               testReconciler.currentNodes,

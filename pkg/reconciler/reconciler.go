@@ -332,11 +332,22 @@ func (r *Reconciler) reconcileNode() {
 			// (a property that we don't care about triggered an update)
 			// For nodes that are not applications or subscriptions, We only care about the Properties,
 			// the Metadata is only used to compute the edges and not sent with the node data.
+			skip := reflect.DeepEqual(ne.Node.Properties, previousNode.Properties)
+
 			// If the node is an application or subscription, it might have changes to its metadata we
 			// need to account for so don't skip updates on those
-			if reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) &&
-				ne.Node.Properties["kind"] != "Application" &&
-				ne.Node.Properties["kind"] != "Subscription" {
+			if skip && (ne.Node.Properties["kind"] == "Application" || ne.Node.Properties["kind"] == "Subscription") {
+				skip = false
+			}
+
+			// VAPBs specially need to update edges based on this piece of metadata
+			if skip && ne.Node.Properties["kind"] == "ValidatingAdmissionPolicyBinding" {
+				if ne.Node.Metadata["paramRef"] != previousNode.Metadata["paramRef"] {
+					skip = false
+				}
+			}
+
+			if skip {
 				return
 			}
 		}
