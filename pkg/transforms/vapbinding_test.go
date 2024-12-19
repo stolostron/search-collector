@@ -114,7 +114,7 @@ func TestVapBindingEdgesGatekeeper(t *testing.T) {
 
 func TestVapBindingEdgesSelector(t *testing.T) {
 	vapb := &unstructured.Unstructured{Object: map[string]interface{}{}}
-	UnmarshalFile("vapb-selector.json", &vapb.Object, t)
+	UnmarshalFile("vapb-selector-original.json", &vapb.Object, t)
 
 	vap := &unstructured.Unstructured{Object: map[string]interface{}{}}
 	UnmarshalFile("vap-selector.json", &vap.Object, t)
