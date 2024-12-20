@@ -26,6 +26,7 @@ type PolicyReport struct {
 // ReportResults rule violation results
 type ReportResults struct {
 	Policy     string           `json:"policy"`
+	Rule       string           `json:"rule,omitempty"`
 	Message    string           `json:"message"`
 	Category   string           `json:"category"`
 	Result     string           `json:"result"`
@@ -78,6 +79,7 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	// Extract the properties specific to this type
 	categoryMap := make(map[string]struct{})
 	policies := sets.Set[string]{}
+	rules := sets.Set[string]{}
 	critical := 0
 	important := 0
 	moderate := 0
@@ -89,7 +91,12 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 		for _, category := range strings.Split(result.Category, ",") {
 			categoryMap[category] = struct{}{}
 		}
+
 		policies.Insert(result.Policy)
+		if result.Rule != "" {
+			rules.Insert(result.Rule)
+		}
+
 		switch result.Properties.TotalRisk {
 		case "4":
 			critical++
@@ -117,8 +124,11 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	policyList := policies.UnsortedList()
 	sort.Strings(policyList)
 
-	// "rules" is incorrect since there is a "rule" field in the results, but this is kept for backwards compatibility
-	node.Properties["rules"] = policyList
+	ruleList := rules.UnsortedList()
+	sort.Strings(ruleList)
+
+	node.Properties["rules"] = ruleList
+	node.Properties["policies"] = policyList
 	node.Properties["category"] = categories
 	node.Properties["critical"] = critical
 	node.Properties["important"] = important
@@ -144,8 +154,8 @@ func (pr PolicyReportResource) BuildEdges(ns NodeStore) []Edge {
 		return edges
 	}
 
-	// "rules" represents the policies
-	for _, policy := range pr.node.Properties["rules"].([]string) {
+	// "policies" represents the policies
+	for _, policy := range pr.node.Properties["policies"].([]string) {
 		var kind, namespace, name string
 
 		splitPolicy := strings.SplitN(policy, "/", 2)
