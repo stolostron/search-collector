@@ -17,7 +17,8 @@ func TestTransformPolicyReport(t *testing.T) {
 
 	// Test unique fields that exist in policy report and are shown in UI - the common test will test the other bits
 	AssertDeepEqual("category Length", len(node.Properties["category"].([]string)), 5, t)
-	AssertDeepEqual("rules", node.Properties["rules"], []string{"policyreport testing risk 1 policy", "policyreport testing risk 2 policy"}, t)
+	AssertDeepEqual("policies", node.Properties["policies"], []string{"policyreport testing risk 1 policy", "policyreport testing risk 2 policy"}, t)
+	AssertDeepEqual("rules", len(node.Properties["rules"].([]string)), 0, t)
 	AssertDeepEqual("numRuleViolations", node.Properties["numRuleViolations"], 2, t)
 	AssertDeepEqual("critical", node.Properties["critical"], 0, t)
 	AssertDeepEqual("important", node.Properties["important"], 0, t)
@@ -37,8 +38,10 @@ func TestTransformKyvernoClusterPolicyReport(t *testing.T) {
 	UnmarshalFile("kyverno-clusterpolicyreport.json", &pr, t)
 	node := PolicyReportResourceBuilder(&pr).BuildNode()
 
+	AssertDeepEqual("apiversion", node.Properties["apiversion"].(string), "v1alpha2", t)
 	AssertDeepEqual("category", node.Properties["category"].([]string), []string{"Kubecost"}, t)
-	AssertDeepEqual("rules", node.Properties["rules"], []string{"no-label-of-monkey", "require-kubecost-labels"}, t)
+	AssertDeepEqual("policies", node.Properties["policies"], []string{"no-label-of-monkey", "require-kubecost-labels"}, t)
+	AssertDeepEqual("rules", node.Properties["rules"], []string{"no-monkey", "require-labels"}, t)
 	// 1 failure and 1 error
 	AssertDeepEqual("numRuleViolations", node.Properties["numRuleViolations"], 2, t)
 	expected := map[string]int{"require-kubecost-labels": 2, "no-label-of-monkey": 0}
@@ -51,12 +54,14 @@ func TestTransformKyvernoPolicyReport(t *testing.T) {
 	node := PolicyReportResourceBuilder(&pr).BuildNode()
 
 	AssertDeepEqual("category", node.Properties["category"].([]string), []string{"Kubecost"}, t)
+	AssertDeepEqual("apiversion", node.Properties["apiversion"].(string), "v1beta1", t)
 	AssertDeepEqual(
-		"rules",
-		node.Properties["rules"],
+		"policies",
+		node.Properties["policies"],
 		[]string{"open-cluster-management-agent-addon/require-kubecost-labels", "require-kubecost-labels"},
 		t,
 	)
+	AssertDeepEqual("rules", node.Properties["rules"], []string{"require-labels"}, t)
 	AssertDeepEqual("numRuleViolations", node.Properties["numRuleViolations"], 2, t)
 	expected := map[string]int{
 		"require-kubecost-labels":                                     1,
