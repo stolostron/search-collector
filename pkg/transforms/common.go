@@ -156,6 +156,53 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 
 	// deployer subscriber edges
 	ret = append(ret, edgesByDeployerSubscriber(nodeInfo, ns)...)
+
+	ret = edgesByKyverno(ret, currNode, ns)
+
+	return ret
+}
+
+// Function to create an edge linking any resource with a Kyverno Policy or ClusterPolicy that generates the resource.
+func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
+	labels, ok := currNode.Properties["label"].(map[string]string)
+	if !ok {
+		return ret
+	}
+
+	if labels["app.kubernetes.io/managed-by"] != "kyverno" || labels["generate.kyverno.io/policy-name"] == "" {
+		return ret
+	}
+
+	// For resources created by kyverno
+	policyNamespace := labels["generate.kyverno.io/policy-namespace"]
+	policyName := labels["generate.kyverno.io/policy-name"]
+	// Kyverno Policy
+	policyKind := "Policy"
+
+	if policyNamespace == "" {
+		// Kyverno ClusterPolicy
+		policyKind = "ClusterPolicy"
+		policyNamespace = "_NONE"
+	}
+
+	policyNode, ok := ns.ByKindNamespaceName[policyKind][policyNamespace][policyName]
+	if !ok {
+		return ret
+	}
+
+	// Prevent from policy.policy.open-cluster-management.io
+	if policyNode.Properties["apigroup"] != "kyverno.io" {
+		return ret
+	}
+
+	ret = append(ret, Edge{
+		SourceKind: currNode.Properties["kind"].(string),
+		SourceUID:  currNode.UID,
+		EdgeType:   "generatedBy",
+		DestUID:    policyNode.UID,
+		DestKind:   policyNode.Properties["kind"].(string),
+	})
+
 	return ret
 }
 
@@ -237,7 +284,8 @@ func edgesByDestinationName(
 	destKind string,
 	nodeInfo NodeInfo,
 	ns NodeStore,
-	seenDests []string) []Edge {
+	seenDests []string,
+) []Edge {
 	ret := []Edge{}
 	for _, value := range seenDests {
 		// Checking against nodeInfo.UID - it gets updated every time edgesByDestinationName is called
@@ -309,7 +357,7 @@ func edgesByDestinationName(
 					nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
 			}
 		}
-		seenDests = append(seenDests, nodeInfo.UID) //add nodeInfo UID to processed/seen nodes
+		seenDests = append(seenDests, nodeInfo.UID) // add nodeInfo UID to processed/seen nodes
 
 		// If the destination node has property _ownerUID, create an edge between the pod and the destination's owner
 		// Call the edgesByOwner recursively to create the uses edge
@@ -419,7 +467,6 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 	}
 	ret = findSub(nodeInfo.UID)
 	return ret
-
 }
 
 // Build edges from the source node in nodeInfo to all applications/channels in the subscription's metadata.
