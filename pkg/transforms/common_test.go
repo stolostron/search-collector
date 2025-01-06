@@ -180,3 +180,102 @@ func TestKyvernoPolicyEdges(t *testing.T) {
 
 	AssertDeepEqual("edge", edge, expectedEdge, t)
 }
+
+func TestGatekeeperMutationEdges(t *testing.T) {
+	// For testing common resource
+	pod := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "Pod",
+		"metadata": map[string]interface{}{
+			"name":      "my-pod",
+			"uid":       "2222",
+			"namespace": "test3",
+			"annotations": map[string]interface{}{
+				"gatekeeper.sh/mutations": "Assign//mutation-configmap:1, AssignMetadata/hello/mutation-meta-configmap:1",
+			},
+		},
+	}}
+
+	// For testing generic resource
+	configmap := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "ConfigMap",
+		"metadata": map[string]interface{}{
+			"name":      "zk-kafka-address",
+			"uid":       "1111",
+			"namespace": "test2",
+			"annotations": map[string]interface{}{
+				"gatekeeper.sh/mutations": "Assign//mutation-configmap:1, AssignMetadata/hello/mutation-meta-configmap:1",
+			},
+		},
+	}}
+
+	// Case: Namespace is "default"
+	assign := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "mutations.gatekeeper.sh/v1",
+			"kind":       "Assign",
+			"metadata": map[string]interface{}{
+				"name": "mutation-configmap",
+				"uid":  "683aaeb0-78b9-4d44-a737-59d621bc71f0",
+			},
+		},
+	}
+
+	assignMeta := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "mutations.gatekeeper.sh/v1",
+			"kind":       "AssignMetadata",
+			"metadata": map[string]interface{}{
+				"name":      "mutation-meta-configmap",
+				"namespace": "hello",
+				"uid":       "bc09fa5f-8ef7-4cd1-833a-4c79c26b03f3",
+			},
+		},
+	}
+
+	nodes := []Node{
+		GenericResourceBuilder(assign).BuildNode(),
+		GenericResourceBuilder(assignMeta).BuildNode(),
+		GenericResourceBuilder(configmap).BuildNode(),
+		GenericResourceBuilder(pod).BuildNode(),
+	}
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	t.Log("Test Gatekeeper mutation")
+	configMapEdges := CommonEdges("local-cluster/1111", nodeStore)
+	if len(configMapEdges) != 2 {
+		t.Fatalf("Expected 2 edge but got %d", len(configMapEdges))
+	}
+
+	podEdges := CommonEdges("local-cluster/1111", nodeStore)
+	if len(configMapEdges) != 2 {
+		t.Fatalf("Expected 2 edge but got %d", len(configMapEdges))
+	}
+
+	edge := configMapEdges[0]
+	edge2 := podEdges[0]
+	expectedEdge := Edge{
+		EdgeType:   "mutatedBy",
+		SourceUID:  "local-cluster/1111",
+		DestUID:    "local-cluster/683aaeb0-78b9-4d44-a737-59d621bc71f0",
+		SourceKind: "ConfigMap",
+		DestKind:   "Assign",
+	}
+
+	AssertDeepEqual("edge", edge, expectedEdge, t)
+	AssertDeepEqual("edge", edge2, expectedEdge, t)
+
+	edge = configMapEdges[1]
+	edge2 = podEdges[1]
+	expectedEdge = Edge{
+		EdgeType:   "mutatedBy",
+		SourceUID:  "local-cluster/1111",
+		DestUID:    "local-cluster/bc09fa5f-8ef7-4cd1-833a-4c79c26b03f3",
+		SourceKind: "ConfigMap",
+		DestKind:   "AssignMetadata",
+	}
+
+	AssertDeepEqual("edge", edge, expectedEdge, t)
+	AssertDeepEqual("edge", edge2, expectedEdge, t)
+}

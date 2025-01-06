@@ -101,6 +101,13 @@ func transformCommon(resource v1.Object) Node {
 		Properties: commonProperties(resource),
 		Metadata:   make(map[string]string),
 	}
+
+	// When a resource is mutated by Gatekeeper, add this annotation
+	mutation, ok := resource.GetAnnotations()["gatekeeper.sh/mutations"]
+	if ok {
+		n.Metadata["gatekeeper.sh/mutations"] = mutation
+	}
+
 	n.Metadata["OwnerUID"] = ownerRefUID(resource.GetOwnerReferences())
 	// Adding OwnerReleaseName and Namespace to resources that doesn't have ownerRef but are deployed by a release.
 	if n.Metadata["OwnerUID"] == "" && resource.GetAnnotations()["meta.helm.sh/release-name"] != "" &&
@@ -108,6 +115,7 @@ func transformCommon(resource v1.Object) Node {
 		n.Metadata["OwnerReleaseName"] = resource.GetAnnotations()["meta.helm.sh/release-name"]
 		n.Metadata["OwnerReleaseNamespace"] = resource.GetAnnotations()["meta.helm.sh/release-namespace"]
 	}
+
 	return n
 }
 
@@ -159,6 +167,8 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 
 	ret = edgesByKyverno(ret, currNode, ns)
 
+	ret = edgesByGatekeeperMutation(ret, currNode, ns)
+
 	return ret
 }
 
@@ -202,6 +212,43 @@ func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
 		DestUID:    policyNode.UID,
 		DestKind:   policyNode.Properties["kind"].(string),
 	})
+
+	return ret
+}
+
+// Function to create an edge linking a resource to Gatekeeper mutations (e.g., Assign, AssignImage) that modify the resource.
+func edgesByGatekeeperMutation(ret []Edge, currNode Node, ns NodeStore) []Edge {
+	mutationEntries, ok := currNode.Metadata["gatekeeper.sh/mutations"]
+	if !ok || mutationEntries == "" {
+		return ret
+	}
+
+	for _, kindNsName := range strings.Split(mutationEntries, ", ") {
+		parts := strings.Split(kindNsName, "/")
+		if len(parts) != 3 {
+			continue // Skip invalid entries that don't follow the "kind/namespace/name" format
+		}
+
+		mutationNs := parts[1]
+		if parts[1] == "" {
+			mutationNs = "_NONE"
+		}
+
+		// Extract the mutation name (ignoring any suffix after ':').
+		mutationName := strings.Split(parts[2], ":")[0]
+		mutationNode, ok := ns.ByKindNamespaceName[parts[0]][mutationNs][mutationName]
+		if !ok {
+			continue
+		}
+
+		ret = append(ret, Edge{
+			SourceKind: currNode.Properties["kind"].(string),
+			SourceUID:  currNode.UID,
+			EdgeType:   "mutatedBy",
+			DestUID:    mutationNode.UID,
+			DestKind:   mutationNode.Properties["kind"].(string),
+		})
+	}
 
 	return ret
 }
