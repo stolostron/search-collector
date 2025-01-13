@@ -160,12 +160,18 @@ func genericProperties(r *unstructured.Unstructured) map[string]interface{} {
 	if r.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"] != "" {
 		ret["_hostingDeployable"] = r.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"]
 	}
-	return ret
 
+	return ret
 }
 
 func genericMetadata(r *unstructured.Unstructured) map[string]string {
 	metadata := make(map[string]string)
+	// When a resource is mutated by Gatekeeper, add this annotation
+	mutation, ok := r.GetAnnotations()["gatekeeper.sh/mutations"]
+	if ok {
+		metadata["gatekeeper.sh/mutations"] = mutation
+	}
+
 	metadata["OwnerUID"] = ownerRefUID(r.GetOwnerReferences())
 	// Adds OwnerReleaseName and Namespace to resources that don't have ownerRef, but are deployed by a release.
 	if metadata["OwnerUID"] == "" && r.GetAnnotations()["meta.helm.sh/release-name"] != "" &&
