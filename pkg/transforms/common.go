@@ -41,7 +41,9 @@ func commonAnnotations(object v1.Object) map[string]string {
 
 		switch objKind.GroupVersionKind().Group {
 		case POLICY_OPEN_CLUSTER_MANAGEMENT_IO:
+		// Add annotations for severity
 		case "constraints.gatekeeper.sh":
+		case "mutations.gatekeeper.sh":
 		default:
 			return nil
 		}
