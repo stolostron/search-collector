@@ -6,7 +6,7 @@ module github.com/stolostron/search-collector
 go 1.20
 
 require (
-	github.com/golang/glog v1.0.0
+	github.com/golang/glog v1.2.4
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
