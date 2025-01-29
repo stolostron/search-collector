@@ -5,6 +5,7 @@ output/
 build-harness/
 build-harness-extensions/
 search-collector
+.vscode/
 
 !vbh/.build-harness-vendorized
 !vbh/build-harness
