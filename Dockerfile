@@ -6,7 +6,7 @@ WORKDIR /go/src/github.com/stolostron/search-collector
 COPY . .
 RUN CGO_ENABLED=1 GOGC=25 go build -trimpath -o main main.go
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10-1154
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10-1179
 
 ARG VCS_REF
 ARG VCS_URL
