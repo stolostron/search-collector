@@ -21,7 +21,10 @@ import (
 
 	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stolostron/search-collector/pkg/metrics"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/helm/pkg/proto/hapi/release"
@@ -46,7 +49,7 @@ func initTestReconciler() *Reconciler {
 	}
 }
 
-func createNodeEvents() []tr.NodeEvent {
+func createNodeEvents(resourceNameOne string, resourceNameTwo string) []tr.NodeEvent {
 	events := NodeEdge{}
 	nodeEvents := []tr.NodeEvent{}
 	// First Node
@@ -61,7 +64,9 @@ func createNodeEvents() []tr.NodeEvent {
 	}
 	unstructuredNode := tr.GenericResourceBuilder(&unstructuredInput)
 	bEdges := tr.GenericResourceBuilder(&unstructuredInput).BuildEdges
-	events.BuildNode = append(events.BuildNode, unstructuredNode.BuildNode())
+	node := unstructuredNode.BuildNode()
+	node.ResourceString = resourceNameOne
+	events.BuildNode = append(events.BuildNode, node)
 	events.BuildEdges = append(events.BuildEdges, bEdges)
 
 	// Second Node
@@ -73,6 +78,7 @@ func createNodeEvents() []tr.NodeEvent {
 	p.UID = "5678"
 	podNode := tr.PodResourceBuilder(&p).BuildNode()
 	podNode.Metadata["OwnerUID"] = "local-cluster/1234"
+	podNode.ResourceString = resourceNameTwo
 	podEdges := tr.PodResourceBuilder(&p).BuildEdges
 
 	events.BuildNode = append(events.BuildNode, podNode)
@@ -89,6 +95,80 @@ func createNodeEvents() []tr.NodeEvent {
 		nodeEvents = append(nodeEvents, ne)
 	}
 	return nodeEvents
+}
+
+func createAndReconcileNodeEvents(testReconciler *Reconciler, nodeEventNameOne string, nodeEventNameTwo string) {
+	events := createNodeEvents(nodeEventNameOne, nodeEventNameTwo)
+
+	// Input node events to reconciler
+	go func() {
+		for _, ne := range events {
+			testReconciler.Input <- ne
+		}
+	}()
+
+	for range events {
+		testReconciler.reconcileNode()
+	}
+}
+
+func setupMetricsRegistry() {
+	// reset metrics and register new ones to ensure metrics don't carry over values between tests
+	metrics.EventsReceivedCount.Reset()
+	metrics.ResourcesSentToIndexerCount.Reset()
+	registry := prometheus.NewRegistry()
+	metrics.PromRegistry = registry
+	registry.MustRegister(metrics.EventsReceivedCount)
+	registry.MustRegister(metrics.ResourcesSentToIndexerCount)
+}
+
+func TestReconcilerIncrementsResourcesMetrics(t *testing.T) {
+	// Given: Reconciler and two unique node events
+	setupMetricsRegistry()
+	testReconciler := initTestReconciler()
+	createAndReconcileNodeEvents(testReconciler, "uniqueNameOne", "uniqueNameTwo")
+
+	// When: we collect the metrics
+	collectedMetrics, _ := metrics.PromRegistry.Gather() // use the prometheus registry to confirm metrics have been scraped.
+
+	// Then: we get both metrics and they are incremented appropriately - everything is unique so everything gets incremented
+	assert.Equal(t, 2, len(collectedMetrics))
+	// EventsReceivedCount - resource_kind = uniqueNameOne, value: 1
+	assert.Equal(t, 1.0, collectedMetrics[0].GetMetric()[0].GetCounter().GetValue())
+	// EventsReceivedCount - resource_kind = uniqueNameTwo, value: 1
+	assert.Equal(t, 1.0, collectedMetrics[0].GetMetric()[1].GetCounter().GetValue())
+	// ResourcesSentToIndexerCount - resource_kind = uniqueNameOne, value: 1
+	assert.Equal(t, 1.0, collectedMetrics[1].GetMetric()[0].GetCounter().GetValue())
+	// ResourcesSentToIndexerCount - resource_kind = uniqueNameTwo, value: 1
+	assert.Equal(t, 1.0, collectedMetrics[1].GetMetric()[1].GetCounter().GetValue())
+}
+
+func TestReconcilerResourcesMetricSentToIndexerDiff(t *testing.T) {
+	// Given: Reconciler and four resources (2 duplicates)
+	setupMetricsRegistry()
+	testReconciler := initTestReconciler()
+	// we create and reconcile the same node events so EventsReceivedCount should be 2x ResourcesSentToIndexerCount
+	createAndReconcileNodeEvents(testReconciler, "uniqueNameOne", "uniqueNameTwo")
+	// we have to resetDiffs to mock a send and populate previous nodes
+	testReconciler.mutex.Lock()
+	testReconciler.resetDiffs()
+	testReconciler.mutex.Unlock()
+	createAndReconcileNodeEvents(testReconciler, "uniqueNameOne", "uniqueNameTwo")
+
+	// When: we collect the metrics
+	collectedMetrics, _ := metrics.PromRegistry.Gather() // use the prometheus registry to confirm metrics have been scraped.
+
+	// Then: we get both metrics -EventsReceivedCount should be 2x ResourcesSentToIndexerCount because it processed duplicate node events
+	// Reconciler drops the duplicate node events because they contain no changes
+	assert.Equal(t, 2, len(collectedMetrics))
+	// EventsReceivedCount - resource_kind = uniqueNameOne, value: 2
+	assert.Equal(t, 2.0, collectedMetrics[0].GetMetric()[0].GetCounter().GetValue())
+	// EventsReceivedCount - resource_kind = uniqueNameTwo, value: 2
+	assert.Equal(t, 2.0, collectedMetrics[0].GetMetric()[1].GetCounter().GetValue())
+	// ResourcesSentToIndexerCount - resource_kind = uniqueNameOne, value: 1
+	assert.Equal(t, 1.0, collectedMetrics[1].GetMetric()[0].GetCounter().GetValue())
+	// ResourcesSentToIndexerCount - resource_kind = uniqueNameTwo, value: 1
+	assert.Equal(t, 1.0, collectedMetrics[1].GetMetric()[1].GetCounter().GetValue())
 }
 
 func TestReconcilerOutOfOrderDelete(t *testing.T) {
@@ -238,19 +318,9 @@ func TestReconcilerRedundant(t *testing.T) {
 
 func TestReconcilerAddEdges(t *testing.T) {
 	testReconciler := initTestReconciler()
-	// Add events
-	events := createNodeEvents()
 
-	// Input node events to reconciler
-	go func() {
-		for _, ne := range events {
-			testReconciler.Input <- ne
-		}
-	}()
+	createAndReconcileNodeEvents(testReconciler, "", "")
 
-	for range events {
-		testReconciler.reconcileNode()
-	}
 	// Build edges
 	edgeMap1 := testReconciler.allEdges()
 
@@ -277,19 +347,9 @@ func TestReconcilerDiff(t *testing.T) {
 			"very": "important",
 		},
 	}
-	// Add events
-	events := createNodeEvents()
 
-	// Input node events to reconciler
-	go func() {
-		for _, ne := range events {
-			testReconciler.Input <- ne
-		}
-	}()
+	createAndReconcileNodeEvents(testReconciler, "", "")
 
-	for range events {
-		testReconciler.reconcileNode()
-	}
 	// Compute reconciler diff - this time there should be 1 node and edge to add, 1 node to update
 	diff := testReconciler.Diff()
 	// Compute reconciler diff again - this time there shouldn't be any new edges or nodes to add/update
