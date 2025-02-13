@@ -47,3 +47,6 @@ clean::
 # Build the docker image
 docker-build: 
 	docker build -f Dockerfile . -t search-collector
+
+show-metrics:
+	curl -k http://localhost:5010/metrics
