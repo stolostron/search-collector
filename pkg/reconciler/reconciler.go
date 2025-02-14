@@ -17,6 +17,7 @@ import (
 
 	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
+	"github.com/stolostron/search-collector/pkg/metrics"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 )
 
@@ -284,7 +285,7 @@ func (r *Reconciler) receive() {
 	}
 }
 
-// This is a separate funcition so we can defer the mutex unlock and guarantee the lock is lifted every iteration
+// This is a separate function so we can defer the mutex unlock and guarantee the lock is lifted every iteration
 func (r *Reconciler) reconcileNode() {
 	ne := <-r.Input
 
@@ -293,6 +294,8 @@ func (r *Reconciler) reconcileNode() {
 	// and then blocked, we could end up getting out of order
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
+
+	metrics.EventsReceivedCount.WithLabelValues(ne.Node.ResourceString).Inc()
 
 	// Check whether we already have this node in our diff/purged state with a more up to date time.
 	// If so, we ignore the version of it we're currently processing.
@@ -320,6 +323,7 @@ func (r *Reconciler) reconcileNode() {
 
 		if inPrevious {
 			r.diffNodes[ne.UID] = ne // Since it was in the previous, we need to have a deletion diff.
+			metrics.ResourcesSentToIndexerCount.WithLabelValues(ne.Node.ResourceString).Inc()
 		} else {
 			delete(r.diffNodes, ne.UID) // Otherwise no need to send a payload, just remove from local memory
 		}
@@ -362,6 +366,8 @@ func (r *Reconciler) reconcileNode() {
 				}
 			}
 		}
+		// TODO: log the resources that surpass a specific threshold of EventsReceivedCount - ResourcesSentToIndexerCount
+		metrics.ResourcesSentToIndexerCount.WithLabelValues(ne.Node.ResourceString).Inc()
 
 		r.currentNodes[ne.UID] = ne.Node
 		r.edgeFuncs[ne.UID] = ne.ComputeEdges
