@@ -7,7 +7,7 @@ go 1.20
 
 require (
 	github.com/golang/glog v1.0.0
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/stolostron/governance-policy-propagator v0.0.0-20220125192743-95d49290a318
@@ -48,7 +48,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
