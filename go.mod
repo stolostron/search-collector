@@ -10,7 +10,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
-	github.com/stolostron/governance-policy-propagator v0.0.0-20220125192743-95d49290a318
+	github.com/stolostron/governance-policy-propagator 72a87ff9ce2a
 	github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0
 	github.com/stolostron/multicloud-operators-placementrule v1.2.4-1-20220311-8eedb3f
 	github.com/stretchr/testify v1.8.2
