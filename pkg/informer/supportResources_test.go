@@ -9,11 +9,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-//generate fakeclient to get configmap
+// generate fakeclient to get configmap
 func Test_GetConfigMapByName(t *testing.T) {
 
 	configmaps := []struct {
@@ -172,4 +173,16 @@ func Test_supportedResources(t *testing.T) {
 
 	}
 
+}
+
+func Test_supportedResourcesIgnoreMap(t *testing.T) {
+	// Given: a list of resources we are supposed to ignore
+	ignoreListTestCases := []string{"events", "projects", "clusters", "clusterstatuses", "oauthaccesstokens"}
+
+	// When: we pass them into isResourceAllowed check
+	for _, test := range ignoreListTestCases {
+		// Then: they all come back false - resource not allowed
+		allowed := isResourceAllowed("", test, []Resource{}, []Resource{})
+		assert.Equal(t, allowed, false)
+	}
 }
