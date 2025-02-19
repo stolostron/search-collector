@@ -21,7 +21,7 @@ func TestTransformKyvernoPolicy(t *testing.T) {
 				},
 			},
 			"spec": map[string]interface{}{
-				"validationFailureAction": "Deny",
+				"validationFailureAction": "Enforce",
 				"random":                  "value",
 			},
 		},
@@ -29,7 +29,7 @@ func TestTransformKyvernoPolicy(t *testing.T) {
 	rv := KyvernoPolicyResourceBuilder(&p)
 	node := rv.node
 
-	AssertEqual("validationFailureAction", node.Properties["validationFailureAction"], "Deny", t)
+	AssertEqual("validationFailureAction", node.Properties["validationFailureAction"], "Enforce", t)
 	AssertEqual("background", node.Properties["background"], true, t)
 	AssertEqual("admission", node.Properties["admission"], true, t)
 	AssertEqual("severity", node.Properties["severity"], "medium", t)
@@ -54,7 +54,7 @@ func TestTransformKyvernoClusterPolicy(t *testing.T) {
 				},
 			},
 			"spec": map[string]interface{}{
-				"validationFailureAction": "Deny",
+				"validationFailureAction": "Enforce",
 				"random":                  "value",
 				"background":              false,
 				"admission":               false,
@@ -64,8 +64,110 @@ func TestTransformKyvernoClusterPolicy(t *testing.T) {
 	rv := KyvernoPolicyResourceBuilder(&p)
 	node := rv.node
 
-	AssertEqual("validationFailureAction", node.Properties["validationFailureAction"], "Deny", t)
+	AssertEqual("validationFailureAction", node.Properties["validationFailureAction"], "Enforce", t)
 	AssertEqual("background", node.Properties["background"], false, t)
 	AssertEqual("admission", node.Properties["admission"], false, t)
 	AssertEqual("severity", node.Properties["severity"], "critical", t)
+}
+
+func TestTransformKyvernoFailureAction(t *testing.T) {
+	tests := []struct {
+		clusterPolicy unstructured.Unstructured
+		expected      string
+		testName      string
+	}{
+		{
+			clusterPolicy: unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "kyverno.io/v1",
+					"kind":       "ClusterPolicy",
+					"metadata": map[string]interface{}{
+						"name": "my-policy",
+						"annotations": map[string]interface{}{
+							"policies.kyverno.io/severity": "critical",
+						},
+					},
+					"spec": map[string]interface{}{
+						"validationFailureAction": "Enforce",
+						"random":                  "value",
+						"background":              false,
+						"admission":               false,
+						"rules": []interface{}{
+							map[string]interface{}{"validate": map[string]interface{}{
+								"failureAction": "Audit",
+							}},
+							map[string]interface{}{"validate": map[string]interface{}{
+								"failureAction": "Enforce",
+							}},
+						},
+					},
+				},
+			},
+			expected: "Audit/Enforce",
+			testName: "Test mixed failureActions",
+		},
+		{
+			clusterPolicy: unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "kyverno.io/v1",
+					"kind":       "ClusterPolicy",
+					"metadata": map[string]interface{}{
+						"name": "my-policy",
+						"annotations": map[string]interface{}{
+							"policies.kyverno.io/severity": "critical",
+						},
+					},
+					"spec": map[string]interface{}{
+						"validationFailureAction": "Enforce",
+						"random":                  "value",
+						"background":              false,
+						"admission":               false,
+						"rules": []interface{}{
+							map[string]interface{}{"validate": map[string]interface{}{
+								"failureAction": "Audit",
+							}},
+							map[string]interface{}{"validate": map[string]interface{}{
+								"failureAction": "Audit",
+							}},
+						},
+					},
+				},
+			},
+			expected: "Audit",
+			testName: "Test identical failureActions",
+		},
+		{
+			clusterPolicy: unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "kyverno.io/v1",
+					"kind":       "ClusterPolicy",
+					"metadata": map[string]interface{}{
+						"name": "my-policy",
+						"annotations": map[string]interface{}{
+							"policies.kyverno.io/severity": "critical",
+						},
+					},
+					"spec": map[string]interface{}{
+						"random":     "value",
+						"background": false,
+						"admission":  false,
+						"rules": []interface{}{
+							map[string]interface{}{"generate": map[string]interface{}{}},
+						},
+					},
+				},
+			},
+			expected: "Audit",
+			testName: "Test generate rule",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			rv := KyvernoPolicyResourceBuilder(&tt.clusterPolicy)
+			node := rv.node
+
+			AssertEqual("validationFailureAction", node.Properties["validationFailureAction"], tt.expected, t)
+		})
+	}
 }
