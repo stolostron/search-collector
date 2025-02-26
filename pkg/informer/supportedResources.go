@@ -46,13 +46,17 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// Ignore oauthaccesstoken resources because those cause too much noise on OpenShift clusters.
 	// Ignore projects as namespaces are overwritten to be projects on Openshift clusters - they tend to share
 	// the same uid.
-	list := []string{"events", "projects", "clusters", "clusterstatuses", "oauthaccesstokens"}
-	// Deny all apiResources with kind in list
-	for _, name := range list {
-		if kind == name {
-			glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
-			return false
-		}
+	ignoreMap := map[string]interface{}{
+		"events":            nil,
+		"projects":          nil,
+		"clusters":          nil,
+		"clusterstatuses":   nil,
+		"oauthaccesstokens": nil,
+	}
+	// Deny all apiResources with kind in map
+	if _, ok := ignoreMap[kind]; ok {
+		glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
+		return false
 	}
 
 	// Deny resources that match the deny list.
