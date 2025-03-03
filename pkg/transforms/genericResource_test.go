@@ -96,10 +96,14 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-04-30T16:22:02Z", t)
 
 	// Verify properties defined in the transform config
+	AssertEqual("agentConnected", node.Properties["agentConnected"], "True", t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
+	AssertEqual("flavor", node.Properties["flavor"], "small", t)
 	AssertEqual("memory", node.Properties["memory"], "2Gi", t)
+	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("status", node.Properties["status"], "Running", t)
+	AssertEqual("workload", node.Properties["workload"], "server", t)
 	AssertEqual("_specRunning", node.Properties["_specRunning"], true, t)
 	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], nil, t)
 }
@@ -119,8 +123,10 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
 	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
+	AssertEqual("osVersion", node.Properties["osVersion"], "7 (Core)", t)
 	AssertEqual("phase", node.Properties["phase"], "Running", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("vmSize", node.Properties["vmSize"], "small", t)
 
 }
 
