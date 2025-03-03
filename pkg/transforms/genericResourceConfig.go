@@ -70,10 +70,14 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"VirtualMachine.kubevirt.io": {
 		properties: []ExtractProperty{
+			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
+			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`},
+			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},
+			{Name: "workload", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/workload}`},
 			{Name: "_specRunning", JSONPath: `{.spec.running}`},
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
 		},
@@ -83,8 +87,10 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 			{Name: "node", JSONPath: `{.status.nodeName}`},
+			{Name: "osVersion", JSONPath: `{.status.guestOSInfo.version}`},
 			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "vmSize", JSONPath: `{.metadata.labels.\kubevirt\.io/size}`},
 		},
 	},
 }
