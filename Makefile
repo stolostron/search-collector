@@ -20,7 +20,7 @@ build-linux:
 .PHONY: lint
 lint:
 	GOPATH=$(go env GOPATH)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "${GOPATH}/bin" v1.64.6
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "${GOPATH}/bin" v1.61.0
 	CGO_ENABLED=1 GOGC=25 golangci-lint run --timeout=3m
 	gosec ./...
 	
