@@ -13,6 +13,7 @@ import (
 	"github.com/stolostron/search-collector/pkg/informer"
 	lease "github.com/stolostron/search-collector/pkg/lease"
 	rec "github.com/stolostron/search-collector/pkg/reconciler"
+	"github.com/stolostron/search-collector/pkg/server"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 
 	"github.com/golang/glog"
@@ -57,6 +58,9 @@ func main() {
 		glog.Info("Create/Update lease for search")
 		go wait.Forever(leaseReconciler.Reconcile, time.Duration(leaseReconciler.LeaseDurationSeconds)*time.Second)
 	}
+
+	// Start metrics server to serve Prometheus metrics
+	go server.StartAndListen()
 
 	// Create input channel
 	transformChannel := make(chan *tr.Event)

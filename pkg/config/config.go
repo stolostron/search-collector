@@ -48,15 +48,17 @@ type Config struct {
 	AggregatorHost       string       `env:"AGGREGATOR_HOST"`    // Host of the Aggregator
 	AggregatorPort       string       `env:"AGGREGATOR_PORT"`    // Port of the Aggregator
 	ClusterName          string       `env:"CLUSTER_NAME"`       // The name of of the cluster where this pod is running
-	PodNamespace         string       `env:"POD_NAMESPACE"`      // The namespace of this pod
 	DeployedInHub        bool         `env:"DEPLOYED_IN_HUB"`    // Tracks if deployed in the Hub or Managed cluster
 	HeartbeatMS          int          `env:"HEARTBEAT_MS"`       // Interval(ms) to send empty payload to ensure connection
+	HTTPTimeout          int          `env:"HTTP_TIMEOUT"`       // Timeout for http server connections. Default: 5 min
 	KubeConfig           string       `env:"KUBECONFIG"`         // Local kubeconfig path
 	MaxBackoffMS         int          `env:"MAX_BACKOFF_MS"`     // Maximum backoff in ms to wait after error
+	PodNamespace         string       `env:"POD_NAMESPACE"`      // The namespace of this pod
 	RediscoverRateMS     int          `env:"REDISCOVER_RATE_MS"` // Interval(ms) to poll for changes to CRDs
 	RetryJitterMS        int          `env:"RETRY_JITTER_MS"`    // Random jitter added to backoff wait.
 	ReportRateMS         int          `env:"REPORT_RATE_MS"`     // Interval(ms) to send changes to the aggregator
 	RuntimeMode          string       `env:"RUNTIME_MODE"`       // Running mode (development or production)
+	ServerAddress        string       `env:"SERVER_ADDRESS"`     // Web server address
 }
 
 var Cfg = Config{}
@@ -145,6 +147,10 @@ func InitConfig() {
 
 		glog.Info("Running inside klusterlet. Aggregator URL: ", Cfg.AggregatorURL)
 	}
+
+	// setting configs for metrics server
+	setDefault(&Cfg.ServerAddress, "SERVER_ADDRESS", ":5010")
+	setDefaultInt(&Cfg.HTTPTimeout, "HTTP_TIMEOUT", 5*60*1000)
 }
 
 // Sets config field to perfer the env over config file
