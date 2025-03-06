@@ -145,3 +145,18 @@ func Test_genericResourceFromConfigDataVolume(t *testing.T) {
 	AssertEqual("size", node.Properties["size"], "20Gi", t)
 	AssertEqual("storageClassName", node.Properties["storageClassName"], nil, t)
 }
+
+func Test_genericResourceFromConfigNamespace(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("namespace.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "default", t)
+	AssertEqual("kind", node.Properties["kind"], "Namespace", t)
+	AssertEqual("namespace", node.Properties["namespace"], nil, t)
+	AssertEqual("created", node.Properties["created"], "2019-02-21T21:25:42Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("status", node.Properties["status"], "Active", t)
+}
