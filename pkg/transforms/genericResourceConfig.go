@@ -39,15 +39,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "phase", JSONPath: "{.status.phase}"},
 		},
 	},
-	"Subscription.operators.coreos.com": {
-		properties: []ExtractProperty{
-			{Name: "source", JSONPath: "{.spec.source}"},
-			{Name: "package", JSONPath: "{.spec.name}"},
-			{Name: "channel", JSONPath: "{.spec.channel}"},
-			{Name: "installplan", JSONPath: "{.status.installedCSV}"},
-			{Name: "phase", JSONPath: "{.status.state}"},
-		},
-	},
 	"ClusterOperator.config.openshift.io": {
 		properties: []ExtractProperty{
 			{Name: "version", JSONPath: `{.status.versions[?(@.name=="operator")].version}`},
@@ -60,6 +51,20 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "size", JSONPath: `{.spec.storage.resources.requests.storage}`},
 			{Name: "storageClassName", JSONPath: `{.spec.storage.storageClassName}`},
+		},
+	},
+	"Namespace": {
+		properties: []ExtractProperty{
+			{Name: "status", JSONPath: `{.status.phase}`},
+		},
+	},
+	"Subscription.operators.coreos.com": {
+		properties: []ExtractProperty{
+			{Name: "source", JSONPath: "{.spec.source}"},
+			{Name: "package", JSONPath: "{.spec.name}"},
+			{Name: "channel", JSONPath: "{.spec.channel}"},
+			{Name: "installplan", JSONPath: "{.status.installedCSV}"},
+			{Name: "phase", JSONPath: "{.status.state}"},
 		},
 	},
 	"ValidatingAdmissionPolicy.admissionregistration.k8s.io": {
@@ -103,6 +108,14 @@ func getTransformConfig(group, kind string) (ResourceConfig, bool) {
 	// 	  1. ConfigMap where it can be customized by the users.
 	// 	  2. CRD "additionalPrinterColumns" field.
 
-	val, found := transformConfig[kind+"."+group]
+	var val ResourceConfig
+	var found bool
+
+	if group == "" { // kubernetes core api resources
+		val, found = transformConfig[kind]
+	} else {
+		val, found = transformConfig[kind+"."+group]
+	}
+
 	return val, found
 }

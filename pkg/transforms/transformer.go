@@ -286,15 +286,6 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = JobResourceBuilder(&typedResource)
 
-		case [2]string{"Namespace", ""}:
-			typedResource := core.Namespace{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = NamespaceResourceBuilder(&typedResource)
-
 		case [2]string{"Node", ""}:
 			typedResource := core.Node{}
 			err := runtime.DefaultUnstructuredConverter.
