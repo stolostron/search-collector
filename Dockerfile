@@ -42,7 +42,7 @@ LABEL org.label-schema.vendor="Red Hat" \
 RUN microdnf update -y &&\
     microdnf install -y ca-certificates vi --nodocs &&\
     mkdir /licenses &&\
-    microdnf clean all --assumeyes
+    microdnf clean all
 
 COPY --from=builder /go/src/github.com/stolostron/search-collector/main /bin/main
 
