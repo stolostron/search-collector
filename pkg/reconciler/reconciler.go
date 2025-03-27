@@ -108,14 +108,14 @@ func NewReconciler() *Reconciler {
 // Returns the diff between the current and previous states, and resets the diff.
 // TODO the latter half of this function got pretty messy, it could use a refactor/rewrite
 func (r *Reconciler) Diff() Diff {
-	klog.V(4).Info("Reconciler calculating diff from previous state.")
+	klog.V(4).Info("Reconciler is calculating diff from previous state.")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	ret := Diff{}
 
 	if len(r.diffNodes) == 0 {
-		klog.V(5).Info("Calculating diff... no events since the last reconcile.")
+		klog.V(5).Info("Reconciler has no events since the last reconcile.")
 		return ret
 	}
 
@@ -193,7 +193,7 @@ func (r *Reconciler) Diff() Diff {
 
 // Returns the complete current state and resets the diff
 func (r *Reconciler) Complete() CompleteState {
-	klog.V(3).Info("Reconciler is building complete state.")
+	klog.V(3).Info("Reconciler is building the complete state.")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -262,7 +262,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 
 	// Loop across all the nodes and build their edges.
 	for _, uid := range append(appUIDs, otherUIDs...) {
-		klog.V(5).Infof("Calculating edges UID: %s", uid)
+		klog.V(6).Infof("Calculating edges for node with UID: %s", uid)
 		edges := r.edgeFuncs[uid](ns) // Get edges from this specific node
 
 		edges = append(edges, tr.CommonEdges(uid, ns)...) // Get common edges for this node
