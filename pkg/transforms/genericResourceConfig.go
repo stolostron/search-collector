@@ -58,6 +58,11 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "status", JSONPath: `{.status.phase}`},
 		},
 	},
+	"StorageClass.storage.k8s.io": {
+		properties: []ExtractProperty{
+			{Name: "provisioner", JSONPath: `{.provisioner}`},
+		},
+	},
 	"Subscription.operators.coreos.com": {
 		properties: []ExtractProperty{
 			{Name: "source", JSONPath: "{.spec.source}"},
