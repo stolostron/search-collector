@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // NodeResource ...
@@ -23,7 +24,7 @@ type NodeResource struct {
 }
 
 // NodeResourceBuilder ...
-func NodeResourceBuilder(n *v1.Node) *NodeResource {
+func NodeResourceBuilder(n *v1.Node, r *unstructured.Unstructured, additionalColumns ...ExtractProperty) *NodeResource {
 	node := transformCommon(n) // Start off with the common properties
 
 	var roles []string
@@ -68,6 +69,8 @@ func NodeResourceBuilder(n *v1.Node) *NodeResource {
 		status += "-SchedulingDisabled" // Encoding to single string to work around limitations.
 	}
 	node.Properties["status"] = status
+
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 
 	return &NodeResource{node: node}
 }

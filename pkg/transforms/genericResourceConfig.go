@@ -58,6 +58,13 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "status", JSONPath: `{.status.phase}`},
 		},
 	},
+	"Node": {
+		properties: []ExtractProperty{
+			{Name: "allocatableMemory", JSONPath: `{.status.allocatable.memory}`},
+			{Name: "ipAddress", JSONPath: `{.status.addresses[?(@.type=="InternalIP")].address}`},
+			{Name: "memoryCapacity", JSONPath: `{.status.capacity.memory}`},
+		},
+	},
 	"Subscription.operators.coreos.com": {
 		properties: []ExtractProperty{
 			{Name: "source", JSONPath: "{.spec.source}"},
