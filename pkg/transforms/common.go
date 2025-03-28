@@ -18,8 +18,11 @@ import (
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiTypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/jsonpath"
+	"k8s.io/klog/v2"
 )
 
 // An object given to the Edge Building methods in the transforms package.
@@ -603,4 +606,88 @@ func copyhostingSubProperties(srcUID string, destUID string, ns NodeStore) {
 			}
 		}
 	}
+}
+
+func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additionalColumns ...ExtractProperty) Node {
+	group := r.GroupVersionKind().Group
+	kind := r.GetKind()
+	// Check if a transform config exists for this resource and extract the additional properties.
+	transformConfig, found := getTransformConfig(group, kind)
+	if !found {
+		return node
+	}
+
+	// Currently, only pull in the additionalPrinterColumns listed in the CRD if it's a Gatekeeper
+	// constraint or globally enabled.
+	if !found && (config.Cfg.CollectCRDPrinterColumns || group == "constraints.gatekeeper.sh") {
+		transformConfig = ResourceConfig{properties: additionalColumns}
+	}
+
+	for _, prop := range transformConfig.properties {
+		// Skip properties that are already set. This could happen if additionalPrinterColumns
+		// is overriding a generic property.
+		if _, ok := node.Properties[prop.Name]; ok {
+			continue
+		}
+
+		// Skip additionalPrinterColumns that should be ignored.
+		if !found && defaultTransformIgnoredFields[prop.Name] {
+			continue
+		}
+
+		jp := jsonpath.New(prop.Name)
+		parseErr := jp.Parse(prop.JSONPath)
+		if parseErr != nil {
+			klog.Errorf("Error parsing jsonpath [%s] for [%s.%s] prop: [%s]. Reason: %v",
+				prop.JSONPath, kind, group, prop.Name, parseErr)
+			continue
+		}
+
+		result, err := jp.FindResults(r.Object)
+		if err != nil {
+			// This error isn't always indicative of a problem, for example, when the object is created, it
+			// won't have a status yet, so the jsonpath returns an error until controller adds the status.
+			klog.V(1).Infof("Unable to extract prop [%s] from [%s.%s] Name: [%s]. Reason: %v",
+				prop.Name, kind, group, r.GetName(), err)
+			continue
+		}
+
+		if len(result) > 0 && len(result[0]) > 0 {
+			val := result[0][0].Interface()
+
+			if knownStringArrays[prop.Name] {
+				if _, ok := val.([]string); !ok {
+					klog.V(1).Infof("Ignoring the property [%s] from [%s.%s] Name: [%s]. Reason: not a string slice",
+						prop.Name, kind, group, r.GetName())
+					continue
+				}
+			}
+
+			if prop.metadataOnly {
+				strVal, ok := val.(string)
+
+				if !ok {
+					klog.V(1).Infof(
+						"Unable to extract metadata prop [%s] from [%s.%s] Name: [%s] since it's not a string: %v",
+						prop.Name, kind, group, r.GetName(),
+					)
+					continue
+				}
+
+				node.Metadata[prop.Name] = strVal
+			} else {
+				node.Properties[prop.Name] = val
+			}
+		} else {
+			klog.Errorf("Unexpected error extracting [%s] from [%s.%s] Name: [%s]. Result object is empty.",
+				prop.Name, kind, group, r.GetName())
+			continue
+		}
+	}
+
+	if found {
+		klog.V(5).Infof("Built [%s.%s] using transform config.\nNode: %+v\n", kind, group, node)
+	}
+
+	return node
 }

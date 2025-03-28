@@ -293,7 +293,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = NodeResourceBuilder(&typedResource)
+			trans = NodeResourceBuilder(&typedResource, event.Resource, event.AdditionalPrinterColumns...)
 
 		case [2]string{"PersistentVolume", ""}:
 			typedResource := core.PersistentVolume{}
