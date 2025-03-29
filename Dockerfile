@@ -1,12 +1,12 @@
 # Copyright Contributors to the Open Cluster Management project
 
-FROM registry.ci.openshift.org/stolostron/builder:go1.22-linux AS builder
+FROM registry.ci.openshift.org/stolostron/builder:go1.23-linux AS builder
 
 WORKDIR /go/src/github.com/stolostron/search-collector
 COPY . .
 RUN CGO_ENABLED=1 GOGC=25 go build -trimpath -o main main.go
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.10-1179
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 ARG VCS_REF
 ARG VCS_URL
@@ -39,8 +39,8 @@ LABEL org.label-schema.vendor="Red Hat" \
       io.k8s.description="$IMAGE_DESCRIPTION" \
       io.openshift.tags="$IMAGE_OPENSHIFT_TAGS"
 
-RUN microdnf update &&\
-    microdnf install ca-certificates vi --nodocs &&\
+RUN microdnf update -y &&\
+    microdnf install -y ca-certificates vi --nodocs &&\
     mkdir /licenses &&\
     microdnf clean all
 
