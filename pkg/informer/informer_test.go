@@ -233,19 +233,6 @@ func Test_Run_retryBackoff(t *testing.T) {
 // 	}
 // }
 
-// Test helper function that returns the smaller integer
-func Test_min(t *testing.T) {
-	var a, b int64 = 1, 2
-
-	if min(a, b) != a {
-		t.Errorf("Expected a: %d to be smaller than b: %d", a, b)
-	}
-
-	if min(b, a) != a {
-		t.Errorf("Expected a: %d to be smaller than b: %d", a, b)
-	}
-}
-
 // Verify that Informer.watch() can be stopped.
 func Test_watch(t *testing.T) {
 	// Create informer instance to test.

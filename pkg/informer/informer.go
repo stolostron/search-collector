@@ -77,14 +77,6 @@ func (inform *GenericInformer) Run(ctx context.Context) {
 	}
 }
 
-// Helper function that returns the smaller of two integers.
-func min(a, b int64) int64 {
-	if a > b {
-		return b
-	}
-	return a
-}
-
 // Helper function that creates a new unstructured resource with given Kind and UID.
 func newUnstructured(kind, uid string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
