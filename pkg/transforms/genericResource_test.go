@@ -145,6 +145,7 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("status", node.Properties["status"], "Operation complete", t)
 	AssertEqual("sourceVM", node.Properties["sourceVM"], "centos7-gray-owl-35", t)
+	AssertDeepEqual("accesindicationssMode", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
 
 }
 

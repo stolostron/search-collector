@@ -50,6 +50,7 @@
     "creationTime": "2025-03-25T17:10:58Z",
     "phase": "Succeeded",
     "readyToUse": true,
+    "indications": ["Online", "NoGuestAgent"],
     "snapshotVolumes": {
       "excludedVolumes": ["rootdisk", "cloudinitdisk"]
     },

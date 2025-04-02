@@ -102,8 +102,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "status", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
-			// {Name: "lastRestored", JSONPath: `{}`}, // From VirtualMachineRestore resource
-			{Name: "indications", JSONPath: `{.status.indications}`}, // this is an array of strings
+			{Name: "indications", JSONPath: `{.status.indications}`}, // this is an array of strings - will collect array items separated by ;
 			{Name: "sourceVM", JSONPath: `{.spec.source.name}`},
 		},
 	},
