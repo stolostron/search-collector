@@ -1,0 +1,59 @@
+{
+  "apiVersion": "snapshot.kubevirt.io/v1beta1",
+  "kind": "VirtualMachineSnapshot",
+  "metadata": {
+    "resourceVersion": "11848215",
+    "name": "centos7-gray-owl-35-snapshot",
+    "uid": "2e432308-e94c-4866-a86a-388ce0b6cbc1",
+    "creationTimestamp": "2024-09-18T19:43:53Z",
+    "generation": 36,
+    "namespace": "openshift-cnv",
+    "ownerReferences": [
+      {
+        "apiVersion": "kubevirt.io/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "VirtualMachine",
+        "name": "centos7-gray-owl-35",
+        "uid": "42634581-0cc1-4aa9-bec6-69f59049e2d3"
+      }
+    ],
+    "annotations": {
+      "description": "test desc"
+    }
+  },
+  "spec": {
+    "failureDeadline": "10m0s",
+    "source": {
+      "apiGroup": "kubevirt.io",
+      "kind": "VirtualMachine",
+      "name": "centos7-gray-owl-35"
+    }
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2025-03-25T17:10:58Z",
+        "reason": "Operation complete",
+        "status": "False",
+        "type": "Progressing"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2025-03-25T17:10:58Z",
+        "reason": "Operation complete",
+        "status": "True",
+        "type": "Ready"
+      }
+    ],
+    "creationTime": "2025-03-25T17:10:58Z",
+    "phase": "Succeeded",
+    "readyToUse": true,
+    "snapshotVolumes": {
+      "excludedVolumes": ["rootdisk", "cloudinitdisk"]
+    },
+    "sourceID": "42634581-0cc1-4aa9-bec6-69f59049e2d3",
+    "virtualMachineSnapshotContentName": "vmsnapshot-content-7be2115f-2dcf-4561-b941-2632c1f55a40"
+  }
+}

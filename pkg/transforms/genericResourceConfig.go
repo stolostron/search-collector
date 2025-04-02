@@ -98,6 +98,15 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "vmSize", JSONPath: `{.metadata.labels.\kubevirt\.io/size}`},
 		},
 	},
+	"VirtualMachineSnapshot.snapshot.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "status", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
+			// {Name: "lastRestored", JSONPath: `{}`}, // From VirtualMachineRestore resource
+			{Name: "indications", JSONPath: `{.status.indications}`}, // this is an array of strings
+			{Name: "sourceVM", JSONPath: `{.spec.source.name}`},
+		},
+	},
 }
 
 // Get the properties to extract from a resource.
