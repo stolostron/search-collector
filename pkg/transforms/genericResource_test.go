@@ -130,6 +130,25 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 
 }
 
+func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachinesnapshot.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "centos7-gray-owl-35-snapshot", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineSnapshot", t)
+	AssertEqual("namespace", node.Properties["namespace"], "openshift-cnv", t)
+	AssertEqual("created", node.Properties["created"], "2024-09-18T19:43:53Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("status", node.Properties["status"], "Operation complete", t)
+	AssertEqual("sourceVM", node.Properties["sourceVM"], "centos7-gray-owl-35", t)
+	AssertDeepEqual("accesindicationssMode", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
+
+}
+
 func Test_genericResourceFromConfigDataVolume(t *testing.T) {
 	var r unstructured.Unstructured
 	UnmarshalFile("datavolume.json", &r, t)
