@@ -179,3 +179,21 @@ func Test_genericResourceFromConfigNamespace(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("status", node.Properties["status"], "Active", t)
 }
+
+func Test_genericResourceFromConfigStorageClass(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("storageclass.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "gp2-csi", t)
+	AssertEqual("kind", node.Properties["kind"], "StorageClass", t)
+	AssertEqual("namespace", node.Properties["namespace"], nil, t)
+	AssertEqual("created", node.Properties["created"], "2025-03-11T10:24:44Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("allowVolumeExpansion", node.Properties["allowVolumeExpansion"], true, t)
+	AssertEqual("provisioner", node.Properties["provisioner"], "ebs.csi.aws.com", t)
+	AssertEqual("reclaimPolicy", node.Properties["reclaimPolicy"], "Delete", t)
+	AssertEqual("volumeBindingMode", node.Properties["volumeBindingMode"], "WaitForFirstConsumer", t)
+}

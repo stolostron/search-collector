@@ -58,6 +58,14 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "status", JSONPath: `{.status.phase}`},
 		},
 	},
+	"StorageClass.storage.k8s.io": {
+		properties: []ExtractProperty{
+			{Name: "allowVolumeExpansion", JSONPath: `{.allowVolumeExpansion}`},
+			{Name: "provisioner", JSONPath: `{.provisioner}`},
+			{Name: "reclaimPolicy", JSONPath: `{.reclaimPolicy}`},
+			{Name: "volumeBindingMode", JSONPath: `{.volumeBindingMode}`},
+		},
+	},
 	"Subscription.operators.coreos.com": {
 		properties: []ExtractProperty{
 			{Name: "source", JSONPath: "{.spec.source}"},

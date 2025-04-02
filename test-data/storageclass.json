@@ -1,0 +1,18 @@
+{
+    "allowVolumeExpansion": true,
+    "apiVersion": "storage.k8s.io/v1",
+    "kind": "StorageClass",
+    "metadata": {
+        "creationTimestamp": "2025-03-11T10:24:44Z",
+        "name": "gp2-csi",
+        "resourceVersion": "5737",
+        "uid": "74433afa-e59e-409e-8991-0a8b43fead61"
+    },
+    "parameters": {
+        "encrypted": "true",
+        "type": "gp2"
+    },
+    "provisioner": "ebs.csi.aws.com",
+    "reclaimPolicy": "Delete",
+    "volumeBindingMode": "WaitForFirstConsumer"
+}
