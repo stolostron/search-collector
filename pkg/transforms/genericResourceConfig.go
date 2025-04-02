@@ -58,6 +58,13 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "status", JSONPath: `{.status.phase}`},
 		},
 	},
+	"Node": {
+		properties: []ExtractProperty{
+			{Name: "ipAddress", JSONPath: `{.status.addresses[?(@.type=="InternalIP")].address}`},
+			{Name: "memoryAllocatable", JSONPath: `{.status.allocatable.memory}`},
+			{Name: "memoryCapacity", JSONPath: `{.status.capacity.memory}`},
+		},
+	},
 	"StorageClass.storage.k8s.io": {
 		properties: []ExtractProperty{
 			{Name: "allowVolumeExpansion", JSONPath: `{.allowVolumeExpansion}`},
