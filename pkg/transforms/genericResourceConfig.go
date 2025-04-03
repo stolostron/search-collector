@@ -4,6 +4,8 @@ package transforms
 type ExtractProperty struct {
 	Name     string // `json:"name,omitempty"`
 	JSONPath string // `json:"jsonpath,omitempty"`
+	// Denotes this property represents a memory field of a resource and must be converted to bytes for standardization
+	isMemory bool
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
 }
@@ -58,6 +60,13 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "status", JSONPath: `{.status.phase}`},
 		},
 	},
+	"Node": {
+		properties: []ExtractProperty{
+			{Name: "ipAddress", JSONPath: `{.status.addresses[?(@.type=="InternalIP")].address}`},
+			{Name: "memoryAllocatable", JSONPath: `{.status.allocatable.memory}`, isMemory: true},
+			{Name: "memoryCapacity", JSONPath: `{.status.capacity.memory}`, isMemory: true},
+		},
+	},
 	"StorageClass.storage.k8s.io": {
 		properties: []ExtractProperty{
 			{Name: "allowVolumeExpansion", JSONPath: `{.allowVolumeExpansion}`},
@@ -86,7 +95,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
-			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`},
+			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, isMemory: true},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},

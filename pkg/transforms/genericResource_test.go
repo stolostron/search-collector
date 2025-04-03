@@ -99,7 +99,7 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	AssertEqual("agentConnected", node.Properties["agentConnected"], "True", t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
-	AssertEqual("memory", node.Properties["memory"], "2Gi", t)
+	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi * 1024 * 1024 * 1024
 	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("status", node.Properties["status"], "Running", t)

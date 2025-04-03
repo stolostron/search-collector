@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/stolostron/search-collector/pkg/config"
+	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -278,4 +279,29 @@ func TestGatekeeperMutationEdges(t *testing.T) {
 
 	AssertDeepEqual("edge", edge, expectedEdge, t)
 	AssertDeepEqual("edge", edge2, expectedEdge, t)
+}
+
+func TestMemoryToBytes(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expected    int64
+		shouldError bool
+	}{
+		{"k", "1k", 1000, false},                     // SI unit (1K = 1000 bytes)
+		{"Ki", "1Ki", 1024, false},                   // Binary unit (1Ki = 1024 bytes)
+		{"G", "1G", 1000000000, false},               // SI unit (1G = 1,000,000,000 bytes)
+		{"Gi", "1Gi", 1073741824, false},             // Binary unit (1Gi = 1024^3 bytes)
+		{"Small Value", "512Mi", 536870912, false},   // 512Mi = 512 * 1024^2
+		{"Large Value", "2Ti", 2199023255552, false}, // 2Ti = 2 * 1024^4
+		{"No Unit", "1024", 1024, false},             // Assumes bytes
+		{"Invalid Input", "abcMB", 0, true},          // Invalid string
+		{"Empty String", "", 0, true},                // Edge case: empty input
+	}
+
+	for _, tt := range tests {
+		result, err := memoryToBytes(tt.input)
+		assert.Equal(t, tt.shouldError, err != nil)
+		assert.Equal(t, tt.expected, result)
+	}
 }
