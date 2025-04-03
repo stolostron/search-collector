@@ -30,8 +30,8 @@ func TestTransformNode(t *testing.T) {
 	AssertDeepEqual("role", node.Properties["role"], []string{"etcd", "main", "management", "proxy", "va"}, t)
 	AssertDeepEqual("status", node.Properties["status"], "Ready", t)
 	AssertEqual("ipAddress", node.Properties["ipAddress"], "1.1.1.1", t)
-	AssertEqual("memoryCapacity", node.Properties["memoryCapacity"], "24689408Ki", t)
-	AssertEqual("memoryAllocatable", node.Properties["memoryAllocatable"], "23538432Ki", t)
+	AssertEqual("memoryCapacity", node.Properties["memoryCapacity"], int64(25281953792), t)       // 24689408Ki * 1024
+	AssertEqual("memoryAllocatable", node.Properties["memoryAllocatable"], int64(24103354368), t) // 23538432Ki * 1024
 }
 
 func TestNodeBuildEdges(t *testing.T) {

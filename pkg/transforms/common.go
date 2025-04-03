@@ -17,6 +17,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
+	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -675,6 +676,25 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				}
 
 				node.Metadata[prop.Name] = strVal
+			} else if prop.isMemory {
+				strVal, ok := val.(string)
+
+				if !ok {
+					klog.V(1).Infof(
+						"Unable to extract memory prop [%s] from [%s.%s] Name: [%s] since it's not a string: %v",
+						prop.Name, kind, group, r.GetName(),
+					)
+					continue
+				}
+
+				mem, memErr := memoryToBytes(strVal)
+				if memErr != nil {
+					klog.V(1).Infof(
+						"Unable to parse memory value [%s] from [%s.%s] Name: [%s] Reason: %v",
+						strVal, kind, group, r.GetName(), memErr,
+					)
+				}
+				node.Properties[prop.Name] = mem
 			} else {
 				node.Properties[prop.Name] = val
 			}
@@ -690,4 +710,12 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	}
 
 	return node
+}
+
+func memoryToBytes(memory string) (int64, error) {
+	quantity, err := resource.ParseQuantity(memory)
+	if err != nil {
+		return 0, err
+	}
+	return quantity.Value(), nil
 }
