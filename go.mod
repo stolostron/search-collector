@@ -29,7 +29,7 @@ require (
 	sigs.k8s.io/application v0.8.3
 )
 
-require github.com/stolostron/klusterlet-addon-controller v0.0.0-20221125104750-d4b167d5fae6
+require github.com/stolostron/klusterlet-addon-controller ace4634835aa
 
 require (
 	github.com/Masterminds/semver v1.5.0 // indirect
