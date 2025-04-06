@@ -23,7 +23,7 @@ require (
 	k8s.io/client-go v13.0.0+incompatible
 	k8s.io/helm v2.17.0+incompatible
 	k8s.io/klog/v2 v2.100.1
-	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // indirect
+	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e // indirect
 	open-cluster-management.io/multicloud-operators-channel v0.8.0
 	open-cluster-management.io/multicloud-operators-subscription v0.8.0 //Use 2.0 when available
 	sigs.k8s.io/application v0.8.3
