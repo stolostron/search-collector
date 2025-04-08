@@ -15,11 +15,8 @@ ENV VCS_REF="$VCS_REF" \
     USER_UID=1001 \
     GOGC=25
 
-USER ${USER_UID}
-ENTRYPOINT ["/bin/main"]
-
 LABEL com.redhat.component="acm-search-collector-container" \
-      description="Search collector service" \      
+      description="Search collector service" \
       maintainer="acm-contact@redhat.com" \
       name="search-collector" \
       org.label-schema.license="Red Hat Advanced Cluster Management for Kubernetes EULA" \
@@ -28,3 +25,6 @@ LABEL com.redhat.component="acm-search-collector-container" \
       io.k8s.display-name="Search collector" \
       io.k8s.description="Search collector service" \
       io.openshift.tags="data,images"
+
+USER ${USER_UID}
+ENTRYPOINT ["/bin/main"]
