@@ -27,4 +27,4 @@ LABEL com.redhat.component="acm-search-collector-container" \
       summary="Search collector service" \
       io.k8s.display-name="Search collector" \
       io.k8s.description="Search collector service" \
-      io.openshift.tags="data,images" \
+      io.openshift.tags="data,images"
