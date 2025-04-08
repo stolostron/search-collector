@@ -1,5 +1,17 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "packageRules": [
+        {
+            "enabled": true,
+            "groupName": "kubernetes packages",
+            "matchPackageNames": ["k8s.io/**"]
+        },
+        {
+            "enabled": true,
+            "groupName": "github.com packages",
+            "matchPackageNames": ["github.com/**"]
+        }
+    ],
     "schedule": "before 8am on Tuesday",
     "timezone": "America/New_York"
 }
