@@ -9,6 +9,15 @@ RUN CGO_ENABLED=1 GOGC=25 go build -trimpath -o main main.go
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
+COPY --from=builder /go/src/github.com/stolostron/search-collector/main /bin/main
+
+ENV VCS_REF="$VCS_REF" \
+    USER_UID=1001 \
+    GOGC=25
+
+USER ${USER_UID}
+ENTRYPOINT ["/bin/main"]
+
 LABEL com.redhat.component="acm-search-collector-container" \
       description="Search collector service" \      
       maintainer="acm-contact@redhat.com" \
@@ -21,12 +30,3 @@ LABEL com.redhat.component="acm-search-collector-container" \
       io.k8s.description="Search collector service" \
       io.openshift.tags="data,images" \
       vendor="Red Hat"
-
-COPY --from=builder /go/src/github.com/stolostron/search-collector/main /bin/main
-
-ENV VCS_REF="$VCS_REF" \
-    USER_UID=1001 \
-    GOGC=25
-
-USER ${USER_UID}
-ENTRYPOINT ["/bin/main"]
