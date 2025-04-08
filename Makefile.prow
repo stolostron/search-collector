@@ -1,6 +1,6 @@
 # Copyright Contributors to the Open Cluster Management project
 
-include build/Configfile
+include ./build/Configfile
 include /opt/build-harness/Makefile.prow
 
 .PHONY: build
