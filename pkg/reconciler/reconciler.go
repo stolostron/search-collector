@@ -108,10 +108,16 @@ func NewReconciler() *Reconciler {
 // Returns the diff between the current and previous states, and resets the diff.
 // TODO the latter half of this function got pretty messy, it could use a refactor/rewrite
 func (r *Reconciler) Diff() Diff {
+	glog.V(4).Info("Reconciler is calculating diff from previous state.")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	ret := Diff{}
+
+	if len(r.diffNodes) == 0 {
+		glog.V(5).Info("Reconciler has no events since the last reconcile.")
+		return ret
+	}
 
 	// Fill out nodes
 	for _, ne := range r.diffNodes {
@@ -187,6 +193,7 @@ func (r *Reconciler) Diff() Diff {
 
 // Returns the complete current state and resets the diff
 func (r *Reconciler) Complete() CompleteState {
+	glog.V(3).Info("Reconciler is building the complete state.")
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -223,6 +230,7 @@ func (r *Reconciler) Complete() CompleteState {
 // Keyed by srcUID then destUID for fast comparison with previous.
 // This function reads from the state, locking left up to caller (complete and diff methods)
 func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
+	glog.V(4).Info("Reconciler is rebuilding edges for all nodes.")
 	ret := make(map[string]map[string]tr.Edge)
 
 	ns := tr.NodeStore{
@@ -254,7 +262,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 
 	// Loop across all the nodes and build their edges.
 	for _, uid := range append(appUIDs, otherUIDs...) {
-		glog.V(5).Infof("Calculating edges UID: %s", uid)
+		glog.V(6).Infof("Calculating edges for node with UID: %s", uid)
 		edges := r.edgeFuncs[uid](ns) // Get edges from this specific node
 
 		edges = append(edges, tr.CommonEdges(uid, ns)...) // Get common edges for this node
@@ -278,7 +286,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 
 // This method takes a channel and constantly receives from it, reconciling the input with whatever is currently stored
 func (r *Reconciler) receive() {
-	glog.Info("Reconciler Routine Started")
+	glog.Info("Reconciler receive routine started.")
 	for {
 		r.reconcileNode()
 	}
