@@ -9,16 +9,17 @@ RUN CGO_ENABLED=1 GOGC=25 go build -trimpath -o main main.go
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
-LABEL com.redhat.component="acm-search-collector-container" \
-      description="Search collector service" \
-      maintainer="acm-contact@redhat.com" \
-      name="search-collector" \
-      org.label-schema.license="Red Hat Advanced Cluster Management for Kubernetes EULA" \
-      org.label-schema.schema-version="1.0" \
-      summary="Search collector service" \
-      io.k8s.display-name="Search collector" \
-      io.k8s.description="Search collector service" \
-      io.openshift.tags="data,images"
+LABEL com.redhat.component="acm-search-collector-container"
+LABEL description="Search collector service"
+LABEL maintainer="acm-contact@redhat.com"
+LABEL name="search-collector"
+LABEL org.label-schema.license="Red Hat Advanced Cluster Management for Kubernetes EULA"
+LABEL org.label-schema.schema-version="1.0"
+LABEL summary="Search collector service"
+LABEL io.k8s.display-name="Search collector"
+LABEL io.k8s.description="Search collector service"
+LABEL io.openshift.tags="data,images"
+LABEL some.custom.label="custom label value"
 
 COPY --from=builder /go/src/github.com/stolostron/search-collector/main /bin/main
 
