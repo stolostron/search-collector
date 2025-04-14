@@ -2,11 +2,20 @@ package transforms
 
 // Declares a property to extract from a resource using jsonpath.
 type ExtractProperty struct {
-	Name     string // `json:"name,omitempty"`
-	JSONPath string // `json:"jsonpath,omitempty"`
+	Name     string   // `json:"name,omitempty"`
+	JSONPath string   // `json:"jsonpath,omitempty"`
+	DataType DataType // `json:"dataType,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
 }
+
+type DataType string
+
+const (
+	DataTypeBytes  DataType = "bytes"
+	DataTypeString DataType = "string"
+	DataTypeNumber DataType = "number"
+)
 
 // Declares the properties to extract from a given resource.
 type ResourceConfig struct {
@@ -58,6 +67,13 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "status", JSONPath: `{.status.phase}`},
 		},
 	},
+	"Node": {
+		properties: []ExtractProperty{
+			{Name: "ipAddress", JSONPath: `{.status.addresses[?(@.type=="InternalIP")].address}`},
+			{Name: "memoryAllocatable", JSONPath: `{.status.allocatable.memory}`, DataType: DataTypeBytes},
+			{Name: "memoryCapacity", JSONPath: `{.status.capacity.memory}`, DataType: DataTypeBytes},
+		},
+	},
 	"StorageClass.storage.k8s.io": {
 		properties: []ExtractProperty{
 			{Name: "allowVolumeExpansion", JSONPath: `{.allowVolumeExpansion}`},
@@ -86,7 +102,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
-			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`},
+			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},
