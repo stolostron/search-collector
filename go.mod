@@ -15,7 +15,7 @@ require (
 	github.com/stolostron/multicloud-operators-placementrule v1.2.4-1-20220311-8eedb3f
 	github.com/stretchr/testify v1.8.2
 	github.com/tkanos/gonfig v0.0.0-20210106201359-53e13348de2f
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.2
