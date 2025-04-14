@@ -676,7 +676,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				}
 
 				node.Metadata[prop.Name] = strVal
-			} else if prop.isMemory {
+			} else if prop.DataType == DataTypeBytes {
 				strVal, ok := val.(string)
 
 				if !ok {
