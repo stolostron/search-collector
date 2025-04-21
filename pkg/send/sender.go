@@ -45,7 +45,6 @@ type Payload struct {
 	AddEdges    []tr.Edge `json:"addEdges,omitempty"`    // List of Edges which must be added
 	DeleteEdges []tr.Edge `json:"deleteEdges,omitempty"` // List of Edges which must be deleted
 	ClearAll    bool      `json:"clearAll,omitempty"`    // Tells the aggregator to clear existing data first.
-	RequestId   int       `json:"requestId,omitempty"`   // Unique ID to track each request for debug.
 	Version     string    `json:"version,omitempty"`     // Version of this collector
 }
 
@@ -115,26 +114,14 @@ func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *S
 	return s
 }
 
-// Generates a random ID for the request.
-func generateRequestId() int {
-	max := big.NewInt(999099)
-	valBig, err := rand.Int(rand.Reader, max)
-	if err != nil {
-		glog.Warning("Error generating RequestID.")
-		return 0
-	}
-	return int(valBig.Int64())
-}
-
 // Returns a payload and expected total resources, add, update, and delete operations since the last send.
 func (s *Sender) diffPayload() (Payload, int, int) {
 
 	diff := s.rec.Diff()
 
 	payload := Payload{
-		ClearAll:  false,
-		RequestId: generateRequestId(),
-		Version:   config.COLLECTOR_API_VERSION,
+		ClearAll: false,
+		Version:  config.COLLECTOR_API_VERSION,
 
 		AddResources:     diff.AddNodes,
 		UpdatedResources: diff.UpdateNodes,
@@ -155,7 +142,6 @@ func (s *Sender) completePayload() (Payload, int, int) {
 	// Delete and Update aren't needed when we're sending all the data. Just fill out the adds.
 	payload := Payload{
 		ClearAll:     true,
-		RequestId:    generateRequestId(),
 		AddResources: complete.Nodes,
 
 		AddEdges: complete.Edges,
@@ -194,8 +180,8 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it
 // doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
-	glog.Infof("Sending Resources { request: %6d, add: %2d, update: %2d, delete: %2d, edge add: %2d, edge delete: %2d }",
-		payload.RequestId, len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources),
+	glog.Infof("Sending Resources { add: %2d, update: %2d, delete: %2d, edge add: %2d, edge delete: %2d }",
+		len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources),
 		len(payload.AddEdges), len(payload.DeleteEdges))
 
 	payloadBytes, err := json.Marshal(payload)
@@ -211,7 +197,6 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Clear-All", strconv.FormatBool(payload.ClearAll))
-	req.Header.Set("X-Request-ID", strconv.Itoa(payload.RequestId))
 
 	resp, err := s.httpClient.Do(req)
 	if resp != nil && resp.Body != nil {
