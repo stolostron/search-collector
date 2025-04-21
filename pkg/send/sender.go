@@ -20,6 +20,7 @@ import (
 	"math"
 	"math/big"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -163,7 +164,7 @@ func (s *Sender) completePayload() (Payload, int, int) {
 }
 
 // Send will retry after recoverable errors.
-//  - Aggregator busy
+//   - Aggregator busy
 func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
 	retry := 0
 	for {
@@ -202,7 +203,17 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		return err
 	}
 	payloadBuffer := bytes.NewBuffer(payloadBytes)
-	resp, err := s.httpClient.Post(s.aggregatorURL+s.aggregatorSyncPath, "application/json", payloadBuffer)
+
+	req, err := http.NewRequest("POST", s.aggregatorURL+s.aggregatorSyncPath, payloadBuffer)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Clear-All", strconv.FormatBool(payload.ClearAll))
+	req.Header.Set("X-Request-ID", strconv.Itoa(payload.RequestId))
+
+	resp, err := s.httpClient.Do(req)
 	if resp != nil && resp.Body != nil {
 		// #nosec G307
 		defer resp.Body.Close()
