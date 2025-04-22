@@ -316,6 +316,10 @@ spec:
           value: quay.io/redhat-appstudio-tekton-catalog/task-sast-snyk-check:0.3@sha256:9fa6975ec81dfa45b3ba383a8276dfd4b478ae5265a595600d91220e1d49d6bb
         - name: kind
           value: task
+        - name: image-digest
+          value: $(tasks.build-container.results.IMAGE_DIGEST)
+        - name: image-url
+          value: $(tasks.build-container.results.IMAGE_URL)
         resolver: bundles
       when:
       - input: $(params.skip-checks)
