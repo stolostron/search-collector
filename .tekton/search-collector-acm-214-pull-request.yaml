@@ -453,6 +453,8 @@ spec:
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
+      - name: image-digest
+        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
       runAfter:
       - coverity-availability-check
       taskRef:
@@ -463,8 +465,6 @@ spec:
           value: quay.io/konflux-ci/tekton-catalog/task-sast-coverity-check-oci-ta:0.2@sha256:07cb09253da53235f83d1a2327faebb8505091c509fc1e3af12a43cfe34f63a6
         - name: kind
           value: task
-        - name: image-digest
-          value: $(tasks.build-image-index.results.IMAGE_DIGEST)
         resolver: bundles
       when:
       - input: $(params.skip-checks)
