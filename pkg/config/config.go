@@ -65,10 +65,6 @@ type Config struct {
 var Cfg = Config{}
 var FilePath = flag.String("c", "./config.json", "Collector configuration file") // ./config.json is the default
 
-func init() {
-	InitConfig()
-}
-
 func InitConfig() {
 	glog.Info("Loading config from environment.")
 	// Load default config from ./config.json.

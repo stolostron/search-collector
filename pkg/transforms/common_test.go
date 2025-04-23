@@ -74,6 +74,9 @@ func TestCommonProperties(t *testing.T) {
 }
 
 func TestKyvernoPolicyEdges(t *testing.T) {
+	// Establish the config
+	config.InitConfig()
+
 	configmap := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "v1",
 		"kind":       "ConfigMap",

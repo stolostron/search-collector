@@ -22,6 +22,7 @@ import (
 	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stolostron/search-collector/pkg/metrics"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 	"github.com/stretchr/testify/assert"
@@ -317,6 +318,9 @@ func TestReconcilerRedundant(t *testing.T) {
 }
 
 func TestReconcilerAddEdges(t *testing.T) {
+	// Establish the config
+	config.InitConfig()
+
 	testReconciler := initTestReconciler()
 
 	createAndReconcileNodeEvents(testReconciler, "", "")
