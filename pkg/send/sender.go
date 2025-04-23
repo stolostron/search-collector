@@ -196,7 +196,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Clear-All", strconv.FormatBool(payload.ClearAll))
+	req.Header.Set("X-Overwrite-State", strconv.FormatBool(payload.ClearAll))
 
 	resp, err := s.httpClient.Do(req)
 	if resp != nil && resp.Body != nil {
