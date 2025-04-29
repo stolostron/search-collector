@@ -670,7 +670,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				if !ok {
 					klog.V(1).Infof(
 						"Unable to extract metadata prop [%s] from [%s.%s] Name: [%s] since it's not a string: %v",
-						prop.Name, kind, group, r.GetName(),
+						prop.Name, kind, group, r.GetName(), val,
 					)
 					continue
 				}
@@ -682,7 +682,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				if !ok {
 					klog.V(1).Infof(
 						"Unable to extract memory prop [%s] from [%s.%s] Name: [%s] since it's not a string: %v",
-						prop.Name, kind, group, r.GetName(),
+						prop.Name, kind, group, r.GetName(), val,
 					)
 					continue
 				}
