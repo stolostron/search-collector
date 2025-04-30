@@ -1,0 +1,80 @@
+{
+  "apiVersion": "operators.coreos.com/v1alpha1",
+  "kind": "CatalogSource",
+  "metadata": {
+    "annotations": {
+      "openshift.io/required-scc": "restricted-v2",
+      "operatorframework.io/managed-by": "marketplace-operator",
+      "target.workload.openshift.io/management": "{\"effect\": \"PreferredDuringScheduling\"}"
+    },
+    "creationTimestamp": "2025-04-29T11:17:33Z",
+    "generation": 1,
+    "name": "redhat-operators",
+    "namespace": "openshift-marketplace",
+    "resourceVersion": "169709",
+    "uid": "d8c42f3b-a7b7-475f-9a03-e3312239e361"
+  },
+  "spec": {
+    "displayName": "Red Hat Operators",
+    "grpcPodConfig": {
+      "extractContent": {
+        "cacheDir": "/tmp/cache",
+        "catalogDir": "/configs"
+      },
+      "memoryTarget": "30Mi",
+      "nodeSelector": {
+        "kubernetes.io/os": "linux",
+        "node-role.kubernetes.io/master": ""
+      },
+      "priorityClassName": "system-cluster-critical",
+      "securityContextConfig": "restricted",
+      "tolerations": [
+        {
+          "effect": "NoSchedule",
+          "key": "node-role.kubernetes.io/master",
+          "operator": "Exists"
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists",
+          "tolerationSeconds": 120
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists",
+          "tolerationSeconds": 120
+        }
+      ]
+    },
+    "icon": {
+      "base64data": "",
+      "mediatype": ""
+    },
+    "image": "registry.redhat.io/redhat/redhat-operator-index:v4.18",
+    "priority": -100,
+    "publisher": "Red Hat",
+    "sourceType": "grpc",
+    "updateStrategy": {
+      "registryPoll": {
+        "interval": "10m"
+      }
+    }
+  },
+  "status": {
+    "connectionState": {
+      "address": "redhat-operators.openshift-marketplace.svc:50051",
+      "lastConnect": "2025-04-29T13:26:23Z",
+      "lastObservedState": "READY"
+    },
+    "latestImageRegistryPoll": "2025-04-29T15:25:16Z",
+    "registryService": {
+      "createdAt": "2025-04-29T11:25:26Z",
+      "port": "50051",
+      "protocol": "grpc",
+      "serviceName": "redhat-operators",
+      "serviceNamespace": "openshift-marketplace"
+    }
+  }
+}

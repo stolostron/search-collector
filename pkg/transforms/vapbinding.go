@@ -15,8 +15,7 @@ import (
 )
 
 type VapBindingResource struct {
-	node     Node
-	paramRef *admissionregistration.ParamRef
+	node Node
 }
 
 // Validating admission policy Binding
@@ -81,8 +80,7 @@ func VapBindingResourceBuilder(v *unstructured.Unstructured) *VapBindingResource
 	}
 
 	// Store this parameter to let the reconciler know to update the edges
-	binding.node.Metadata["paramRef"] = string(paramRefBytes)
-	binding.paramRef = paramRef
+	binding.node.Metadata["paramRef"] = paramRef
 
 	return binding
 }
@@ -111,7 +109,7 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 
 	edges := edgesByDestinationName(propSet, "ValidatingAdmissionPolicy", nodeInfo, ns, []string{})
 
-	if v.paramRef == nil {
+	if !v.node.hasMetadata("paramRef") {
 		return edges
 	}
 
@@ -120,12 +118,12 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 		return edges
 	}
 
-	paramKind := policy.Metadata["paramKind_kind"]
+	paramKind := policy.GetMetadata("paramKind_kind")
 	if paramKind == "" {
 		return edges
 	}
 
-	paramApiVersion := policy.Metadata["paramKind_apiVersion"]
+	paramApiVersion := policy.GetMetadata("paramKind_apiVersion")
 	if paramApiVersion == "" {
 		return edges
 	}
@@ -137,19 +135,24 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 
 	namespaceToName := ns.ByKindNamespaceName[paramKind]
 
-	if v.paramRef.Namespace != "" {
+	paramRef, ok := v.node.Metadata["paramRef"].(*admissionregistration.ParamRef)
+	if !ok || paramRef == nil {
+		return edges
+	}
+
+	if paramRef.Namespace != "" {
 		// If the namespace is specified, then limit the searches to just this namespace
 		namespaceToName = map[string]map[string]Node{
-			v.paramRef.Namespace: ns.ByKindNamespaceName[paramKind][v.paramRef.Namespace],
+			paramRef.Namespace: ns.ByKindNamespaceName[paramKind][paramRef.Namespace],
 		}
 	}
 
 	var paramRefSelector labels.Selector
 
-	if v.paramRef.Selector != nil {
+	if paramRef.Selector != nil {
 		var err error
 
-		paramRefSelector, err = metav1.LabelSelectorAsSelector(v.paramRef.Selector)
+		paramRefSelector, err = metav1.LabelSelectorAsSelector(paramRef.Selector)
 		if err != nil {
 			return edges
 		}
@@ -167,7 +170,7 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 				continue
 			}
 
-			if v.paramRef.Name != "" && v.paramRef.Name != node.Properties["name"].(string) {
+			if paramRef.Name != "" && paramRef.Name != node.Properties["name"].(string) {
 				continue
 			}
 

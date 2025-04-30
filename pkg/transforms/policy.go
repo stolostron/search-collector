@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"slices"
 	"strings"
 
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
@@ -80,17 +81,10 @@ func getPolicyCommonProperties(c *unstructured.Unstructured, node Node) Node {
 	return node
 }
 
-// For cert, config policies.
-func StandalonePolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
-	node := transformCommon(c) // Start off with the common properties
-
-	return &PolicyResource{node: getPolicyCommonProperties(c, node)}
-}
-
 func OperatorPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
 	node := transformCommon(c) // Start off with the common properties
-
 	node = getPolicyCommonProperties(c, node)
+	node = recordRelatedObjects(c, node)
 
 	var deploymentAvailable bool
 	var upgradeAvailable bool
@@ -130,7 +124,126 @@ func OperatorPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource
 	node.Properties["deploymentAvailable"] = deploymentAvailable
 	node.Properties["upgradeAvailable"] = upgradeAvailable
 
-	return &PolicyResource{node: node}
+	return &PolicyResource{
+		node: node,
+	}
+}
+
+func ConfigPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
+	node := transformCommon(c) // Start off with the common properties
+	node = getPolicyCommonProperties(c, node)
+	node = recordRelatedObjects(c, node)
+
+	return &PolicyResource{
+		node: node,
+	}
+}
+
+func recordRelatedObjects(c *unstructured.Unstructured, node Node) Node {
+	relatedObjects, found, err := unstructured.NestedSlice(c.Object, "status", "relatedObjects")
+	if !found || err != nil {
+		return node
+	}
+
+	objList := make([]relatedObject, 0, len(relatedObjects))
+
+	for _, item := range relatedObjects {
+		relObj := parseConfigPolicyRelatedObject(item)
+		if relObj == nil {
+			continue
+		}
+
+		objList = append(objList, *relObj)
+	}
+
+	slices.SortFunc(objList, func(a, b relatedObject) int {
+		return strings.Compare(a.kind+a.namespace+a.name, b.kind+b.namespace+b.name)
+	})
+
+	node.Metadata["relObjs"] = objList
+
+	return node
+}
+
+func parseConfigPolicyRelatedObject(item any) *relatedObject {
+	relObj, ok := item.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	object, found, err := unstructured.NestedMap(relObj, "object")
+	if !found || err != nil {
+		return nil
+	}
+
+	meta, found, err := unstructured.NestedStringMap(object, "metadata")
+	if !found || err != nil {
+		return nil
+	}
+
+	kind, ok := object["kind"].(string)
+	if !ok {
+		return nil
+	}
+
+	return &relatedObject{
+		kind:      kind,
+		namespace: meta["namespace"],
+		name:      meta["name"],
+	}
+}
+
+func CertPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
+	node := transformCommon(c) // Start off with the common properties
+
+	detailMap, found, err := unstructured.NestedMap(c.Object, "status", "compliancyDetails")
+	if len(detailMap) == 0 || !found || err != nil {
+		return &PolicyResource{
+			node: getPolicyCommonProperties(c, node),
+		}
+	}
+
+	certList := []relatedObject{}
+	for namespace, item := range detailMap {
+		details, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		// this "list" is actually a map
+		nonCompCerts, found, err := unstructured.NestedMap(details, "nonCompliantCertificatesList")
+		if len(nonCompCerts) == 0 || !found || err != nil {
+			continue
+		}
+
+		for _, item := range nonCompCerts {
+			cert, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+
+			name, ok := cert["secretName"].(string)
+			if !ok {
+				continue
+			}
+
+			certList = append(certList, relatedObject{
+				kind:      "Secret",
+				namespace: namespace,
+				name:      name,
+			})
+		}
+	}
+
+	slices.SortFunc(certList, func(a, b relatedObject) int {
+		return strings.Compare(a.kind+a.namespace+a.name, b.kind+b.namespace+b.name)
+	})
+
+	node.Metadata["relObjs"] = certList
+
+	return &PolicyResource{
+		node: getPolicyCommonProperties(c, node),
+	}
 }
 
 // BuildNode construct the node for Policy Resources
@@ -138,8 +251,22 @@ func (p PolicyResource) BuildNode() Node {
 	return p.node
 }
 
-// BuildEdges construct the edges for Policy Resources
 func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
-	// no op for now to implement interface
+	policyKind, ok := p.node.Properties["kind"].(string)
+	if !ok {
+		return []Edge{}
+	}
+
+	if relObjs, ok := p.node.Metadata["relObjs"].([]relatedObject); ok {
+		info := NodeInfo{
+			EdgeType: "relatedResource",
+			Name:     p.node.Properties["name"].(string),
+			UID:      p.node.UID,
+			Kind:     policyKind,
+		}
+
+		return edgesFromRelatedObjects(info, ns, relObjs)
+	}
+
 	return []Edge{}
 }

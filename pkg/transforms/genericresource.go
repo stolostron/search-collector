@@ -87,8 +87,8 @@ func genericProperties(r *unstructured.Unstructured) map[string]interface{} {
 	return ret
 }
 
-func genericMetadata(r *unstructured.Unstructured) map[string]string {
-	metadata := make(map[string]string)
+func genericMetadata(r *unstructured.Unstructured) map[string]any {
+	metadata := make(map[string]any)
 	// When a resource is mutated by Gatekeeper, add this annotation
 	mutation, ok := r.GetAnnotations()["gatekeeper.sh/mutations"]
 	if ok {

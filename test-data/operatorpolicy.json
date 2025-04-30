@@ -147,74 +147,8 @@
           "apiVersion": "operators.coreos.com/v1alpha1",
           "kind": "ClusterServiceVersion",
           "metadata": {
-            "name": "gatekeeper-operator-product",
-            "namespace": "openshift-operators"
-          }
-        },
-        "reason": "Resource not found but should exist",
-        "cluster": "local-cluster"
-      },
-      {
-        "compliant": "UnknownCompliancy",
-        "object": {
-          "apiVersion": "apiextensions.k8s.io/v1",
-          "kind": "CustomResourceDefinition",
-          "metadata": {
-            "name": "-"
-          }
-        },
-        "reason": "No relevant CustomResourceDefinitions found",
-        "cluster": "local-cluster"
-      },
-      {
-        "compliant": "UnknownCompliancy",
-        "object": {
-          "apiVersion": "apps/v1",
-          "kind": "Deployment",
-          "metadata": {
-            "name": "-"
-          }
-        },
-        "reason": "No relevant deployments found",
-        "cluster": "local-cluster"
-      },
-      {
-        "compliant": "Compliant",
-        "object": {
-          "apiVersion": "operators.coreos.com/v1alpha1",
-          "kind": "InstallPlan",
-          "metadata": {
-            "name": "-",
-            "namespace": "openshift-operators"
-          }
-        },
-        "reason": "There are no relevant InstallPlans in this namespace",
-        "cluster": "local-cluster"
-      },
-      {
-        "compliant": "Compliant",
-        "object": {
-          "apiVersion": "operators.coreos.com/v1",
-          "kind": "OperatorGroup",
-          "metadata": {
-            "name": "global-operators",
-            "namespace": "openshift-operators"
-          }
-        },
-        "properties": {
-          "uid": "7c60436b-6d6b-44a6-a534-2fd01967ade6"
-        },
-        "reason": "Resource found as expected",
-        "cluster": "local-cluster"
-      },
-      {
-        "compliant": "NonCompliant",
-        "object": {
-          "apiVersion": "operators.coreos.com/v1alpha1",
-          "kind": "Subscription",
-          "metadata": {
-            "name": "gatekeeper-operator-product",
-            "namespace": "openshift-operators"
+            "name": "advanced-cluster-management.v2.9.0",
+            "namespace": "open-cluster-management"
           }
         },
         "reason": "Resource not found but should exist",

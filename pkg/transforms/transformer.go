@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"fmt"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -61,16 +62,32 @@ type Node struct {
 	UID            string                 `json:"uid"`
 	ResourceString string                 `json:"resourceString"`
 	Properties     map[string]interface{} `json:"properties"`
-	Metadata       map[string]string      `json:"-"` // This won't be sent to the indexer.
+	Metadata       map[string]any         `json:"-"` // This won't be sent to the indexer.
 }
 
 func (n Node) hasMetadata(md string) bool {
-	return n.Metadata != nil && n.Metadata[md] != ""
+	if n.Metadata == nil {
+		return false
+	}
+
+	val, ok := n.Metadata[md]
+	if !ok {
+		return false
+	}
+
+	// special case for empty string
+	if str, ok := val.(string); ok && str == "" {
+		return false
+	}
+
+	return true
 }
 
-func (n Node) GetMetadata(md string) string {
-	if n.hasMetadata(md) {
-		return n.Metadata[md]
+// GetMetadata returns the value as a string.
+// It will return an empty string if the key is not found.
+func (n Node) GetMetadata(key string) string {
+	if n.hasMetadata(key) {
+		return fmt.Sprint(n.Metadata[key])
 	}
 	return ""
 }
@@ -350,9 +367,11 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PolicyResourceBuilder(&typedResource)
 
-		case [2]string{"ConfigurationPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO},
-			[2]string{"CertificatePolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
-			trans = StandalonePolicyResourceBuilder(event.Resource)
+		case [2]string{"ConfigurationPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
+			trans = ConfigPolicyResourceBuilder(event.Resource)
+
+		case [2]string{"CertificatePolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
+			trans = CertPolicyResourceBuilder(event.Resource)
 
 		case [2]string{"OperatorPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
 			trans = OperatorPolicyResourceBuilder(event.Resource)

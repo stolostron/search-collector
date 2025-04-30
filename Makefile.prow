@@ -15,7 +15,7 @@ lint:
 	
 .PHONY: unit-test
 unit-test:
-	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
+	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out -coverpkg=./...
 
 .PHONY: test-e2e
 test-e2e:

@@ -38,7 +38,7 @@ func TestTransformConfigPolicy(t *testing.T) {
 		Object: object,
 	}
 
-	configResource := StandalonePolicyResourceBuilder(unstructured)
+	configResource := ConfigPolicyResourceBuilder(unstructured)
 
 	node := configResource.BuildNode()
 
@@ -48,6 +48,7 @@ func TestTransformConfigPolicy(t *testing.T) {
 	AssertEqual("severity", node.Properties["severity"], "low", t)
 	AssertEqual("disabled", node.Properties["disabled"], false, t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], true, t)
+	AssertEqual("relObjs", node.GetMetadata("relObjs"), "[{Namespace  default}]", t)
 }
 
 func TestTransformOperatorPolicy(t *testing.T) {
@@ -70,6 +71,9 @@ func TestTransformOperatorPolicy(t *testing.T) {
 	AssertEqual("upgradeAvailable", node.Properties["upgradeAvailable"], true, t)
 	AssertEqual("disabled", node.Properties["disabled"], false, t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], false, t)
+	obj1 := "{CatalogSource openshift-marketplace redhat-operators}"
+	obj2 := "{ClusterServiceVersion open-cluster-management advanced-cluster-management.v2.9.0}"
+	AssertEqual("relObjs", node.GetMetadata("relObjs"), "["+obj1+" "+obj2+"]", t)
 }
 
 func TestTransformCertPolicy(t *testing.T) {
@@ -80,13 +84,14 @@ func TestTransformCertPolicy(t *testing.T) {
 		Object: object,
 	}
 
-	certResource := StandalonePolicyResourceBuilder(unstructured)
+	certResource := CertPolicyResourceBuilder(unstructured)
 
 	node := certResource.BuildNode()
 
 	// Test only the fields that exist in policy - the common test will test the other bits
-	AssertEqual("compliant", node.Properties["compliant"], "Compliant", t)
+	AssertEqual("compliant", node.Properties["compliant"], "NonCompliant", t)
 	AssertEqual("severity", node.Properties["severity"], "low", t)
 	AssertEqual("disabled", node.Properties["disabled"], false, t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], true, t)
+	AssertEqual("relObjs", node.GetMetadata("relObjs"), "[{Secret default sample-secret}]", t)
 }
