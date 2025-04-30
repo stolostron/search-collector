@@ -367,9 +367,11 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PolicyResourceBuilder(&typedResource)
 
-		case [2]string{"ConfigurationPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO},
-			[2]string{"CertificatePolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
-			trans = StandalonePolicyResourceBuilder(event.Resource)
+		case [2]string{"ConfigurationPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
+			trans = ConfigPolicyResourceBuilder(event.Resource)
+
+		case [2]string{"CertificatePolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
+			trans = CertPolicyResourceBuilder(event.Resource)
 
 		case [2]string{"OperatorPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
 			trans = OperatorPolicyResourceBuilder(event.Resource)

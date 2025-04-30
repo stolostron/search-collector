@@ -547,6 +547,35 @@ func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string, onlyApplica
 	return ret
 }
 
+type relatedObject struct {
+	kind      string
+	namespace string
+	name      string
+}
+
+func edgesFromRelatedObjects(nodeInfo NodeInfo, ns NodeStore, relObjs []relatedObject) []Edge {
+	edges := make([]Edge, 0, len(relObjs))
+
+	for _, obj := range relObjs {
+		namespace := obj.namespace
+		if namespace == "" {
+			namespace = "_NONE"
+		}
+
+		if res, ok := ns.ByKindNamespaceName[obj.kind][namespace][obj.name]; ok {
+			edges = append(edges, Edge{
+				EdgeType:   nodeInfo.EdgeType,
+				SourceKind: nodeInfo.Kind,
+				SourceUID:  nodeInfo.UID,
+				DestKind:   obj.kind,
+				DestUID:    res.UID,
+			})
+		}
+	}
+
+	return edges
+}
+
 // SliceDiff returns the elements in bigSlice that aren't in smallSlice
 func SliceDiff(bigSlice, smallSlice []string) []string {
 	smallMap := make(map[string]struct{}, len(smallSlice))
