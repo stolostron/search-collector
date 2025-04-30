@@ -2,6 +2,7 @@
 # Copyright Contributors to the Open Cluster Management project
 
 BINDIR ?= output
+SONAR_GO_TEST_ARGS ?= ./...
 
 .PHONY: deps
 deps:
@@ -27,7 +28,7 @@ run:
 
 .PHONY: test
 test:
-	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
+	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out -coverpkg=./...
 
 .PHONY: coverage
 coverage:
