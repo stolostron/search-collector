@@ -38,7 +38,7 @@ func (h HelmReleaseResource) BuildNode() Node {
 	node := Node{
 		UID:        GetHelmReleaseUID(releaseName),
 		Properties: make(map[string]interface{}),
-		Metadata:   make(map[string]string),
+		Metadata:   make(map[string]any),
 	}
 	// Extract the properties specific to this type
 	node.Properties["kind"] = "Release"
@@ -74,7 +74,6 @@ type SummarizedManifestResource struct {
 }
 
 func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestResource {
-
 	smr := []SummarizedManifestResource{}
 
 	if h.Release == nil {
@@ -113,7 +112,6 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 }
 
 func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
-
 	smr := getSummarizedManifestResources(h)
 
 	UID := GetHelmReleaseUID(h.GetLabels()["NAME"])
@@ -126,7 +124,7 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 		kind := resource.Kind
 		name := resource.Metadata.Name
 
-		//Obtain Read Lock before checking the map
+		// Obtain Read Lock before checking the map
 		NonNSResMapMutex.RLock()
 		_, notNameSpaced := NonNSResourceMap[kind]
 		NonNSResMapMutex.RUnlock()
@@ -146,13 +144,13 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 				// Add hosting Subscription/Deployable properties to the resource so that they can tracked
 				if helmNode.Properties["_hostingSubscription"] != "" || helmNode.Properties["_hostingDeployable"] != "" {
 					resourceNode := ns.ByUID[resourceNode.UID]
-					//Copy the properties only if the node doesn't have it yet or if they are not the same
+					// Copy the properties only if the node doesn't have it yet or if they are not the same
 					if _, ok := resourceNode.Properties["_hostingSubscription"]; !ok &&
 						helmNode.Properties["_hostingSubscription"] != resourceNode.Properties["_hostingSubscription"] {
 						copyhostingSubProperties(UID, resourceNode.UID, ns)
 					}
 				}
-				if resourceNode.UID != GetHelmReleaseUID(h.GetLabels()["NAME"]) { //avoid connecting node to itself
+				if resourceNode.UID != GetHelmReleaseUID(h.GetLabels()["NAME"]) { // avoid connecting node to itself
 					edges = append(edges, Edge{
 						SourceUID:  resourceNode.UID,
 						DestUID:    GetHelmReleaseUID(h.GetLabels()["NAME"]),

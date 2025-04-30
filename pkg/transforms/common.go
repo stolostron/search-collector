@@ -105,7 +105,7 @@ func transformCommon(resource v1.Object) Node {
 	n := Node{
 		UID:        prefixedUID(resource.GetUID()),
 		Properties: commonProperties(resource),
-		Metadata:   make(map[string]string),
+		Metadata:   make(map[string]any),
 	}
 
 	// When a resource is mutated by Gatekeeper, add this annotation
@@ -224,8 +224,8 @@ func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
 
 // Function to create an edge linking a resource to Gatekeeper mutations (e.g., Assign, AssignImage) that modify the resource.
 func edgesByGatekeeperMutation(ret []Edge, currNode Node, ns NodeStore) []Edge {
-	mutationEntries, ok := currNode.Metadata["gatekeeper.sh/mutations"]
-	if !ok || mutationEntries == "" {
+	mutationEntries := currNode.GetMetadata("gatekeeper.sh/mutations")
+	if mutationEntries == "" {
 		return ret
 	}
 
@@ -377,10 +377,10 @@ func edgesByDestinationName(
 					// Add all the applications connected to a subscription in the Subscription node's metadata -
 					// this metadata will be used to connect other nodes to Application
 					if destKind == "Subscription" && nodeInfo.Kind == "Application" {
-						if destNode.Metadata["_hostingApplication"] != "" {
+						if destNode.GetMetadata("_hostingApplication") != "" {
 							currAppInfo := nodeInfo.NameSpace + "/" + nodeInfo.Name
-							if !strings.Contains(destNode.Metadata["_hostingApplication"], currAppInfo) {
-								destNode.Metadata["_hostingApplication"] = destNode.Metadata["_hostingApplication"] +
+							if !strings.Contains(destNode.GetMetadata("_hostingApplication"), currAppInfo) {
+								destNode.Metadata["_hostingApplication"] = destNode.GetMetadata("_hostingApplication") +
 									"," + nodeInfo.NameSpace + "/" + nodeInfo.Name
 							}
 						} else {
