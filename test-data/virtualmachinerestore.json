@@ -1,6 +1,6 @@
 {
   "apiVersion": "snapshot.kubevirt.io/v1beta1",
-  "kind": "VirtualMachineSnapshot",
+  "kind": "VirtualMachineRestore",
   "metadata": {
     "resourceVersion": "11848215",
     "name": "centos7-gray-owl-35-snapshot-20250506-102417-1746547073646",
