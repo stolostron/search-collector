@@ -126,8 +126,17 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "status", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
+			{Name: "phase",  JSONPath: `{.status.phase}`},
 			{Name: "indications", JSONPath: `{.status.indications}`}, // this is an array of strings - will collect array items separated by ;
 			{Name: "sourceVM", JSONPath: `{.spec.source.name}`},
+		},
+	},
+	"VirtualMachineRestore.snapshot.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "status", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
+			{Name: "lastRestoreTime", JSONPath: `{.status.restoreTime}`},
+			{Name: "targetVM", JSONPath: `{.spec.target.name}`},
 		},
 	},
 }
