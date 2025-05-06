@@ -1,0 +1,50 @@
+{
+  "apiVersion": "snapshot.kubevirt.io/v1beta1",
+  "kind": "VirtualMachineSnapshot",
+  "metadata": {
+    "resourceVersion": "11848215",
+    "name": "centos7-gray-owl-35-snapshot-20250506-102417-1746547073646",
+    "uid": "2e432308-e94c-4866-a86a-388ce0b6cbc2",
+    "creationTimestamp": "2024-09-18T19:43:53Z",
+    "generation": 36,
+    "namespace": "openshift-cnv",
+    "ownerReferences": [
+      {
+        "apiVersion": "kubevirt.io/v1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "kind": "VirtualMachine",
+        "name": "centos7-gray-owl-35",
+        "uid": "42634581-0cc1-4aa9-bec6-69f59049e2d3"
+      }
+    ]
+  },
+  "spec": {
+    "target": {
+      "apiGroup": "kubevirt.io",
+      "kind": "VirtualMachine",
+      "name": "centos7-gray-owl-35"
+    },
+    "virtualMachineSnapshotName": "centos7-gray-owl-35-snapshot"
+  },
+  "status": {
+    "complete": true,
+    "conditions": [
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2025-03-25T17:10:58Z",
+        "reason": "Operation complete",
+        "status": "False",
+        "type": "Progressing"
+      },
+      {
+        "lastProbeTime": null,
+        "lastTransitionTime": "2025-03-25T17:10:58Z",
+        "reason": "Operation complete",
+        "status": "True",
+        "type": "Ready"
+      }
+    ],
+    "restoreTime": "2025-05-06T15:59:39Z"
+  }
+}
