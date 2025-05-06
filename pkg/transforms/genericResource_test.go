@@ -163,7 +163,7 @@ func Test_genericResourceFromConfigVMRestore(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("status", node.Properties["status"], "Operation complete", t)
-	AssertEqual("targetVM", node.Properties["sourceVM"], "centos7-gray-owl-35", t)
+	AssertEqual("targetVM", node.Properties["targetVM"], "centos7-gray-owl-35", t)
 	AssertDeepEqual("lastRestoreTime", node.Properties["lastRestoreTime"], "2025-05-06T15:59:39Z", t)
 
 }
