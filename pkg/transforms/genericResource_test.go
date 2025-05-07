@@ -144,6 +144,7 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("status", node.Properties["status"], "Operation complete", t)
+	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
 	AssertEqual("sourceVM", node.Properties["sourceVM"], "centos7-gray-owl-35", t)
 	AssertDeepEqual("accesindicationssMode", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
 
