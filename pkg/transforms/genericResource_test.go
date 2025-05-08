@@ -143,9 +143,33 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
-	AssertEqual("status", node.Properties["status"], "Operation complete", t)
-	AssertEqual("sourceVM", node.Properties["sourceVM"], "centos7-gray-owl-35", t)
-	AssertDeepEqual("accesindicationssMode", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
+	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
+	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
+	AssertEqual("readyToUse", node.Properties["readyToUse"], true, t)
+	AssertEqual("sourceName", node.Properties["sourceName"], "centos7-gray-owl-35", t)
+	AssertEqual("sourceKind", node.Properties["sourceKind"], "VirtualMachine", t)
+	AssertDeepEqual("indications", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
+
+}
+
+func Test_genericResourceFromConfigVMRestore(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachinerestore.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "centos7-gray-owl-35-snapshot-20250506-102417-1746547073646", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineRestore", t)
+	AssertEqual("namespace", node.Properties["namespace"], "openshift-cnv", t)
+	AssertEqual("created", node.Properties["created"], "2024-09-18T19:43:53Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
+	AssertEqual("complete", node.Properties["complete"], true, t)
+	AssertEqual("targetName", node.Properties["targetName"], "centos7-gray-owl-35", t)
+	AssertEqual("targetKind", node.Properties["targetKind"], "VirtualMachine", t)
+	AssertDeepEqual("restoreTime", node.Properties["restoreTime"], "2025-05-06T15:59:39Z", t)
 
 }
 
