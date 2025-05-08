@@ -143,7 +143,7 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
-	AssertEqual("_status", node.Properties["_status"], "Operation complete", t)
+	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
 	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
 	AssertEqual("readyToUse", node.Properties["readyToUse"], true, t)
 	AssertEqual("sourceName", node.Properties["sourceName"], "centos7-gray-owl-35", t)
@@ -165,7 +165,7 @@ func Test_genericResourceFromConfigVMRestore(t *testing.T) {
 
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
-	AssertEqual("_status", node.Properties["_status"], "Operation complete", t)
+	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
 	AssertEqual("complete", node.Properties["complete"], true, t)
 	AssertEqual("targetName", node.Properties["targetName"], "centos7-gray-owl-35", t)
 	AssertEqual("targetKind", node.Properties["targetKind"], "VirtualMachine", t)

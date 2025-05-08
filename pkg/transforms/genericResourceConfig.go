@@ -125,7 +125,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	"VirtualMachineSnapshot.snapshot.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
-			{Name: "_status", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
+			{Name: "_conditionReadyReason", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
 			{Name: "phase",  JSONPath: `{.status.phase}`},
 			{Name: "indications", JSONPath: `{.status.indications}`}, // this is an array of strings - will collect array items separated by ;
 			{Name: "sourceKind", JSONPath: `{.spec.source.kind}`},
@@ -136,7 +136,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	"VirtualMachineRestore.snapshot.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
-			{Name: "_status", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
+			{Name: "_conditionReadyReason", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
 			{Name: "restoreTime", JSONPath: `{.status.restoreTime}`},
 			{Name: "complete", JSONPath: `{.status.complete}`},
 			{Name: "targetKind", JSONPath: `{.spec.target.kind}`},
