@@ -143,10 +143,12 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
-	AssertEqual("status", node.Properties["status"], "Operation complete", t)
+	AssertEqual("_status", node.Properties["_status"], "Operation complete", t)
 	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
-	AssertEqual("_sourceVM", node.Properties["_sourceVM"], "centos7-gray-owl-35", t)
-	AssertDeepEqual("accesindicationssMode", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
+	AssertEqual("readyToUse", node.Properties["readyToUse"], true, t)
+	AssertEqual("sourceName", node.Properties["sourceName"], "centos7-gray-owl-35", t)
+	AssertEqual("sourceKind", node.Properties["sourceKind"], "VirtualMachine", t)
+	AssertDeepEqual("indications", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
 
 }
 
@@ -163,9 +165,11 @@ func Test_genericResourceFromConfigVMRestore(t *testing.T) {
 
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
-	AssertEqual("status", node.Properties["status"], "Operation complete", t)
-	AssertEqual("_targetVM", node.Properties["_targetVM"], "centos7-gray-owl-35", t)
-	AssertDeepEqual("lastRestoreTime", node.Properties["lastRestoreTime"], "2025-05-06T15:59:39Z", t)
+	AssertEqual("_status", node.Properties["_status"], "Operation complete", t)
+	AssertEqual("complete", node.Properties["complete"], true, t)
+	AssertEqual("targetName", node.Properties["targetName"], "centos7-gray-owl-35", t)
+	AssertEqual("targetKind", node.Properties["targetKind"], "VirtualMachine", t)
+	AssertDeepEqual("restoreTime", node.Properties["restoreTime"], "2025-05-06T15:59:39Z", t)
 
 }
 
