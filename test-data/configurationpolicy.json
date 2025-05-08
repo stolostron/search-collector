@@ -75,6 +75,17 @@
             "name": "default"
           }
         },
+        "reason": "Resource found but does not match",
+        "cluster": "local-cluster"
+      },{
+        "compliant": "NonCompliant",
+        "object": {
+          "apiVersion": "v1",
+          "kind": "Namespace",
+          "metadata": {
+            "name": "nonexistent"
+          }
+        },
         "reason": "Resource not found but should exist",
         "cluster": "local-cluster"
       }

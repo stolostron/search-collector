@@ -362,7 +362,7 @@ func (r *Reconciler) reconcileNode() {
 			}
 
 			if skip && (kind == "CertificatePolicy" || kind == "ConfigurationPolicy" || kind == "OperatorPolicy") {
-				if ne.Node.Metadata["relObjs"] != previousNode.Metadata["relObjs"] {
+				if !reflect.DeepEqual(ne.Node.Metadata["relObjs"], previousNode.Metadata["relObjs"]) {
 					skip = false
 				}
 			}
