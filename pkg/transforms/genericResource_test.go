@@ -145,7 +145,7 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("status", node.Properties["status"], "Operation complete", t)
 	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
-	AssertEqual("sourceVM", node.Properties["sourceVM"], "centos7-gray-owl-35", t)
+	AssertEqual("_sourceVM", node.Properties["_sourceVM"], "centos7-gray-owl-35", t)
 	AssertDeepEqual("accesindicationssMode", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
 
 }
@@ -164,7 +164,7 @@ func Test_genericResourceFromConfigVMRestore(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("status", node.Properties["status"], "Operation complete", t)
-	AssertEqual("targetVM", node.Properties["targetVM"], "centos7-gray-owl-35", t)
+	AssertEqual("_targetVM", node.Properties["_targetVM"], "centos7-gray-owl-35", t)
 	AssertDeepEqual("lastRestoreTime", node.Properties["lastRestoreTime"], "2025-05-06T15:59:39Z", t)
 
 }
