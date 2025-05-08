@@ -11,9 +11,11 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"encoding/json"
 	"slices"
 	"strings"
 
+	"github.com/golang/glog"
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -23,6 +25,11 @@ import (
 type PolicyResource struct {
 	node Node
 }
+
+const (
+	noncompliantEdge EdgeType = "noncompliantRelatedResource"
+	compliantEdge    EdgeType = "compliantRelatedResource"
+)
 
 // PolicyResourceBuilder ...
 func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
@@ -157,7 +164,7 @@ func recordRelatedObjects(c *unstructured.Unstructured, node Node) Node {
 	}
 
 	slices.SortFunc(objList, func(a, b relatedObject) int {
-		return strings.Compare(a.kind+a.namespace+a.name, b.kind+b.namespace+b.name)
+		return strings.Compare(a.String(), b.String())
 	})
 
 	node.Metadata["relObjs"] = objList
@@ -186,11 +193,37 @@ func parseConfigPolicyRelatedObject(item any) *relatedObject {
 		return nil
 	}
 
-	return &relatedObject{
-		kind:      kind,
-		namespace: meta["namespace"],
-		name:      meta["name"],
+	apiVersion, ok := object["apiVersion"].(string)
+	if !ok {
+		return nil
 	}
+
+	group, version, ok := strings.Cut(apiVersion, "/")
+	if !ok {
+		version = group
+		group = ""
+	}
+
+	compliance, found, err := unstructured.NestedString(relObj, "compliant")
+	if !found || err != nil {
+		return nil
+	}
+
+	edgeType := compliantEdge
+	if compliance != "Compliant" {
+		edgeType = noncompliantEdge
+	}
+
+	obj := &relatedObject{
+		Group:     group,
+		Version:   version,
+		Kind:      kind,
+		Namespace: meta["namespace"],
+		Name:      meta["name"],
+		EdgeType:  edgeType,
+	}
+
+	return obj
 }
 
 func CertPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
@@ -228,15 +261,19 @@ func CertPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
 			}
 
 			certList = append(certList, relatedObject{
-				kind:      "Secret",
-				namespace: namespace,
-				name:      name,
+				Group:     "",
+				Version:   "v1",
+				Kind:      "Secret",
+				Namespace: namespace,
+				Name:      name,
+				EdgeType:  noncompliantEdge,
 			})
 		}
 	}
 
+	// sorting is required to keep the list stable, because it is populated from a map
 	slices.SortFunc(certList, func(a, b relatedObject) int {
-		return strings.Compare(a.kind+a.namespace+a.name, b.kind+b.namespace+b.name)
+		return strings.Compare(a.String(), b.String())
 	})
 
 	node.Metadata["relObjs"] = certList
@@ -257,16 +294,61 @@ func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
 		return []Edge{}
 	}
 
-	if relObjs, ok := p.node.Metadata["relObjs"].([]relatedObject); ok {
-		info := NodeInfo{
-			EdgeType: "relatedResource",
-			Name:     p.node.Properties["name"].(string),
-			UID:      p.node.UID,
-			Kind:     policyKind,
-		}
-
-		return edgesFromRelatedObjects(info, ns, relObjs)
+	relObjs, ok := p.node.Metadata["relObjs"].([]relatedObject)
+	if !ok {
+		return []Edge{}
 	}
 
-	return []Edge{}
+	edges := make([]Edge, 0, len(relObjs))
+	missingResources := []relatedObject{}
+
+	// If/When edgeType is returned in the search result, this list might be unnecessary
+	nonCompliantResources := []relatedObject{}
+
+	for _, obj := range relObjs {
+		namespace := obj.Namespace
+		if namespace == "" {
+			namespace = "_NONE"
+		}
+
+		if res, ok := ns.ByKindNamespaceName[obj.Kind][namespace][obj.Name]; ok {
+			edges = append(edges, Edge{
+				EdgeType:   obj.EdgeType,
+				SourceKind: policyKind,
+				SourceUID:  p.node.UID,
+				DestKind:   obj.Kind,
+				DestUID:    res.UID,
+			})
+
+			if obj.EdgeType == noncompliantEdge {
+				nonCompliantResources = append(nonCompliantResources, obj)
+			}
+		} else {
+			missingResources = append(missingResources, obj)
+		}
+	}
+
+	if len(missingResources) > 0 {
+		missingString, err := json.Marshal(missingResources)
+		if err != nil {
+			glog.Error("Failed to marshal a missing resource", err)
+		} else {
+			p.node.Properties["_missingResources"] = string(missingString)
+		}
+	} else {
+		delete(p.node.Properties, "_missingResources")
+	}
+
+	if len(nonCompliantResources) > 0 {
+		nonCompString, err := json.Marshal(nonCompliantResources)
+		if err != nil {
+			glog.Error("Failed to marshal a non compliant resource", err)
+		} else {
+			p.node.Properties["_nonCompliantResources"] = string(nonCompString)
+		}
+	} else {
+		delete(p.node.Properties, "_nonCompliantResources")
+	}
+
+	return edges
 }

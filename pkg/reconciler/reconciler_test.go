@@ -454,16 +454,17 @@ func TestReconcilerComplete(t *testing.T) {
 	// Compute reconciler Complete() state
 	com := testReconciler.Complete()
 
+	ns := tr.NodeStore{
+		ByUID:               testReconciler.currentNodes,
+		ByKindNamespaceName: nodeTripleMap(testReconciler.currentNodes),
+	}
+
 	// Checks the count of nodes and edges based on the JSON files in pkg/test-data
 	// Update counts when the test data is changed
 	// We don't create Nodes for kind = Event
 	const Nodes = 54
 	const Edges = 61
 	if len(com.Edges) != Edges || com.TotalEdges != Edges || len(com.Nodes) != Nodes || com.TotalNodes != Nodes {
-		ns := tr.NodeStore{
-			ByUID:               testReconciler.currentNodes,
-			ByKindNamespaceName: nodeTripleMap(testReconciler.currentNodes),
-		}
 		glog.Infof("len edges: %d", len(com.Edges))
 		for _, edge := range com.Edges {
 			glog.Info("Src: ", ns.ByUID[edge.SourceUID].Properties["kind"], " Type: ", edge.EdgeType, " Dest: ", ns.ByUID[edge.DestUID].Properties["kind"])
@@ -473,6 +474,19 @@ func TestReconcilerComplete(t *testing.T) {
 		t.Log("Expected "+strconv.Itoa(Edges)+" edges, but found ", len(com.Edges))
 		t.Fatalf("Error: Reconciler Complete() not working as expected.")
 	} else {
-		t.Log("Reconciler Complete() working as expected")
+		t.Log("Correct number of edges and nodes")
+	}
+
+	// Verify some properties are set during BuildEdges on ConfigurationPolicies
+	configPolNode := ns.ByKindNamespaceName["ConfigurationPolicy"]["local-cluster"]["policy-namespace"]
+
+	missing := configPolNode.Properties["_missingResources"]
+	if missing != `[{"v":"v1","k":"Namespace","n":"nonexistent"}]` {
+		t.Fatal("Incorrect _missingResources; got", missing)
+	}
+
+	noncompliant := configPolNode.Properties["_nonCompliantResources"]
+	if noncompliant != `[{"v":"v1","k":"Namespace","n":"default"}]` {
+		t.Fatal("Incorrect _nonCompliantResources; got", noncompliant)
 	}
 }
