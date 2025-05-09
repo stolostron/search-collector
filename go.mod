@@ -33,7 +33,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20221125104750-d4b167d5fae6
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -79,10 +79,10 @@ require (
 	open-cluster-management.io/api v0.8.0 // indirect
 	sigs.k8s.io/controller-runtime v0.12.3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
+	sigs.k8s.io/structured-merge-diff/v4/v6 v6.0.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.28.2
 
-replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
+replace github.com/imdario/mergo => github.com/imdario/mergo v1.0.1
