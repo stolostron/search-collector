@@ -17,7 +17,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/helm/pkg/proto/hapi/release"
 )
