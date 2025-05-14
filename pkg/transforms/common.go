@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -547,33 +548,20 @@ func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string, onlyApplica
 	return ret
 }
 
+// relatedObject stores identifying information for a kubernetes resource.
+// When marshalled to json, the struct names are small to reduce total size.
 type relatedObject struct {
-	kind      string
-	namespace string
-	name      string
+	Group     string   `json:"g,omitempty"`
+	Version   string   `json:"v,omitempty"`
+	Kind      string   `json:"k,omitempty"`
+	Namespace string   `json:"ns,omitempty"`
+	Name      string   `json:"n,omitempty"`
+	EdgeType  EdgeType `json:"-"` // omitted from serialization
 }
 
-func edgesFromRelatedObjects(nodeInfo NodeInfo, ns NodeStore, relObjs []relatedObject) []Edge {
-	edges := make([]Edge, 0, len(relObjs))
-
-	for _, obj := range relObjs {
-		namespace := obj.namespace
-		if namespace == "" {
-			namespace = "_NONE"
-		}
-
-		if res, ok := ns.ByKindNamespaceName[obj.kind][namespace][obj.name]; ok {
-			edges = append(edges, Edge{
-				EdgeType:   nodeInfo.EdgeType,
-				SourceKind: nodeInfo.Kind,
-				SourceUID:  nodeInfo.UID,
-				DestKind:   obj.kind,
-				DestUID:    res.UID,
-			})
-		}
-	}
-
-	return edges
+func (r relatedObject) String() string {
+	jsonBytes, _ := json.Marshal(r)
+	return string(jsonBytes)
 }
 
 // SliceDiff returns the elements in bigSlice that aren't in smallSlice
