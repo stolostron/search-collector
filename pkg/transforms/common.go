@@ -631,14 +631,13 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	kind := r.GetKind()
 	// Check if a transform config exists for this resource and extract the additional properties.
 	transformConfig, found := getTransformConfig(group, kind)
-	if !found {
-		return node
-	}
 
 	// Currently, only pull in the additionalPrinterColumns listed in the CRD if it's a Gatekeeper
 	// constraint or globally enabled.
 	if !found && (config.Cfg.CollectCRDPrinterColumns || group == "constraints.gatekeeper.sh") {
 		transformConfig = ResourceConfig{properties: additionalColumns}
+	} else if !found {
+		return node
 	}
 
 	for _, prop := range transformConfig.properties {
