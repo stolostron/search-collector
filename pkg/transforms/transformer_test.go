@@ -77,6 +77,8 @@ func TestTransformRoutine(t *testing.T) {
 	).BuildNode()
 	gatekeeperConstraintNode.ResourceString = "k8srequiredlabels"
 	gatekeeperConstraintNode.Properties["_isExternal"] = false
+	gatekeeperConstraintNode.Properties["enforcementAction"] = "dryrun"
+	gatekeeperConstraintNode.Properties["totalViolations"] = 84
 
 	tests := []struct {
 		name     string
