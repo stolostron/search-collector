@@ -29,7 +29,10 @@ spec:
     value: 5d
   - name: build-platforms
     value:
-    - linux/x86_64
+    - linux/x86_64 # FIXME remove after verifying on on pull build passes
+    - linux/arm64
+    - linux/ppc64le
+    - linux/s390x
   - name: dockerfile
     value: Dockerfile.rhtap
   - name: path-context
