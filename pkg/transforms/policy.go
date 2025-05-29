@@ -319,12 +319,12 @@ func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
 				DestKind:   obj.Kind,
 				DestUID:    res.UID,
 			})
-
-			if obj.EdgeType == noncompliantEdge {
-				nonCompliantResources = append(nonCompliantResources, obj)
-			}
 		} else {
 			missingResources = append(missingResources, obj)
+		}
+
+		if obj.EdgeType == noncompliantEdge {
+			nonCompliantResources = append(nonCompliantResources, obj)
 		}
 	}
 

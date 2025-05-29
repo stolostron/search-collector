@@ -486,7 +486,7 @@ func TestReconcilerComplete(t *testing.T) {
 	}
 
 	noncompliant := configPolNode.Properties["_nonCompliantResources"]
-	if noncompliant != `[{"v":"v1","k":"Namespace","n":"default"}]` {
+	if noncompliant != `[{"v":"v1","k":"Namespace","n":"default"},{"v":"v1","k":"Namespace","n":"nonexistent"}]` {
 		t.Fatal("Incorrect _nonCompliantResources; got", noncompliant)
 	}
 }
