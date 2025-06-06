@@ -4,7 +4,12 @@
         {
             "enabled": true,
             "groupName": "go.mod packages",
+            "matchBaseBranches": ["main", "release-2.14"],
             "matchPackageNames": ["*", "*/**"]
+        },
+        {
+            "enabled": false,
+            "matchBaseBranches": ["release-2.13","release-2.12","release-2.11","release-2.10"]
         }
     ],
     "schedule": "before 8am on Tuesday",
