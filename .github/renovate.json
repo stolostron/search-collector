@@ -3,18 +3,13 @@
     "packageRules": [
         {
             "enabled": true,
-            "groupName": "kubernetes packages",
-            "matchPackageNames": ["k8s.io/**", "sigs.k8s.io/**"]
+            "groupName": "go.mod packages",
+            "matchBaseBranches": ["main", "release-2.14"],
+            "matchPackageNames": ["*", "*/**"]
         },
         {
-            "enabled": true,
-            "groupName": "github.com packages",
-            "matchPackageNames": ["github.com/**"]
-        },
-        {
-            "enabled": true,
-            "groupName": "go packages",
-            "matchPackageNames": ["golang.org/**"]
+            "enabled": false,
+            "matchBaseBranches": ["release-2.13","release-2.12","release-2.11","release-2.10"]
         }
     ],
     "schedule": "before 8am on Tuesday",

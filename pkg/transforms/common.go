@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -105,7 +106,7 @@ func transformCommon(resource v1.Object) Node {
 	n := Node{
 		UID:        prefixedUID(resource.GetUID()),
 		Properties: commonProperties(resource),
-		Metadata:   make(map[string]string),
+		Metadata:   make(map[string]any),
 	}
 
 	// When a resource is mutated by Gatekeeper, add this annotation
@@ -224,8 +225,8 @@ func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
 
 // Function to create an edge linking a resource to Gatekeeper mutations (e.g., Assign, AssignImage) that modify the resource.
 func edgesByGatekeeperMutation(ret []Edge, currNode Node, ns NodeStore) []Edge {
-	mutationEntries, ok := currNode.Metadata["gatekeeper.sh/mutations"]
-	if !ok || mutationEntries == "" {
+	mutationEntries := currNode.GetMetadata("gatekeeper.sh/mutations")
+	if mutationEntries == "" {
 		return ret
 	}
 
@@ -377,10 +378,10 @@ func edgesByDestinationName(
 					// Add all the applications connected to a subscription in the Subscription node's metadata -
 					// this metadata will be used to connect other nodes to Application
 					if destKind == "Subscription" && nodeInfo.Kind == "Application" {
-						if destNode.Metadata["_hostingApplication"] != "" {
+						if destNode.GetMetadata("_hostingApplication") != "" {
 							currAppInfo := nodeInfo.NameSpace + "/" + nodeInfo.Name
-							if !strings.Contains(destNode.Metadata["_hostingApplication"], currAppInfo) {
-								destNode.Metadata["_hostingApplication"] = destNode.Metadata["_hostingApplication"] +
+							if !strings.Contains(destNode.GetMetadata("_hostingApplication"), currAppInfo) {
+								destNode.Metadata["_hostingApplication"] = destNode.GetMetadata("_hostingApplication") +
 									"," + nodeInfo.NameSpace + "/" + nodeInfo.Name
 							}
 						} else {
@@ -547,6 +548,22 @@ func edgesToApplication(nodeInfo NodeInfo, ns NodeStore, UID string, onlyApplica
 	return ret
 }
 
+// relatedObject stores identifying information for a kubernetes resource.
+// When marshalled to json, the struct names are small to reduce total size.
+type relatedObject struct {
+	Group     string   `json:"g,omitempty"`
+	Version   string   `json:"v,omitempty"`
+	Kind      string   `json:"k,omitempty"`
+	Namespace string   `json:"ns,omitempty"`
+	Name      string   `json:"n,omitempty"`
+	EdgeType  EdgeType `json:"-"` // omitted from serialization
+}
+
+func (r relatedObject) String() string {
+	jsonBytes, _ := json.Marshal(r)
+	return string(jsonBytes)
+}
+
 // SliceDiff returns the elements in bigSlice that aren't in smallSlice
 func SliceDiff(bigSlice, smallSlice []string) []string {
 	smallMap := make(map[string]struct{}, len(smallSlice))
@@ -614,14 +631,13 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	kind := r.GetKind()
 	// Check if a transform config exists for this resource and extract the additional properties.
 	transformConfig, found := getTransformConfig(group, kind)
-	if !found {
-		return node
-	}
 
 	// Currently, only pull in the additionalPrinterColumns listed in the CRD if it's a Gatekeeper
 	// constraint or globally enabled.
 	if !found && (config.Cfg.CollectCRDPrinterColumns || group == "constraints.gatekeeper.sh") {
 		transformConfig = ResourceConfig{properties: additionalColumns}
+	} else if !found {
+		return node
 	}
 
 	for _, prop := range transformConfig.properties {
@@ -670,7 +686,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				if !ok {
 					klog.V(1).Infof(
 						"Unable to extract metadata prop [%s] from [%s.%s] Name: [%s] since it's not a string: %v",
-						prop.Name, kind, group, r.GetName(),
+						prop.Name, kind, group, r.GetName(), val,
 					)
 					continue
 				}
@@ -682,7 +698,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				if !ok {
 					klog.V(1).Infof(
 						"Unable to extract memory prop [%s] from [%s.%s] Name: [%s] since it's not a string: %v",
-						prop.Name, kind, group, r.GetName(),
+						prop.Name, kind, group, r.GetName(), val,
 					)
 					continue
 				}

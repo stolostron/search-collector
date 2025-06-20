@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"reflect"
 	"testing"
 
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
@@ -38,7 +39,7 @@ func TestTransformConfigPolicy(t *testing.T) {
 		Object: object,
 	}
 
-	configResource := StandalonePolicyResourceBuilder(unstructured)
+	configResource := ConfigPolicyResourceBuilder(unstructured)
 
 	node := configResource.BuildNode()
 
@@ -48,6 +49,10 @@ func TestTransformConfigPolicy(t *testing.T) {
 	AssertEqual("severity", node.Properties["severity"], "low", t)
 	AssertEqual("disabled", node.Properties["disabled"], false, t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], true, t)
+	obj1 := `{"v":"v1","k":"Namespace","n":"default"}`
+	obj2 := `{"v":"v1","k":"Namespace","n":"nonexistent"}`
+	AssertEqual("relObjs", node.GetMetadata("relObjs"),
+		"["+obj1+" "+obj2+"]", t)
 }
 
 func TestTransformOperatorPolicy(t *testing.T) {
@@ -70,6 +75,28 @@ func TestTransformOperatorPolicy(t *testing.T) {
 	AssertEqual("upgradeAvailable", node.Properties["upgradeAvailable"], true, t)
 	AssertEqual("disabled", node.Properties["disabled"], false, t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], false, t)
+
+	objs := []relatedObject{{
+		Group:     "operators.coreos.com",
+		Version:   "v1alpha1",
+		Kind:      "CatalogSource",
+		Namespace: "openshift-marketplace",
+		Name:      "redhat-operators",
+		EdgeType:  compliantEdge,
+	}, {
+		Group:     "operators.coreos.com",
+		Version:   "v1alpha1",
+		Kind:      "ClusterServiceVersion",
+		Namespace: "open-cluster-management",
+		Name:      "advanced-cluster-management.v2.9.0",
+		EdgeType:  noncompliantEdge,
+	}}
+
+	if !reflect.DeepEqual(node.Metadata["relObjs"], objs) {
+		t.Errorf("relObjs EXPECTED: %T %v\n", node.Metadata["relObjs"], node.Metadata["relObjs"])
+		t.Errorf("relObjs ACTUAL: %T %v\n", objs, objs)
+		t.Fail()
+	}
 }
 
 func TestTransformCertPolicy(t *testing.T) {
@@ -80,13 +107,15 @@ func TestTransformCertPolicy(t *testing.T) {
 		Object: object,
 	}
 
-	certResource := StandalonePolicyResourceBuilder(unstructured)
+	certResource := CertPolicyResourceBuilder(unstructured)
 
 	node := certResource.BuildNode()
 
 	// Test only the fields that exist in policy - the common test will test the other bits
-	AssertEqual("compliant", node.Properties["compliant"], "Compliant", t)
+	AssertEqual("compliant", node.Properties["compliant"], "NonCompliant", t)
 	AssertEqual("severity", node.Properties["severity"], "low", t)
 	AssertEqual("disabled", node.Properties["disabled"], false, t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], true, t)
+	obj := `{"v":"v1","k":"Secret","ns":"default","n":"sample-secret"}`
+	AssertEqual("relObjs", node.GetMetadata("relObjs"), "["+obj+"]", t)
 }

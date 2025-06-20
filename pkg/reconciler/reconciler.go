@@ -346,15 +346,23 @@ func (r *Reconciler) reconcileNode() {
 			// the Metadata is only used to compute the edges and not sent with the node data.
 			skip := reflect.DeepEqual(ne.Node.Properties, previousNode.Properties)
 
+			kind := ne.Node.Properties["kind"]
+
 			// If the node is an application or subscription, it might have changes to its metadata we
 			// need to account for so don't skip updates on those
-			if skip && (ne.Node.Properties["kind"] == "Application" || ne.Node.Properties["kind"] == "Subscription") {
+			if skip && (kind == "Application" || kind == "Subscription") {
 				skip = false
 			}
 
 			// VAPBs specially need to update edges based on this piece of metadata
-			if skip && ne.Node.Properties["kind"] == "ValidatingAdmissionPolicyBinding" {
+			if skip && kind == "ValidatingAdmissionPolicyBinding" {
 				if ne.Node.Metadata["paramRef"] != previousNode.Metadata["paramRef"] {
+					skip = false
+				}
+			}
+
+			if skip && (kind == "CertificatePolicy" || kind == "ConfigurationPolicy" || kind == "OperatorPolicy") {
+				if !reflect.DeepEqual(ne.Node.Metadata["relObjs"], previousNode.Metadata["relObjs"]) {
 					skip = false
 				}
 			}

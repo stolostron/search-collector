@@ -2,14 +2,14 @@
   "apiVersion": "policy.open-cluster-management.io/v1",
   "kind": "CertificatePolicy",
   "metadata": {
-    "creationTimestamp": "2024-08-15T19:21:44Z",
+    "creationTimestamp": "2025-04-29T12:23:25Z",
     "generation": 1,
     "labels": {
       "cluster-name": "local-cluster",
       "cluster-namespace": "local-cluster",
       "policy.open-cluster-management.io/cluster-name": "local-cluster",
       "policy.open-cluster-management.io/cluster-namespace": "local-cluster",
-      "policy.open-cluster-management.io/policy": "default.cert-policy-dd"
+      "policy.open-cluster-management.io/policy": "open-cluster-management-global-set.test-certificate"
     },
     "managedFields": [
       {
@@ -17,7 +17,7 @@
         "manager": "multicluster-operators-subscription"
       }
     ],
-    "name": "policy-certificate",
+    "name": "test-certificate",
     "namespace": "local-cluster",
     "ownerReferences": [
       {
@@ -25,19 +25,22 @@
         "blockOwnerDeletion": true,
         "controller": true,
         "kind": "Policy",
-        "name": "default.cert-policy-dd",
-        "uid": "3104a97d-c42a-43de-b8fa-b8579d9d06b3"
+        "name": "open-cluster-management-global-set.test-certificate",
+        "uid": "c7e61367-7719-4831-8eae-81a5e0243e5a"
       }
     ],
-    "resourceVersion": "395036",
-    "uid": "2fc12fad-80d4-4545-b9d5-bc329f12f4d1"
+    "resourceVersion": "59875",
+    "uid": "b861b4ad-0a5a-406b-93a6-c03ee6b2820c"
   },
   "spec": {
-    "disabled": false,
     "minimumDuration": "300h",
     "namespaceSelector": {
-      "exclude": ["kube-*"],
-      "include": ["default"]
+      "exclude": [
+        "kube-*"
+      ],
+      "include": [
+        "default"
+      ]
     },
     "remediationAction": "inform",
     "severity": "low"
@@ -45,9 +48,22 @@
   "status": {
     "compliancyDetails": {
       "default": {
-        "message": "Found 0 non compliant certificates in the namespace default.\n"
+        "message": "Found 1 non compliant certificates in the namespace default.\nList of non compliant certificates:\nsample-secret expires on 2021-07-06T15:42:01Z\n",
+        "nonCompliantCertificates": 1,
+        "nonCompliantCertificatesList": {
+          "sample-secret": {
+            "ca": true,
+            "duration": 72000000000000,
+            "expiration": "2021-07-06T15:42:01Z",
+            "expiry": -120343310189412045,
+            "sans": [
+              "something.test.com"
+            ],
+            "secretName": "sample-secret"
+          }
+        }
       }
     },
-    "compliant": "Compliant"
+    "compliant": "NonCompliant"
   }
 }

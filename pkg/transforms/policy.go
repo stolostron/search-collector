@@ -11,8 +11,11 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"encoding/json"
+	"slices"
 	"strings"
 
+	"github.com/golang/glog"
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -22,6 +25,11 @@ import (
 type PolicyResource struct {
 	node Node
 }
+
+const (
+	noncompliantEdge EdgeType = "noncompliantRelatedResource"
+	compliantEdge    EdgeType = "compliantRelatedResource"
+)
 
 // PolicyResourceBuilder ...
 func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
@@ -80,17 +88,10 @@ func getPolicyCommonProperties(c *unstructured.Unstructured, node Node) Node {
 	return node
 }
 
-// For cert, config policies.
-func StandalonePolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
-	node := transformCommon(c) // Start off with the common properties
-
-	return &PolicyResource{node: getPolicyCommonProperties(c, node)}
-}
-
 func OperatorPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
 	node := transformCommon(c) // Start off with the common properties
-
 	node = getPolicyCommonProperties(c, node)
+	node = recordRelatedObjects(c, node)
 
 	var deploymentAvailable bool
 	var upgradeAvailable bool
@@ -130,7 +131,156 @@ func OperatorPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource
 	node.Properties["deploymentAvailable"] = deploymentAvailable
 	node.Properties["upgradeAvailable"] = upgradeAvailable
 
-	return &PolicyResource{node: node}
+	return &PolicyResource{
+		node: node,
+	}
+}
+
+func ConfigPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
+	node := transformCommon(c) // Start off with the common properties
+	node = getPolicyCommonProperties(c, node)
+	node = recordRelatedObjects(c, node)
+
+	return &PolicyResource{
+		node: node,
+	}
+}
+
+func recordRelatedObjects(c *unstructured.Unstructured, node Node) Node {
+	relatedObjects, found, err := unstructured.NestedSlice(c.Object, "status", "relatedObjects")
+	if !found || err != nil {
+		return node
+	}
+
+	objList := make([]relatedObject, 0, len(relatedObjects))
+
+	for _, item := range relatedObjects {
+		relObj := parseConfigPolicyRelatedObject(item)
+		if relObj == nil {
+			continue
+		}
+
+		objList = append(objList, *relObj)
+	}
+
+	slices.SortFunc(objList, func(a, b relatedObject) int {
+		return strings.Compare(a.String(), b.String())
+	})
+
+	node.Metadata["relObjs"] = objList
+
+	return node
+}
+
+func parseConfigPolicyRelatedObject(item any) *relatedObject {
+	relObj, ok := item.(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	object, found, err := unstructured.NestedMap(relObj, "object")
+	if !found || err != nil {
+		return nil
+	}
+
+	meta, found, err := unstructured.NestedStringMap(object, "metadata")
+	if !found || err != nil {
+		return nil
+	}
+
+	kind, ok := object["kind"].(string)
+	if !ok {
+		return nil
+	}
+
+	apiVersion, ok := object["apiVersion"].(string)
+	if !ok {
+		return nil
+	}
+
+	group, version, ok := strings.Cut(apiVersion, "/")
+	if !ok {
+		version = group
+		group = ""
+	}
+
+	compliance, found, err := unstructured.NestedString(relObj, "compliant")
+	if !found || err != nil {
+		return nil
+	}
+
+	edgeType := compliantEdge
+	if compliance != "Compliant" {
+		edgeType = noncompliantEdge
+	}
+
+	obj := &relatedObject{
+		Group:     group,
+		Version:   version,
+		Kind:      kind,
+		Namespace: meta["namespace"],
+		Name:      meta["name"],
+		EdgeType:  edgeType,
+	}
+
+	return obj
+}
+
+func CertPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
+	node := transformCommon(c) // Start off with the common properties
+
+	detailMap, found, err := unstructured.NestedMap(c.Object, "status", "compliancyDetails")
+	if len(detailMap) == 0 || !found || err != nil {
+		return &PolicyResource{
+			node: getPolicyCommonProperties(c, node),
+		}
+	}
+
+	certList := []relatedObject{}
+	for namespace, item := range detailMap {
+		details, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		// this "list" is actually a map
+		nonCompCerts, found, err := unstructured.NestedMap(details, "nonCompliantCertificatesList")
+		if len(nonCompCerts) == 0 || !found || err != nil {
+			continue
+		}
+
+		for _, item := range nonCompCerts {
+			cert, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+
+			name, ok := cert["secretName"].(string)
+			if !ok {
+				continue
+			}
+
+			certList = append(certList, relatedObject{
+				Group:     "",
+				Version:   "v1",
+				Kind:      "Secret",
+				Namespace: namespace,
+				Name:      name,
+				EdgeType:  noncompliantEdge,
+			})
+		}
+	}
+
+	// sorting is required to keep the list stable, because it is populated from a map
+	slices.SortFunc(certList, func(a, b relatedObject) int {
+		return strings.Compare(a.String(), b.String())
+	})
+
+	node.Metadata["relObjs"] = certList
+
+	return &PolicyResource{
+		node: getPolicyCommonProperties(c, node),
+	}
 }
 
 // BuildNode construct the node for Policy Resources
@@ -138,8 +288,67 @@ func (p PolicyResource) BuildNode() Node {
 	return p.node
 }
 
-// BuildEdges construct the edges for Policy Resources
 func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
-	// no op for now to implement interface
-	return []Edge{}
+	policyKind, ok := p.node.Properties["kind"].(string)
+	if !ok {
+		return []Edge{}
+	}
+
+	relObjs, ok := p.node.Metadata["relObjs"].([]relatedObject)
+	if !ok {
+		return []Edge{}
+	}
+
+	edges := make([]Edge, 0, len(relObjs))
+	missingResources := []relatedObject{}
+
+	// If/When edgeType is returned in the search result, this list might be unnecessary
+	nonCompliantResources := []relatedObject{}
+
+	for _, obj := range relObjs {
+		namespace := obj.Namespace
+		if namespace == "" {
+			namespace = "_NONE"
+		}
+
+		if res, ok := ns.ByKindNamespaceName[obj.Kind][namespace][obj.Name]; ok {
+			edges = append(edges, Edge{
+				EdgeType:   obj.EdgeType,
+				SourceKind: policyKind,
+				SourceUID:  p.node.UID,
+				DestKind:   obj.Kind,
+				DestUID:    res.UID,
+			})
+		} else {
+			missingResources = append(missingResources, obj)
+		}
+
+		if obj.EdgeType == noncompliantEdge {
+			nonCompliantResources = append(nonCompliantResources, obj)
+		}
+	}
+
+	if len(missingResources) > 0 {
+		missingString, err := json.Marshal(missingResources)
+		if err != nil {
+			glog.Error("Failed to marshal a missing resource", err)
+		} else {
+			p.node.Properties["_missingResources"] = string(missingString)
+		}
+	} else {
+		delete(p.node.Properties, "_missingResources")
+	}
+
+	if len(nonCompliantResources) > 0 {
+		nonCompString, err := json.Marshal(nonCompliantResources)
+		if err != nil {
+			glog.Error("Failed to marshal a non compliant resource", err)
+		} else {
+			p.node.Properties["_nonCompliantResources"] = string(nonCompString)
+		}
+	} else {
+		delete(p.node.Properties, "_nonCompliantResources")
+	}
+
+	return edges
 }
