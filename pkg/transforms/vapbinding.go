@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/golang/glog"
 	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog/v2"
 )
 
 type VapBindingResource struct {
@@ -58,14 +58,14 @@ func VapBindingResourceBuilder(v *unstructured.Unstructured) *VapBindingResource
 	}
 
 	if err != nil {
-		glog.Errorf("Failed to parse the ValidatingAdmissionPolicyBinding %s paramRef: %v", v.GetName(), err)
+		klog.Errorf("Failed to parse the ValidatingAdmissionPolicyBinding %s paramRef: %v", v.GetName(), err)
 
 		return binding
 	}
 
 	paramRefBytes, err := json.Marshal(paramRefMap)
 	if err != nil {
-		glog.Errorf("Failed to parse the ValidatingAdmissionPolicyBinding %s paramRef: %v", v.GetName(), err)
+		klog.Errorf("Failed to parse the ValidatingAdmissionPolicyBinding %s paramRef: %v", v.GetName(), err)
 
 		return binding
 	}
@@ -74,7 +74,7 @@ func VapBindingResourceBuilder(v *unstructured.Unstructured) *VapBindingResource
 
 	err = json.Unmarshal(paramRefBytes, paramRef)
 	if err != nil {
-		glog.Errorf("Failed to parse the ValidatingAdmissionPolicyBinding %s paramRef: %v", v.GetName(), err)
+		klog.Errorf("Failed to parse the ValidatingAdmissionPolicyBinding %s paramRef: %v", v.GetName(), err)
 
 		return binding
 	}

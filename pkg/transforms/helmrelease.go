@@ -15,11 +15,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/helm/pkg/proto/hapi/release"
+	"k8s.io/klog/v2"
 )
 
 type HelmReleaseResource struct {
@@ -77,7 +77,7 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 	smr := []SummarizedManifestResource{}
 
 	if h.Release == nil {
-		glog.V(2).Infof("Cannot retrieve manifest from nil Helm Release %s", h.GetLabels()["NAME"])
+		klog.V(2).Infof("Cannot retrieve manifest from nil Helm Release %s", h.GetLabels()["NAME"])
 		return smr // Can't have any resources without the Release
 	}
 
@@ -100,11 +100,11 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 		// We unmarshal the struct
 		err := yaml.Unmarshal([]byte(resource), &tmpsmr)
 		if err != nil {
-			glog.Errorf("Unmarshalling Helm Release %s failed: %v", h.GetLabels()["NAME"], err)
+			klog.Errorf("Unmarshalling Helm Release %s failed: %v", h.GetLabels()["NAME"], err)
 		} else if tmpsmr.Kind != "" && tmpsmr.Metadata.Name != "" { // ... and if both resource kind and name defined...
 			smr = append(smr, tmpsmr) // ... prep `KIND` and `NAME` for BuildEdges
 		} else { // this shouldn't happen
-			glog.Warningf("kind or name not found for resource in Helm Release %s", h.GetLabels()["NAME"])
+			klog.Warningf("kind or name not found for resource in Helm Release %s", h.GetLabels()["NAME"])
 		}
 	}
 
@@ -160,11 +160,11 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 					})
 				}
 			} else {
-				glog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found",
+				klog.V(2).Infof("%s/%s edge ownedBy Helm Release not created: Helm Release %s not found",
 					kind, name, h.GetLabels()["NAME"])
 			}
 		} else {
-			glog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s",
+			klog.V(2).Infof("edge ownedBy Helm Release %s not created: Resource %s/%s not found in namespace %s",
 				h.GetLabels()["NAME"], kind, name, namespace)
 		}
 	}

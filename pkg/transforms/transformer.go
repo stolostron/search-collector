@@ -16,7 +16,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/golang/glog"
 	ocpapp "github.com/openshift/api/apps/v1"
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 	klusterletaddon "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
@@ -28,6 +27,7 @@ import (
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 	acmapp "open-cluster-management.io/multicloud-operators-channel/pkg/apis/apps/v1"
 	appHelmRelease "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/helmrelease/v1"
 	subscription "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
@@ -157,10 +157,10 @@ var (
 )
 
 func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutines int) Transformer {
-	glog.Info("Transformer started")
+	klog.Info("Transformer started")
 	nr := numRoutines
 	if numRoutines < 1 {
-		glog.Warning(numRoutines, "is an invalid number of routines for Transformer. Using 1 instead.")
+		klog.Warning(numRoutines, "is an invalid number of routines for Transformer. Using 1 instead.")
 		nr = 1
 	}
 
@@ -180,7 +180,7 @@ func NewTransformer(inputChan chan *Event, outputChan chan NodeEvent, numRoutine
 // because it was already taken out by the previous run.
 func TransformRoutine(input chan *Event, output chan NodeEvent) {
 	defer handleRoutineExit(input, output)
-	glog.Info("Starting transformer routine")
+	klog.Info("Starting transformer routine")
 
 	for {
 		var trans Transform
@@ -449,8 +449,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 func handleRoutineExit(input chan *Event, output chan NodeEvent) {
 	// Recover and check the value. If we are here because of a panic, something will be in it.
 	if r := recover(); r != nil { // Case where we got here from a panic
-		glog.Errorf("Error in transformer routine: %v\n", r)
-		glog.Error(string(debug.Stack()))
+		klog.Errorf("Error in transformer routine: %v\n", r)
+		klog.Error(string(debug.Stack()))
 
 		// Start up a new routine with the same channels as the old one. The bad input will be gone since the
 		// old routine (the one that just crashed) took it out of the channel.

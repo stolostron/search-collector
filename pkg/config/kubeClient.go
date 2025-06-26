@@ -6,12 +6,12 @@ package config
 import (
 	"sync"
 
-	"github.com/golang/glog"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
 )
 
 var mutex sync.Mutex
@@ -26,7 +26,7 @@ func GetDynamicClient() dynamic.Interface {
 	}
 	newDynamicClient, err := dynamic.NewForConfig(GetKubeConfig())
 	if err != nil {
-		glog.Fatal("Cannot Construct Dynamic Client ", err)
+		klog.Fatal("Cannot Construct Dynamic Client ", err)
 	}
 	dynamicClient = newDynamicClient
 
@@ -38,15 +38,15 @@ func GetKubeConfig() *rest.Config {
 	var clientConfigError error
 
 	if Cfg.KubeConfig != "" {
-		glog.Infof("Creating k8s client using KubeConfig at: %s", Cfg.KubeConfig)
+		klog.Infof("Creating k8s client using KubeConfig at: %s", Cfg.KubeConfig)
 		clientConfig, clientConfigError = clientcmd.BuildConfigFromFlags("", Cfg.KubeConfig)
 	} else {
-		glog.V(2).Info("Creating k8s client using InClusterClientConfig()")
+		klog.V(2).Info("Creating k8s client using InClusterClientConfig()")
 		clientConfig, clientConfigError = rest.InClusterConfig()
 	}
 
 	if clientConfigError != nil {
-		glog.Fatal("Error getting Kube Config: ", clientConfigError)
+		klog.Fatal("Error getting Kube Config: ", clientConfigError)
 	}
 
 	return clientConfig
@@ -56,7 +56,7 @@ func GetKubeConfig() *rest.Config {
 func GetDiscoveryClient() *discovery.DiscoveryClient {
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(GetKubeConfig())
 	if err != nil {
-		glog.Fatal("Cannot Construct Discovery Client From Config: ", err)
+		klog.Fatal("Cannot Construct Discovery Client From Config: ", err)
 	}
 	return discoveryClient
 }
@@ -67,10 +67,10 @@ func GetKubeClient(config *rest.Config) *kubernetes.Clientset {
 	if config != nil {
 		kubeClient, err = kubernetes.NewForConfig(config)
 		if err != nil {
-			glog.Fatal("Cannot Construct Kube Client from Config: ", err)
+			klog.Fatal("Cannot Construct Kube Client from Config: ", err)
 		}
 	} else {
-		glog.Error("Cannot Construct Kube Client as input Config is nil")
+		klog.Error("Cannot Construct Kube Client as input Config is nil")
 	}
 	return kubeClient
 }

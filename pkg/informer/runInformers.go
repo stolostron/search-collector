@@ -12,7 +12,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
 	rec "github.com/stolostron/search-collector/pkg/reconciler"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
@@ -22,6 +21,7 @@ import (
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog/v2"
 )
 
 var crdGVR = schema.GroupVersionResource{
@@ -327,7 +327,7 @@ func isCRDEstablished(crd *unstructured.Unstructured) bool {
 func getCRDInformer(
 	ctx context.Context, gvrToColumns *gvrToPrinterColumns, syncInformersQueue *workqueue.Type,
 ) (dynamicinformer.DynamicSharedInformerFactory, error) {
-	glog.Info("Starting the CRD informer")
+	klog.Info("Starting the CRD informer")
 
 	dynSharedInformer := dynamicinformer.NewDynamicSharedInformerFactory(config.GetDynamicClient(), 0)
 
@@ -351,7 +351,7 @@ func getCRDInformer(
 
 			err := gvrToColumns.set(objTyped)
 			if err != nil {
-				glog.Errorf(
+				klog.Errorf(
 					"Failed to parse the additionalPrinterColumns from the CRD (%s): %v", objTyped.GetName(), err,
 				)
 			}
@@ -372,7 +372,7 @@ func getCRDInformer(
 
 			err := gvrToColumns.set(newObjTyped)
 			if err != nil {
-				glog.Errorf(
+				klog.Errorf(
 					"Failed to parse the additionalPrinterColumns from the CRD (%s): %v", newObjTyped.GetName(), err,
 				)
 			}
@@ -395,7 +395,7 @@ func getCRDInformer(
 
 			err := gvrToColumns.unset(objTyped)
 			if err != nil {
-				glog.Errorf(
+				klog.Errorf(
 					"Failed to parse the additionalPrinterColumns from the CRD (%s): %v", objTyped.GetName(), err,
 				)
 			}
@@ -409,7 +409,7 @@ func getCRDInformer(
 
 	dynSharedInformer.Start(ctx.Done())
 
-	glog.Info("Waiting for the CRD informer to sync")
+	klog.Info("Waiting for the CRD informer to sync")
 
 	// Waiting for the CRD informer to sync means that the event handlers have all run for the results from the initial
 	// listing of all CRDs. This allows deduplicating the list requests to a single item in the queue.
@@ -424,7 +424,7 @@ func getCRDInformer(
 		syncInformersQueue.Done(item)
 	}
 
-	glog.Info("The CRD informer has started")
+	klog.Info("The CRD informer has started")
 
 	return dynSharedInformer, nil
 }
@@ -520,7 +520,7 @@ func RunInformers(
 			// The parent context canceled, so all the informers's child contexts will also be canceled, so no
 			// explicit clean up is needed. Ideally, this would wait for all the informers to have fully stopped before
 			// returning, but that state is not available here.
-			glog.Info("Waiting for the CRD informer to shutdown")
+			klog.Info("Waiting for the CRD informer to shutdown")
 
 			// The informer is already shutting down since the parent context was canceled, but this call to Shutdown
 			// blocks until all of its goroutines have stopped.
@@ -562,11 +562,11 @@ func syncInformers(
 	createInformerUpdateHandler func(schema.GroupVersionResource) func(interface{}, interface{}),
 	informerDeleteHandler func(obj interface{}),
 ) {
-	glog.V(2).Infof("Synchronizing informers. Informers running: %d", len(stoppers))
+	klog.V(2).Infof("Synchronizing informers. Informers running: %d", len(stoppers))
 
 	gvrList, err := SupportedResources(client)
 	if err != nil {
-		glog.Error("Failed to get complete list of supported resources: ", err)
+		klog.Error("Failed to get complete list of supported resources: ", err)
 	}
 
 	// Sometimes a partial list will be returned even if there is an error.
@@ -581,7 +581,7 @@ func syncInformers(
 				delete(gvrList, gvr)
 				continue
 			} else { // if it's in the old and NOT in the new, stop the informer
-				glog.V(2).Infof("Stopping informer: %s", gvr.String())
+				klog.V(2).Infof("Stopping informer: %s", gvr.String())
 				stopper()
 				delete(stoppers, gvr)
 			}
@@ -589,7 +589,7 @@ func syncInformers(
 		// Now, loop through the new list, which after the above deletions, contains only stuff that needs to
 		// have a new informer created for it.
 		for gvr := range gvrList {
-			glog.V(2).Infof("Starting informer: %s", gvr.String())
+			klog.V(2).Infof("Starting informer: %s", gvr.String())
 			// Using our custom informer.
 			informer, _ := InformerForResource(gvr)
 
@@ -605,6 +605,6 @@ func syncInformers(
 			// spike in memory when the collector starts.
 			informer.WaitUntilInitialized(time.Duration(10) * time.Second) // Times out after 10 seconds.
 		}
-		glog.V(2).Info("Done synchronizing informers. Informers running: ", len(stoppers))
+		klog.V(2).Info("Done synchronizing informers. Informers running: ", len(stoppers))
 	}
 }

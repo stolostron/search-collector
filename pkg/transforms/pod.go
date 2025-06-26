@@ -14,18 +14,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 )
 
 // PodResource ...
 type PodResource struct {
 	node Node
-	Spec v1.PodSpec
+	Spec corev1.PodSpec
 }
 
 // PodResourceBuilder ...
-func PodResourceBuilder(p *v1.Pod) *PodResource {
+func PodResourceBuilder(p *corev1.Pod) *PodResource {
 	// Loop over spec to get the container and image names
 	var containers []string
 	var images []string
@@ -202,7 +202,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 				})
 			}
 		} else {
-			glog.V(2).Infof("Pod %s runsOn edge not created: Node %s not found",
+			klog.V(2).Infof("Pod %s runsOn edge not created: Node %s not found",
 				p.node.Properties["namespace"].(string)+"/"+p.node.Properties["name"].(string), "_NONE/"+nodeName)
 		}
 	}

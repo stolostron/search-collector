@@ -4,13 +4,13 @@ import (
 	"context"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -27,14 +27,14 @@ func GetAllowDenyData(cm *v1.ConfigMap) ([]Resource, []Resource, error, error) {
 	var allow []Resource
 	allowerr := yaml.Unmarshal([]byte(cm.Data["AllowedResources"]), &allow)
 	if allowerr != nil {
-		glog.Errorf(`Error while parsing allowed resources from ConfigMap. 
+		klog.Errorf(`Error while parsing allowed resources from ConfigMap. 
 		Can't use configured value, defaulting to allow all resources. %v`, allowerr)
 	}
 
 	var deny []Resource
 	denyerr := yaml.Unmarshal([]byte(cm.Data["DeniedResources"]), &deny)
 	if denyerr != nil {
-		glog.Errorf(`Error while parsing allowed resources from ConfigMap. 
+		klog.Errorf(`Error while parsing allowed resources from ConfigMap. 
 		Can't use configured value, defaulting to deny all resources. %v`, denyerr)
 	}
 
@@ -50,7 +50,7 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// Deny all apiResources with kind in list
 	for _, name := range list {
 		if kind == name {
-			glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
+			klog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Search collector doesn't support it.", group, kind)
 			return false
 		}
 	}
@@ -62,9 +62,9 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 		// Check if resource is also in the allow list.
 		_, _, allowed := isResourceMatchingList(allowedList, group, kind)
 		if allowed {
-			glog.V(3).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
+			klog.V(3).Infof("Deny Resource [group: '%s' kind: %s]. Resource present in both allow and deny rule.", group, kind)
 		} else {
-			glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].", group, kind, g, k)
+			klog.V(3).Infof("Deny resource [group: '%s' kind: %s]. Matched rule [group: '%s' kind: %s].", group, kind, g, k)
 		}
 		return false
 	}
@@ -72,16 +72,16 @@ func isResourceAllowed(group, kind string, allowedList []Resource, deniedList []
 	// If allowList not provided, interpret it as allow all resources.
 	// otherwise allow only the resources declared in allow list.
 	if len(allowedList) == 0 {
-		glog.V(3).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
+		klog.V(3).Infof("Allow resource [group: '%s' kind: %s]. AllowList is empty.", group, kind)
 		return true
 	} else {
 		g, k, allowed := isResourceMatchingList(allowedList, group, kind)
 		if allowed {
-			glog.V(3).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].", group, kind, g, k)
+			klog.V(3).Infof("Allow resource [group: '%s' kind: %s]. Matched [group: '%s' kind: %s].", group, kind, g, k)
 			return true
 		}
 	}
-	glog.V(3).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
+	klog.V(3).Infof("Deny resource [group: '%s' kind: %s]. It doesn't match any allow or deny rule.", group, kind)
 	return false
 }
 
@@ -110,7 +110,7 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 	if err != nil && apiResources == nil {                          // only return if the list is empty
 		return nil, err
 	} else if err != nil {
-		glog.Warning("ServerPreferredResources could not list all available resources: ", err)
+		klog.Warning("ServerPreferredResources could not list all available resources: ", err)
 	}
 
 	// create client to get configmap
@@ -120,7 +120,7 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 	cm, cmErr := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
 		Get(ctx, "search-collector-config", metav1.GetOptions{})
 	if cmErr != nil {
-		glog.Info("Collecting all resources. ConfigMap search-collector-config is not present.", cmErr)
+		klog.Info("Collecting all resources. ConfigMap search-collector-config is not present.", cmErr)
 	}
 
 	// parse alloy/deny from config
