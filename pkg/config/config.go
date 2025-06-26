@@ -18,10 +18,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/tkanos/gonfig"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
 )
 
 // Out of box defaults
@@ -66,17 +66,17 @@ var Cfg = Config{}
 var FilePath = flag.String("c", "./config.json", "Collector configuration file") // ./config.json is the default
 
 func InitConfig() {
-	glog.Info("Loading config from environment.")
+	klog.Info("Loading config from environment.")
 	// Load default config from ./config.json.
 	// These can be overridden in the next step if environment variables are set.
 	if _, err := os.Stat(filepath.Join(".", "config.json")); !os.IsNotExist(err) {
 		err = gonfig.GetConf(*FilePath, &Cfg)
 		if err != nil {
-			fmt.Println("Error reading config file:", err) // Uses fmt.Println in case something is wrong with glog
+			fmt.Println("Error reading config file:", err) // Uses fmt.Println in case something is wrong with klog
 		}
-		glog.Info("Successfully read from config file: ", *FilePath)
+		klog.Info("Successfully read from config file: ", *FilePath)
 	} else {
-		glog.Warning("Missing config file: ./config.json.")
+		klog.Warning("Missing config file: ./config.json.")
 	}
 
 	// If environment variables are set, use those values instead of ./config.json
@@ -111,49 +111,49 @@ func InitConfig() {
 	setDefault(&Cfg.KubeConfig, "KUBECONFIG", defaultKubePath)
 
 	if collectAnnotations := os.Getenv("COLLECT_ANNOTATIONS"); collectAnnotations != "" {
-		glog.Infof("Using COLLECT_ANNOTATIONS from environment: %s", collectAnnotations)
+		klog.Infof("Using COLLECT_ANNOTATIONS from environment: %s", collectAnnotations)
 
 		var err error
 		Cfg.CollectAnnotations, err = strconv.ParseBool(collectAnnotations)
 		if err != nil {
-			glog.Errorf("Error parsing env COLLECT_ANNOTATIONS, defaulting to false: %v", err)
+			klog.Errorf("Error parsing env COLLECT_ANNOTATIONS, defaulting to false: %v", err)
 		}
 	}
 
 	// Special logic for setting DEPLOYED_IN_HUB with default to false
 	if val := os.Getenv("DEPLOYED_IN_HUB"); val != "" {
-		glog.Infof("Using DEPLOYED_IN_HUB from environment: %s", val)
+		klog.Infof("Using DEPLOYED_IN_HUB from environment: %s", val)
 		var err error
 		Cfg.DeployedInHub, err = strconv.ParseBool(val)
 		if err != nil {
-			glog.Error("Error parsing env DEPLOYED_IN_HUB.  Expected a bool.  Original error: ", err)
-			glog.Info("Leaving flag unchanged, assuming it is a Klusterlet")
+			klog.Error("Error parsing env DEPLOYED_IN_HUB.  Expected a bool.  Original error: ", err)
+			klog.Info("Leaving flag unchanged, assuming it is a Klusterlet")
 		}
 	} else if !Cfg.DeployedInHub {
-		glog.Info("No DEPLOY_IN_HUB from file or environment, assuming it is a Klusterlet")
+		klog.Info("No DEPLOY_IN_HUB from file or environment, assuming it is a Klusterlet")
 	}
 	setDefault(&Cfg.AggregatorConfigFile, "HUB_CONFIG", "")
 
 	if collectCRDPrinterCols := os.Getenv("COLLECT_CRD_PRINTER_COLUMNS"); collectCRDPrinterCols != "" {
-		glog.Infof("Using COLLECT_CRD_PRINTER_COLUMNS from environment: %s", collectCRDPrinterCols)
+		klog.Infof("Using COLLECT_CRD_PRINTER_COLUMNS from environment: %s", collectCRDPrinterCols)
 
 		var err error
 		Cfg.CollectCRDPrinterColumns, err = strconv.ParseBool(collectCRDPrinterCols)
 		if err != nil {
-			glog.Errorf("Error parsing env COLLECT_CRD_PRINTER_COLUMNS, defaulting to false: %v", err)
+			klog.Errorf("Error parsing env COLLECT_CRD_PRINTER_COLUMNS, defaulting to false: %v", err)
 		}
 	}
 
 	if Cfg.DeployedInHub && Cfg.AggregatorConfigFile != "" {
-		glog.Fatal("Config mismatch: DEPLOYED_IN_HUB is true, but HUB_CONFIG is set to connect to another hub")
+		klog.Fatal("Config mismatch: DEPLOYED_IN_HUB is true, but HUB_CONFIG is set to connect to another hub")
 	} else if !Cfg.DeployedInHub && Cfg.AggregatorConfigFile == "" {
-		glog.Fatal("Config mismatch: DEPLOYED_IN_HUB is false, but no HUB_CONFIG is set to connect to another hub")
+		klog.Fatal("Config mismatch: DEPLOYED_IN_HUB is false, but no HUB_CONFIG is set to connect to another hub")
 	}
 
 	if Cfg.AggregatorConfigFile != "" {
 		hubConfig, err := clientcmd.BuildConfigFromFlags("", Cfg.AggregatorConfigFile)
 		if err != nil {
-			glog.Error("Error building K8s client from config file [", Cfg.AggregatorConfigFile, "]. Original error: ",
+			klog.Error("Error building K8s client from config file [", Cfg.AggregatorConfigFile, "]. Original error: ",
 				err)
 		}
 
@@ -161,7 +161,7 @@ func InitConfig() {
 			Cfg.ClusterName + "/clusterstatuses"
 		Cfg.AggregatorConfig = hubConfig
 
-		glog.Info("Running inside klusterlet. Aggregator URL: ", Cfg.AggregatorURL)
+		klog.Info("Running inside klusterlet. Aggregator URL: ", Cfg.AggregatorURL)
 	}
 
 	// setting configs for metrics server
@@ -173,24 +173,24 @@ func InitConfig() {
 // If no config or env set to the default value
 func setDefault(field *string, env, defaultVal string) {
 	if val := os.Getenv(env); val != "" {
-		glog.Infof("Using %s from environment: %s", env, val)
+		klog.Infof("Using %s from environment: %s", env, val)
 		*field = val
 	} else if *field == "" && defaultVal != "" {
-		glog.Infof("No %s from file or environment, using default value: %s", env, defaultVal)
+		klog.Infof("No %s from file or environment, using default value: %s", env, defaultVal)
 		*field = defaultVal
 	}
 }
 
 func setDefaultInt(field *int, env string, defaultVal int) {
 	if val := os.Getenv(env); val != "" {
-		glog.Infof("Using %s from environment: %s", env, val)
+		klog.Infof("Using %s from environment: %s", env, val)
 		var err error
 		*field, err = strconv.Atoi(val)
 		if err != nil {
-			glog.Error("Error parsing env [", env, "].  Expected an integer.  Original error: ", err)
+			klog.Error("Error parsing env [", env, "].  Expected an integer.  Original error: ", err)
 		}
 	} else if *field == 0 && defaultVal != 0 {
-		glog.Infof("No %s from file or environment, using default value: %d", env, defaultVal)
+		klog.Infof("No %s from file or environment, using default value: %d", env, defaultVal)
 		*field = defaultVal
 	}
 }

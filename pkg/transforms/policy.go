@@ -15,10 +15,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/golang/glog"
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/klog/v2"
 )
 
 // PolicyResource ...
@@ -39,7 +39,7 @@ func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
 	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
 	node.Properties["disabled"] = p.Spec.Disabled
 	node.Properties["numRules"] = len(p.Spec.PolicyTemplates)
-	// For the root policy (on hub, in non cluster ns), it doesn’t have an overall status. it has status per cluster.
+	// For the root policy (on hub, in non cluster ns), it doesn't have an overall status. it has status per cluster.
 	// On managed cluster, compliance is reported by status.compliant
 	if p.Status.ComplianceState != "" {
 		node.Properties["compliant"] = string(p.Status.ComplianceState)
@@ -331,7 +331,7 @@ func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
 	if len(missingResources) > 0 {
 		missingString, err := json.Marshal(missingResources)
 		if err != nil {
-			glog.Error("Failed to marshal a missing resource", err)
+			klog.Error("Failed to marshal a missing resource", err)
 		} else {
 			p.node.Properties["_missingResources"] = string(missingString)
 		}
@@ -342,7 +342,7 @@ func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
 	if len(nonCompliantResources) > 0 {
 		nonCompString, err := json.Marshal(nonCompliantResources)
 		if err != nil {
-			glog.Error("Failed to marshal a non compliant resource", err)
+			klog.Error("Failed to marshal a non compliant resource", err)
 		} else {
 			p.node.Properties["_nonCompliantResources"] = string(nonCompString)
 		}

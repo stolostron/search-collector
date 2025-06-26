@@ -24,7 +24,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
+
 	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stolostron/search-collector/pkg/reconciler"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
@@ -160,13 +161,13 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 
 		// If indexer was busy, wait and retry with the same payload.
 		if sendError != nil && sendError.Error() == "Aggregator busy" {
-			glog.Warningf("Received busy response from Indexer. Resending in %s.", nextRetryWait)
+			klog.Warningf("Received busy response from Indexer. Resending in %s.", nextRetryWait)
 			time.Sleep(nextRetryWait)
 			continue
 		}
 		// For other errors, wait, reload the config, and re-send the full state payload.
 		if sendError != nil {
-			glog.Warningf("Received error response [%s] from Indexer. Resetting config and resending in %s.",
+			klog.Warningf("Received error response [%s] from Indexer. Resetting config and resending in %s.",
 				sendError.Error(), nextRetryWait)
 			time.Sleep(nextRetryWait)
 			config.InitConfig() // re-initialize config to get the latest certificate.
@@ -180,7 +181,7 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it
 // doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
 func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
-	glog.Infof("Sending Resources { add: %2d, update: %2d, delete: %2d, edge add: %2d, edge delete: %2d }",
+	klog.Infof("Sending Resources { add: %2d, update: %2d, delete: %2d, edge add: %2d, edge delete: %2d }",
 		len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources),
 		len(payload.AddEdges), len(payload.DeleteEdges))
 
@@ -204,7 +205,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		glog.Error("httpClient error: ", err)
+		klog.Error("httpClient error: ", err)
 		return err
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
@@ -221,7 +222,7 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	r := SyncResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
-		glog.Error("Error decoding JSON response.")
+		klog.Error("Error decoding JSON response.")
 		return err
 	}
 
@@ -246,11 +247,11 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 // Attempts to send a diff, then just sends the complete if the aggregator appears to need that.
 func (s *Sender) Sync() error {
 	if s.lastSentTime == -1 { // If we have never sent before, we just send the complete.
-		glog.Info("First time sending or last Sync cycle failed, sending complete payload")
+		klog.Info("First time sending or last Sync cycle failed, sending complete payload")
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
 		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
-			glog.Error("Sync sender error. ", err)
+			klog.Error("Sync sender error. ", err)
 			return err
 		}
 
@@ -263,21 +264,21 @@ func (s *Sender) Sync() error {
 	if payload.empty() {
 		// check if a ping is necessary
 		if time.Now().Unix()-s.lastSentTime < int64(config.Cfg.HeartbeatMS/1000) {
-			glog.V(3).Info("Nothing to send, skipping send cycle.")
+			klog.V(3).Info("Nothing to send, skipping send cycle.")
 			return nil
 		}
-		glog.V(2).Info("Sending empty payload for heartbeat.")
+		klog.V(2).Info("Sending empty payload for heartbeat.")
 	}
 	err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 	if err != nil {
 		// If something went wrong here, form a new complete payload (only necessary because
 		// currentState may have changed since we got it, and we have to keep our diffs synced)
-		glog.Warning("Error on diff payload sending: ", err)
+		klog.Warning("Error on diff payload sending: ", err)
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
-		glog.Warning("Retrying with complete payload")
+		klog.Warning("Retrying with complete payload")
 		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
-			glog.Error("Error resending complete payload.")
+			klog.Error("Error resending complete payload.")
 			// If this retry fails, we want to start over with a complete payload next time,
 			// so we reset as if we've not sent anything before.
 			s.lastSentTime = -1
@@ -304,23 +305,23 @@ func (s *Sender) StartSendLoop(ctx context.Context) {
 		default:
 		}
 
-		glog.V(3).Info("Beginning Send Cycle")
+		klog.V(3).Info("Beginning Send Cycle")
 		err := s.Sync()
 		if err != nil {
-			glog.Error("SEND ERROR: ", err)
+			klog.Error("SEND ERROR: ", err)
 			// Increase the backoffFactor, doubling the wait time. Stops increasing after it passes the max
 			// wait time so that we don't overflow int. Can be changed with env:MAX_BACKOFF_MS
 			if sendInterval(backoffFactor) < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
 				backoffFactor++
 			}
 		} else {
-			glog.V(2).Info("Send Cycle Completed Successfully")
+			klog.V(2).Info("Send Cycle Completed Successfully")
 			backoffFactor = 1 // Reset backoff to 1 because we had a sucessful send.
 		}
 
 		nextSendWait := sendInterval(backoffFactor)
 		if backoffFactor > 1 {
-			glog.Warningf("Error during last sync. Resending in %s.", nextSendWait)
+			klog.Warningf("Error during last sync. Resending in %s.", nextSendWait)
 		}
 		// Sleep either for the current backed off interval, or the maximum time defined in the config
 		time.Sleep(nextSendWait)

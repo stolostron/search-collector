@@ -16,11 +16,12 @@ import (
 	"net/http"
 	"os"
 
+	"k8s.io/klog/v2"
+
 	"github.com/stolostron/search-collector/pkg/config"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured/unstructuredscheme"
-	"k8s.io/client-go/rest"
 
-	"github.com/golang/glog"
+	"k8s.io/client-go/rest"
 )
 
 func getHTTPSClient() (client http.Client) {
@@ -31,7 +32,7 @@ func getHTTPSClient() (client http.Client) {
 		aggregatorRESTClient, err := rest.UnversionedRESTClientFor(config.Cfg.AggregatorConfig)
 		if err != nil {
 			// Exit because this is an unrecoverable configuration problem.
-			glog.Fatal("Error getting httpClient from kubeconfig. Original error: ", err)
+			klog.Fatal("Error getting httpClient from kubeconfig. Original error: ", err)
 		}
 		client = *(aggregatorRESTClient.Client)
 		return client
@@ -52,7 +53,7 @@ func getHTTPSClient() (client http.Client) {
 		caCert, err := os.ReadFile("./sslcert/tls.crt")
 		cert, err2 := tls.LoadX509KeyPair("./sslcert/tls.crt", "./sslcert/tls.key")
 		if err != nil || err2 != nil {
-			glog.Error("WARNING: Using insecure TLS connection. Couldn't load certs ", err, err2)
+			klog.Error("WARNING: Using insecure TLS connection. Couldn't load certs ", err, err2)
 			tlsCfg.InsecureSkipVerify = true
 		} else {
 			caCertPool := x509.NewCertPool()

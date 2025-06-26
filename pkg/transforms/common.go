@@ -16,7 +16,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/config"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,7 +133,7 @@ func addReleaseOwnerUID(node Node, ns NodeStore) {
 	if releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][ownerNamespace][ownerName]; ok {
 		node.Metadata["OwnerUID"] = releaseNode.UID
 	} else {
-		glog.V(3).Infof("HelmRelease node not found for namespace: %s name: %s", ownerNamespace, ownerName)
+		klog.V(3).Infof("HelmRelease node not found for namespace: %s name: %s", ownerNamespace, ownerName)
 	}
 }
 
@@ -324,7 +323,7 @@ func edgesByOwner(destUID string, ns NodeStore, nodeInfo NodeInfo, seenDests []s
 				}
 			}
 		} else {
-			glog.V(4).Infof("For %s, %s, %s edge not created: ownerUID %s not found",
+			klog.V(4).Infof("For %s, %s, %s edge not created: ownerUID %s not found",
 				nodeInfo.Kind, nodeInfo.NameSpace+"/"+nodeInfo.Name, nodeInfo.EdgeType, destUID)
 		}
 	}
@@ -361,7 +360,7 @@ func edgesByDestinationName(
 				} else if len(destKindInfo) == 1 {
 					name = destKindInfo[0]
 				} else {
-					glog.V(4).Infof("For %s, %s edge not created as %s is not in namespace/name format",
+					klog.V(4).Infof("For %s, %s edge not created as %s is not in namespace/name format",
 						nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind+"/"+name)
 					continue
 				}
@@ -406,7 +405,7 @@ func edgesByDestinationName(
 					}
 				}
 			} else {
-				glog.V(4).Infof("For %s, %s edge not created as %s named %s not found",
+				klog.V(4).Infof("For %s, %s edge not created as %s named %s not found",
 					nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name,
 					nodeInfo.EdgeType, destKind, nodeInfo.NameSpace+"/"+name)
 			}
@@ -469,11 +468,11 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 					}
 				}
 			} else {
-				glog.V(4).Infof("For %s, %s edge not created as %s named %s not found",
+				klog.V(4).Infof("For %s, %s edge not created as %s named %s not found",
 					nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destKind, namespace+"/"+name)
 			}
 		} else {
-			glog.V(4).Infof("For %s, %s edge not created as %s is not in namespace/name format",
+			klog.V(4).Infof("For %s, %s edge not created as %s is not in namespace/name format",
 				nodeInfo.NameSpace+"/"+nodeInfo.Kind+"/"+nodeInfo.Name, nodeInfo.EdgeType, destNsName)
 		}
 		return depSubedges

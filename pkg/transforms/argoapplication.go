@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 )
 
 // ArgoApplicationResource ...
@@ -149,7 +149,7 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 
 func TruncateText(text string, width int) string {
 	if width < 0 {
-		glog.Warningf("text truncation width is less than zero, width: %v", width)
+		klog.Warningf("text truncation width is less than zero, width: %v", width)
 
 		return ""
 	}
@@ -205,12 +205,12 @@ func (a ArgoApplicationResource) BuildEdges(ns NodeStore) []Edge {
 
 	// add missing application resource as a property
 	if len(missingResc) != 0 {
-		glog.V(5).Infof("ArgoApplication [%s] has %d missing resources:\n%+v",
+		klog.V(5).Infof("ArgoApplication [%s] has %d missing resources:\n%+v",
 			a.node.Properties["name"], len(missingResc), missingResc)
 		rescb, err := json.Marshal(missingResc)
 
 		if err != nil {
-			glog.Error("ArgoApplication transform failed to marshal missingResc", err)
+			klog.Error("ArgoApplication transform failed to marshal missingResc", err)
 		} else {
 			a.node.Properties["_missingResources"] = string(rescb)
 		}

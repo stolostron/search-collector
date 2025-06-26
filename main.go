@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -19,8 +18,8 @@ import (
 	rec "github.com/stolostron/search-collector/pkg/reconciler"
 	"github.com/stolostron/search-collector/pkg/server"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
+	"k8s.io/klog/v2"
 
-	"github.com/golang/glog"
 	"github.com/stolostron/search-collector/pkg/send"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -51,24 +50,19 @@ func getMainContext() context.Context {
 }
 
 func main() {
-	// init logs
+	// Initialize the logger.
+	klog.InitFlags(nil)
 	flag.Parse()
-	// Glog by default logs to a file. Change it so that by default it all goes to stderr. (no option for stdout).
-	err := flag.Lookup("logtostderr").Value.Set("true")
-	if err != nil {
-		fmt.Println("Error setting default flag:", err) // Uses fmt.Println in case something is wrong with glog args
-		os.Exit(1)
-	}
-	defer glog.Flush() // This should ensure that everything makes it out on to the console if the program crashes.
+	defer klog.Flush()
+	klog.Info("Starting search-collector")
 
 	// determine number of CPUs available.
 	// We make that many goroutines for transformation and reconciliation,
 	// so that we take maximum advantage of whatever hardware we're on
 	numThreads := runtime.NumCPU()
 
-	glog.Info("Starting Search Collector")
 	if commit, ok := os.LookupEnv("VCS_REF"); ok {
-		glog.Info("Built from git commit: ", commit)
+		klog.Info("Built from git commit: ", commit)
 	}
 
 	config.InitConfig()
@@ -81,7 +75,7 @@ func main() {
 			ClusterName:          config.Cfg.ClusterName,
 			LeaseDurationSeconds: int32(LeaseDurationSeconds),
 		}
-		glog.Info("Create/Update lease for search")
+		klog.Info("Create/Update lease for search")
 		go wait.Forever(leaseReconciler.Reconcile, time.Duration(leaseReconciler.LeaseDurationSeconds)*time.Second)
 	}
 
@@ -112,7 +106,7 @@ func main() {
 	go func() {
 		err := informer.RunInformers(mainCtx, informersInitialized, upsertTransformer, reconciler)
 		if err != nil {
-			glog.Errorf("Failed to run the informers: %v", err)
+			klog.Errorf("Failed to run the informers: %v", err)
 
 			os.Exit(1)
 		}
@@ -123,10 +117,10 @@ func main() {
 	// Wait here until informers have collected the full state of the cluster.
 	// The initial payload must have the complete state to avoid unecessary deletion
 	// and recreate of existing rows in the database during the resync.
-	glog.Info("Waiting for informers to load initial state.")
+	klog.Info("Waiting for informers to load initial state.")
 	<-informersInitialized
 
-	glog.Info("Starting the sender.")
+	klog.Info("Starting the sender.")
 	wg.Add(1)
 
 	go func() {

@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stolostron/search-collector/pkg/config"
@@ -29,6 +28,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/helm/pkg/proto/hapi/release"
+	"k8s.io/klog/v2"
 )
 
 type NodeEdge struct {
@@ -465,9 +465,9 @@ func TestReconcilerComplete(t *testing.T) {
 	const Nodes = 55
 	const Edges = 61
 	if len(com.Edges) != Edges || com.TotalEdges != Edges || len(com.Nodes) != Nodes || com.TotalNodes != Nodes {
-		glog.Infof("len edges: %d", len(com.Edges))
+		klog.Infof("len edges: %d", len(com.Edges))
 		for _, edge := range com.Edges {
-			glog.Info("Src: ", ns.ByUID[edge.SourceUID].Properties["kind"], " Type: ", edge.EdgeType, " Dest: ", ns.ByUID[edge.DestUID].Properties["kind"])
+			klog.Info("Src: ", ns.ByUID[edge.SourceUID].Properties["kind"], " Type: ", edge.EdgeType, " Dest: ", ns.ByUID[edge.DestUID].Properties["kind"])
 		}
 
 		t.Log("Expected "+strconv.Itoa(Nodes)+" nodes, but found ", len(com.Nodes))
