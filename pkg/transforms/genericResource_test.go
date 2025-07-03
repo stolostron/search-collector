@@ -33,7 +33,7 @@ func Test_genericResourceFromConfig(t *testing.T) {
 	assert.True(t, ok)
 
 	// Ensure last-applied-configuration and other large annotations are not present
-	expectedAnnotationKeys := sets.New[string](
+	expectedAnnotationKeys := sets.New(
 		"capabilities", "categories", "certified", "createdAt", "olm.operatorGroup",
 		"olm.operatorNamespace", "olm.targetNamespaces", "operatorframework.io/suggested-namespace",
 		"operators.openshift.io/infrastructure-features", "operators.operatorframework.io/internal-objects", "support",
