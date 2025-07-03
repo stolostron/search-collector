@@ -1,13 +1,23 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "gomod": {
+        "enabled": false
+    },
     "packageRules": [
         {
+            "matchManagers": [
+                "gomod"
+            ],
             "enabled": true,
             "groupName": "go.mod packages",
             "matchBaseBranches": ["main", "release-2.15"],
             "matchPackageNames": ["*", "*/**"]
         }
     ],
+    "vulnerabilityAlerts": {
+        "enabled": true
+    },
+    "osvVulnerabilityAlerts": true,
     "schedule": "before 8am on Tuesday",
     "timezone": "America/New_York"
 }

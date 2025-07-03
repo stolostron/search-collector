@@ -26,7 +26,7 @@ import (
 
 // Out of box defaults
 const (
-	COLLECTOR_API_VERSION      = "2.14.0"
+	COLLECTOR_API_VERSION      = "2.15.0"
 	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010" // this will be deprecated in the future
 	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
 	DEFAULT_AGGREGATOR_PORT    = "3010"
