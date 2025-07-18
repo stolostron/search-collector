@@ -11,21 +11,18 @@ Copyright (c) 2020 Red Hat, Inc.
 package send
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"math"
 	"math/big"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"k8s.io/klog/v2"
 
+	"github.com/segmentio/kafka-go"
 	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stolostron/search-collector/pkg/reconciler"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
@@ -154,8 +151,13 @@ func (s *Sender) completePayload() (Payload, int, int) {
 //   - Aggregator busy
 func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
 	retry := 0
+	producer := kafka.NewWriter(kafka.WriterConfig{
+		Brokers:  []string{"kafka-kafka-bootstrap.amq-streams.svc:9092"},
+		Topic:    "resource-events",
+		Balancer: &kafka.LeastBytes{},
+	})
 	for {
-		sendError := s.send(payload, expectedTotalResources, expectedTotalEdges)
+		sendError := s.send(payload, producer, expectedTotalResources, expectedTotalEdges)
 		retry++
 		nextRetryWait := sendInterval(retry)
 
@@ -177,71 +179,122 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 	}
 }
 
+type KafkaEvent struct {
+	Type    string      `json:"type"` // addResource, updateResource, deleteEdge, etc.
+	Cluster string      `json:"cluster"`
+	Payload interface{} `json:"payload"` // Node, Edge
+}
+
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it
 // doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
-func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
-	klog.Infof("Sending Resources { add: %2d, update: %2d, delete: %2d, edge add: %2d, edge delete: %2d }",
-		len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources),
-		len(payload.AddEdges), len(payload.DeleteEdges))
+func (s *Sender) send(payload Payload, producer *kafka.Writer, expectedTotalResources int, expectedTotalEdges int) error {
+	ctx := context.Background()
+	klog.Infof("Writing resource messages to kafka")
 
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	payloadBuffer := bytes.NewBuffer(payloadBytes)
-
-	req, err := http.NewRequest("POST", s.aggregatorURL+s.aggregatorSyncPath, payloadBuffer)
-	if err != nil {
-		return err
+	var messages []kafka.Message
+	headers := make([]kafka.Header, 0)
+	if payload.ClearAll {
+		headers = append(headers, kafka.Header{Key: "ClearAll", Value: []byte("True")})
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Overwrite-State", strconv.FormatBool(payload.ClearAll))
-
-	resp, err := s.httpClient.Do(req)
-	if resp != nil && resp.Body != nil {
-		// #nosec G307
-		defer resp.Body.Close()
-	}
-	if err != nil {
-		klog.Error("httpClient error: ", err)
-		return err
-	}
-	if resp.StatusCode == http.StatusTooManyRequests {
-		return errors.New("Aggregator busy")
-	} else if resp.StatusCode != http.StatusOK {
-		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
-			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
-		if resp.StatusCode == http.StatusUnauthorized {
-			msg = "401 Unauthorized"
+	if payload.ClearAll {
+		klog.Infof("Start of send FULL-CLUSTER-STATE")
+		ke := KafkaEvent{
+			Type:    "CLEAR-ALL-START",
+			Cluster: config.Cfg.ClusterName,
+			Payload: nil,
 		}
-		return errors.New(msg)
+		data, _ := json.Marshal(ke)
+		messages = append(messages, kafka.Message{
+			Key:     []byte(ke.Type),
+			Headers: headers,
+			Value:   data,
+		})
 	}
 
-	r := SyncResponse{}
-	err = json.NewDecoder(resp.Body).Decode(&r)
-	if err != nil {
-		klog.Error("Error decoding JSON response.")
-		return err
+	for _, r := range payload.AddResources {
+		ke := KafkaEvent{
+			Type:    "addResource",
+			Cluster: config.Cfg.ClusterName,
+			Payload: r,
+		}
+		data, _ := json.Marshal(ke)
+		messages = append(messages, kafka.Message{
+			Key:     []byte(ke.Type),
+			Headers: headers,
+			Value:   data,
+		})
 	}
 
-	// Compare size that comes back in r to size that we track, accounting for the errors reported by the aggregator.
-	if r.TotalResources != (expectedTotalResources + len(r.DeleteErrors) - len(r.AddErrors)) {
-		msg := fmt.Sprintf("Aggregator reported wrong number of total resources. Expected %d, got %d",
-			expectedTotalResources, r.TotalResources)
-		return errors.New(msg)
+	//for _, r := range payload.UpdatedResources {
+	//	msg := KafkaEvent{
+	//		Type:    "updateResource",
+	//		Cluster: config.Cfg.ClusterName,
+	//		Payload: r,
+	//	}
+	//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
+	//		return err
+	//	}
+	//}
+
+	//for _, r := range payload.DeletedResources {
+	//	msg := KafkaEvent{
+	//		Type:    "deleteResource",
+	//		Cluster: config.Cfg.ClusterName,
+	//		Payload: r,
+	//	}
+	//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
+	//		return err
+	//	}
+	//}
+
+	for _, e := range payload.AddEdges {
+		ke := KafkaEvent{
+			Type:    "addEdge",
+			Cluster: config.Cfg.ClusterName,
+			Payload: e,
+		}
+		data, _ := json.Marshal(ke)
+		messages = append(messages, kafka.Message{
+			Key:     []byte(ke.Type),
+			Headers: headers,
+			Value:   data,
+		})
 	}
 
-	if r.TotalEdges != (expectedTotalEdges + len(r.DeleteEdgeErrors) - len(r.AddEdgeErrors)) {
-		msg := fmt.Sprintf("Aggregator reported wrong number of total intra edges. Expected %d, got %d",
-			expectedTotalEdges, r.TotalEdges)
-		return errors.New(msg)
+	//for _, e := range payload.DeleteEdges {
+	//	msg := KafkaEvent{
+	//		Type:    "deleteEdge",
+	//		Cluster: config.Cfg.ClusterName,
+	//		Payload: e,
+	//	}
+	//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
+	//		return err
+	//	}
+	//}
+
+	if payload.ClearAll {
+		klog.Infof("End of send FULL-CLUSTER-STATE")
+		ke := KafkaEvent{
+			Type:    "CLEAR-ALL-END",
+			Cluster: config.Cfg.ClusterName,
+			Payload: nil,
+		}
+		data, _ := json.Marshal(ke)
+		messages = append(messages, kafka.Message{
+			Key:     []byte(ke.Type),
+			Headers: headers,
+			Value:   data,
+		})
 	}
 
-	// Check the total
-	return nil
+	return producer.WriteMessages(ctx, messages...)
 }
+
+//func sendEvent(ctx context.Context, producer *kafka.Writer, messages []kafka.Message, headers []kafka.Header) error {
+//	return producer.WriteMessages(ctx, messages...)
+//}
 
 // Sends data to the aggregator.
 // Attempts to send a diff, then just sends the complete if the aggregator appears to need that.
@@ -295,8 +348,6 @@ func (s *Sender) Sync() error {
 // Starts the send loop to send data on an interval.
 // In case of error it backoffs and retries.
 func (s *Sender) StartSendLoop(ctx context.Context) {
-	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
-	backoffFactor := 1 // Note: must be 1. Using 0 will send the next payload immediately.
 
 	for {
 		select {
@@ -306,25 +357,25 @@ func (s *Sender) StartSendLoop(ctx context.Context) {
 		}
 
 		klog.V(3).Info("Beginning Send Cycle")
-		err := s.Sync()
-		if err != nil {
-			klog.Error("SEND ERROR: ", err)
-			// Increase the backoffFactor, doubling the wait time. Stops increasing after it passes the max
-			// wait time so that we don't overflow int. Can be changed with env:MAX_BACKOFF_MS
-			if sendInterval(backoffFactor) < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
-				backoffFactor++
-			}
-		} else {
-			klog.V(2).Info("Send Cycle Completed Successfully")
-			backoffFactor = 1 // Reset backoff to 1 because we had a sucessful send.
-		}
-
-		nextSendWait := sendInterval(backoffFactor)
-		if backoffFactor > 1 {
-			klog.Warningf("Error during last sync. Resending in %s.", nextSendWait)
-		}
-		// Sleep either for the current backed off interval, or the maximum time defined in the config
-		time.Sleep(nextSendWait)
+		_ = s.Sync()
+		//if err != nil {
+		//	klog.Error("SEND ERROR: ", err)
+		//	// Increase the backoffFactor, doubling the wait time. Stops increasing after it passes the max
+		//	// wait time so that we don't overflow int. Can be changed with env:MAX_BACKOFF_MS
+		//	if sendInterval(backoffFactor) < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
+		//		backoffFactor++
+		//	}
+		//} else {
+		//	klog.V(2).Info("Send Cycle Completed Successfully")
+		//	backoffFactor = 1 // Reset backoff to 1 because we had a sucessful send.
+		//}
+		//
+		//nextSendWait := sendInterval(backoffFactor)
+		//if backoffFactor > 1 {
+		//	klog.Warningf("Error during last sync. Resending in %s.", nextSendWait)
+		//}
+		//// Sleep either for the current backed off interval, or the maximum time defined in the config
+		//time.Sleep(nextSendWait)
 	}
 }
 
