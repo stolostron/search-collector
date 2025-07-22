@@ -17,7 +17,9 @@ import (
 	"math"
 	"math/big"
 	"net/http"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -191,6 +193,7 @@ type KafkaEvent struct {
 func (s *Sender) send(payload Payload, producer *kafka.Writer, expectedTotalResources int, expectedTotalEdges int) error {
 	ctx := context.Background()
 	klog.Infof("Writing resource messages to kafka")
+	klog.Infof("Start of send FULL-CLUSTER-STATE")
 
 	var messages []kafka.Message
 	headers := make([]kafka.Header, 0)
@@ -198,98 +201,205 @@ func (s *Sender) send(payload Payload, producer *kafka.Writer, expectedTotalReso
 		headers = append(headers, kafka.Header{Key: "ClearAll", Value: []byte("True")})
 	}
 
-	if payload.ClearAll {
-		klog.Infof("Start of send FULL-CLUSTER-STATE")
-		ke := KafkaEvent{
-			Type:    "CLEAR-ALL-START",
-			Cluster: config.Cfg.ClusterName,
-			Payload: nil,
+	for c := 0; c < 100; c++ {
+		if payload.ClearAll {
+
+			ke := KafkaEvent{
+				Type:    "CLEAR-ALL-START",
+				Cluster: config.Cfg.ClusterName + strconv.Itoa(c),
+				Payload: nil,
+			}
+			data, _ := json.Marshal(ke)
+			messages = append(messages, kafka.Message{
+				Key:     []byte(ke.Type),
+				Headers: headers,
+				Value:   data,
+			})
 		}
-		data, _ := json.Marshal(ke)
-		messages = append(messages, kafka.Message{
-			Key:     []byte(ke.Type),
-			Headers: headers,
-			Value:   data,
-		})
-	}
+		for i := 0; i < 10; i++ { // The breaking combo of 100 clusters sending 10x the normal (~7000 resources) payload
 
-	for _, r := range payload.AddResources {
-		ke := KafkaEvent{
-			Type:    "addResource",
-			Cluster: config.Cfg.ClusterName,
-			Payload: r,
+			for _, r := range payload.AddResources {
+				r.UID = strings.Split(r.UID, "/")[0] + strconv.Itoa(c) + "/" + strings.Split(r.UID, "/")[1] + strconv.Itoa(i) // local-cluster/abcd -> local-cluster0/abcd0
+				ke := KafkaEvent{
+					Type:    "addResource",
+					Cluster: config.Cfg.ClusterName + strconv.Itoa(c),
+					Payload: r,
+				}
+				data, _ := json.Marshal(ke)
+				messages = append(messages, kafka.Message{
+					Key:     []byte(ke.Type),
+					Headers: headers,
+					Value:   data,
+				})
+			}
+
+			//for _, r := range payload.UpdatedResources {
+			//	msg := KafkaEvent{
+			//		Type:    "updateResource",
+			//		Cluster: config.Cfg.ClusterName,
+			//		Payload: r,
+			//	}
+			//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
+			//		return err
+			//	}
+			//}
+
+			//for _, r := range payload.DeletedResources {
+			//	msg := KafkaEvent{
+			//		Type:    "deleteResource",
+			//		Cluster: config.Cfg.ClusterName,
+			//		Payload: r,
+			//	}
+			//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
+			//		return err
+			//	}
+			//}
+
+			for _, e := range payload.AddEdges {
+				ke := KafkaEvent{
+					Type:    "addEdge",
+					Cluster: config.Cfg.ClusterName + strconv.Itoa(c),
+					Payload: e,
+				}
+				data, _ := json.Marshal(ke)
+				messages = append(messages, kafka.Message{
+					Key:     []byte(ke.Type),
+					Headers: headers,
+					Value:   data,
+				})
+			}
+
+			//for _, e := range payload.DeleteEdges {
+			//	msg := KafkaEvent{
+			//		Type:    "deleteEdge",
+			//		Cluster: config.Cfg.ClusterName,
+			//		Payload: e,
+			//	}
+			//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
+			//		return err
+			//	}
+			//}
+
+			if payload.ClearAll {
+
+				ke := KafkaEvent{
+					Type:    "CLEAR-ALL-END",
+					Cluster: config.Cfg.ClusterName + strconv.Itoa(c),
+					Payload: nil,
+				}
+				data, _ := json.Marshal(ke)
+				messages = append(messages, kafka.Message{
+					Key:     []byte(ke.Type),
+					Headers: headers,
+					Value:   data,
+				})
+			}
 		}
-		data, _ := json.Marshal(ke)
-		messages = append(messages, kafka.Message{
-			Key:     []byte(ke.Type),
-			Headers: headers,
-			Value:   data,
-		})
 	}
-
-	//for _, r := range payload.UpdatedResources {
-	//	msg := KafkaEvent{
-	//		Type:    "updateResource",
-	//		Cluster: config.Cfg.ClusterName,
-	//		Payload: r,
-	//	}
-	//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
-	//		return err
-	//	}
-	//}
-
-	//for _, r := range payload.DeletedResources {
-	//	msg := KafkaEvent{
-	//		Type:    "deleteResource",
-	//		Cluster: config.Cfg.ClusterName,
-	//		Payload: r,
-	//	}
-	//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
-	//		return err
-	//	}
-	//}
-
-	for _, e := range payload.AddEdges {
-		ke := KafkaEvent{
-			Type:    "addEdge",
-			Cluster: config.Cfg.ClusterName,
-			Payload: e,
-		}
-		data, _ := json.Marshal(ke)
-		messages = append(messages, kafka.Message{
-			Key:     []byte(ke.Type),
-			Headers: headers,
-			Value:   data,
-		})
-	}
-
-	//for _, e := range payload.DeleteEdges {
-	//	msg := KafkaEvent{
-	//		Type:    "deleteEdge",
-	//		Cluster: config.Cfg.ClusterName,
-	//		Payload: e,
-	//	}
-	//	if err := sendEvent(ctx, producer, msg, headers); err != nil {
-	//		return err
-	//	}
-	//}
-
-	if payload.ClearAll {
-		klog.Infof("End of send FULL-CLUSTER-STATE")
-		ke := KafkaEvent{
-			Type:    "CLEAR-ALL-END",
-			Cluster: config.Cfg.ClusterName,
-			Payload: nil,
-		}
-		data, _ := json.Marshal(ke)
-		messages = append(messages, kafka.Message{
-			Key:     []byte(ke.Type),
-			Headers: headers,
-			Value:   data,
-		})
-	}
+	klog.Infof("End of send FULL-CLUSTER-STATE")
 
 	return producer.WriteMessages(ctx, messages...)
+}
+
+const numWorkers = 5
+
+// appears not faster in testing over a single goroutine utilizing batching
+func (s *Sender) sendConcurrent(payload Payload, producer *kafka.Writer) error {
+	ctx := context.Background()
+	klog.Infof("Writing resources concurrently to kafka")
+	klog.Infof("%d addresources and %d addedges", len(payload.AddResources), len(payload.AddEdges))
+
+	headers := make([]kafka.Header, 0)
+	if payload.ClearAll {
+		headers = append(headers, kafka.Header{Key: "ClearAll", Value: []byte("True")})
+	}
+
+	// Write CLEAR-ALL-START
+	if payload.ClearAll {
+		klog.Infof("Start of send FULL-CLUSTER-STATE")
+		startMsg := kafka.Message{
+			Key:     []byte("CLEAR-ALL-START"),
+			Headers: headers,
+			Value:   mustJSON(KafkaEvent{Type: "CLEAR-ALL-START", Cluster: config.Cfg.ClusterName}),
+		}
+		if err := producer.WriteMessages(ctx, startMsg); err != nil {
+			return err
+		}
+	}
+
+	// Set up a shared channel for messages
+	msgCh := make(chan kafka.Message, 1000)
+
+	// Start workers
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		go func() {
+			defer wg.Done()
+			var batch []kafka.Message
+			const batchSize = 200 // Tune
+			for msg := range msgCh {
+				batch = append(batch, msg)
+				if len(batch) >= batchSize {
+					if err := producer.WriteMessages(ctx, batch...); err != nil {
+						klog.Errorf("Failed to write Kafka batch: %v", err)
+					}
+					batch = batch[:0]
+				}
+			}
+			// flush any remaining
+			if len(batch) > 0 {
+				if err := producer.WriteMessages(ctx, batch...); err != nil {
+					klog.Errorf("Failed to write final Kafka batch: %v", err)
+				}
+			}
+		}()
+	}
+
+	// Feed resources into the channel
+	for _, r := range payload.AddResources {
+		event := KafkaEvent{Type: "addResource", Cluster: config.Cfg.ClusterName, Payload: r}
+		msgCh <- kafka.Message{
+			Key:     []byte("addResource"),
+			Headers: headers,
+			Value:   mustJSON(event),
+		}
+	}
+
+	for _, e := range payload.AddEdges {
+		event := KafkaEvent{Type: "addEdge", Cluster: config.Cfg.ClusterName, Payload: e}
+		msgCh <- kafka.Message{
+			Key:     []byte("addEdge"),
+			Headers: headers,
+			Value:   mustJSON(event),
+		}
+	}
+
+	close(msgCh)
+	wg.Wait()
+
+	// Write CLEAR-ALL-END
+	if payload.ClearAll {
+		klog.Infof("End of send FULL-CLUSTER-STATE")
+		endMsg := kafka.Message{
+			Key:     []byte("CLEAR-ALL-END"),
+			Headers: headers,
+			Value:   mustJSON(KafkaEvent{Type: "CLEAR-ALL-END", Cluster: config.Cfg.ClusterName}),
+		}
+		if err := producer.WriteMessages(ctx, endMsg); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func mustJSON(v any) []byte {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return data
 }
 
 //func sendEvent(ctx context.Context, producer *kafka.Writer, messages []kafka.Message, headers []kafka.Header) error {
