@@ -14,17 +14,35 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestTransformPersistentVolumeClaim(t *testing.T) {
 	var p v1.PersistentVolumeClaim
 	UnmarshalFile("persistentvolumeclaim.json", &p, t)
-	node := PersistentVolumeClaimResourceBuilder(&p).BuildNode()
+	node := PersistentVolumeClaimResourceBuilder(&p, newUnstructuredPersistentVolumeClaim()).BuildNode()
 
 	// Test only the fields that exist in node - the common test will test the other bits
 	AssertEqual("volumeName", node.Properties["volumeName"], "test-pv", t)
+	AssertEqual("volumeMode", node.Properties["volumeMode"], "Filesystem", t)
 	AssertEqual("status", node.Properties["status"], "Bound", t)
 	AssertEqual("storageClassName", node.Properties["storageClassName"], "test-storage", t)
 	AssertEqual("capacity", node.Properties["capacity"], "5Gi", t)
+	AssertEqual("requestedStorage", node.Properties["requestedStorage"], int64(5368709120), t) // 5Gi
 	AssertDeepEqual("accessMode", node.Properties["accessMode"], []string{"ReadWriteOnce"}, t)
+}
+
+func newUnstructuredPersistentVolumeClaim() *unstructured.Unstructured {
+	return &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "PersistentVolumeClaim",
+		"spec": map[string]interface{}{
+			"volumeMode": "Filesystem",
+			"resources": map[string]interface{}{
+				"requests": map[string]interface{}{
+					"storage": "5Gi",
+				},
+			},
+		},
+	}}
 }

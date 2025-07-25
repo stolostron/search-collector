@@ -310,7 +310,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = NodeResourceBuilder(&typedResource, event.Resource, event.AdditionalPrinterColumns...)
+			trans = NodeResourceBuilder(&typedResource, event.Resource)
 
 		case [2]string{"PersistentVolume", ""}:
 			typedResource := core.PersistentVolume{}
@@ -328,7 +328,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PersistentVolumeClaimResourceBuilder(&typedResource)
+			trans = PersistentVolumeClaimResourceBuilder(&typedResource, event.Resource)
 
 		case [2]string{"PlacementBinding", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := policy.PlacementBinding{}
