@@ -107,7 +107,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
-			{Name: "description", JSONPath: `{.metadata.annotations.description}`},
+			{Name: "_description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
