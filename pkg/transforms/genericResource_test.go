@@ -97,6 +97,13 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 
 	// Verify properties defined in the transform config
 	AssertEqual("agentConnected", node.Properties["agentConnected"], "True", t)
+	AssertDeepEqual("conditions", node.Properties["conditions"], map[string]string{
+		"AgentConnected":   "True",
+		"DataVolumesReady": "True",
+		"Initialized":      "True",
+		"LiveMigratable":   "False",
+		"Ready":            "True",
+	}, t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi * 1024 * 1024 * 1024

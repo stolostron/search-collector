@@ -7,6 +7,8 @@ type ExtractProperty struct {
 	DataType DataType // `json:"dataType,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
+	// A property to denote that we should gather status conditions on this resource
+	StatusConditions bool
 }
 
 type DataType string
@@ -100,6 +102,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	"VirtualMachine.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
+			{Name: "conditions", JSONPath: `{.status.conditions}`, StatusConditions: true},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
@@ -126,7 +129,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "_conditionReadyReason", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
-			{Name: "phase",  JSONPath: `{.status.phase}`},
+			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "indications", JSONPath: `{.status.indications}`}, // this is an array of strings - will collect array items separated by ;
 			{Name: "sourceKind", JSONPath: `{.spec.source.kind}`},
 			{Name: "sourceName", JSONPath: `{.spec.source.name}`},

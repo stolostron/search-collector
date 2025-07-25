@@ -710,6 +710,25 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					)
 				}
 				node.Properties[prop.Name] = mem
+			} else if prop.StatusConditions {
+				conditionsMap := make(map[string]string, 0)
+
+				conditions, ok := val.([]interface{})
+				if !ok {
+					klog.V(1).Infof("Unable to extract prop [%s] from [%s.%s] Name: [%s] since it's not []interface: %v",
+						prop.Name, kind, group, r.GetName(), val)
+					continue
+				}
+				for _, cond := range conditions {
+					condMap, ok := cond.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					condType, _ := condMap["type"].(string)
+					status, _ := condMap["status"].(string)
+					conditionsMap[condType] = status
+				}
+				node.Properties[prop.Name] = conditionsMap
 			} else {
 				node.Properties[prop.Name] = val
 			}
