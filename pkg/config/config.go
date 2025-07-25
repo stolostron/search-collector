@@ -49,6 +49,7 @@ type Config struct {
 	AggregatorPort           string       `env:"AGGREGATOR_PORT"`             // Port of the Aggregator
 	CollectAnnotations       bool         `env:"COLLECT_ANNOTATIONS"`         // Collect all annotations with values <=64 characters
 	CollectCRDPrinterColumns bool         `env:"COLLECT_CRD_PRINTER_COLUMNS"` // Enable collecting additional printer columns in the CRD
+	CollectStatusConditions  bool         `env:"COLLECT_STATUS_CONDITIONS"`   // Collect all status condition types and values if present
 	ClusterName              string       `env:"CLUSTER_NAME"`                // The name of of the cluster where this pod is running
 	DeployedInHub            bool         `env:"DEPLOYED_IN_HUB"`             // Tracks if deployed in the Hub or Managed cluster
 	HeartbeatMS              int          `env:"HEARTBEAT_MS"`                // Interval(ms) to send empty payload to ensure connection
@@ -117,6 +118,16 @@ func InitConfig() {
 		Cfg.CollectAnnotations, err = strconv.ParseBool(collectAnnotations)
 		if err != nil {
 			klog.Errorf("Error parsing env COLLECT_ANNOTATIONS, defaulting to false: %v", err)
+		}
+	}
+
+	if collectStatusConditions := os.Getenv("COLLECT_STATUS_CONDITIONS"); collectStatusConditions != "" {
+		klog.Infof("Using COLLECT_STATUS_CONDITIONS from environment: %s", collectStatusConditions)
+
+		var err error
+		Cfg.CollectStatusConditions, err = strconv.ParseBool(collectStatusConditions)
+		if err != nil {
+			klog.Errorf("Error parsing env COLLECT_STATUS_CONDITIONS, defaulting to false: %v", err)
 		}
 	}
 

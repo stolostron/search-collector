@@ -710,25 +710,6 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					)
 				}
 				node.Properties[prop.Name] = mem
-			} else if prop.StatusConditions {
-				conditionsMap := make(map[string]string, 0)
-
-				conditions, ok := val.([]interface{})
-				if !ok {
-					klog.V(1).Infof("Unable to extract prop [%s] from [%s.%s] Name: [%s] since it's not []interface: %v",
-						prop.Name, kind, group, r.GetName(), val)
-					continue
-				}
-				for _, cond := range conditions {
-					condMap, ok := cond.(map[string]interface{})
-					if !ok {
-						continue
-					}
-					condType, _ := condMap["type"].(string)
-					status, _ := condMap["status"].(string)
-					conditionsMap[condType] = status
-				}
-				node.Properties[prop.Name] = conditionsMap
 			} else {
 				node.Properties[prop.Name] = val
 			}
@@ -739,11 +720,60 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 		}
 	}
 
+	conditionsMap := commonStatusConditions(kind, group, r)
+	if len(conditionsMap) > 0 {
+		node.Properties["conditions"] = conditionsMap
+	}
+
 	if found {
 		klog.V(5).Infof("Built [%s.%s] using transform config.\nNode: %+v\n", kind, group, node)
 	}
 
 	return node
+}
+
+func commonStatusConditions(kind string, group string, r *unstructured.Unstructured) map[string]string {
+	conditionsMap := make(map[string]string, 0)
+	if !config.Cfg.CollectStatusConditions {
+		switch kind + "." + group {
+		case "VirtualMachine.kubevirt.io": // TODO: identify more resources to gather status conditions for
+		default:
+			return conditionsMap
+		}
+	}
+
+	jp := jsonpath.New("conditions")
+	parseErr := jp.Parse(`{.status.conditions}`)
+	if parseErr != nil {
+		klog.Errorf("Error parsing jsonpath [{.status.conditions}] for [%s.%s] prop: [conditions]. Reason: %v",
+			kind, group, parseErr)
+	}
+
+	result, err := jp.FindResults(r.Object)
+	if err != nil {
+		// This error isn't always indicative of a problem, for example, when the object is created, it
+		// won't have a status yet, so the jsonpath returns an error until controller adds the status.
+		klog.V(1).Infof("Unable to extract prop [conditions] from [%s.%s] Name: [%s]. Reason: %v",
+			kind, group, r.GetName(), err)
+	}
+	if len(result) > 0 && len(result[0]) > 0 {
+		val := result[0][0].Interface()
+		conditions, ok := val.([]interface{})
+		if !ok {
+			klog.V(1).Infof("Unable to extract prop [conditions] from [%s.%s] Name: [%s] since it's not []interface: %v",
+				kind, group, r.GetName(), val)
+		}
+		for _, cond := range conditions {
+			condMap, ok := cond.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			condType, _ := condMap["type"].(string)
+			status, _ := condMap["status"].(string)
+			conditionsMap[condType] = status
+		}
+	}
+	return conditionsMap
 }
 
 func memoryToBytes(memory string) (int64, error) {
