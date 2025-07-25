@@ -98,10 +98,12 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("agentConnected", node.Properties["agentConnected"], "True", t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
+	AssertEqual("description", node.Properties["description"], "some description", t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi * 1024 * 1024 * 1024
 	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("specRunStrategy", node.Properties["specRunStrategy"], nil, t)
 	AssertEqual("status", node.Properties["status"], "Running", t)
 	AssertEqual("workload", node.Properties["workload"], "server", t)
 	AssertEqual("_specRunning", node.Properties["_specRunning"], true, t)
@@ -120,14 +122,32 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-09-18T19:43:53Z", t)
 
 	// Verify properties defined in the transform config
+	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
+	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi * 1024 * 1024 * 1024
 	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
 	AssertEqual("osVersion", node.Properties["osVersion"], "7 (Core)", t)
 	AssertEqual("phase", node.Properties["phase"], "Running", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("vmSize", node.Properties["vmSize"], "small", t)
+}
 
+func Test_genericResourceFromConfigVMIM(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachineinstancemigration.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("created", node.Properties["created"], "2025-07-11T14:42:32Z", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineInstanceMigration", t)
+	AssertDeepEqual("label", node.Properties["label"], map[string]string{"kubevirt.io/vm1-name": "rhel-10-crimson-eagle-72"}, t)
+	AssertEqual("name", node.Properties["name"], "rhel-10-crimson-eagle-72-migration-j9h6b", t)
+	AssertEqual("namespace", node.Properties["namespace"], "ugo", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("endTimestamp", node.Properties["endTimestamp"], "2025-07-11T14:42:32Z", t)
+	AssertEqual("statusPhase", node.Properties["statusPhase"], "Scheduling", t)
 }
 
 func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {

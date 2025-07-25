@@ -30,7 +30,8 @@
             }
         },
         "storageClassName": "test-storage",
-        "volumeName": "test-pv"
+        "volumeName": "test-pv",
+        "volumeMode": "Filesystem"
     },
     "status": {
         "accessModes": [

@@ -1,0 +1,42 @@
+{
+  "apiVersion": "kubevirt.io/v1",
+  "kind": "VirtualMachineInstanceMigration",
+  "metadata": {
+    "creationTimestamp": "2025-07-11T14:42:32Z",
+    "resourceVersion": "5392720",
+    "generation": 1,
+    "name": "rhel-10-crimson-eagle-72-migration-j9h6b",
+    "namespace": "ugo",
+    "uid": "0d403109-153b-4ac4-8cf2-3398c13fe8ba",
+    "labels": {
+      "kubevirt.io/vm1-name": "rhel-10-crimson-eagle-72"
+    },
+    "annotations": {
+      "kubevirt.io/latest-observed-api-version": "v1",
+      "kubevirt.io/storage-observed-api-version": "v1"
+    },
+    "finalizers": [
+      "kubevirt.io/migrationJobFinalize"
+    ]
+  },
+  "spec": {
+    "vmiName": "rhel-10-crimson-eagle-72"
+  },
+  "status": {
+    "migrationState": {
+      "sourcePod": "virt-launcher-rhel-10-crimson-eagle-72-zkzmn",
+      "endTimestamp": "2025-07-11T14:42:32Z"
+    },
+    "phase": "Scheduling",
+    "phaseTransitionTimestamps": [
+      {
+        "phase": "Pending",
+        "phaseTransitionTime": "2025-07-11T14:42:32Z"
+      },
+      {
+        "phase": "Scheduling",
+        "phaseTransitionTime": "2025-07-11T14:42:32Z"
+      }
+    ]
+  }
+}

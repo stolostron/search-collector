@@ -199,10 +199,23 @@
                 "interfaceName": "eth0",
                 "ipAddress": "10.128.1.193",
                 "ipAddresses": [
-                    "10.128.1.193"
+                    "10.128.1.193",
+                    "fe80::60:ddff:fe00:4"
                 ],
                 "mac": "02:b8:ac:00:00:01",
                 "name": "default",
+                "queueCount": 1
+            },
+            {
+                "infoSource": "domain, guest-agent2",
+                "interfaceName": "eth0-2",
+                "ipAddress": "10.128.1.194",
+                "ipAddresses": [
+                    "10.128.1.194",
+                    "fe80::60:ddff:fe00:5"
+                ],
+                "mac": "02:b8:ac:00:00:01",
+                "name": "default2",
                 "queueCount": 1
             }
         ],

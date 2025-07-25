@@ -3,6 +3,7 @@
     "kind": "VirtualMachine",
     "metadata": {
         "annotations": {
+            "description": "some description",
             "kubemacpool.io/transaction-timestamp": "2024-04-30T16:22:02.151446447Z",
             "kubevirt.io/latest-observed-api-version": "v1",
             "kubevirt.io/storage-observed-api-version": "v1",
@@ -117,7 +118,21 @@
                     "memory": {
                         "guest": "2Gi"
                     },
-                    "resources": {}
+                    "resources": {},
+                    "volumes": [
+                        {
+                            "name": "rootdisk",
+                            "dataVolume": {
+                                "name": "rhel-8-amber-fish-51-volume"
+                            }
+                        },
+                        {
+                            "name": "cloudinitdisk",
+                            "cloudInitNoDisk": {
+                                "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: q9hy-mzra-3vk9\nuser: rhel"
+                            }
+                        }
+                    ]
                 },
                 "networks": [
                     {

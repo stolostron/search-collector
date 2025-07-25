@@ -74,6 +74,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "memoryCapacity", JSONPath: `{.status.capacity.memory}`, DataType: DataTypeBytes},
 		},
 	},
+	"PersistentVolumeClaim": {
+		properties: []ExtractProperty{
+			{Name: "requestedStorage", JSONPath: `{.spec.resources.requests.storage}`, DataType: DataTypeBytes},
+			{Name: "volumeMode", JSONPath: `{.spec.volumeMode}`},
+		},
+	},
 	"StorageClass.storage.k8s.io": {
 		properties: []ExtractProperty{
 			{Name: "allowVolumeExpansion", JSONPath: `{.allowVolumeExpansion}`},
@@ -101,10 +107,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
+			{Name: "description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "specRunStrategy", JSONPath: `{.spec.runStrategy}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},
 			{Name: "workload", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/workload}`},
 			{Name: "_specRunning", JSONPath: `{.spec.running}`},
@@ -113,8 +121,10 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"VirtualMachineInstance.kubevirt.io": {
 		properties: []ExtractProperty{
+			{Name: "cpu", JSONPath: `{.spec.domain.cpu.cores}`},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
+			{Name: "memory", JSONPath: `{.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "node", JSONPath: `{.status.nodeName}`},
 			{Name: "osVersion", JSONPath: `{.status.guestOSInfo.version}`},
 			{Name: "phase", JSONPath: `{.status.phase}`},
@@ -122,11 +132,17 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "vmSize", JSONPath: `{.metadata.labels.\kubevirt\.io/size}`},
 		},
 	},
+	"VirtualMachineInstanceMigration.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "statusPhase", JSONPath: `{.status.phase}`},
+			{Name: "endTimestamp", JSONPath: `{.status.migrationState.endTimestamp}`},
+		},
+	},
 	"VirtualMachineSnapshot.snapshot.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "_conditionReadyReason", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
-			{Name: "phase",  JSONPath: `{.status.phase}`},
+			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "indications", JSONPath: `{.status.indications}`}, // this is an array of strings - will collect array items separated by ;
 			{Name: "sourceKind", JSONPath: `{.spec.source.kind}`},
 			{Name: "sourceName", JSONPath: `{.spec.source.name}`},

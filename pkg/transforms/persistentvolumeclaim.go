@@ -12,6 +12,7 @@ package transforms
 
 import (
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // PersistentVolumeClaimResource ...
@@ -20,7 +21,8 @@ type PersistentVolumeClaimResource struct {
 }
 
 // PersistentVolumeClaimResourceBuilder ...
-func PersistentVolumeClaimResourceBuilder(p *v1.PersistentVolumeClaim) *PersistentVolumeClaimResource {
+func PersistentVolumeClaimResourceBuilder(p *v1.PersistentVolumeClaim, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *PersistentVolumeClaimResource {
 	node := transformCommon(p) // Start off with the common properties
 
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
@@ -48,6 +50,9 @@ func PersistentVolumeClaimResourceBuilder(p *v1.PersistentVolumeClaim) *Persiste
 			node.Properties["request"] = request.String()
 		}
 	}
+
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
+
 	return &PersistentVolumeClaimResource{node: node}
 }
 
