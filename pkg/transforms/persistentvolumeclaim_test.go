@@ -28,7 +28,7 @@ func TestTransformPersistentVolumeClaim(t *testing.T) {
 	AssertEqual("status", node.Properties["status"], "Bound", t)
 	AssertEqual("storageClassName", node.Properties["storageClassName"], "test-storage", t)
 	AssertEqual("capacity", node.Properties["capacity"], "5Gi", t)
-	AssertEqual("requestedStorage", node.Properties["requestedStorage"], int64(5368709120), t) // 5 * 1024 * 1024 * 1024
+	AssertEqual("requestedStorage", node.Properties["requestedStorage"], int64(5368709120), t) // 5Gi
 	AssertDeepEqual("accessMode", node.Properties["accessMode"], []string{"ReadWriteOnce"}, t)
 }
 
