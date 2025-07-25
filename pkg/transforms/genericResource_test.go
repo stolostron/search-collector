@@ -146,7 +146,7 @@ func Test_genericResourceFromConfigVMIM(t *testing.T) {
 	AssertEqual("namespace", node.Properties["namespace"], "ugo", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("endTimestamp", node.Properties["endTimestamp"], "2025-07-11T14:42:32Z", t)
+	AssertEqual("endTime", node.Properties["endTime"], "2025-07-11T14:42:32Z", t)
 	AssertEqual("statusPhase", node.Properties["statusPhase"], "Scheduling", t)
 }
 

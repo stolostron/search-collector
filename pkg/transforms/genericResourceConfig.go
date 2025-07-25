@@ -135,7 +135,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	"VirtualMachineInstanceMigration.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "statusPhase", JSONPath: `{.status.phase}`},
-			{Name: "endTimestamp", JSONPath: `{.status.migrationState.endTimestamp}`},
+			{Name: "endTime", JSONPath: `{.status.migrationState.endTimestamp}`},
 		},
 	},
 	"VirtualMachineSnapshot.snapshot.kubevirt.io": {
