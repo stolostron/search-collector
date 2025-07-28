@@ -15,6 +15,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog/v2"
 )
 
@@ -25,7 +26,7 @@ type PodResource struct {
 }
 
 // PodResourceBuilder ...
-func PodResourceBuilder(p *corev1.Pod) *PodResource {
+func PodResourceBuilder(p *corev1.Pod, r *unstructured.Unstructured) *PodResource {
 	// Loop over spec to get the container and image names
 	var containers []string
 	var images []string
@@ -123,6 +124,8 @@ func PodResourceBuilder(p *corev1.Pod) *PodResource {
 	if p.Status.StartTime != nil {
 		node.Properties["startedAt"] = p.Status.StartTime.UTC().Format(time.RFC3339)
 	}
+
+	node = applyDefaultTransformConfig(node, r)
 
 	return &PodResource{node: node, Spec: p.Spec}
 }

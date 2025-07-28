@@ -15,12 +15,13 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func TestTransformPod(t *testing.T) {
 	var p v1.Pod
 	UnmarshalFile("pod.json", &p, t)
-	node := PodResourceBuilder(&p).BuildNode()
+	node := PodResourceBuilder(&p, newUnstructuredPod()).BuildNode()
 
 	// Build time struct matching time in test data
 	date := time.Date(2019, 02, 21, 21, 30, 33, 0, time.UTC)
@@ -36,12 +37,19 @@ func TestTransformPod(t *testing.T) {
 	AssertEqual("startedAt", node.Properties["startedAt"], date.UTC().Format(time.RFC3339), t)
 	AssertEqual("status", node.Properties["status"], string(v1.PodRunning), t)
 	AssertEqual("_ownerUID", node.Properties["_ownerUID"], "local-cluster/eb762405-361f-11e9-85ca-00163e019656", t)
+	AssertDeepEqual("condition", node.Properties["condition"], map[string]string{
+		"ContainersReady":           "True",
+		"Initialized":               "True",
+		"PodReadyToStartContainers": "True",
+		"PodScheduled":              "True",
+		"Ready":                     "True",
+	}, t)
 }
 
 func TestTransformPodInitWaiting(t *testing.T) {
 	var p v1.Pod
 	UnmarshalFile("pod-init-waiting.json", &p, t)
-	node := PodResourceBuilder(&p).BuildNode()
+	node := PodResourceBuilder(&p, newUnstructuredPod()).BuildNode()
 
 	AssertEqual("podIP", node.Properties["podIP"], "2.2.2.3", t)
 	AssertEqual("restarts", node.Properties["restarts"], int64(2), t)
@@ -51,7 +59,7 @@ func TestTransformPodInitWaiting(t *testing.T) {
 func TestTransformPodInitFailed(t *testing.T) {
 	var p v1.Pod
 	UnmarshalFile("pod-init-failed.json", &p, t)
-	node := PodResourceBuilder(&p).BuildNode()
+	node := PodResourceBuilder(&p, newUnstructuredPod()).BuildNode()
 
 	// Test only status of pood with a completed init container
 	AssertEqual("status", node.Properties["status"], "Init:ExitCode:255", t)
@@ -84,7 +92,7 @@ func TestPodBuildEdges(t *testing.T) {
 	// Build edges from mock resource pod.json
 	var p v1.Pod
 	UnmarshalFile("pod.json", &p, t)
-	edges := PodResourceBuilder(&p).BuildEdges(nodeStore)
+	edges := PodResourceBuilder(&p, newUnstructuredPod()).BuildEdges(nodeStore)
 
 	// Verify created edges.
 	AssertEqual("Pod edge total: ", len(edges), 5, t)
@@ -93,4 +101,35 @@ func TestPodBuildEdges(t *testing.T) {
 	AssertEqual("Pod attachedTo", edges[2].DestKind, "PersistentVolumeClaim", t)
 	AssertEqual("Pod attachedTo", edges[3].DestKind, "PersistentVolume", t)
 	AssertEqual("Pod runsOn", edges[4].DestKind, "Node", t)
+}
+
+func newUnstructuredPod() *unstructured.Unstructured {
+	return &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "Pod",
+		"status": map[string]interface{}{
+			"conditions": []interface{}{
+				map[string]interface{}{
+					"type":   "Ready",
+					"status": "True",
+				},
+				map[string]interface{}{
+					"type":   "ContainersReady",
+					"status": "True",
+				},
+				map[string]interface{}{
+					"type":   "PodScheduled",
+					"status": "True",
+				},
+				map[string]interface{}{
+					"type":   "Initialized",
+					"status": "True",
+				},
+				map[string]interface{}{
+					"type":   "PodReadyToStartContainers",
+					"status": "True",
+				},
+			},
+		},
+	}}
 }

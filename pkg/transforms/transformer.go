@@ -355,7 +355,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = PodResourceBuilder(&typedResource)
+			trans = PodResourceBuilder(&typedResource, event.Resource)
 
 		case [2]string{"Policy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO},
 			[2]string{"Policy", "policies.open-cluster-management.io"}:

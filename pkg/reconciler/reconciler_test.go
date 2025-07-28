@@ -77,10 +77,10 @@ func createNodeEvents(resourceNameOne string, resourceNameTwo string) []tr.NodeE
 	p.Kind = "Pod"
 	p.Namespace = "default"
 	p.UID = "5678"
-	podNode := tr.PodResourceBuilder(&p).BuildNode()
+	podNode := tr.PodResourceBuilder(&p, &unstructured.Unstructured{}).BuildNode()
 	podNode.Metadata["OwnerUID"] = "local-cluster/1234"
 	podNode.ResourceString = resourceNameTwo
-	podEdges := tr.PodResourceBuilder(&p).BuildEdges
+	podEdges := tr.PodResourceBuilder(&p, &unstructured.Unstructured{}).BuildEdges
 
 	events.BuildNode = append(events.BuildNode, podNode)
 	events.BuildEdges = append(events.BuildEdges, podEdges)

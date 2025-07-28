@@ -631,6 +631,11 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	// Check if a transform config exists for this resource and extract the additional properties.
 	transformConfig, found := getTransformConfig(group, kind)
 
+	conditionsMap := commonStatusConditions(kind, group, r)
+	if len(conditionsMap) > 0 {
+		node.Properties["condition"] = conditionsMap
+	}
+
 	// Currently, only pull in the additionalPrinterColumns listed in the CRD if it's a Gatekeeper
 	// constraint or globally enabled.
 	if !found && (config.Cfg.CollectCRDPrinterColumns || group == "constraints.gatekeeper.sh") {
@@ -725,6 +730,55 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	}
 
 	return node
+}
+
+func commonStatusConditions(kind string, group string, r *unstructured.Unstructured) map[string]string {
+	conditionsMap := make(map[string]string, 0)
+	if group != "" {
+		group = "." + group
+	}
+	if !config.Cfg.CollectStatusConditions {
+		switch kind + group {
+		case "VirtualMachine.kubevirt.io", "Node", "Pod", "Search.search.open-cluster-management.io", "MultiClusterHub.operator.open-cluster-management.io":
+		default:
+			return conditionsMap
+		}
+	}
+
+	// FIXME: when on Go 1.24 get via https://pkg.go.dev/sigs.k8s.io/cluster-api@v1.10.4/api/v1beta1#Conditions to simplify
+
+	jp := jsonpath.New("conditions")
+	parseErr := jp.Parse(`{.status.conditions}`)
+	if parseErr != nil {
+		klog.Errorf("Error parsing jsonpath [{.status.conditions}] for [%s.%s] prop: [conditions]. Reason: %v",
+			kind, group, parseErr)
+	}
+
+	result, err := jp.FindResults(r.Object)
+	if err != nil {
+		// This error isn't always indicative of a problem, for example, when the object is created, it
+		// won't have a status yet, so the jsonpath returns an error until controller adds the status.
+		klog.V(4).Infof("Unable to extract prop [condition] from [%s.%s] Name: [%s]. Reason: %v",
+			kind, group, r.GetName(), err)
+	}
+	if len(result) > 0 && len(result[0]) > 0 {
+		val := result[0][0].Interface()
+		conditions, ok := val.([]interface{})
+		if !ok {
+			klog.V(1).Infof("Unable to extract prop [condition] from [%s.%s] Name: [%s] since it's not []interface: %v",
+				kind, group, r.GetName(), val)
+		}
+		for _, cond := range conditions {
+			condMap, ok := cond.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			condType, _ := condMap["type"].(string)
+			status, _ := condMap["status"].(string)
+			conditionsMap[condType] = status
+		}
+	}
+	return conditionsMap
 }
 
 func memoryToBytes(memory string) (int64, error) {
