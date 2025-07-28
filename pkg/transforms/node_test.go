@@ -32,6 +32,12 @@ func TestTransformNode(t *testing.T) {
 	AssertEqual("ipAddress", node.Properties["ipAddress"], "1.1.1.1", t)
 	AssertEqual("memoryCapacity", node.Properties["memoryCapacity"], int64(25281953792), t)       // 24689408Ki * 1024
 	AssertEqual("memoryAllocatable", node.Properties["memoryAllocatable"], int64(24103354368), t) // 23538432Ki * 1024
+	AssertDeepEqual("condition", node.Properties["condition"], map[string]string{
+		"DiskPressure":   "False",
+		"MemoryPressure": "False",
+		"PIDPressure":    "False",
+		"Ready":          "True",
+	}, t)
 }
 
 func TestNodeBuildEdges(t *testing.T) {
@@ -78,6 +84,24 @@ func newUnstructuredNode() *unstructured.Unstructured {
 				"hugepages-2Mi":     "0",
 				"memory":            "24689408Ki",
 				"pods":              "80",
+			},
+			"conditions": []interface{}{
+				map[string]interface{}{
+					"type":   "Ready",
+					"status": "True",
+				},
+				map[string]interface{}{
+					"type":   "DiskPressure",
+					"status": "False",
+				},
+				map[string]interface{}{
+					"type":   "MemoryPressure",
+					"status": "False",
+				},
+				map[string]interface{}{
+					"type":   "PIDPressure",
+					"status": "False",
+				},
 			},
 		},
 	}}
