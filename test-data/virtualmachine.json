@@ -127,9 +127,27 @@
                             }
                         },
                         {
+                            "name": "rootdisk-2",
+                            "dataVolume": {
+                                "name": "rhel-8-amber-fish-51-volume-2"
+                            }
+                        },
+                        {
                             "name": "cloudinitdisk",
                             "cloudInitNoDisk": {
                                 "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: q9hy-mzra-3vk9\nuser: rhel"
+                            }
+                        },
+                        {
+                            "name": "pvc-1",
+                            "persistentVolumeClaim": {
+                                "claimName": "the-claim-is-persistent"
+                            }
+                        },
+                        {
+                            "name": "pvc-2",
+                            "persistentVolumeClaim": {
+                                "claimName": "the-claim-is-too-persistent"
                             }
                         }
                     ]

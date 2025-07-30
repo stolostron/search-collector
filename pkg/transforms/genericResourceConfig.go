@@ -107,10 +107,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
+			{Name: "dataVolumeNames", JSONPath: `{.spec.template.spec.domain.volumes[*].dataVolume.name}`},
 			{Name: "_description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
+			{Name: "pvcClaimNames", JSONPath: `{.spec.template.spec.domain.volumes[*].persistentVolumeClaim.claimName}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "runStrategy", JSONPath: `{.spec.runStrategy}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},
@@ -136,6 +138,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "endTime", JSONPath: `{.status.migrationState.endTimestamp}`},
+			{Name: "vmiName", JSONPath: `{.spec.vmiName}`},
 		},
 	},
 	"VirtualMachineSnapshot.snapshot.kubevirt.io": {
