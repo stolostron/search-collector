@@ -105,10 +105,12 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 		"Ready":            "True",
 	}, t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
+	AssertDeepEqual("dataVolumeNames", node.Properties["dataVolumeNames"], []interface{}{"rhel-8-amber-fish-51-volume", "rhel-8-amber-fish-51-volume-2"}, t)
 	AssertEqual("_description", node.Properties["_description"], "some description", t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
 	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
+	AssertDeepEqual("pvcClaimNames", node.Properties["pvcClaimNames"], []interface{}{"the-claim-is-persistent", "the-claim-is-too-persistent"}, t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("runStrategy", node.Properties["runStrategy"], nil, t)
 	AssertEqual("status", node.Properties["status"], "Running", t)
@@ -155,6 +157,7 @@ func Test_genericResourceFromConfigVMIM(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("endTime", node.Properties["endTime"], "2025-07-11T14:42:32Z", t)
 	AssertEqual("phase", node.Properties["phase"], "Scheduling", t)
+	AssertEqual("vmiName", node.Properties["vmiName"], "rhel-10-crimson-eagle-72", t)
 }
 
 func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
