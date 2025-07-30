@@ -675,15 +675,13 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 
 		// TODO: generalize to handle other types of nested arrays, and what if its deeply nested?
 		if len(result) > 0 && len(result[0]) > 0 {
-			if kind == "VirtualMachine" && group == "kubevirt.io" {
-				if prop.Name == "dataVolumeNames" || prop.Name == "pvcClaimNames" {
-					var nestedSlice []interface{}
-					for _, v := range result[0] {
-						nestedSlice = append(nestedSlice, v.Interface())
-					}
-					node.Properties[prop.Name] = nestedSlice
-					continue
+			if kind == "VirtualMachine" && group == "kubevirt.io" && (prop.Name == "dataVolumeNames" || prop.Name == "pvcClaimNames") {
+				var nestedSlice []interface{}
+				for _, v := range result[0] {
+					nestedSlice = append(nestedSlice, v.Interface())
 				}
+				node.Properties[prop.Name] = nestedSlice
+				continue
 			}
 			val := result[0][0].Interface()
 
