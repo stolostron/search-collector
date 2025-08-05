@@ -11,9 +11,9 @@ type ExtractProperty struct {
 
 // Declares an edge to extract from a resource.
 type ExtractEdge struct {
-	EdgeType string // `json:"edgeType,omitempty"`
-	Kind     string // `json:"kind,omitempty"`
-	Name     string // `json:"name,omitempty"`
+	EdgeType EdgeType // `json:"edgeType,omitempty"`
+	Kind     string   // `json:"kind,omitempty"`
+	Name     string   // `json:"name,omitempty"`
 }
 
 type DataType string
@@ -127,7 +127,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
 		},
 		edges: []ExtractEdge{
-			{EdgeType: "runsOn", Kind: "Node", Name: "{.status.nodeName}"},
 			{EdgeType: "attachedTo", Kind: "PersistentVolumeClaim",
 				Name: "{.spec.template.spec.volumes[?(@.persistentVolumeClaim.claimName)].persistentVolumeClaim.claimName}"},
 			{EdgeType: "attachedTo", Kind: "DataVolume",

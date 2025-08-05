@@ -9,14 +9,15 @@ import (
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/util/jsonpath"
 	"k8s.io/klog/v2"
 )
 
 // GenericResource ...
 type GenericResource struct {
-	node Node
-	// edges        []Edge
+	node         Node
 	extractEdges []ExtractEdge
+	r            *unstructured.Unstructured // TODO: remove r from here
 }
 
 // Builds a GenericResource node.
@@ -31,9 +32,12 @@ func GenericResourceBuilder(r *unstructured.Unstructured, additionalColumns ...E
 
 	n = applyDefaultTransformConfig(n, r, additionalColumns...)
 
-	klog.Infof("Build edges from config for kind: %s, name: %s", r.GetKind(), r.GetName())
+	tc, ok := getTransformConfig(r.GroupVersionKind().Group, r.GetKind())
+	if !ok || len(tc.edges) == 0 {
+		return &GenericResource{node: n}
+	}
 
-	return &GenericResource{node: n, extractEdges: []ExtractEdge{}}
+	return &GenericResource{node: n, extractEdges: tc.edges, r: r} // TODO: remove r from here
 }
 
 // BuildNode construct the node for Generic Resources
@@ -44,7 +48,52 @@ func (r GenericResource) BuildNode() Node {
 
 // BuildEdges construct the edges for Generic Resources
 func (r GenericResource) BuildEdges(ns NodeStore) []Edge {
-	klog.Infof("Building edges for %s - %s", r.node.Properties["kind"], r.node.Properties["name"])
+	if len(r.extractEdges) > 0 {
+		klog.Infof("Building edges from config for kind: %s", r.node.Properties["kind"])
+		edges := []Edge{}
+		for _, edge := range r.extractEdges {
+
+			// Resolving the edge
+			jp := jsonpath.New("name")
+			parseErr := jp.Parse(edge.Name)
+			if parseErr != nil {
+				klog.Errorf("Error parsing edge.Name from jsonpath: %v", parseErr)
+				continue
+			}
+
+			result, err := jp.FindResults(r.r.Object)
+			if err != nil {
+				// This error isn't always indicative of a problem, for example, when the object is created, it
+				// won't have a status yet, so the jsonpath returns an error until controller adds the status.
+				klog.Errorf("Unable to extract edge.Name from jsonpath: %v", err)
+				continue
+			}
+
+			if len(result) > 0 && len(result[0]) > 0 {
+				val := result[0][0].Interface()
+
+				name := val.(string)
+				namespace := r.node.Properties["namespace"].(string)
+				sourceKind := r.node.Properties["kind"].(string)
+				destUID := ns.ByKindNamespaceName[edge.Kind][namespace][name].UID
+
+				if destUID == "" {
+					klog.Infof("No destination found for kind: %s, namespace:%s, name: %s", edge.Kind, namespace, name)
+					continue
+				}
+				edges = append(edges, Edge{
+					SourceUID:  r.node.UID,
+					SourceKind: sourceKind,
+					DestUID:    destUID,
+					DestKind:   edge.Kind,
+					EdgeType:   edge.EdgeType,
+				})
+			}
+		}
+		klog.Infof("Built edges from config. %+v", edges)
+		return edges
+	}
+
 	return []Edge{}
 }
 
