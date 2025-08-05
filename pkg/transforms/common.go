@@ -12,7 +12,6 @@ package transforms
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -201,7 +200,6 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 			case string:
 				n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][v]
 				if !ok {
-					fmt.Println("!ok")
 					return ret
 				}
 				ret = append(ret, Edge{
@@ -211,16 +209,10 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 					DestKind:   n.Properties["kind"].(string),
 					DestUID:    n.UID,
 				})
-			case []interface{}:
+			case []string:
 				for _, item := range v {
-					strItem, ok := item.(string)
+					n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][item]
 					if !ok {
-						fmt.Printf("Non-string item in list for metadata key %s: %v\n", e.Name, item)
-						continue
-					}
-					n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][strItem]
-					if !ok {
-						fmt.Println("!ok")
 						continue
 					}
 					ret = append(ret, Edge{
