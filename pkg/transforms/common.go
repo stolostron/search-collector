@@ -209,9 +209,9 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 					DestKind:   n.Properties["kind"].(string),
 					DestUID:    n.UID,
 				})
-			case []string:
+			case []interface{}:
 				for _, item := range v {
-					n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][item]
+					n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][item.(string)]
 					if !ok {
 						continue
 					}
