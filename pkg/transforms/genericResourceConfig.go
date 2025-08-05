@@ -13,6 +13,7 @@ type DataType string
 
 const (
 	DataTypeBytes  DataType = "bytes"
+	DataTypeSlice  DataType = "slice"
 	DataTypeString DataType = "string"
 	DataTypeNumber DataType = "number"
 )
@@ -107,12 +108,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
-			{Name: "dataVolumeNames", JSONPath: `{.spec.template.spec.domain.volumes[*].dataVolume.name}`, metadataOnly: true},
+			{Name: "dataVolumeNames", JSONPath: `{.spec.template.spec.domain.volumes[*].dataVolume.name}`, metadataOnly: true, DataType: DataTypeSlice},
 			{Name: "_description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
-			{Name: "pvcClaimNames", JSONPath: `{.spec.template.spec.domain.volumes[*].persistentVolumeClaim.claimName}`, metadataOnly: true},
+			{Name: "pvcClaimNames", JSONPath: `{.spec.template.spec.domain.volumes[*].persistentVolumeClaim.claimName}`, metadataOnly: true, DataType: DataTypeSlice},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "runStrategy", JSONPath: `{.spec.runStrategy}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},

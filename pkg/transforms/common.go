@@ -735,6 +735,18 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 		}
 
 		if len(result) > 0 && len(result[0]) > 0 {
+			if prop.DataType == DataTypeSlice {
+				var slice []interface{}
+				for _, v := range result[0] {
+					slice = append(slice, v.Interface())
+				}
+				if prop.metadataOnly {
+					node.Metadata[prop.Name] = slice
+				} else {
+					node.Properties[prop.Name] = slice
+				}
+				continue
+			}
 			val := result[0][0].Interface()
 
 			if knownStringArrays[prop.Name] {
@@ -746,14 +758,6 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			}
 
 			if prop.metadataOnly {
-				if kind == "VirtualMachine" && group == "kubevirt.io" && (prop.Name == "dataVolumeNames" || prop.Name == "pvcClaimNames") {
-					var nestedSlice []interface{}
-					for _, v := range result[0] {
-						nestedSlice = append(nestedSlice, v.Interface())
-					}
-					node.Metadata[prop.Name] = nestedSlice
-					continue
-				}
 				strVal, ok := val.(string)
 
 				if !ok {
