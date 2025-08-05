@@ -175,6 +175,67 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 
 	ret = edgesByGatekeeperMutation(ret, currNode, ns)
 
+	ret = edgesByDefaultTransformConfig(ret, currNode, ns)
+
+	return ret
+}
+
+// Function to create a configured edge between configured resources
+func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Edge {
+	var kind, apiGroup, namespace string
+	kind = currNode.Properties["kind"].(string)
+	if n, ok := currNode.Properties["namespace"]; ok {
+		namespace = n.(string)
+	}
+	if g, ok := currNode.Properties["apigroup"]; ok {
+		apiGroup = g.(string)
+	}
+
+	// make edges from VirtualMachineInstanceMigration -> VirtualMachineInstance
+	if kind == "VirtualMachineInstanceMigration" && apiGroup == "kubevirt.io" {
+		vmiNode, ok := ns.ByKindNamespaceName["VirtualMachineInstance"][namespace][currNode.Metadata["vmiName"].(string)]
+		if !ok {
+			return ret
+		}
+		ret = append(ret, Edge{
+			SourceKind: kind,
+			SourceUID:  currNode.UID,
+			EdgeType:   "migrationOf",
+			DestKind:   vmiNode.Properties["kind"].(string),
+			DestUID:    vmiNode.UID,
+		})
+	}
+
+	// make edges from VirtualMachine -> PersistentVolumeClaim, VirtualMachine -> DataVolume
+	if kind == "VirtualMachine" && apiGroup == "kubevirt.io" {
+		for _, pvcName := range currNode.Metadata["pvcClaimNames"].([]interface{}) {
+			pvcNode, ok := ns.ByKindNamespaceName["PersistentVolumeClaim"][namespace][pvcName.(string)]
+			if !ok {
+				continue
+			}
+			ret = append(ret, Edge{
+				SourceKind: kind,
+				SourceUID:  currNode.UID,
+				EdgeType:   "uses",
+				DestKind:   pvcNode.Properties["kind"].(string),
+				DestUID:    pvcNode.UID,
+			})
+		}
+		for _, dvName := range currNode.Metadata["dataVolumeNames"].([]interface{}) {
+			dvNode, ok := ns.ByKindNamespaceName["DataVolume"][namespace][dvName.(string)]
+			if !ok {
+				continue
+			}
+			ret = append(ret, Edge{
+				SourceKind: kind,
+				SourceUID:  currNode.UID,
+				EdgeType:   "uses",
+				DestKind:   dvNode.Properties["kind"].(string),
+				DestUID:    dvNode.UID,
+			})
+		}
+	}
+
 	return ret
 }
 
@@ -673,16 +734,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			continue
 		}
 
-		// TODO: generalize to handle other types of nested arrays, and what if its deeply nested?
 		if len(result) > 0 && len(result[0]) > 0 {
-			if kind == "VirtualMachine" && group == "kubevirt.io" && (prop.Name == "dataVolumeNames" || prop.Name == "pvcClaimNames") {
-				var nestedSlice []interface{}
-				for _, v := range result[0] {
-					nestedSlice = append(nestedSlice, v.Interface())
-				}
-				node.Properties[prop.Name] = nestedSlice
-				continue
-			}
 			val := result[0][0].Interface()
 
 			if knownStringArrays[prop.Name] {
@@ -694,6 +746,14 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			}
 
 			if prop.metadataOnly {
+				if kind == "VirtualMachine" && group == "kubevirt.io" && (prop.Name == "dataVolumeNames" || prop.Name == "pvcClaimNames") {
+					var nestedSlice []interface{}
+					for _, v := range result[0] {
+						nestedSlice = append(nestedSlice, v.Interface())
+					}
+					node.Metadata[prop.Name] = nestedSlice
+					continue
+				}
 				strVal, ok := val.(string)
 
 				if !ok {

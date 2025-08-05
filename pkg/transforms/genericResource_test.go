@@ -59,6 +59,50 @@ func Test_genericResourceFromConfig(t *testing.T) {
 	assert.Nil(t, node.Properties["annotations"])
 }
 
+func Test_edgesFromVirtualMachineInstanceMigration(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachineinstancemigration.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	nodes := []Node{
+		{UID: "uuid-123-vmim", Properties: map[string]interface{}{"kind": "VirtualMachineInstance", "namespace": "ugo", "name": "rhel-10-crimson-eagle-72"}},
+	}
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	edges := make([]Edge, 0)
+	edges = edgesByDefaultTransformConfig(edges, node, nodeStore)
+
+	AssertEqual("VMI edge total: ", len(edges), 1, t)
+	AssertEqual("VMI migrationOf", edges[0].DestKind, "VirtualMachineInstance", t)
+}
+
+func Test_edgesFromVirtualMachine(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachine.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	nodes := []Node{
+		{UID: "uuid-123-pvc-1", Properties: map[string]interface{}{"kind": "PersistentVolumeClaim", "namespace": "openshift-cnv", "name": "the-claim-is-persistent"}},
+		{UID: "uuid-123-pvc-2", Properties: map[string]interface{}{"kind": "PersistentVolumeClaim", "namespace": "openshift-cnv", "name": "the-claim-is-too-persistent"}},
+		{UID: "uuid-123-dv-1", Properties: map[string]interface{}{"kind": "DataVolume", "namespace": "openshift-cnv", "name": "rhel-8-amber-fish-51-volume"}},
+		{UID: "uuid-123-dv-2", Properties: map[string]interface{}{"kind": "DataVolume", "namespace": "openshift-cnv", "name": "rhel-8-amber-fish-51-volume-2"}},
+	}
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	edges := make([]Edge, 0)
+	edges = edgesByDefaultTransformConfig(edges, node, nodeStore)
+
+	AssertEqual("VM edge total: ", len(edges), 4, t)
+	AssertEqual("VM uses", edges[0].DestKind, "PersistentVolumeClaim", t)
+	AssertEqual("VM uses pvc name: ", edges[0].DestUID, "uuid-123-pvc-1", t)
+	AssertEqual("VM uses", edges[1].DestKind, "PersistentVolumeClaim", t)
+	AssertEqual("VM uses pvc name: ", edges[1].DestUID, "uuid-123-pvc-2", t)
+	AssertEqual("VM uses", edges[2].DestKind, "DataVolume", t)
+	AssertEqual("VM uses dv name: ", edges[2].DestUID, "uuid-123-dv-1", t)
+	AssertEqual("VM uses", edges[3].DestKind, "DataVolume", t)
+	AssertEqual("VM uses dv name: ", edges[3].DestUID, "uuid-123-dv-2", t)
+}
+
 func Test_allowListedForAnnotations(t *testing.T) {
 	obj := unstructured.Unstructured{}
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
@@ -105,12 +149,10 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 		"Ready":            "True",
 	}, t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
-	AssertDeepEqual("dataVolumeNames", node.Properties["dataVolumeNames"], []interface{}{"rhel-8-amber-fish-51-volume", "rhel-8-amber-fish-51-volume-2"}, t)
 	AssertEqual("_description", node.Properties["_description"], "some description", t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
 	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
-	AssertDeepEqual("pvcClaimNames", node.Properties["pvcClaimNames"], []interface{}{"the-claim-is-persistent", "the-claim-is-too-persistent"}, t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("runStrategy", node.Properties["runStrategy"], nil, t)
 	AssertEqual("status", node.Properties["status"], "Running", t)
@@ -157,7 +199,6 @@ func Test_genericResourceFromConfigVMIM(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("endTime", node.Properties["endTime"], "2025-07-11T14:42:32Z", t)
 	AssertEqual("phase", node.Properties["phase"], "Scheduling", t)
-	AssertEqual("vmiName", node.Properties["vmiName"], "rhel-10-crimson-eagle-72", t)
 }
 
 func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
