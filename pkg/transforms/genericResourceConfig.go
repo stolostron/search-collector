@@ -9,6 +9,13 @@ type ExtractProperty struct {
 	metadataOnly bool
 }
 
+// Declares an edge to extract from a resource.
+type ExtractEdge struct {
+	EdgeType string // `json:"edgeType,omitempty"`
+	Kind     string // `json:"kind,omitempty"`
+	Name     string // `json:"name,omitempty"`
+}
+
 type DataType string
 
 const (
@@ -20,6 +27,7 @@ const (
 // Declares the properties to extract from a given resource.
 type ResourceConfig struct {
 	properties []ExtractProperty // `json:"properties,omitempty"`
+	edges      []ExtractEdge     // `json:"edges,omitempty"`
 }
 
 var (
@@ -117,6 +125,13 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "workload", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/workload}`},
 			{Name: "_specRunning", JSONPath: `{.spec.running}`},
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
+		},
+		edges: []ExtractEdge{
+			{EdgeType: "runsOn", Kind: "Node", Name: "{.status.nodeName}"},
+			{EdgeType: "attachedTo", Kind: "PersistentVolumeClaim",
+				Name: "{.spec.template.spec.volumes[?(@.persistentVolumeClaim.claimName)].persistentVolumeClaim.claimName}"},
+			{EdgeType: "attachedTo", Kind: "DataVolume",
+				Name: "{.spec.template.spec.volumes[?(@.dataVolume.name)].dataVolume.name}"},
 		},
 	},
 	"VirtualMachineInstance.kubevirt.io": {

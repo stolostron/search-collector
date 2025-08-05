@@ -9,11 +9,14 @@ import (
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/klog/v2"
 )
 
 // GenericResource ...
 type GenericResource struct {
 	node Node
+	// edges        []Edge
+	extractEdges []ExtractEdge
 }
 
 // Builds a GenericResource node.
@@ -28,7 +31,9 @@ func GenericResourceBuilder(r *unstructured.Unstructured, additionalColumns ...E
 
 	n = applyDefaultTransformConfig(n, r, additionalColumns...)
 
-	return &GenericResource{node: n}
+	klog.Infof("Build edges from config for kind: %s, name: %s", r.GetKind(), r.GetName())
+
+	return &GenericResource{node: n, extractEdges: []ExtractEdge{}}
 }
 
 // BuildNode construct the node for Generic Resources
@@ -39,6 +44,7 @@ func (r GenericResource) BuildNode() Node {
 
 // BuildEdges construct the edges for Generic Resources
 func (r GenericResource) BuildEdges(ns NodeStore) []Edge {
+	klog.Infof("Building edges for %s - %s", r.node.Properties["kind"], r.node.Properties["name"])
 	return []Edge{}
 }
 
