@@ -12,6 +12,7 @@ package transforms
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -191,48 +192,46 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 		apiGroup = g.(string)
 	}
 
-	// make edges from VirtualMachineInstanceMigration -> VirtualMachineInstance
-	if kind == "VirtualMachineInstanceMigration" && apiGroup == "kubevirt.io" {
-		vmiNode, ok := ns.ByKindNamespaceName["VirtualMachineInstance"][namespace][currNode.Metadata["vmiName"].(string)]
-		if !ok {
-			return ret
-		}
-		ret = append(ret, Edge{
-			SourceKind: kind,
-			SourceUID:  currNode.UID,
-			EdgeType:   "migrationOf",
-			DestKind:   vmiNode.Properties["kind"].(string),
-			DestUID:    vmiNode.UID,
-		})
-	}
+	transformConfig, found := getTransformConfig(apiGroup, kind)
 
-	// make edges from VirtualMachine -> PersistentVolumeClaim, VirtualMachine -> DataVolume
-	if kind == "VirtualMachine" && apiGroup == "kubevirt.io" {
-		for _, pvcName := range currNode.Metadata["pvcClaimNames"].([]interface{}) {
-			pvcNode, ok := ns.ByKindNamespaceName["PersistentVolumeClaim"][namespace][pvcName.(string)]
-			if !ok {
-				continue
+	if found {
+		for _, e := range transformConfig.edges {
+			val := currNode.Metadata[e.Name]
+			switch v := val.(type) {
+			case string:
+				n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][v]
+				if !ok {
+					fmt.Println("!ok")
+					return ret
+				}
+				ret = append(ret, Edge{
+					SourceKind: kind,
+					SourceUID:  currNode.UID,
+					EdgeType:   EdgeType(e.Type),
+					DestKind:   n.Properties["kind"].(string),
+					DestUID:    n.UID,
+				})
+			case []interface{}:
+				for _, item := range v {
+					strItem, ok := item.(string)
+					if !ok {
+						fmt.Printf("Non-string item in list for metadata key %s: %v\n", e.Name, item)
+						continue
+					}
+					n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][strItem]
+					if !ok {
+						fmt.Println("!ok")
+						continue
+					}
+					ret = append(ret, Edge{
+						SourceKind: kind,
+						SourceUID:  currNode.UID,
+						EdgeType:   EdgeType(e.Type),
+						DestKind:   n.Properties["kind"].(string),
+						DestUID:    n.UID,
+					})
+				}
 			}
-			ret = append(ret, Edge{
-				SourceKind: kind,
-				SourceUID:  currNode.UID,
-				EdgeType:   "uses",
-				DestKind:   pvcNode.Properties["kind"].(string),
-				DestUID:    pvcNode.UID,
-			})
-		}
-		for _, dvName := range currNode.Metadata["dataVolumeNames"].([]interface{}) {
-			dvNode, ok := ns.ByKindNamespaceName["DataVolume"][namespace][dvName.(string)]
-			if !ok {
-				continue
-			}
-			ret = append(ret, Edge{
-				SourceKind: kind,
-				SourceUID:  currNode.UID,
-				EdgeType:   "uses",
-				DestKind:   dvNode.Properties["kind"].(string),
-				DestUID:    dvNode.UID,
-			})
 		}
 	}
 

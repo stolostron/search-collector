@@ -9,6 +9,12 @@ type ExtractProperty struct {
 	metadataOnly bool
 }
 
+type ExtractEdge struct {
+	Name   string
+	ToKind string
+	Type   string
+}
+
 type DataType string
 
 const (
@@ -21,6 +27,7 @@ const (
 // Declares the properties to extract from a given resource.
 type ResourceConfig struct {
 	properties []ExtractProperty // `json:"properties,omitempty"`
+	edges      []ExtractEdge
 }
 
 var (
@@ -121,6 +128,10 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "_specRunning", JSONPath: `{.spec.running}`},
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
 		},
+		edges: []ExtractEdge{
+			{Name: "dataVolumeNames", ToKind: "DataVolume", Type: "uses"},
+			{Name: "pvcClaimNames", ToKind: "PersistentVolumeClaim", Type: "uses"},
+		},
 	},
 	"VirtualMachineInstance.kubevirt.io": {
 		properties: []ExtractProperty{
@@ -140,6 +151,9 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "endTime", JSONPath: `{.status.migrationState.endTimestamp}`},
 			{Name: "vmiName", JSONPath: `{.spec.vmiName}`, metadataOnly: true},
+		},
+		edges: []ExtractEdge{
+			{Name: "vmiName", ToKind: "VirtualMachineInstance", Type: "migrationOf"},
 		},
 	},
 	"VirtualMachineSnapshot.snapshot.kubevirt.io": {

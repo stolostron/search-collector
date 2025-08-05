@@ -93,14 +93,14 @@ func Test_edgesFromVirtualMachine(t *testing.T) {
 	edges = edgesByDefaultTransformConfig(edges, node, nodeStore)
 
 	AssertEqual("VM edge total: ", len(edges), 4, t)
-	AssertEqual("VM uses", edges[0].DestKind, "PersistentVolumeClaim", t)
-	AssertEqual("VM uses pvc name: ", edges[0].DestUID, "uuid-123-pvc-1", t)
-	AssertEqual("VM uses", edges[1].DestKind, "PersistentVolumeClaim", t)
-	AssertEqual("VM uses pvc name: ", edges[1].DestUID, "uuid-123-pvc-2", t)
-	AssertEqual("VM uses", edges[2].DestKind, "DataVolume", t)
-	AssertEqual("VM uses dv name: ", edges[2].DestUID, "uuid-123-dv-1", t)
-	AssertEqual("VM uses", edges[3].DestKind, "DataVolume", t)
-	AssertEqual("VM uses dv name: ", edges[3].DestUID, "uuid-123-dv-2", t)
+	AssertEqual("VM uses", edges[0].DestKind, "DataVolume", t)
+	AssertEqual("VM uses dv name: ", edges[0].DestUID, "uuid-123-dv-1", t)
+	AssertEqual("VM uses", edges[1].DestKind, "DataVolume", t)
+	AssertEqual("VM uses dv name: ", edges[1].DestUID, "uuid-123-dv-2", t)
+	AssertEqual("VM uses", edges[2].DestKind, "PersistentVolumeClaim", t)
+	AssertEqual("VM uses pvc name: ", edges[2].DestUID, "uuid-123-pvc-1", t)
+	AssertEqual("VM uses", edges[3].DestKind, "PersistentVolumeClaim", t)
+	AssertEqual("VM uses pvc name: ", edges[3].DestUID, "uuid-123-pvc-2", t)
 }
 
 func Test_allowListedForAnnotations(t *testing.T) {
