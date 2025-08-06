@@ -205,7 +205,7 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 				ret = append(ret, Edge{
 					SourceKind: kind,
 					SourceUID:  currNode.UID,
-					EdgeType:   EdgeType(e.Type),
+					EdgeType:   e.Type,
 					DestKind:   n.Properties["kind"].(string),
 					DestUID:    n.UID,
 				})
@@ -218,7 +218,7 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 					ret = append(ret, Edge{
 						SourceKind: kind,
 						SourceUID:  currNode.UID,
-						EdgeType:   EdgeType(e.Type),
+						EdgeType:   e.Type,
 						DestKind:   n.Properties["kind"].(string),
 						DestUID:    n.UID,
 					})

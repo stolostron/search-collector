@@ -10,9 +10,9 @@ type ExtractProperty struct {
 }
 
 type ExtractEdge struct {
-	Name   string
-	ToKind string
-	Type   string
+	Name   string   // `json:"name,omitempty"`
+	ToKind string   // `json:"toKind,omitempty"`
+	Type   EdgeType // `json:"type,omitempty"`
 }
 
 type DataType string
@@ -27,7 +27,7 @@ const (
 // Declares the properties to extract from a given resource.
 type ResourceConfig struct {
 	properties []ExtractProperty // `json:"properties,omitempty"`
-	edges      []ExtractEdge
+	edges      []ExtractEdge     // `json:"edges,omitempty"`
 }
 
 var (
@@ -129,8 +129,8 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
 		},
 		edges: []ExtractEdge{
-			{Name: "dataVolumeNames", ToKind: "DataVolume", Type: "uses"},
-			{Name: "pvcClaimNames", ToKind: "PersistentVolumeClaim", Type: "uses"},
+			{Name: "dataVolumeNames", ToKind: "DataVolume", Type: "attachedTo"},
+			{Name: "pvcClaimNames", ToKind: "PersistentVolumeClaim", Type: "attachedTo"},
 		},
 	},
 	"VirtualMachineInstance.kubevirt.io": {
