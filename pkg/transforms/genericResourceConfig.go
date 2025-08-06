@@ -129,8 +129,8 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
 		},
 		edges: []ExtractEdge{
-			{Name: "dataVolumeNames", ToKind: "DataVolume", Type: "attachedTo"},
-			{Name: "pvcClaimNames", ToKind: "PersistentVolumeClaim", Type: "attachedTo"},
+			{Name: "dataVolumeNames", ToKind: "DataVolume", Type: attachedTo},
+			{Name: "pvcClaimNames", ToKind: "PersistentVolumeClaim", Type: attachedTo},
 		},
 	},
 	"VirtualMachineInstance.kubevirt.io": {
@@ -153,7 +153,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "vmiName", JSONPath: `{.spec.vmiName}`, metadataOnly: true},
 		},
 		edges: []ExtractEdge{
-			{Name: "vmiName", ToKind: "VirtualMachineInstance", Type: "migrationOf"},
+			{Name: "vmiName", ToKind: "VirtualMachineInstance", Type: migrationOf},
 		},
 	},
 	"VirtualMachineSnapshot.snapshot.kubevirt.io": {

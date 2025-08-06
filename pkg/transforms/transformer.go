@@ -122,14 +122,14 @@ func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEven
 // A specific type designated for relationship type
 type EdgeType string
 
-// TODO: to be used later
-// Differnet values for EdgeType
-// const (
-// 	ownedBy    EdgeType = "ownedBy"
-// 	attachedTo EdgeType = "attachedTo"
-// 	runsOn     EdgeType = "runsOn"
-// 	selects    EdgeType = "selects"
-// )
+// Different values for EdgeType
+const (
+	ownedBy     EdgeType = "ownedBy"
+	attachedTo  EdgeType = "attachedTo"
+	migrationOf EdgeType = "migrationOf"
+	runsOn      EdgeType = "runsOn"
+	selects     EdgeType = "selects"
+)
 
 // Structure to hold Edge, containing the type and UIDs to relationships
 type Edge struct {
