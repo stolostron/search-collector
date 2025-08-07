@@ -9,10 +9,17 @@ type ExtractProperty struct {
 	metadataOnly bool
 }
 
+type ExtractEdge struct {
+	Name   string   // `json:"name,omitempty"`
+	ToKind string   // `json:"toKind,omitempty"`
+	Type   EdgeType // `json:"type,omitempty"`
+}
+
 type DataType string
 
 const (
 	DataTypeBytes  DataType = "bytes"
+	DataTypeSlice  DataType = "slice"
 	DataTypeString DataType = "string"
 	DataTypeNumber DataType = "number"
 )
@@ -20,6 +27,7 @@ const (
 // Declares the properties to extract from a given resource.
 type ResourceConfig struct {
 	properties []ExtractProperty // `json:"properties,omitempty"`
+	edges      []ExtractEdge     // `json:"edges,omitempty"`
 }
 
 var (
@@ -107,16 +115,22 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
+			{Name: "dataVolumeNames", JSONPath: `{.spec.template.spec.domain.volumes[*].dataVolume.name}`, metadataOnly: true, DataType: DataTypeSlice},
 			{Name: "_description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
+			{Name: "pvcClaimNames", JSONPath: `{.spec.template.spec.domain.volumes[*].persistentVolumeClaim.claimName}`, metadataOnly: true, DataType: DataTypeSlice},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "runStrategy", JSONPath: `{.spec.runStrategy}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},
 			{Name: "workload", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/workload}`},
 			{Name: "_specRunning", JSONPath: `{.spec.running}`},
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
+		},
+		edges: []ExtractEdge{
+			{Name: "dataVolumeNames", ToKind: "DataVolume", Type: attachedTo},
+			{Name: "pvcClaimNames", ToKind: "PersistentVolumeClaim", Type: attachedTo},
 		},
 	},
 	"VirtualMachineInstance.kubevirt.io": {
@@ -136,6 +150,10 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		properties: []ExtractProperty{
 			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "endTime", JSONPath: `{.status.migrationState.endTimestamp}`},
+			{Name: "vmiName", JSONPath: `{.spec.vmiName}`, metadataOnly: true},
+		},
+		edges: []ExtractEdge{
+			{Name: "vmiName", ToKind: "VirtualMachineInstance", Type: migrationOf},
 		},
 	},
 	"VirtualMachineSnapshot.snapshot.kubevirt.io": {

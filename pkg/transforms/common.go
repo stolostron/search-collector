@@ -175,6 +175,58 @@ func CommonEdges(uid string, ns NodeStore) []Edge {
 
 	ret = edgesByGatekeeperMutation(ret, currNode, ns)
 
+	ret = edgesByDefaultTransformConfig(ret, currNode, ns)
+
+	return ret
+}
+
+// Function to create a configured edge between configured resources
+func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Edge {
+	var kind, apiGroup, namespace string
+	kind = currNode.Properties["kind"].(string)
+	if n, ok := currNode.Properties["namespace"]; ok {
+		namespace = n.(string)
+	}
+	if g, ok := currNode.Properties["apigroup"]; ok {
+		apiGroup = g.(string)
+	}
+
+	transformConfig, found := getTransformConfig(apiGroup, kind)
+
+	if found {
+		for _, e := range transformConfig.edges {
+			val := currNode.Metadata[e.Name]
+			switch v := val.(type) {
+			case string:
+				n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][v]
+				if !ok {
+					continue
+				}
+				ret = append(ret, Edge{
+					SourceKind: kind,
+					SourceUID:  currNode.UID,
+					EdgeType:   e.Type,
+					DestKind:   n.Properties["kind"].(string),
+					DestUID:    n.UID,
+				})
+			case []interface{}:
+				for _, item := range v {
+					n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][item.(string)]
+					if !ok {
+						continue
+					}
+					ret = append(ret, Edge{
+						SourceKind: kind,
+						SourceUID:  currNode.UID,
+						EdgeType:   e.Type,
+						DestKind:   n.Properties["kind"].(string),
+						DestUID:    n.UID,
+					})
+				}
+			}
+		}
+	}
+
 	return ret
 }
 
@@ -674,6 +726,18 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 		}
 
 		if len(result) > 0 && len(result[0]) > 0 {
+			if prop.DataType == DataTypeSlice {
+				var slice []interface{}
+				for _, v := range result[0] {
+					slice = append(slice, v.Interface())
+				}
+				if prop.metadataOnly {
+					node.Metadata[prop.Name] = slice
+				} else {
+					node.Properties[prop.Name] = slice
+				}
+				continue
+			}
 			val := result[0][0].Interface()
 
 			if knownStringArrays[prop.Name] {
