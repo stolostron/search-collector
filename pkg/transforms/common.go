@@ -200,7 +200,7 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 			case string:
 				n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][v]
 				if !ok {
-					return ret
+					continue
 				}
 				ret = append(ret, Edge{
 					SourceKind: kind,
