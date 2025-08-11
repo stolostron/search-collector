@@ -32,6 +32,12 @@ spec:
     - linux/x86_64
   - name: dockerfile
     value: Dockerfile.rhtap
+  - name: build-source-image
+    value: 'true'
+  - name: hermetic
+    value: 'true'
+  - name: prefetch-input
+    value: '[{"type": "gomod", "path": "."}]'
   - name: path-context
     value: .
   pipelineSpec:
@@ -601,7 +607,7 @@ spec:
         - name: name
           value: rpms-signature-scan
         - name: bundle
-          value: quay.io/konflux-ci/konflux-vanguard/task-rpms-signature-scan:0.2@sha256:7d1c087d7d33dd97effb3b4c9f3788e4c3138da2032040d69da6929e9a3aaceb
+          value: quay.io/konflux-ci/konflux-vanguard/task-rpms-signature-scan:0.2@sha256:a2f6d9e43b823a45df0062612c163f6620afbb7e912faf2f7633c1fdcfe0367d
         - name: kind
           value: task
         resolver: bundles
