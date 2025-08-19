@@ -195,6 +195,7 @@ func Test_genericResourceFromConfigVMIM(t *testing.T) {
 	AssertDeepEqual("label", node.Properties["label"], map[string]string{"kubevirt.io/vm1-name": "rhel-10-crimson-eagle-72"}, t)
 	AssertEqual("name", node.Properties["name"], "rhel-10-crimson-eagle-72-migration-j9h6b", t)
 	AssertEqual("namespace", node.Properties["namespace"], "ugo", t)
+	AssertEqual("vmiName", node.Properties["vmiName"], "rhel-10-crimson-eagle-72", t)
 
 	// Verify properties defined in the transform config
 	AssertEqual("endTime", node.Properties["endTime"], "2025-07-11T14:42:32Z", t)
