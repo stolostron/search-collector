@@ -699,8 +699,10 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	for _, prop := range transformConfig.properties {
 		// Skip properties that are already set. This could happen if additionalPrinterColumns
 		// is overriding a generic property.
-		if _, ok := node.Properties[prop.Name]; ok {
-			continue
+		if !prop.metadataOnly {
+			if _, ok := node.Properties[prop.Name]; ok {
+				continue
+			}
 		}
 
 		// Skip additionalPrinterColumns that should be ignored.
