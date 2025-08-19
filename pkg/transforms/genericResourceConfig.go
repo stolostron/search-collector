@@ -148,9 +148,10 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"VirtualMachineInstanceMigration.kubevirt.io": {
 		properties: []ExtractProperty{
-			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "endTime", JSONPath: `{.status.migrationState.endTimestamp}`},
-			{Name: "vmiName", JSONPath: `{.spec.vmiName}`, metadataOnly: true},
+			{Name: "phase", JSONPath: `{.status.phase}`},
+			{Name: "vmiName", JSONPath: `{.spec.vmiName}`},
+			{Name: "vmiName", JSONPath: `{.spec.vmiName}`, metadataOnly: true}, // Used to build the edge
 		},
 		edges: []ExtractEdge{
 			{Name: "vmiName", ToKind: "VirtualMachineInstance", Type: migrationOf},
