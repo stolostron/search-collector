@@ -47,7 +47,7 @@ spec:
       - name: revision
         value: main
       - name: pathInRepo
-        value: pipelines/common.yaml # or pipelines/common_mce_X.Y.yaml for MCE X.Y branches
+        value: pipelines/common.yaml
   taskRunTemplate:
     serviceAccountName: build-pipeline-search-collector-acm-214
   workspaces:
