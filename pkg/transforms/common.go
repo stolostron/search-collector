@@ -195,7 +195,12 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 
 	if found {
 		for _, e := range transformConfig.edges {
-			val := currNode.Metadata[e.Name]
+			var val interface{}
+			if v, ok := currNode.Metadata[e.Name]; ok {
+				val = v
+			} else if v, ok = currNode.Properties[e.Name]; ok {
+				val = v
+			}
 			switch v := val.(type) {
 			case string:
 				n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][v]
