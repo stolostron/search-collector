@@ -149,10 +149,14 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 		"Ready":            "True",
 	}, t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
+	AssertDeepEqual("dataVolumeNames", node.Properties["dataVolumeNames"],
+		[]interface{}{"rhel-8-amber-fish-51-volume", "rhel-8-amber-fish-51-volume-2"}, t)
 	AssertEqual("_description", node.Properties["_description"], "some description", t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
 	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
+	AssertDeepEqual("pvcClaimNames", node.Properties["pvcClaimNames"],
+		[]interface{}{"the-claim-is-persistent", "the-claim-is-too-persistent"}, t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("runStrategy", node.Properties["runStrategy"], nil, t)
 	AssertEqual("status", node.Properties["status"], "Running", t)
