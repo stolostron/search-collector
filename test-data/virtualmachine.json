@@ -118,39 +118,7 @@
                     "memory": {
                         "guest": "2Gi"
                     },
-                    "resources": {},
-                    "volumes": [
-                        {
-                            "name": "rootdisk",
-                            "dataVolume": {
-                                "name": "rhel-8-amber-fish-51-volume"
-                            }
-                        },
-                        {
-                            "name": "rootdisk-2",
-                            "dataVolume": {
-                                "name": "rhel-8-amber-fish-51-volume-2"
-                            }
-                        },
-                        {
-                            "name": "cloudinitdisk",
-                            "cloudInitNoDisk": {
-                                "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: q9hy-mzra-3vk9\nuser: rhel"
-                            }
-                        },
-                        {
-                            "name": "pvc-1",
-                            "persistentVolumeClaim": {
-                                "claimName": "the-claim-is-persistent"
-                            }
-                        },
-                        {
-                            "name": "pvc-2",
-                            "persistentVolumeClaim": {
-                                "claimName": "the-claim-is-too-persistent"
-                            }
-                        }
-                    ]
+                    "resources": {}
                 },
                 "networks": [
                     {
@@ -161,16 +129,40 @@
                 "terminationGracePeriodSeconds": 180,
                 "volumes": [
                     {
-                        "dataVolume": {
-                            "name": "rhel9-gitops"
-                        },
-                        "name": "rootdisk"
-                    },
-                    {
                         "cloudInitConfigDrive": {
                             "userData": "#cloud-config\nuser: clclc-user"
                         },
                         "name": "cloudinitdisk"
+                    },
+                    {
+                        "name": "rootdisk",
+                        "dataVolume": {
+                            "name": "rhel-8-amber-fish-51-volume"
+                        }
+                    },
+                    {
+                        "name": "rootdisk-2",
+                        "dataVolume": {
+                            "name": "rhel-8-amber-fish-51-volume-2"
+                        }
+                    },
+                    {
+                        "name": "cloudinitdisk",
+                        "cloudInitNoDisk": {
+                            "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: q9hy-mzra-3vk9\nuser: rhel"
+                        }
+                    },
+                    {
+                        "name": "pvc-1",
+                        "persistentVolumeClaim": {
+                            "claimName": "the-claim-is-persistent"
+                        }
+                    },
+                    {
+                        "name": "pvc-2",
+                        "persistentVolumeClaim": {
+                            "claimName": "the-claim-is-too-persistent"
+                        }
                     }
                 ]
             }
