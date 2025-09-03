@@ -1,8 +1,4 @@
 build_root_image:
   name: builder
   namespace: stolostron
-<<<<<<< HEAD
-  tag: go1.23-linux
-=======
   tag: go1.24-linux
->>>>>>> 67ee24d (update go to 1.24 (#786))
