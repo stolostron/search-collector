@@ -113,8 +113,11 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"VirtualMachine.kubevirt.io": {
 		properties: []ExtractProperty{
+			{Name: "architecture", JSONPath: `{.spec.template.spec.architecture}`},
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
+			{Name: "cpuSockets", JSONPath: `{.spec.template.spec.domain.cpu.sockets}`},
+			{Name: "cpuThreads", JSONPath: `{.spec.template.spec.domain.cpu.threads}`},
 			{Name: "dataVolumeNames", JSONPath: `{.spec.template.spec.volumes[*].dataVolume.name}`, DataType: DataTypeSlice},
 			{Name: "_description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
@@ -124,9 +127,9 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "runStrategy", JSONPath: `{.spec.runStrategy}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},
-			{Name: "workload", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/workload}`},
 			{Name: "_specRunning", JSONPath: `{.spec.running}`},
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
+			{Name: "workload", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/workload}`},
 		},
 		edges: []ExtractEdge{
 			{Name: "dataVolumeNames", ToKind: "DataVolume", Type: attachedTo},
@@ -135,7 +138,10 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"VirtualMachineInstance.kubevirt.io": {
 		properties: []ExtractProperty{
+			{Name: "architecture", JSONPath: `{.spec.architecture}`},
 			{Name: "cpu", JSONPath: `{.spec.domain.cpu.cores}`},
+			{Name: "cpuSockets", JSONPath: `{.spec.domain.cpu.sockets}`},
+			{Name: "cpuThreads", JSONPath: `{.spec.domain.cpu.threads}`},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 			{Name: "memory", JSONPath: `{.spec.domain.memory.guest}`, DataType: DataTypeBytes},

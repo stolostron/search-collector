@@ -140,6 +140,7 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-04-30T16:22:02Z", t)
 
 	// Verify properties defined in the transform config
+	AssertEqual("architecture", node.Properties["architecture"], "amd64", t)
 	AssertEqual("agentConnected", node.Properties["agentConnected"], "True", t)
 	AssertDeepEqual("condition", node.Properties["condition"], map[string]string{
 		"AgentConnected":   "True",
@@ -149,6 +150,8 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 		"Ready":            "True",
 	}, t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
+	AssertEqual("cpuSockets", node.Properties["cpuSockets"], int64(1), t)
+	AssertEqual("cpuThreads", node.Properties["cpuThreads"], int64(1), t)
 	AssertDeepEqual("dataVolumeNames", node.Properties["dataVolumeNames"],
 		[]interface{}{"rhel-8-amber-fish-51-volume", "rhel-8-amber-fish-51-volume-2"}, t)
 	AssertEqual("_description", node.Properties["_description"], "some description", t)
@@ -177,7 +180,10 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-09-18T19:43:53Z", t)
 
 	// Verify properties defined in the transform config
+	AssertEqual("architecture", node.Properties["architecture"], "amd64", t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
+	AssertEqual("cpuSockets", node.Properties["cpuSockets"], int64(1), t)
+	AssertEqual("cpuThreads", node.Properties["cpuThreads"], int64(1), t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
