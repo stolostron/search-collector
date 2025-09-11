@@ -116,8 +116,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "architecture", JSONPath: `{.spec.template.spec.architecture}`},
 			{Name: "agentConnected", JSONPath: `{.status.conditions[?(@.type=="AgentConnected")].status}`},
 			{Name: "cpu", JSONPath: `{.spec.template.spec.domain.cpu.cores}`},
-			{Name: "cpuSockets", JSONPath: `{.spec.template.spec.domain.cpu.sockets}`},
-			{Name: "cpuThreads", JSONPath: `{.spec.template.spec.domain.cpu.threads}`},
 			{Name: "dataVolumeNames", JSONPath: `{.spec.template.spec.volumes[*].dataVolume.name}`, DataType: DataTypeSlice},
 			{Name: "_description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
@@ -138,7 +136,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"VirtualMachineInstance.kubevirt.io": {
 		properties: []ExtractProperty{
-			{Name: "architecture", JSONPath: `{.spec.architecture}`},
 			{Name: "cpu", JSONPath: `{.spec.domain.cpu.cores}`},
 			{Name: "cpuSockets", JSONPath: `{.spec.domain.cpu.sockets}`},
 			{Name: "cpuThreads", JSONPath: `{.spec.domain.cpu.threads}`},
