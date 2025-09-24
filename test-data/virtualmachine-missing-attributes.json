@@ -1,0 +1,127 @@
+{
+    "apiVersion": "kubevirt.io/v1",
+    "kind": "VirtualMachine",
+    "metadata": {
+        "annotations": {
+            "kubemacpool.io/transaction-timestamp": "2024-04-30T16:22:02.151446447Z",
+            "kubevirt.io/latest-observed-api-version": "v1",
+            "kubevirt.io/storage-observed-api-version": "v1",
+            "vm.kubevirt.io/validations": "[\n  {\n    \"name\": \"minimal-required-memory\",\n    \"path\": \"jsonpath::.spec.domain.memory.guest\",\n    \"rule\": \"integer\",\n    \"message\": \"This VM requires more memory.\",\n    \"min\": 1610612736\n  }\n]\n"
+        },
+        "creationTimestamp": "2024-04-30T16:22:02Z",
+        "finalizers": [
+            "kubevirt.io/virtualMachineControllerFinalize"
+        ],
+        "generation": 1,
+        "labels": {
+            "app": "rhel9-gitops",
+            "app.kubernetes.io/instance": "test3-local-cluster",
+            "kubevirt.io/dynamic-credentials-support": "true",
+            "vm.kubevirt.io/template": "rhel9-server-small",
+            "vm.kubevirt.io/template.namespace": "openshift",
+            "vm.kubevirt.io/template.revision": "1",
+            "vm.kubevirt.io/template.version": "v0.26.0"
+        },
+        "name": "rhel9-gitops",
+        "namespace": "openshift-cnv",
+        "resourceVersion": "8398727",
+        "uid": "01c049ff-8a18-4c6e-98fb-df6ab7777777"
+    },
+    "spec": {
+        "dataVolumeTemplates": [
+            {
+                "apiVersion": "cdi.kubevirt.io/v1beta1",
+                "kind": "DataVolume",
+                "metadata": {
+                    "creationTimestamp": null,
+                    "name": "rhel9-gitops"
+                },
+                "spec": {
+                    "sourceRef": {
+                        "kind": "DataSource",
+                        "name": "rhel9",
+                        "namespace": "openshift-virtualization-os-images"
+                    },
+                    "storage": {
+                        "resources": {
+                            "requests": {
+                                "storage": "30Gi"
+                            }
+                        }
+                    }
+                }
+            }
+        ],
+        "template": {
+            "spec": {
+                "domain": {
+                    "devices": {
+                        "disks": [
+                            {
+                                "disk": {
+                                    "bus": "virtio"
+                                },
+                                "name": "rootdisk"
+                            },
+                            {
+                                "disk": {
+                                    "bus": "virtio"
+                                },
+                                "name": "cloudinitdisk"
+                            }
+                        ],
+                        "interfaces": [
+                            {
+                                "macAddress": "00:f0:70:00:00:00",
+                                "masquerade": {},
+                                "model": "virtio",
+                                "name": "default"
+                            }
+                        ],
+                        "networkInterfaceMultiqueue": true,
+                        "rng": {}
+                    },
+                    "features": {
+                        "acpi": {},
+                        "smm": {
+                            "enabled": true
+                        }
+                    },
+                    "firmware": {
+                        "bootloader": {
+                            "efi": {}
+                        }
+                    },
+                    "machine": {
+                        "type": "pc-q35-rhel9.2.0"
+                    },
+                    "resources": {}
+                },
+                "networks": [
+                    {
+                        "name": "default",
+                        "pod": {}
+                    }
+                ],
+                "terminationGracePeriodSeconds": 180,
+                "volumes": [
+                    {
+                        "cloudInitConfigDrive": {
+                            "userData": "#cloud-config\nuser: clclc-user"
+                        },
+                        "name": "cloudinitdisk"
+                    },
+                    {
+                        "name": "cloudinitdisk",
+                        "cloudInitNoDisk": {
+                            "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: q9hy-mzra-3vk9\nuser: rhel"
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "status": {
+        "conditions": []
+    }
+}
