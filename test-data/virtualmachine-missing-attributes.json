@@ -25,7 +25,7 @@
         "name": "rhel9-gitops",
         "namespace": "openshift-cnv",
         "resourceVersion": "8398727",
-        "uid": "01c049ff-8a18-4c6e-98fb-df6ab7777777"
+        "uid": "b95b4e56-9b13-11f0-bb8b-6a9e6a5efa95"
     },
     "spec": {
         "dataVolumeTemplates": [
@@ -114,7 +114,7 @@
                     {
                         "name": "cloudinitdisk",
                         "cloudInitNoDisk": {
-                            "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: q9hy-mzra-3vk9\nuser: rhel"
+                            "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: dummy-password\nuser: rhel"
                         }
                     }
                 ]

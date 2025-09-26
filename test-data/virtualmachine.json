@@ -149,7 +149,7 @@
                     {
                         "name": "cloudinitdisk",
                         "cloudInitNoDisk": {
-                            "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: q9hy-mzra-3vk9\nuser: rhel"
+                            "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: dummy-password\nuser: rhel"
                         }
                     },
                     {
