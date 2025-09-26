@@ -462,7 +462,7 @@ func TestReconcilerComplete(t *testing.T) {
 	// Checks the count of nodes and edges based on the JSON files in pkg/test-data
 	// Update counts when the test data is changed
 	// We don't create Nodes for kind = Event
-	const Nodes = 56
+	const Nodes = 57
 	const Edges = 61
 	if len(com.Edges) != Edges || com.TotalEdges != Edges || len(com.Nodes) != Nodes || com.TotalNodes != Nodes {
 		klog.Infof("len edges: %d", len(com.Edges))

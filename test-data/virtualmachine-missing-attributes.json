@@ -3,7 +3,6 @@
     "kind": "VirtualMachine",
     "metadata": {
         "annotations": {
-            "description": "some description",
             "kubemacpool.io/transaction-timestamp": "2024-04-30T16:22:02.151446447Z",
             "kubevirt.io/latest-observed-api-version": "v1",
             "kubevirt.io/storage-observed-api-version": "v1",
@@ -26,7 +25,7 @@
         "name": "rhel9-gitops",
         "namespace": "openshift-cnv",
         "resourceVersion": "8398727",
-        "uid": "01c049ff-8a18-4c6e-98fb-df6ab7777777"
+        "uid": "b95b4e56-9b13-11f0-bb8b-6a9e6a5efa95"
     },
     "spec": {
         "dataVolumeTemplates": [
@@ -53,28 +52,9 @@
                 }
             }
         ],
-        "running": true,
         "template": {
-            "metadata": {
-                "annotations": {
-                    "vm.kubevirt.io/flavor": "small",
-                    "vm.kubevirt.io/os": "rhel9",
-                    "vm.kubevirt.io/workload": "server"
-                },
-                "creationTimestamp": null,
-                "labels": {
-                    "kubevirt.io/domain": "rhel9-gitops",
-                    "kubevirt.io/size": "small"
-                }
-            },
             "spec": {
-                "architecture": "amd64",
                 "domain": {
-                    "cpu": {
-                        "cores": 1,
-                        "sockets": 1,
-                        "threads": 1
-                    },
                     "devices": {
                         "disks": [
                             {
@@ -115,9 +95,6 @@
                     "machine": {
                         "type": "pc-q35-rhel9.2.0"
                     },
-                    "memory": {
-                        "guest": "2Gi"
-                    },
                     "resources": {}
                 },
                 "networks": [
@@ -135,33 +112,9 @@
                         "name": "cloudinitdisk"
                     },
                     {
-                        "name": "rootdisk",
-                        "dataVolume": {
-                            "name": "rhel-8-amber-fish-51-volume"
-                        }
-                    },
-                    {
-                        "name": "rootdisk-2",
-                        "dataVolume": {
-                            "name": "rhel-8-amber-fish-51-volume-2"
-                        }
-                    },
-                    {
                         "name": "cloudinitdisk",
                         "cloudInitNoDisk": {
                             "userData": "#cloud-config\nchpasswd:\nexpire: false\npassword: dummy-password\nuser: rhel"
-                        }
-                    },
-                    {
-                        "name": "pvc-1",
-                        "persistentVolumeClaim": {
-                            "claimName": "the-claim-is-persistent"
-                        }
-                    },
-                    {
-                        "name": "pvc-2",
-                        "persistentVolumeClaim": {
-                            "claimName": "the-claim-is-too-persistent"
                         }
                     }
                 ]
@@ -169,58 +122,6 @@
         }
     },
     "status": {
-        "conditions": [
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": null,
-                "status": "True",
-                "type": "Initialized"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2024-04-30T16:22:50Z",
-                "status": "True",
-                "type": "Ready"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": null,
-                "message": "All of the VMI's DVs are bound and not running",
-                "reason": "AllDVsReady",
-                "status": "True",
-                "type": "DataVolumesReady"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": null,
-                "message": "cannot migrate VMI: PVC rhel9-gitops is not shared, live migration requires that all PVCs must be shared (using ReadWriteMany access mode)",
-                "reason": "DisksNotLiveMigratable",
-                "status": "False",
-                "type": "LiveMigratable"
-            },
-            {
-                "lastProbeTime": "2024-04-30T16:23:06Z",
-                "lastTransitionTime": null,
-                "status": "True",
-                "type": "AgentConnected"
-            }
-        ],
-        "created": true,
-        "desiredGeneration": 1,
-        "observedGeneration": 1,
-        "printableStatus": "Running",
-        "ready": true,
-        "volumeSnapshotStatuses": [
-            {
-                "enabled": false,
-                "name": "rootdisk",
-                "reason": "No VolumeSnapshotClass: Volume snapshots are not configured for this StorageClass [local-sc] [rootdisk]"
-            },
-            {
-                "enabled": false,
-                "name": "cloudinitdisk",
-                "reason": "Snapshot is not supported for this volumeSource type [cloudinitdisk]"
-            }
-        ]
+        "conditions": []
     }
 }
