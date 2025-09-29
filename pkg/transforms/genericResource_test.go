@@ -159,11 +159,11 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	AssertDeepEqual("pvcClaimNames", node.Properties["pvcClaimNames"],
 		[]interface{}{"the-claim-is-persistent", "the-claim-is-too-persistent"}, t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
-	AssertEqual("runStrategy", node.Properties["runStrategy"], nil, t)
+	AssertEqual("runStrategy", node.Properties["runStrategy"], "", t)
 	AssertEqual("status", node.Properties["status"], "Running", t)
 	AssertEqual("workload", node.Properties["workload"], "server", t)
 	AssertEqual("_specRunning", node.Properties["_specRunning"], true, t)
-	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], nil, t)
+	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], "", t)
 }
 
 func Test_genericResourceFromConfigVMI(t *testing.T) {
@@ -265,7 +265,7 @@ func Test_genericResourceFromConfigDataVolume(t *testing.T) {
 
 	// Verify properties defined in the transform config
 	AssertEqual("size", node.Properties["size"], "20Gi", t)
-	AssertEqual("storageClassName", node.Properties["storageClassName"], nil, t)
+	AssertEqual("storageClassName", node.Properties["storageClassName"], "", t)
 }
 
 func Test_genericResourceFromConfigNamespace(t *testing.T) {
@@ -299,4 +299,28 @@ func Test_genericResourceFromConfigStorageClass(t *testing.T) {
 	AssertEqual("provisioner", node.Properties["provisioner"], "ebs.csi.aws.com", t)
 	AssertEqual("reclaimPolicy", node.Properties["reclaimPolicy"], "Delete", t)
 	AssertEqual("volumeBindingMode", node.Properties["volumeBindingMode"], "WaitForFirstConsumer", t)
+}
+
+func Test_genericResourceFromConfigDefaultsEmptyString(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachine-missing-attributes.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify properties defined in the transform config
+	AssertEqual("architecture", node.Properties["architecture"], "", t)           // no architecture key on .spec.template.spec
+	AssertEqual("agentConnected", node.Properties["agentConnected"], "", t)       // empty conditions map on .status.conditions
+	AssertDeepEqual("condition", node.Properties["condition"], "", t)             // empty conditions map on .status.conditions
+	AssertEqual("cpu", node.Properties["cpu"], "", t)                             // no cpu map key on .spec.template.spec.domain
+	AssertDeepEqual("dataVolumeNames", node.Properties["dataVolumeNames"], "", t) // no dataVolume maps on .spec.template.spec.domain.volumes
+	AssertEqual("_description", node.Properties["_description"], "", t)           // no description key on .metadata.annotations
+	AssertEqual("flavor", node.Properties["flavor"], "", t)                       // no metadata map on .spec.template
+	AssertEqual("memory", node.Properties["memory"], "", t)                       // no memory map on .spec.template.spec.domain
+	AssertEqual("osName", node.Properties["osName"], "", t)                       // no metadata map on .spec.template
+	AssertDeepEqual("pvcClaimNames", node.Properties["pvcClaimNames"], "", t)     // no persistentVolumeClaim maps on .spec.template.spec.domain.volumes
+	AssertEqual("ready", node.Properties["ready"], "", t)                         // empty conditions map on .status.conditions
+	AssertEqual("runStrategy", node.Properties["runStrategy"], "", t)             // no runStrategy key on .spec
+	AssertEqual("status", node.Properties["status"], "", t)                       // no printableStatus key on .spec
+	AssertEqual("workload", node.Properties["workload"], "", t)                   // no metadata map on .spec.template
+	AssertEqual("_specRunning", node.Properties["_specRunning"], "", t)           // no running key on .spec
+	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], "", t)   // no runStrategy key on .spec
 }
