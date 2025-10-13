@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stolostron/search-collector/pkg/config"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,6 +69,9 @@ func fakeDiscoveryClient() (*httptest.Server, discovery.DiscoveryClient) {
 }
 
 func Test_syncInformers(t *testing.T) {
+	// Establish the config
+	config.InitConfig()
+
 	mockStoppers := make(map[schema.GroupVersionResource]context.CancelFunc)
 
 	fakeServer, fakeClient := fakeDiscoveryClient()
