@@ -20,6 +20,7 @@ import (
 
 	"github.com/golang/glog"
 	lru "github.com/golang/groupcache/lru"
+	"github.com/stolostron/search-collector/pkg/config"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -236,6 +237,9 @@ func TestReconcilerRedundant(t *testing.T) {
 }
 
 func TestReconcilerAddEdges(t *testing.T) {
+	// Establish the config
+	config.InitConfig()
+
 	testReconciler := initTestReconciler()
 	//Add events
 	events := createNodeEvents()
