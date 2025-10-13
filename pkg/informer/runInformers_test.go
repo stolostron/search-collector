@@ -5,6 +5,7 @@ package informer
 import (
 	"context"
 	"encoding/json"
+	"github.com/stolostron/search-collector/pkg/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -68,6 +69,9 @@ func fakeDiscoveryClient() (*httptest.Server, discovery.DiscoveryClient) {
 }
 
 func Test_syncInformers(t *testing.T) {
+	// Establish the config
+	config.InitConfig()
+
 	mockStoppers := make(map[schema.GroupVersionResource]context.CancelFunc)
 
 	fakeServer, fakeClient := fakeDiscoveryClient()

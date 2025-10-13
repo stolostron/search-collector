@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package reconciler
 
 import (
+	"github.com/stolostron/search-collector/pkg/config"
 	"log"
 	"os"
 	"reflect"
@@ -236,6 +237,9 @@ func TestReconcilerRedundant(t *testing.T) {
 }
 
 func TestReconcilerAddEdges(t *testing.T) {
+	// Establish the config
+	config.InitConfig()
+
 	testReconciler := initTestReconciler()
 	// Add events
 	events := createNodeEvents()

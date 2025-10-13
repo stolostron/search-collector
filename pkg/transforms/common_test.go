@@ -38,6 +38,8 @@ func CreateGenericResource() machineryV1.Object {
 }
 
 func TestCommonProperties(t *testing.T) {
+	// Establish the config
+	config.InitConfig()
 	config.Cfg.CollectAnnotations = true
 
 	defer func() {
