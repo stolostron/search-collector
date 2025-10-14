@@ -33,7 +33,7 @@ func fakeDynamicClient() *fake.FakeDynamicClient {
 		newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-bar3", "id-005"))
 }
 
-func generateSimpleEvent(informer GenericInformer, t *testing.T) {
+func generateSimpleEvent(informer *GenericInformer, t *testing.T) {
 	// Add resource. Generates ADDED event.
 	newResource := newTestUnstructured("open-cluster-management.io/v1", "TheKind", "ns-foo", "name-new", "id-999")
 	_, err1 := informer.client.Resource(gvr).Namespace("ns-foo").Create(context.TODO(), newResource, v1.CreateOptions{})
@@ -63,7 +63,7 @@ func newTestUnstructured(apiVersion, kind, namespace, name, uid string) *unstruc
 	}
 }
 
-func initInformer() (informer GenericInformer, _ *int, _ *int, _ *int) {
+func initInformer() (informer *GenericInformer, _ *int, _ *int, _ *int) {
 	// Create informer instance to test.
 	informer, _ = InformerForResource(gvr)
 
