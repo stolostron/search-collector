@@ -5,6 +5,7 @@ package informer
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"github.com/stolostron/search-collector/pkg/config"
@@ -24,7 +25,7 @@ type GenericInformer struct {
 	AddFunc       func(interface{})
 	DeleteFunc    func(interface{})
 	UpdateFunc    func(prev interface{}, next interface{}) // We don't use prev, but matching client-go informer.
-	initialized   bool
+	initialized   atomic.Bool
 	resourceIndex map[string]string // Index of curr resources [key=UUID value=resourceVersion]
 	retries       int64             // Counts times we have tried without establishing a watch.
 }
@@ -36,7 +37,6 @@ func InformerForResource(res schema.GroupVersionResource) (GenericInformer, erro
 		AddFunc:       (func(interface{}) { klog.Warning("AddFunc not initialized for ", res.String()) }),
 		DeleteFunc:    (func(interface{}) { klog.Warning("DeleteFunc not initialized for ", res.String()) }),
 		UpdateFunc:    (func(interface{}, interface{}) { klog.Warning("UpdateFunc not init for ", res.String()) }),
-		initialized:   false,
 		retries:       0,
 		resourceIndex: make(map[string]string),
 	}
@@ -70,7 +70,7 @@ func (inform *GenericInformer) Run(ctx context.Context) {
 
 			err := inform.listAndResync()
 			if err == nil {
-				inform.initialized = true
+				inform.initialized.Store(true)
 				inform.watch(ctx.Done())
 			}
 		}
@@ -214,7 +214,7 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 // or until timeout.
 func (inform *GenericInformer) WaitUntilInitialized(timeout time.Duration) {
 	start := time.Now()
-	for !inform.initialized {
+	for !inform.initialized.Load() {
 		if time.Since(start) > timeout {
 			klog.V(2).Infof("Informer [%s] timed out after %s waiting for initialization.", inform.gvr.String(), timeout)
 			break

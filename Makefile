@@ -26,6 +26,9 @@ lint:
 run:
 	GOGC=25 go run main.go --v=2
 
+run-race:
+	GOGC=25 go run -race main.go --v=2
+
 .PHONY: test
 test:
 	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out -coverpkg=./...
