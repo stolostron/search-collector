@@ -31,8 +31,8 @@ type GenericInformer struct {
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
-func InformerForResource(res schema.GroupVersionResource) (GenericInformer, error) {
-	i := GenericInformer{
+func InformerForResource(res schema.GroupVersionResource) (*GenericInformer, error) {
+	i := &GenericInformer{
 		gvr:           res,
 		AddFunc:       (func(interface{}) { klog.Warning("AddFunc not initialized for ", res.String()) }),
 		DeleteFunc:    (func(interface{}) { klog.Warning("DeleteFunc not initialized for ", res.String()) }),
