@@ -691,8 +691,6 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	conditionsMap := commonStatusConditions(kind, group, r)
 	if len(conditionsMap) > 0 {
 		node.Properties["condition"] = conditionsMap
-	} else {
-		node.Properties["condition"] = ""
 	}
 
 	// Currently, only pull in the additionalPrinterColumns listed in the CRD if it's a Gatekeeper
@@ -731,7 +729,6 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			// won't have a status yet, so the jsonpath returns an error until controller adds the status.
 			klog.V(1).Infof("Unable to extract prop [%s] from [%s.%s] Name: [%s]. Reason: %v",
 				prop.Name, kind, group, r.GetName(), err)
-			node.Properties[prop.Name] = ""
 			continue
 		}
 
@@ -794,9 +791,8 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			}
 		} else {
 			// path is valid but has no values, e.g. {status: {conditions: []}} where JSONPath == {.status.conditions[?(@.type=="AgentConnected")].status}
-			klog.V(3).Infof("Extracting [%s] from [%s.%s] Name: [%s] returned no values: setting to ''.",
+			klog.V(3).Infof("Extracting [%s] from [%s.%s] Name: [%s] returned no values",
 				prop.Name, kind, group, r.GetName())
-			node.Properties[prop.Name] = ""
 			continue
 		}
 	}
