@@ -1,0 +1,69 @@
+{
+    "apiVersion": "constraints.gatekeeper.sh/v1beta1",
+    "kind": "K8sRequiredLabels",
+    "metadata": {
+        "creationTimestamp": "2025-10-16T14:42:01Z",
+        "generation": 2,
+        "name": "ns-must-have-gk",
+        "resourceVersion": "480208",
+        "uid": "ba3bc39e-c990-4c8c-ba03-b66ce04c5fd2"
+    },
+    "spec": {
+        "enforcementAction": "dryrun",
+        "match": {
+            "kinds": [
+                {
+                    "apiGroups": [
+                        ""
+                    ],
+                    "kinds": [
+                        "Namespace"
+                    ]
+                }
+            ],
+            "namespaces": [
+                "open-cluster-fake"
+            ]
+        },
+        "parameters": {
+            "labels": [
+                "gatekeeper"
+            ]
+        }
+    },
+    "status": {
+        "auditTimestamp": "2025-10-16T18:16:32Z",
+        "byPod": [
+            {
+                "constraintUID": "ba3bc39e-c990-4c8c-ba03-b66ce04c5fd2",
+                "enforced": true,
+                "id": "gatekeeper-audit-6754cbb446-l7v58",
+                "observedGeneration": 2,
+                "operations": [
+                    "audit",
+                    "generate",
+                    "status"
+                ]
+            },
+            {
+                "constraintUID": "ba3bc39e-c990-4c8c-ba03-b66ce04c5fd2",
+                "enforced": true,
+                "id": "gatekeeper-controller-manager-749c7dc667-hkvjz",
+                "observedGeneration": 2,
+                "operations": [
+                    "webhook"
+                ]
+            },
+            {
+                "constraintUID": "ba3bc39e-c990-4c8c-ba03-b66ce04c5fd2",
+                "enforced": true,
+                "id": "gatekeeper-controller-manager-749c7dc667-qjrcq",
+                "observedGeneration": 2,
+                "operations": [
+                    "webhook"
+                ]
+            }
+        ],
+        "totalViolations": 0
+    }
+}

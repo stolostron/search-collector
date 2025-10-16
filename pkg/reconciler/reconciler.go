@@ -361,7 +361,10 @@ func (r *Reconciler) reconcileNode() {
 				}
 			}
 
-			if skip && (kind == "CertificatePolicy" || kind == "ConfigurationPolicy" || kind == "OperatorPolicy") {
+			isPolicy := (kind == "CertificatePolicy" || kind == "ConfigurationPolicy" || kind == "OperatorPolicy")
+			isConstraint := ne.Node.Properties["apigroup"] == "constraints.gatekeeper.sh"
+
+			if skip && (isPolicy || isConstraint) {
 				if !reflect.DeepEqual(ne.Node.Metadata["relObjs"], previousNode.Metadata["relObjs"]) {
 					skip = false
 				}
