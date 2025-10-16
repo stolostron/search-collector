@@ -54,6 +54,7 @@
             }
         ],
         "running": true,
+        "runStrategy": "always",
         "template": {
             "metadata": {
                 "annotations": {
