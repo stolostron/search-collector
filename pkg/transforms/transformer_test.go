@@ -72,7 +72,7 @@ func TestTransformRoutine(t *testing.T) {
 		{Name: "enforcementAction", JSONPath: "{.spec.enforcementAction}"},
 		{Name: "totalViolations", JSONPath: "{.status.totalViolations}"},
 	}
-	gatekeeperConstraintNode := GenericResourceBuilder(
+	gatekeeperConstraintNode := GkConstraintResourceBuilder(
 		&unstructGatekeeperConstraint, gatekeeperPrinterColumns...,
 	).BuildNode()
 	gatekeeperConstraintNode.ResourceString = "k8srequiredlabels"
