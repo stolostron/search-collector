@@ -1,0 +1,94 @@
+{
+    "apiVersion": "constraints.gatekeeper.sh/v1beta1",
+    "kind": "ContainerLivenessprobeNotset",
+    "metadata": {
+        "creationTimestamp": "2025-10-16T14:30:14Z",
+        "generation": 4,
+        "name": "containerlivenessprobenotset",
+        "resourceVersion": "255515",
+        "uid": "f42e8d1f-be16-443c-b1b9-efa9dc5ad459"
+    },
+    "spec": {
+        "enforcementAction": "dryrun",
+        "match": {
+            "excludedNamespaces": [
+                "kube-*",
+                "open*"
+            ],
+            "kinds": [
+                {
+                    "apiGroups": [
+                        "apps"
+                    ],
+                    "kinds": [
+                        "Deployment"
+                    ]
+                }
+            ]
+        }
+    },
+    "status": {
+        "auditTimestamp": "2025-10-16T14:43:32Z",
+        "byPod": [
+            {
+                "constraintUID": "f42e8d1f-be16-443c-b1b9-efa9dc5ad459",
+                "enforced": true,
+                "id": "gatekeeper-audit-6754cbb446-l7v58",
+                "observedGeneration": 4,
+                "operations": [
+                    "audit",
+                    "generate",
+                    "status"
+                ]
+            },
+            {
+                "constraintUID": "f42e8d1f-be16-443c-b1b9-efa9dc5ad459",
+                "enforced": true,
+                "id": "gatekeeper-controller-manager-749c7dc667-hkvjz",
+                "observedGeneration": 4,
+                "operations": [
+                    "webhook"
+                ]
+            },
+            {
+                "constraintUID": "f42e8d1f-be16-443c-b1b9-efa9dc5ad459",
+                "enforced": true,
+                "id": "gatekeeper-controller-manager-749c7dc667-qjrcq",
+                "observedGeneration": 4,
+                "operations": [
+                    "webhook"
+                ]
+            }
+        ],
+        "totalViolations": 3,
+        "violations": [
+            {
+                "enforcementAction": "dryrun",
+                "group": "apps",
+                "kind": "Deployment",
+                "message": "Deployment/provider-credential-controller: container 'provider-credential-controller' has no livenessProbe. See: https://docs.openshift.com/container-platform/latest/applications/application-health.html",
+                "name": "provider-credential-controller",
+                "namespace": "multicluster-engine",
+                "version": "v1"
+            },
+            {
+                "enforcementAction": "dryrun",
+                "group": "apps",
+                "kind": "Deployment",
+                "message": "Deployment/provider-credential-controller: container 'old-provider-connection' has no livenessProbe. See: https://docs.openshift.com/container-platform/latest/applications/application-health.html",
+                "name": "provider-credential-controller",
+                "namespace": "multicluster-engine",
+                "version": "v1"
+            },
+            {
+                "enforcementAction": "dryrun",
+                "group": "apps",
+                "kind": "Deployment",
+                "message": "(fake violation)",
+                "name": "fake-deployment",
+                "namespace": "default",
+                "version": "v1"
+            }
+        ]
+    }
+}
