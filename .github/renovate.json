@@ -10,7 +10,7 @@
             ],
             "enabled": true,
             "groupName": "go.mod packages",
-            "matchBaseBranches": ["main", "release-2.15"],
+            "matchBaseBranches": ["main", "release-2.16"],
             "matchPackageNames": ["*", "*/**"]
         }
     ],
