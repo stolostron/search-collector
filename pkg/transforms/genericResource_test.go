@@ -324,3 +324,21 @@ func Test_genericResourceFromConfigWithMissingAttributes(t *testing.T) {
 	AssertEqual("_specRunning", node.Properties["_specRunning"], nil, t)           // no running key on .spec
 	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], nil, t)   // no runStrategy key on .spec
 }
+
+func Test_genericResourceNetworkAddonsConfig(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("networkaddonsconfig.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "cluster", t)
+	AssertEqual("kind", node.Properties["kind"], "NetworkAddonsConfig", t)
+	AssertEqual("created", node.Properties["created"], "2025-12-01T14:05:35Z", t)
+
+	// Verify status conditions
+	AssertDeepEqual("condition", node.Properties["condition"], map[string]string{
+		"Degraded":    "False",
+		"Progressing": "False",
+		"Available":   "True",
+	}, t)
+}

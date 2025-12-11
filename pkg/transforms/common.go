@@ -49,6 +49,10 @@ func commonAnnotations(object v1.Object) map[string]string {
 		case "constraints.gatekeeper.sh":
 		case "mutations.gatekeeper.sh":
 		default:
+			transformConfig, found := getTransformConfig(objKind.GroupVersionKind().Group, objKind.GroupVersionKind().Kind)
+			if found && transformConfig.extractAnnotations {
+				break
+			}
 			return nil
 		}
 	}
@@ -688,9 +692,11 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	// Check if a transform config exists for this resource and extract the additional properties.
 	transformConfig, found := getTransformConfig(group, kind)
 
-	conditionsMap := commonStatusConditions(kind, group, r)
-	if len(conditionsMap) > 0 {
-		node.Properties["condition"] = conditionsMap
+	if config.Cfg.CollectStatusConditions || (found && transformConfig.extractConditions) {
+		conditionsMap := commonStatusConditions(kind, group, r)
+		if len(conditionsMap) > 0 {
+			node.Properties["condition"] = conditionsMap
+		}
 	}
 
 	// Currently, only pull in the additionalPrinterColumns listed in the CRD if it's a Gatekeeper
@@ -808,13 +814,6 @@ func commonStatusConditions(kind string, group string, r *unstructured.Unstructu
 	conditionsMap := make(map[string]string, 0)
 	if group != "" {
 		group = "." + group
-	}
-	if !config.Cfg.CollectStatusConditions {
-		switch kind + group {
-		case "VirtualMachine.kubevirt.io", "Node", "Pod", "Search.search.open-cluster-management.io", "MultiClusterHub.operator.open-cluster-management.io":
-		default:
-			return conditionsMap
-		}
 	}
 
 	// FIXME: when on Go 1.24 get via https://pkg.go.dev/sigs.k8s.io/cluster-api@v1.10.4/api/v1beta1#Conditions to simplify
