@@ -1,0 +1,66 @@
+{
+  "apiVersion": "networkaddonsoperator.network.kubevirt.io/v1",
+  "kind": "NetworkAddonsConfig",
+  "metadata": {
+    "creationTimestamp": "2025-12-01T14:05:35Z",
+    "generation": 1,
+    "labels": {
+      "app": "kubevirt-hyperconverged",
+      "app.kubernetes.io/component": "network",
+      "app.kubernetes.io/managed-by": "hco-operator",
+      "app.kubernetes.io/part-of": "hyperconverged-cluster",
+      "app.kubernetes.io/version": "4.20.1"
+    },
+    "name": "cluster",
+    "resourceVersion": "935434",
+    "uid": "uid-asdf-1"
+  },
+  "spec": {
+    "kubeMacPool": {},
+    "kubevirtIpamController": {
+      "defaultNetworkNADNamespace": "openshift-ovn-kubernetes"
+    },
+    "linuxBridge": {},
+    "multus": {},
+    "selfSignConfiguration": {
+      "caOverlapInterval": "24h0m0s",
+      "caRotateInterval": "48h0m0s",
+      "certOverlapInterval": "12h0m0s",
+      "certRotateInterval": "24h0m0s"
+    },
+    "tlsSecurityProfile": {
+      "intermediate": {},
+      "type": "Intermediate"
+    }
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastTransitionTime": "2025-12-01T14:05:37Z",
+        "status": "False",
+        "type": "Degraded"
+      },
+      {
+        "lastTransitionTime": "2025-12-01T14:07:40Z",
+        "status": "False",
+        "type": "Progressing"
+      },
+      {
+        "lastTransitionTime": "2025-12-01T14:07:40Z",
+        "status": "True",
+        "type": "Available"
+      }
+    ],
+    "containers": [
+      {
+        "image": "registry.redhat.io/container-native-virtualization/cnv-containernetworking-plugins-rhel9@sha256:asdf1234",
+        "name": "cni-plugins",
+        "parentKind": "DaemonSet",
+        "parentName": "kube-cni-linux-bridge-plugin"
+      }
+    ],
+    "observedVersion": "sha256:asdf1234",
+    "operatorVersion": "sha256:asdf1234",
+    "targetVersion": "sha256:asdf1234"
+  }
+}

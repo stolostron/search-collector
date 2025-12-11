@@ -26,8 +26,10 @@ const (
 
 // Declares the properties to extract from a given resource.
 type ResourceConfig struct {
-	properties []ExtractProperty // `json:"properties,omitempty"`
-	edges      []ExtractEdge     // `json:"edges,omitempty"`
+	properties         []ExtractProperty // `json:"properties,omitempty"`
+	edges              []ExtractEdge     // `json:"edges,omitempty"`
+	extractAnnotations bool              // `json:"extractAnnotations,omitempty"`
+	extractConditions  bool              // `json:"extractConditions,omitempty"`
 }
 
 var (
@@ -70,10 +72,16 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "storageClassName", JSONPath: `{.spec.storage.storageClassName}`},
 		},
 	},
+	"MultiClusterHub.operator.open-cluster-management.io": {
+		extractConditions: true,
+	},
 	"Namespace": {
 		properties: []ExtractProperty{
 			{Name: "status", JSONPath: `{.status.phase}`},
 		},
+	},
+	"NetworkAddonsConfig.networkaddonsoperator.network.kubevirt.io": {
+		extractConditions: true,
 	},
 	"Node": {
 		properties: []ExtractProperty{
@@ -81,12 +89,19 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "memoryAllocatable", JSONPath: `{.status.allocatable.memory}`, DataType: DataTypeBytes},
 			{Name: "memoryCapacity", JSONPath: `{.status.capacity.memory}`, DataType: DataTypeBytes},
 		},
+		extractConditions: true,
 	},
 	"PersistentVolumeClaim": {
 		properties: []ExtractProperty{
 			{Name: "requestedStorage", JSONPath: `{.spec.resources.requests.storage}`, DataType: DataTypeBytes},
 			{Name: "volumeMode", JSONPath: `{.spec.volumeMode}`},
 		},
+	},
+	"Pod": {
+		extractConditions: true,
+	},
+	"Search.search.open-cluster-management.io": {
+		extractConditions: true,
 	},
 	"StorageClass.storage.k8s.io": {
 		properties: []ExtractProperty{
@@ -133,6 +148,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "dataVolumeNames", ToKind: "DataVolume", Type: attachedTo},
 			{Name: "pvcClaimNames", ToKind: "PersistentVolumeClaim", Type: attachedTo},
 		},
+		extractConditions: true,
 	},
 	"VirtualMachineInstance.kubevirt.io": {
 		properties: []ExtractProperty{
