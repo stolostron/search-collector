@@ -1,0 +1,49 @@
+{
+  "apiVersion": "clone.kubevirt.io/v1beta1",
+  "kind": "VirtualMachineClone",
+  "metadata": {
+    "creationTimestamp": "2025-07-11T14:42:22Z",
+    "name": "full-vm-clone",
+    "namespace": "default",
+    "labels": {
+      "app": "vmclone-demo",
+      "kubevirt.io/test": "true"
+    },
+    "annotations": {
+      "clone.kubevirt.io/description": "Comprehensive example of a VM clone",
+      "clone.kubevirt.io/requested-by": "example-user"
+    }
+  },
+  "spec": {
+    "source": {
+      "apiGroup": "kubevirt.io",
+      "kind": "VirtualMachine",
+      "name": "source-vm",
+      "namespace": "default"
+    },
+    "target": {
+      "kind": "RealityMachine",
+      "name": "full-clone-vm",
+      "namespace": "default"
+    }
+  },
+  "status": {
+    "phase": "Phased",
+    "conditions": [
+      {
+        "type": "Reconciled",
+        "status": "False",
+        "reason": "CloneInProgress",
+        "message": "Clone controller is preparing resources",
+        "lastTransitionTime": "2025-12-07T10:00:00Z"
+      },
+      {
+        "type": "NotReconciled",
+        "status": "True",
+        "reason": "CloneNotInProgress",
+        "message": "Clone controller is not preparing resources",
+        "lastTransitionTime": "2023-12-07T10:00:00Z"
+      }
+    ]
+  }
+}

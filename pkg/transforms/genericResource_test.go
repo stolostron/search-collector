@@ -228,6 +228,10 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 	AssertEqual("sourceName", node.Properties["sourceName"], "centos7-gray-owl-35", t)
 	AssertEqual("sourceKind", node.Properties["sourceKind"], "VirtualMachine", t)
 	AssertDeepEqual("indications", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
+	AssertDeepEqual("condition", node.Properties["condition"], map[string]string{
+		"Ready":       "True",
+		"Progressing": "False",
+	}, t)
 
 }
 
@@ -325,7 +329,7 @@ func Test_genericResourceFromConfigWithMissingAttributes(t *testing.T) {
 	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], nil, t)   // no runStrategy key on .spec
 }
 
-func Test_genericResourceNetworkAddonsConfig(t *testing.T) {
+func Test_genericResourceFromConfigNetworkAddonsConfig(t *testing.T) {
 	var r unstructured.Unstructured
 	UnmarshalFile("networkaddonsconfig.json", &r, t)
 	node := GenericResourceBuilder(&r).BuildNode()
@@ -340,5 +344,78 @@ func Test_genericResourceNetworkAddonsConfig(t *testing.T) {
 		"Degraded":    "False",
 		"Progressing": "False",
 		"Available":   "True",
+	}, t)
+}
+
+func Test_genericResourceFromConfigVirtualMachineInstancetype(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachineinstancetype.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "small", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineInstancetype", t)
+	AssertEqual("created", node.Properties["created"], "2025-07-11T14:42:32Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("cpuGuest", node.Properties["cpuGuest"], int64(2), t)
+	AssertEqual("memoryGuest", node.Properties["memoryGuest"], int64(4294967296), t) // 4Gi
+}
+
+func Test_genericResourceFromConfigVirtualMachineClusterInstancetype(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachineclusterinstancetype.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "u1.medium", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineClusterInstancetype", t)
+	AssertEqual("created", node.Properties["created"], "2025-07-11T14:42:22Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("cpuGuest", node.Properties["cpuGuest"], int64(4), t)
+	AssertEqual("memoryGuest", node.Properties["memoryGuest"], int64(8589934592), t) // 8Gi
+}
+
+func Test_genericResourceFromConfigDataSource(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("datasource.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "DataSourceName", t)
+	AssertEqual("kind", node.Properties["kind"], "DataSource", t)
+	AssertEqual("created", node.Properties["created"], "2025-07-11T14:41:22Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("pvcName", node.Properties["pvcName"], "datasourcePVCName", t)
+	AssertEqual("pvcNamespace", node.Properties["pvcNamespace"], "datasourcePVCNamespace", t)
+	AssertEqual("snapshotName", node.Properties["snapshotName"], "datasourceSnapshotName", t)
+	AssertEqual("snapshotNamespace", node.Properties["snapshotNamespace"], "datasourceSnapshotNamespace", t)
+	AssertDeepEqual("condition", node.Properties["condition"], map[string]string{
+		"ThatType": "True",
+		"ThisType": "False",
+	}, t)
+}
+
+func Test_genericResourceFromConfigVirtualMachineClone(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachineclone.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "full-vm-clone", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineClone", t)
+	AssertEqual("created", node.Properties["created"], "2025-07-11T14:42:22Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("phase", node.Properties["phase"], "Phased", t)
+	AssertEqual("targetName", node.Properties["targetName"], "full-clone-vm", t)
+	AssertEqual("targetKind", node.Properties["targetKind"], "RealityMachine", t)
+	AssertEqual("sourceName", node.Properties["sourceName"], "source-vm", t)
+	AssertEqual("sourceKind", node.Properties["sourceKind"], "VirtualMachine", t)
+	AssertDeepEqual("condition", node.Properties["condition"], map[string]string{
+		"NotReconciled": "True",
+		"Reconciled":    "False",
 	}, t)
 }
