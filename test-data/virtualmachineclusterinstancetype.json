@@ -1,0 +1,32 @@
+{
+  "apiVersion": "instancetype.kubevirt.io/v1beta1",
+  "kind": "VirtualMachineClusterInstancetype",
+  "metadata": {
+    "creationTimestamp": "2025-07-11T14:42:22Z",
+    "name": "u1.medium",
+    "annotations": {
+      "instancetype.kubevirt.io/display-name": "Universal Medium"
+    },
+    "labels": {
+      "instancetype.kubevirt.io/vendor": "kubevirt",
+      "instancetype.kubevirt.io/series": "u1"
+    }
+  },
+  "spec": {
+    "cpu": {
+      "guest": 4,
+      "dedicatedCPUPlacement": true,
+      "isolateEmulatorThread": true,
+      "realtime": {
+        "enabled": false
+      }
+    },
+    "memory": {
+      "guest": "8Gi"
+    },
+    "ioThreadsPolicy": "shared",
+    "launchSecurity": {
+      "tpm": {}
+    }
+  }
+}

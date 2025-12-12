@@ -66,6 +66,15 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "degraded", JSONPath: `{.status.conditions[?(@.type=="Degraded")].status}`},
 		},
 	},
+	"DataSource.cdi.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "pvcName", JSONPath: `{.spec.source.pvc.name}`},
+			{Name: "pvcNamespace", JSONPath: `{.spec.source.pvc.namespace}`},
+			{Name: "snapshotName", JSONPath: `{.spec.source.snapshot.name}`},
+			{Name: "snapshotNamespace", JSONPath: `{.spec.source.snapshot.namespace}`},
+		},
+		extractConditions: true,
+	},
 	"DataVolume.cdi.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "size", JSONPath: `{.spec.storage.resources.requests.storage}`},
@@ -150,6 +159,22 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		},
 		extractConditions: true,
 	},
+	"VirtualMachineClone.clone.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "targetName", JSONPath: `{.spec.target.name}`},
+			{Name: "targetKind", JSONPath: `{.spec.target.kind}`},
+			{Name: "sourceName", JSONPath: `{.spec.source.name}`},
+			{Name: "sourceKind", JSONPath: `{.spec.source.kind}`},
+			{Name: "phase", JSONPath: `{.status.phase}`},
+		},
+		extractConditions: true,
+	},
+	"VirtualMachineClusterInstancetype.instancetype.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "cpuGuest", JSONPath: `{.spec.cpu.guest}`},
+			{Name: "memoryGuest", JSONPath: `{.spec.memory.guest}`, DataType: DataTypeBytes},
+		},
+	},
 	"VirtualMachineInstance.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "cpu", JSONPath: `{.spec.domain.cpu.cores}`},
@@ -176,6 +201,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "vmiName", ToKind: "VirtualMachineInstance", Type: migrationOf},
 		},
 	},
+	"VirtualMachineInstancetype.instancetype.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "cpuGuest", JSONPath: `{.spec.cpu.guest}`},
+			{Name: "memoryGuest", JSONPath: `{.spec.memory.guest}`, DataType: DataTypeBytes},
+		},
+	},
 	"VirtualMachineSnapshot.snapshot.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
@@ -186,6 +217,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "sourceName", JSONPath: `{.spec.source.name}`},
 			{Name: "readyToUse", JSONPath: `{.status.readyToUse}`},
 		},
+		extractConditions: true,
 	},
 	"VirtualMachineRestore.snapshot.kubevirt.io": {
 		properties: []ExtractProperty{

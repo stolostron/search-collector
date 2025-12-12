@@ -1,0 +1,46 @@
+{
+  "apiVersion": "cdi.kubevirt.io/v1beta1",
+  "kind": "DataSource",
+  "metadata": {
+    "creationTimestamp": "2025-07-11T14:41:22Z",
+    "name": "DataSourceName",
+    "annotations": {
+      "annotation-1.annotation/annotation": "annotation"
+    },
+    "labels": {
+      "label-1.label/label": "label"
+    }
+  },
+  "spec": {
+    "source": {
+      "pvc": {
+        "name": "datasourcePVCName",
+        "namespace": "datasourcePVCNamespace"
+      },
+      "snapshot": {
+        "name": "datasourceSnapshotName",
+        "namespace": "datasourceSnapshotNamespace"
+      }
+    }
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastHeartbeatTime": "2025-12-01T14:05:37Z",
+        "lastTransitionTime": "2024-12-01T14:05:37Z",
+        "message": "The data is sourced",
+        "reason": "Because",
+        "status": "True",
+        "type": "ThatType"
+      },
+      {
+        "lastHeartbeatTime": "2023-12-01T14:05:37Z",
+        "lastTransitionTime": "2022-12-01T14:05:37Z",
+        "message": "The data is too sourced",
+        "reason": "Because it is",
+        "status": "False",
+        "type": "ThisType"
+      }
+    ]
+  }
+}
