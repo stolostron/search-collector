@@ -27,8 +27,16 @@
     },
     "spec": {
         "source": {
+            "pvc": {
+                "name": "pvc-name",
+                "namespace": "pvc-namespace"
+            },
             "registry": {
                 "url": "docker://quay.io/containerdisks/centos:7-2009"
+            },
+            "snapshot": {
+                "name": "snapshot-name",
+                "namespace": "snapshot-namespace"
             }
         },
         "storage": {

@@ -3,6 +3,7 @@
   "kind": "VirtualMachineInstanceMigration",
   "metadata": {
     "creationTimestamp": "2025-07-11T14:42:32Z",
+    "deletionTimestamp": "2026-07-11T14:42:32Z",
     "resourceVersion": "5392720",
     "generation": 1,
     "name": "rhel-10-crimson-eagle-72-migration-j9h6b",
@@ -24,7 +25,10 @@
   },
   "status": {
     "migrationState": {
+      "migrationPolicyName": "my-first-migration-policy",
+      "sourceNode": "node-1",
       "sourcePod": "virt-launcher-rhel-10-crimson-eagle-72-zkzmn",
+      "targetNode": "node-2",
       "endTimestamp": "2025-07-11T14:42:32Z"
     },
     "phase": "Scheduling",

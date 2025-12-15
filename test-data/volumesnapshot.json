@@ -1,0 +1,28 @@
+{
+  "apiVersion": "snapshot.storage.k8s.io/v1",
+  "kind": "VolumeSnapshot",
+  "metadata": {
+    "name": "example-volume-snapshot",
+    "namespace": "default",
+    "creationTimestamp": "2025-12-15T12:00:00Z",
+    "labels": {
+      "app": "snapshot-demo"
+    },
+    "annotations": {
+      "snapshot.storage.kubernetes.io/allow-volume-mode-change": "true"
+    }
+  },
+  "spec": {
+    "volumeSnapshotClassName": "csi-snapshot-class",
+    "source": {
+      "persistentVolumeClaimName": "example-pvc"
+    }
+  },
+  "status": {
+    "readyToUse": true,
+    "creationTime": "2025-12-15T12:00:05Z",
+    "restoreSize": "10Gi",
+    "boundVolumeSnapshotContentName": "snapcontent-123456",
+    "error": null
+  }
+}

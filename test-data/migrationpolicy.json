@@ -1,0 +1,38 @@
+{
+  "apiVersion": "migrations.kubevirt.io/v1alpha1",
+  "kind": "MigrationPolicy",
+  "metadata": {
+    "creationTimestamp": "2025-12-15T12:00:00Z",
+    "name": "example-migration-policy",
+    "namespace": "kubevirt",
+    "labels": {
+      "kubevirt.io/policy": "live-migration"
+    },
+    "annotations": {
+      "migrations.kubevirt.io/description": "Migration policy for high-priority workloads"
+    }
+  },
+  "spec": {
+    "selectors": {
+      "namespaceSelector": {
+        "matchNames": [
+          "default",
+          "production"
+        ]
+      },
+      "virtualMachineInstanceSelector": {
+        "matchLabels": {
+          "workload": "critical"
+        }
+      }
+    },
+    "allowAutoConverge": true,
+    "allowPostCopy": false,
+    "bandwidthPerMigration": "64Mi",
+    "completionTimeoutPerGiB": 120,
+    "progressTimeout": 300
+  },
+  "status": {
+    "observedGeneration": 1
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "apiVersion": "cdi.kubevirt.io/v1beta1",
+  "kind": "DataImportCron",
+  "metadata": {
+    "annotations": {
+      "cdi.kubevirt.io/storage.import.lastCronTime": "2025-12-15T08:04:03Z",
+      "cdi.kubevirt.io/storage.import.nextCronTime": "2025-12-15T20:04:00Z"
+    },
+    "creationTimestamp": "2025-12-01T14:06:11Z",
+    "generation": 35,
+    "labels": {
+      "app.kubernetes.io/component": "templating",
+      "app.kubernetes.io/managed-by": "ssp-operator"
+    },
+    "name": "fedora-image-cron",
+    "namespace": "openshift-virtualization-os-images",
+    "resourceVersion": "18989431",
+    "uid": "uid-asdf-1"
+  },
+  "spec": {
+    "garbageCollect": "Outdated",
+    "managedDataSource": "fedora",
+    "schedule": "4 8/12 * * *"
+  },
+  "status": {
+    "conditions": [
+      {
+        "lastHeartbeatTime": "2025-12-01T14:07:58Z",
+        "lastTransitionTime": "2025-12-01T14:07:58Z",
+        "message": "No current import",
+        "reason": "NoImport",
+        "status": "False",
+        "type": "Progressing"
+      },
+      {
+        "lastHeartbeatTime": "2025-12-01T14:07:58Z",
+        "lastTransitionTime": "2025-12-01T14:07:58Z",
+        "message": "Latest import is up to date",
+        "reason": "UpToDate",
+        "status": "True",
+        "type": "UpToDate"
+      }
+    ],
+    "currentImports": [
+      {
+        "DataVolumeName": "fedora-68ed96832eca",
+        "Digest": "sha256:abcd1234"
+      }
+    ],
+    "lastExecutionTimestamp": "2025-12-15T08:04:03Z",
+    "lastImportTimestamp": "2025-12-01T14:07:58Z",
+    "lastImportedPVC": {
+      "name": "fedora-68ed96832eca",
+      "namespace": "openshift-virtualization-os-images"
+    },
+    "sourceFormat": "pvc"
+  }
+}
