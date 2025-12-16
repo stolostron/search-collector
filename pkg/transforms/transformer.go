@@ -115,7 +115,7 @@ func NewNodeEvent(event *Event, trans Transform, resourceString string) NodeEven
 	}
 	ne.ResourceString = resourceString
 	// Search v-2 , types is expected part of properties
-	ne.Node.Properties["kind_plural"] = resourceString //nolint // "could remove embedded field 'Node' from selector"
+	ne.Node.Properties["kind_plural"] = resourceString //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 	return ne
 }
 
