@@ -44,8 +44,8 @@ func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
 	if p.Status.ComplianceState != "" {
 		node.Properties["compliant"] = string(p.Status.ComplianceState)
 	}
-	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"]
-	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]
+	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"] //nolint // "could remove embedded field 'ObjectMeta' from selector
+	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]       //nolint // "could remove embedded field 'ObjectMeta' from selector
 	if okns && okpp {
 		node.Properties["_parentPolicy"] = pnamespace + "/" + ppolicy
 	}
@@ -113,13 +113,14 @@ func OperatorPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource
 			continue
 		}
 
-		if conditionType == "InstallPlanCompliant" {
+		switch conditionType {
+		case "InstallPlanCompliant":
 			if conditionReason == "InstallPlanRequiresApproval" || conditionReason == "InstallPlanApproved" {
 				upgradeAvailable = true
 			} else {
 				upgradeAvailable = false
 			}
-		} else if conditionType == "DeploymentCompliant" {
+		case "DeploymentCompliant":
 			if conditionReason == "DeploymentsAvailable" {
 				deploymentAvailable = true
 			} else {

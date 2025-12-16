@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"math/big"
 	"net/http"
@@ -202,14 +203,16 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	resp, err := s.httpClient.Do(req)
 	if resp != nil && resp.Body != nil {
 		// #nosec G307
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			_ = Body.Close()
+		}(resp.Body)
 	}
 	if err != nil {
 		klog.Error("httpClient error: ", err)
 		return err
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return errors.New("Aggregator busy")
+		return errors.New("aggregator busy")
 	} else if resp.StatusCode != http.StatusOK {
 		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
 			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
