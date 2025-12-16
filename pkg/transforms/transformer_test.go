@@ -163,7 +163,7 @@ func TestTransformRoutine(t *testing.T) {
 	for _, test := range tests {
 		input <- test.in
 		actual := <-output
-		test.expected.Node.Properties["kind_plural"] = test.in.ResourceString
+		test.expected.Node.Properties["kind_plural"] = test.in.ResourceString //nolint // "could remove embedded field 'Node' from selector"
 		AssertDeepEqual(test.name, actual.Node, test.expected.Node, t)
 		AssertEqual(test.name, actual.Time, test.expected.Time, t)
 		AssertEqual(test.name, actual.Operation, test.expected.Operation, t)

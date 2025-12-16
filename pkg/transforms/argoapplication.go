@@ -89,7 +89,7 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 	// add its ApplicationSet owner
 	applicationSet := ""
 
-	for _, ref := range a.ObjectMeta.OwnerReferences {
+	for _, ref := range a.ObjectMeta.OwnerReferences { //nolint // "could remove embedded field 'ObjectMeta' from selector"
 		if strings.Index(ref.APIVersion, "argoproj.io/") == 0 && ref.Kind == "ApplicationSet" {
 			applicationSet = ref.Name
 
