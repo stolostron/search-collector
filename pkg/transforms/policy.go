@@ -44,8 +44,8 @@ func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
 	if p.Status.ComplianceState != "" {
 		node.Properties["compliant"] = string(p.Status.ComplianceState)
 	}
-	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"] //nolint // "could remove embedded field 'ObjectMeta' from selector
-	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]       //nolint // "could remove embedded field 'ObjectMeta' from selector
+	pnamespace, okns := p.ObjectMeta.Labels["parent-namespace"] //nolint:staticcheck // "could remove embedded field 'ObjectMeta' from selector
+	ppolicy, okpp := p.ObjectMeta.Labels["parent-policy"]       //nolint:staticcheck // "could remove embedded field 'ObjectMeta' from selector
 	if okns && okpp {
 		node.Properties["_parentPolicy"] = pnamespace + "/" + ppolicy
 	}
