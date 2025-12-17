@@ -122,11 +122,12 @@ func (r *Reconciler) Diff() Diff {
 
 	// Fill out nodes
 	for _, ne := range r.diffNodes {
-		if ne.Operation == tr.Create {
+		switch ne.Operation {
+		case tr.Create:
 			ret.AddNodes = append(ret.AddNodes, ne.Node)
-		} else if ne.Operation == tr.Update {
+		case tr.Update:
 			ret.UpdateNodes = append(ret.UpdateNodes, ne.Node)
-		} else if ne.Operation == tr.Delete {
+		case tr.Delete:
 			ret.DeleteNodes = append(ret.DeleteNodes, tr.Deletion{UID: ne.UID})
 		}
 	}
@@ -303,12 +304,12 @@ func (r *Reconciler) reconcileNode() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	metrics.EventsReceivedCount.WithLabelValues(ne.Node.ResourceString).Inc()
+	metrics.EventsReceivedCount.WithLabelValues(ne.Node.ResourceString).Inc() //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 
 	// Check whether we already have this node in our diff/purged state with a more up to date time.
 	// If so, we ignore the version of it we're currently processing.
-	otherNode, inDiff := r.diffNodes[ne.Node.UID]
-	nodeInterface, inPurged := r.purgedNodes.Get(ne.Node.UID)
+	otherNode, inDiff := r.diffNodes[ne.Node.UID]             //nolint:staticcheck // "could remove embedded field 'Node' from selector"
+	nodeInterface, inPurged := r.purgedNodes.Get(ne.Node.UID) //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 
 	if inDiff && otherNode.Time > ne.Time {
 		return
@@ -322,7 +323,7 @@ func (r *Reconciler) reconcileNode() {
 		}
 	}
 
-	previousNode, inPrevious := r.previousNodes[ne.Node.UID]
+	previousNode, inPrevious := r.previousNodes[ne.Node.UID] //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 
 	if ne.Operation == tr.Delete {
 		delete(r.currentNodes, ne.UID) // Get rid of it from our currentState, if it was ever there.
@@ -344,9 +345,9 @@ func (r *Reconciler) reconcileNode() {
 			// (a property that we don't care about triggered an update)
 			// For nodes that are not applications or subscriptions, We only care about the Properties,
 			// the Metadata is only used to compute the edges and not sent with the node data.
-			skip := reflect.DeepEqual(ne.Node.Properties, previousNode.Properties)
+			skip := reflect.DeepEqual(ne.Node.Properties, previousNode.Properties) //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 
-			kind := ne.Node.Properties["kind"]
+			kind := ne.Node.Properties["kind"] //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 
 			// If the node is an application or subscription, it might have changes to its metadata we
 			// need to account for so don't skip updates on those
@@ -356,16 +357,16 @@ func (r *Reconciler) reconcileNode() {
 
 			// VAPBs specially need to update edges based on this piece of metadata
 			if skip && kind == "ValidatingAdmissionPolicyBinding" {
-				if ne.Node.Metadata["paramRef"] != previousNode.Metadata["paramRef"] {
+				if ne.Node.Metadata["paramRef"] != previousNode.Metadata["paramRef"] { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 					skip = false
 				}
 			}
 
 			isPolicy := (kind == "CertificatePolicy" || kind == "ConfigurationPolicy" || kind == "OperatorPolicy")
-			isConstraint := ne.Node.Properties["apigroup"] == "constraints.gatekeeper.sh"
+			isConstraint := ne.Node.Properties["apigroup"] == "constraints.gatekeeper.sh" //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 
 			if skip && (isPolicy || isConstraint) {
-				if !reflect.DeepEqual(ne.Node.Metadata["relObjs"], previousNode.Metadata["relObjs"]) {
+				if !reflect.DeepEqual(ne.Node.Metadata["relObjs"], previousNode.Metadata["relObjs"]) { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 					skip = false
 				}
 			}
@@ -378,20 +379,20 @@ func (r *Reconciler) reconcileNode() {
 		// we are processing the same helm release N times. Since the order which the configmap gets this point
 		// is not gauranteed , we are setting helm status which are old . Skipping if the current helm revison
 		// is OLDER than one we already have.
-		if ne.Node.ResourceString == "releases" {
+		if ne.Node.ResourceString == "releases" { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 			// If node has already been sent, check the previous helm revision is latest and discard current one
 			if inPrevious {
-				if previousNode.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
+				if previousNode.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 					klog.V(5).Infof("Skip %d for  release %s - previous is good",
-						ne.Node.Properties["revision"], ne.Node.Properties["name"])
+						ne.Node.Properties["revision"], ne.Node.Properties["name"]) //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 					return
 				}
 			}
 			// If we have processed this release already (ready to send), check it's the latest and discard current one
 			if nodeVal, ok := r.currentNodes[ne.UID]; ok {
-				if nodeVal.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) {
+				if nodeVal.Properties["revision"].(int64) > ne.Node.Properties["revision"].(int64) { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 					klog.V(5).Infof("Skip %d for  release %s - lower revision",
-						ne.Node.Properties["revision"], ne.Node.Properties["name"])
+						ne.Node.Properties["revision"], ne.Node.Properties["name"]) //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 					return
 				}
 			}

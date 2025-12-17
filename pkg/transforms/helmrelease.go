@@ -60,7 +60,7 @@ func (h HelmReleaseResource) BuildNode() Node {
 		timestamp := lastDeployed.AsTime()
 		node.Properties["chartName"] = h.Release.GetChart().GetMetadata().GetName()
 		node.Properties["chartVersion"] = h.Release.GetChart().GetMetadata().GetVersion()
-		node.Properties["namespace"] = h.Release.GetNamespace()
+		node.Properties["namespace"] = h.Release.GetNamespace() //nolint:staticcheck // "could remove embedded field 'Release' from selector
 		node.Properties["updated"] = timestamp.UTC().Format(time.RFC3339)
 	}
 	return node
@@ -88,7 +88,7 @@ func getSummarizedManifestResources(h HelmReleaseResource) []SummarizedManifestR
 		(2) https://helm.sh/docs/chart_template_guide/#a-first-template
 	*/
 
-	manifest := h.Release.GetManifest()
+	manifest := h.Release.GetManifest() //nolint:staticcheck // "could remove embedded field 'Release' from selector
 
 	// Strings for parsing out important information from manifest resources
 
