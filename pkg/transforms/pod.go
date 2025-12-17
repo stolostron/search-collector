@@ -105,8 +105,8 @@ func PodResourceBuilder(p *corev1.Pod, r *unstructured.Unstructured) *PodResourc
 		reason = "Terminating"
 	}
 
-	node := transformCommon(p) // Start off with the common properties
-	ownerReferences := p.ObjectMeta.OwnerReferences
+	node := transformCommon(p)                      // Start off with the common properties
+	ownerReferences := p.ObjectMeta.OwnerReferences //nolint:staticcheck // "could remove embedded field 'ObjectMeta' from selector"
 
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
