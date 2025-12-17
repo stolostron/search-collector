@@ -28,7 +28,7 @@ func NodeResourceBuilder(n *v1.Node, r *unstructured.Unstructured, additionalCol
 	node := transformCommon(n) // Start off with the common properties
 
 	var roles []string
-	labels := n.ObjectMeta.Labels
+	labels := n.ObjectMeta.Labels //nolint:staticcheck // "could remove embedded field 'ObjectMeta' from selector
 	for key, value := range labels {
 		if strings.HasPrefix(key, "node-role.kubernetes.io/") && value == "" {
 			roles = append(roles, strings.TrimPrefix(key, "node-role.kubernetes.io/"))
