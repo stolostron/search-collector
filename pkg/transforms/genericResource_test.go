@@ -205,8 +205,13 @@ func Test_genericResourceFromConfigVMIM(t *testing.T) {
 	AssertEqual("vmiName", node.Properties["vmiName"], "rhel-10-crimson-eagle-72", t)
 
 	// Verify properties defined in the transform config
+	AssertEqual("deleted", node.Properties["deleted"], "2026-07-11T14:42:32Z", t)
 	AssertEqual("endTime", node.Properties["endTime"], "2025-07-11T14:42:32Z", t)
+	AssertEqual("migrationPolicyName", node.Properties["migrationPolicyName"], "my-first-migration-policy", t)
 	AssertEqual("phase", node.Properties["phase"], "Scheduling", t)
+	AssertEqual("sourceNode", node.Properties["sourceNode"], "node-1", t)
+	AssertEqual("sourcePod", node.Properties["sourcePod"], "virt-launcher-rhel-10-crimson-eagle-72-zkzmn", t)
+	AssertEqual("targetNode", node.Properties["targetNode"], "node-2", t)
 }
 
 func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
@@ -250,9 +255,11 @@ func Test_genericResourceFromConfigVMRestore(t *testing.T) {
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
 	AssertEqual("complete", node.Properties["complete"], true, t)
+	AssertEqual("targetApiGroup", node.Properties["targetApiGroup"], "kubevirt.io", t)
 	AssertEqual("targetName", node.Properties["targetName"], "centos7-gray-owl-35", t)
 	AssertEqual("targetKind", node.Properties["targetKind"], "VirtualMachine", t)
 	AssertDeepEqual("restoreTime", node.Properties["restoreTime"], "2025-05-06T15:59:39Z", t)
+	AssertEqual("virtualMachineSnapshotName", node.Properties["virtualMachineSnapshotName"], "centos7-gray-owl-35-snapshot", t)
 
 }
 
@@ -268,8 +275,16 @@ func Test_genericResourceFromConfigDataVolume(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-09-09T20:00:42Z", t)
 
 	// Verify properties defined in the transform config
+	AssertEqual("pvcName", node.Properties["pvcName"], "pvc-name", t)
+	AssertEqual("pvcNamespace", node.Properties["pvcNamespace"], "pvc-namespace", t)
 	AssertEqual("size", node.Properties["size"], "20Gi", t)
+	AssertEqual("snapshotName", node.Properties["snapshotName"], "snapshot-name", t)
+	AssertEqual("snapshotNamespace", node.Properties["snapshotNamespace"], "snapshot-namespace", t)
+	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
 	AssertEqual("storageClassName", node.Properties["storageClassName"], nil, t)
+	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
+		"cdi.kubevirt.io/storage.usePopulator": "false",
+	}, t)
 }
 
 func Test_genericResourceFromConfigNamespace(t *testing.T) {
@@ -417,5 +432,76 @@ func Test_genericResourceFromConfigVirtualMachineClone(t *testing.T) {
 	AssertDeepEqual("condition", node.Properties["condition"], map[string]string{
 		"NotReconciled": "True",
 		"Reconciled":    "False",
+	}, t)
+}
+
+func Test_genericResourceFromConfigNetworkAttachmentDefinition(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("networkattachmentdefinition.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "next-net", t)
+	AssertEqual("kind", node.Properties["kind"], "NetworkAttachmentDefinition", t)
+	AssertEqual("created", node.Properties["created"], "2000-04-30T16:22:02Z", t)
+
+	// Verify properties defined in the transform config
+	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
+		"description": "Definition of a network attachment",
+		"label":       "test",
+	}, t)
+}
+
+func Test_genericResourceFromConfigDataImportCron(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("dataimportcron.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "fedora-image-cron", t)
+	AssertEqual("kind", node.Properties["kind"], "DataImportCron", t)
+	AssertEqual("created", node.Properties["created"], "2025-12-01T14:06:11Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("managedDataSource", node.Properties["managedDataSource"], "fedora", t)
+	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
+		"cdi.kubevirt.io/storage.import.lastCronTime": "2025-12-15T08:04:03Z",
+		"cdi.kubevirt.io/storage.import.nextCronTime": "2025-12-15T20:04:00Z",
+	}, t)
+}
+
+func Test_genericResourceFromConfigVolumeSnapshot(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("volumesnapshot.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "example-volume-snapshot", t)
+	AssertEqual("kind", node.Properties["kind"], "VolumeSnapshot", t)
+	AssertEqual("created", node.Properties["created"], "2025-12-15T12:00:00Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("volumeSnapshotClassName", node.Properties["volumeSnapshotClassName"], "csi-snapshot-class", t)
+	AssertEqual("persistentVolumeClaimName", node.Properties["persistentVolumeClaimName"], "example-pvc", t)
+	AssertEqual("restoreSize", node.Properties["restoreSize"], int64(10737418240), t) // 10Gi
+}
+
+func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("migrationpolicy.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "example-migration-policy", t)
+	AssertEqual("kind", node.Properties["kind"], "MigrationPolicy", t)
+	AssertEqual("created", node.Properties["created"], "2025-12-15T12:00:00Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("allowAutoConverge", node.Properties["allowAutoConverge"], true, t)
+	AssertEqual("allowPostCopy", node.Properties["allowPostCopy"], false, t)
+	AssertEqual("bandwidthPerMigration", node.Properties["bandwidthPerMigration"], int64(67108864), t)
+	AssertEqual("completionTimeoutPerGiB", node.Properties["completionTimeoutPerGiB"], int64(120), t)
+	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
+		"migrations.kubevirt.io/description": "Migration policy for high-priority workloads",
 	}, t)
 }

@@ -1,0 +1,15 @@
+{
+  "apiVersion": "k8s.cni.cncf.io/v1",
+  "kind": "NetworkAttachmentDefinition",
+  "metadata": {
+    "annotations": {
+      "description": "Definition of a network attachment",
+      "label": "test"
+    },
+    "creationTimestamp": "2000-04-30T16:22:02Z",
+    "name": "next-net"
+  },
+  "spec": {
+    "config": "{\n  \"cniVersion\": \"0.3.1\",\n  \"name\": \"work-network\",\n  \"namespace\": \"namespace2\",\n  \"type\": \"host-device\",\n  \"device\": \"eth1\",\n  \"ipam\": {\n    \"type\": \"dhcp\"\n  }\n}"
+  }
+}

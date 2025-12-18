@@ -78,8 +78,29 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	"DataVolume.cdi.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "size", JSONPath: `{.spec.storage.resources.requests.storage}`},
+			{Name: "snapshotName", JSONPath: `{.spec.source.snapshot.name}`},
+			{Name: "snapshotNamespace", JSONPath: `{.spec.source.snapshot.namespace}`},
+			{Name: "phase", JSONPath: `{.status.phase}`},
+			{Name: "pvcName", JSONPath: `{.spec.source.pvc.name}`},
+			{Name: "pvcNamespace", JSONPath: `{.spec.source.pvc.namespace}`},
 			{Name: "storageClassName", JSONPath: `{.spec.storage.storageClassName}`},
 		},
+		extractAnnotations: true,
+	},
+	"DataImportCron.cdi.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "managedDataSource", JSONPath: `{.spec.managedDataSource}`},
+		},
+		extractAnnotations: true,
+	},
+	"MigrationPolicy.migrations.kubevirt.io": {
+		properties: []ExtractProperty{
+			{Name: "allowAutoConverge", JSONPath: `{.spec.allowAutoConverge}`},
+			{Name: "allowPostCopy", JSONPath: `{.spec.allowPostCopy}`},
+			{Name: "bandwidthPerMigration", JSONPath: `{.spec.bandwidthPerMigration}`, DataType: DataTypeBytes},
+			{Name: "completionTimeoutPerGiB", JSONPath: `{.spec.completionTimeoutPerGiB}`},
+		},
+		extractAnnotations: true,
 	},
 	"MultiClusterHub.operator.open-cluster-management.io": {
 		extractConditions: true,
@@ -91,6 +112,9 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"NetworkAddonsConfig.networkaddonsoperator.network.kubevirt.io": {
 		extractConditions: true,
+	},
+	"NetworkAttachmentDefinition.k8s.cni.cncf.io": {
+		extractAnnotations: true,
 	},
 	"Node": {
 		properties: []ExtractProperty{
@@ -192,8 +216,13 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"VirtualMachineInstanceMigration.kubevirt.io": {
 		properties: []ExtractProperty{
+			{Name: "deleted", JSONPath: `{.metadata.deletionTimestamp}`},
 			{Name: "endTime", JSONPath: `{.status.migrationState.endTimestamp}`},
+			{Name: "migrationPolicyName", JSONPath: `{.status.migrationState.migrationPolicyName}`},
 			{Name: "phase", JSONPath: `{.status.phase}`},
+			{Name: "sourceNode", JSONPath: `{.status.migrationState.sourceNode}`},
+			{Name: "sourcePod", JSONPath: `{.status.migrationState.sourcePod}`},
+			{Name: "targetNode", JSONPath: `{.status.migrationState.targetNode}`},
 			{Name: "vmiName", JSONPath: `{.spec.vmiName}`},
 			{Name: "vmiName", JSONPath: `{.spec.vmiName}`, metadataOnly: true}, // Used to build the edge
 		},
@@ -225,8 +254,17 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "_conditionReadyReason", JSONPath: `{.status.conditions[?(@.type=='Ready')].reason}`},
 			{Name: "restoreTime", JSONPath: `{.status.restoreTime}`},
 			{Name: "complete", JSONPath: `{.status.complete}`},
+			{Name: "targetApiGroup", JSONPath: `{.spec.target.apiGroup}`},
 			{Name: "targetKind", JSONPath: `{.spec.target.kind}`},
 			{Name: "targetName", JSONPath: `{.spec.target.name}`},
+			{Name: "virtualMachineSnapshotName", JSONPath: `{.spec.virtualMachineSnapshotName}`},
+		},
+	},
+	"VolumeSnapshot.snapshot.storage.k8s.io": {
+		properties: []ExtractProperty{
+			{Name: "volumeSnapshotClassName", JSONPath: `{.spec.volumeSnapshotClassName}`},
+			{Name: "persistentVolumeClaimName", JSONPath: `{.spec.source.persistentVolumeClaimName}`},
+			{Name: "restoreSize", JSONPath: `{.status.restoreSize}`, DataType: DataTypeBytes},
 		},
 	},
 }
