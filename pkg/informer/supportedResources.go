@@ -10,7 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -118,7 +117,7 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 
 	// locate the search-collector-config ConfigMap
 	cm, cmErr := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
-		Get(ctx, "search-collector-config", metav1.GetOptions{})
+		Get(ctx, "search-collector-config", machineryV1.GetOptions{})
 	if cmErr != nil {
 		glog.Info("Collecting all resources. ConfigMap search-collector-config is not present.", cmErr)
 	}
