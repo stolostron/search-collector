@@ -280,7 +280,7 @@ func Test_genericResourceFromConfigDataVolume(t *testing.T) {
 	AssertEqual("size", node.Properties["size"], "20Gi", t)
 	AssertEqual("snapshotName", node.Properties["snapshotName"], "snapshot-name", t)
 	AssertEqual("snapshotNamespace", node.Properties["snapshotNamespace"], "snapshot-namespace", t)
-	AssertEqual("statusPhase", node.Properties["statusPhase"], "Succeeded", t)
+	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
 	AssertEqual("storageClassName", node.Properties["storageClassName"], nil, t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"cdi.kubevirt.io/storage.usePopulator": "false",
