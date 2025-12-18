@@ -114,9 +114,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		extractConditions: true,
 	},
 	"NetworkAttachmentDefinition.k8s.cni.cncf.io": {
-		properties: []ExtractProperty{
-			{Name: "config", JSONPath: `{.spec.config}`},
-		},
 		extractAnnotations: true,
 	},
 	"Node": {

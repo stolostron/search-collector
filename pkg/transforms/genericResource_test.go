@@ -446,9 +446,6 @@ func Test_genericResourceFromConfigNetworkAttachmentDefinition(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2000-04-30T16:22:02Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("config", node.Properties["config"],
-		"{\n  \"cniVersion\": \"0.3.1\",\n  \"name\": \"work-network\",\n  \"namespace\": \"namespace2\","+
-			"\n  \"type\": \"host-device\",\n  \"device\": \"eth1\",\n  \"ipam\": {\n    \"type\": \"dhcp\"\n  }\n}", t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"description": "Definition of a network attachment",
 		"label":       "test",
