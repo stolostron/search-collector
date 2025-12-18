@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"math/big"
 	"net/http"
@@ -163,7 +164,7 @@ func (s *Sender) completePayload() (Payload, int, int) {
 }
 
 // Send will retry after recoverable errors.
-//  - Aggregator busy
+//   - indexer busy
 func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
 	retry := 0
 	for {
@@ -172,7 +173,7 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 		nextRetryWait := sendInterval(retry)
 
 		// If indexer was busy, wait and retry with the same payload.
-		if sendError != nil && sendError.Error() == "Aggregator busy" {
+		if sendError != nil && sendError.Error() == "indexer busy" {
 			glog.Warningf("Received busy response from Indexer. Resending in %s.", nextRetryWait)
 			time.Sleep(nextRetryWait)
 			continue
@@ -205,14 +206,16 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	resp, err := s.httpClient.Post(s.aggregatorURL+s.aggregatorSyncPath, "application/json", payloadBuffer)
 	if resp != nil && resp.Body != nil {
 		// #nosec G307
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			_ = Body.Close()
+		}(resp.Body)
 	}
 	if err != nil {
 		glog.Error("httpClient error: ", err)
 		return err
 	}
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return errors.New("Aggregator busy")
+		return errors.New("indexer busy")
 	} else if resp.StatusCode != http.StatusOK {
 		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
 			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)

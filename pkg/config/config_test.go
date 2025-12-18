@@ -22,7 +22,7 @@ func Test_SetDefault_01(t *testing.T) {
 // Should use value from environment variable if it exists.
 func Test_SetDefault_02(t *testing.T) {
 
-	os.Setenv("TEST_ENV_VARIABLE", "value-from-env")
+	_ = os.Setenv("TEST_ENV_VARIABLE", "value-from-env")
 	property := ""
 	setDefault(&property, "TEST_ENV_VARIABLE", "default-value")
 
@@ -44,7 +44,7 @@ func Test_SetDefaultInt_01(t *testing.T) {
 // Should use value from environment variable if it exists.
 func Test_SetDefaultInt_02(t *testing.T) {
 
-	os.Setenv("TEST_ENV_VARIABLE", "9999")
+	_ = os.Setenv("TEST_ENV_VARIABLE", "9999")
 	var property int
 	setDefaultInt(&property, "TEST_ENV_VARIABLE", 0000)
 
