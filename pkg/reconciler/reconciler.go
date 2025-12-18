@@ -349,13 +349,13 @@ func (r *Reconciler) reconcileNode() {
 
 			// If the node is an application or subscription, it might have changes to its metadata we
 			// need to account for so don't skip updates on those
-			if skip && (ne.Node.Properties["kind"] == "Application" || ne.Node.Properties["kind"] == "Subscription") {
+			if skip && (ne.Node.Properties["kind"] == "Application" || ne.Node.Properties["kind"] == "Subscription") { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 				skip = false
 			}
 
 			// VAPBs specially need to update edges based on this piece of metadata
-			if skip && ne.Node.Properties["kind"] == "ValidatingAdmissionPolicyBinding" {
-				if ne.Node.Metadata["paramRef"] != previousNode.Metadata["paramRef"] {
+			if skip && ne.Node.Properties["kind"] == "ValidatingAdmissionPolicyBinding" { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
+				if ne.Node.Metadata["paramRef"] != previousNode.Metadata["paramRef"] { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
 					skip = false
 				}
 			}
