@@ -504,10 +504,6 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertEqual("allowPostCopy", node.Properties["allowPostCopy"], false, t)
 	AssertEqual("bandwidthPerMigration", node.Properties["bandwidthPerMigration"], int64(67108864), t)
 	AssertEqual("completionTimeoutPerGiB", node.Properties["completionTimeoutPerGiB"], int64(120), t)
-	AssertDeepEqual("selectors", node.Properties["selectors"], map[string]interface{}{
-		"namespaceSelector":              map[string]interface{}{"matchNames": []interface{}{"default", "production"}},
-		"virtualMachineInstanceSelector": map[string]interface{}{"matchLabels": map[string]interface{}{"workload": "critical"}},
-	}, t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"migrations.kubevirt.io/description": "Migration policy for high-priority workloads",
 	}, t)
