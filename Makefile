@@ -31,12 +31,13 @@ run-race:
 
 .PHONY: test
 test:
-	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out -coverpkg=./...
+	DEPLOYED_IN_HUB=true go test ./... -failfast
 
 .PHONY: coverage
 coverage:
+	DEPLOYED_IN_HUB=true go test ./... -failfast -v -coverprofile cover.out
 	go tool cover -html=cover.out -o=cover.html
-
+	open cover.html
 
 .PHONY: clean
 clean::
