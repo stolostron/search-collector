@@ -66,6 +66,18 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "degraded", JSONPath: `{.status.conditions[?(@.type=="Degraded")].status}`},
 		},
 	},
+	"ConfigMap": {
+		properties: []ExtractProperty{
+			{Name: "statusCompletionTime", JSONPath: `{.data.STATUS_COMPLETION_TIME_STAMP}`},
+			{Name: "statusSucceeded", JSONPath: `{.data.STATUS_SUCCEEDED}`},
+			{Name: "statusFailureReason", JSONPath: `{.data.STATUS_FAILURE_REASON}`},
+			{Name: "statusStartTime", JSONPath: `{.data.STATUS_START_TIME_STAMP}`},
+			{Name: "statusAvgLatency", JSONPath: `{.data.STATUS_AVG_LATENCY_NANO}`},
+			{Name: "statusMaxLatency", JSONPath: `{.data.STATUS_MAX_LATENCY_NANO}`},
+			{Name: "statusMinLatency", JSONPath: `{.data.STATUS_MIN_LATENCY_NANO}`},
+			{Name: "statusMeasurementDuration", JSONPath: `{.data.STATUS_MEASUREMENT_DURATION}`},
+		},
+	},
 	"DataSource.cdi.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "pvcName", JSONPath: `{.spec.source.pvc.name}`},
@@ -93,12 +105,20 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		},
 		extractAnnotations: true,
 	},
+	"Job": {
+		properties: []ExtractProperty{
+			{Name: "active", JSONPath: `{.status.active}`},
+			{Name: "containerEnvs", JSONPath: `{.spec.template.spec.containers[*].envs}`, DataType: DataTypeSlice},
+			{Name: "failed", JSONPath: `{.status.failed}`},
+		},
+	},
 	"MigrationPolicy.migrations.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "allowAutoConverge", JSONPath: `{.spec.allowAutoConverge}`},
 			{Name: "allowPostCopy", JSONPath: `{.spec.allowPostCopy}`},
 			{Name: "bandwidthPerMigration", JSONPath: `{.spec.bandwidthPerMigration}`, DataType: DataTypeBytes},
 			{Name: "completionTimeoutPerGiB", JSONPath: `{.spec.completionTimeoutPerGiB}`},
+			{Name: "selectors", JSONPath: `{.spec.selectors}`},
 		},
 		extractAnnotations: true,
 	},
@@ -114,6 +134,9 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		extractConditions: true,
 	},
 	"NetworkAttachmentDefinition.k8s.cni.cncf.io": {
+		properties: []ExtractProperty{
+			{Name: "config", JSONPath: `{.spec.config}`},
+		},
 		extractAnnotations: true,
 	},
 	"Node": {
@@ -132,6 +155,15 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"Pod": {
 		extractConditions: true,
+	},
+	"Service": {
+		properties: []ExtractProperty{
+			{Name: "ips", JSONPath: `{.status.loadBalancer.ingress[*].ip}`, DataType: DataTypeSlice},
+			{Name: "nodePort", JSONPath: `{.spec.ports[*].nodePort}`, DataType: DataTypeSlice},
+			{Name: "selector", JSONPath: `{.spec.selector}`},
+			{Name: "servicePort", JSONPath: `{.spec.ports[*].port}`, DataType: DataTypeSlice},
+			{Name: "targetPort", JSONPath: `{.spec.ports[*].targetPort}`, DataType: DataTypeSlice},
+		},
 	},
 	"Search.search.open-cluster-management.io": {
 		extractConditions: true,
@@ -201,17 +233,31 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"VirtualMachineInstance.kubevirt.io": {
 		properties: []ExtractProperty{
+			{Name: "affinity", JSONPath: `{.spec.affinity}`},
 			{Name: "cpu", JSONPath: `{.spec.domain.cpu.cores}`},
 			{Name: "cpuSockets", JSONPath: `{.spec.domain.cpu.sockets}`},
 			{Name: "cpuThreads", JSONPath: `{.spec.domain.cpu.threads}`},
+			{Name: "gpuNames", JSONPath: `{.spec.domain.devices.gpus[*].name}`, DataType: DataTypeSlice},
+			{Name: "guestOSInfoID", JSONPath: `{.status.guestOSInfo.id}`},
+			{Name: "hostDeviceNames", JSONPath: `{.spec.domain.devices.hostDevices[*].name}`, DataType: DataTypeSlice},
+			{Name: "interfaceNames", JSONPath: `{.spec.domain.devices.interfaces[*].name}`, DataType: DataTypeSlice},
+			{Name: "interfaceStatusInterfaceNames", JSONPath: `{.status.interfaces[*].interfaceName}`, DataType: DataTypeSlice},
+			{Name: "interfaceStatusIPAddresses", JSONPath: `{.status.interfaces[*].ipAddress}`, DataType: DataTypeSlice},
+			{Name: "interfaceStatusNames", JSONPath: `{.status.interfaces[*].name}`, DataType: DataTypeSlice},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 			{Name: "memory", JSONPath: `{.spec.domain.memory.guest}`, DataType: DataTypeBytes},
+			{Name: "migrationPolicyName", JSONPath: `{.status.migrationState.migrationPolicyName}`},
+			{Name: "multusNetworkNames", JSONPath: `{.spec.networks[?(@.multus)].multus.networkName}`, DataType: DataTypeSlice},
+			{Name: "networkNames", JSONPath: `{.spec.networks[*].name}`, DataType: DataTypeSlice},
 			{Name: "node", JSONPath: `{.status.nodeName}`},
 			{Name: "osVersion", JSONPath: `{.status.guestOSInfo.version}`},
 			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "startStrategy", JSONPath: `{.spec.startStrategy}`},
+			{Name: "tolerations", JSONPath: `{.spec.tolerations}`},
 			{Name: "vmSize", JSONPath: `{.metadata.labels.\kubevirt\.io/size}`},
+			{Name: "volumes", JSONPath: `{.spec.volumes}`},
 		},
 	},
 	"VirtualMachineInstanceMigration.kubevirt.io": {
@@ -247,6 +293,15 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "readyToUse", JSONPath: `{.status.readyToUse}`},
 		},
 		extractConditions: true,
+	},
+	"VirtualMachineSnapshotContent.snapshot.kubevirt.io": {
+		properties: []ExtractProperty{
+			//{Name: "sourceVirtualMachine", JSONPath: `{.spec.source.virtualMachine}`},
+			{Name: "sourceVirtualMachineName", JSONPath: `{.spec.source.virtualMachine.metadata.name}`, metadataOnly: true},
+		},
+		edges: []ExtractEdge{
+			{Name: "sourceVirtualMachineName", ToKind: "VirtualMachine", Type: contentOf},
+		},
 	},
 	"VirtualMachineRestore.snapshot.kubevirt.io": {
 		properties: []ExtractProperty{

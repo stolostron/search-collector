@@ -1,0 +1,75 @@
+{
+  "apiVersion": "snapshot.kubevirt.io/v1alpha1",
+  "kind": "VirtualMachineSnapshotContent",
+  "metadata": {
+    "name": "vmsnapshotcontent-asdf",
+    "namespace": "openshift-cnv",
+    "uid": "asdf1234",
+    "creationTimestamp": "2025-01-05T14:12:33Z",
+    "ownerReferences": [
+      {
+        "apiVersion": "snapshot.kubevirt.io/v1alpha1",
+        "kind": "VirtualMachineSnapshot",
+        "name": "vm-snapshot-1",
+        "uid": "asdf4321",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "source": {
+      "virtualMachine": {
+        "metadata": {
+          "name": "source-vm-name",
+          "uid": "asdf4321",
+          "creationTimestamp": "2024-01-05T14:12:33Z"
+        },
+        "spec": {
+          "runStrategy": "Always",
+          "running": true,
+          "template": {
+            "metadata": {
+              "name": "template-name",
+              "namespace": "openshift-cnv"
+            },
+            "spec": {
+              "domain": {
+                "cpu": {
+                  "cores": 2,
+                  "dedicatedCpuPlacement": 2
+                },
+                "devices": [
+                  {
+                    "disks": [
+                      {
+                        "name": "disk-1",
+                        "shareable": false
+                      }
+                    ]
+                  },
+                  {
+                    "gpus": [
+                      {
+                        "name": "gpu-1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "status": {
+          "created": true,
+          "observedGeneration": 2
+        }
+      }
+    }
+  },
+  "status": {
+    "creationTime": "2025-01-05T14:12:40Z",
+    "readyToUse": true,
+    "error": null
+  }
+}

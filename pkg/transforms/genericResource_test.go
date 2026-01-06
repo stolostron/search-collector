@@ -76,6 +76,23 @@ func Test_edgesFromVirtualMachineInstanceMigration(t *testing.T) {
 	AssertEqual("VMI migrationOf", edges[0].DestKind, "VirtualMachineInstance", t)
 }
 
+func Test_edgesFromVirtualMachineSnapshotContent(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachinesnapshotcontent.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	nodes := []Node{
+		{UID: "uuid-123-vm", Properties: map[string]interface{}{"kind": "VirtualMachine", "namespace": "openshift-cnv", "name": "source-vm-name"}},
+	}
+	nodeStore := BuildFakeNodeStore(nodes)
+
+	edges := make([]Edge, 0)
+	edges = edgesByDefaultTransformConfig(edges, node, nodeStore)
+
+	AssertEqual("VMSC edge total: ", len(edges), 1, t)
+	AssertEqual("VMSC contentOf", edges[0].DestKind, "VirtualMachine", t)
+}
+
 func Test_edgesFromVirtualMachine(t *testing.T) {
 	var r unstructured.Unstructured
 	UnmarshalFile("virtualmachine.json", &r, t)
@@ -178,17 +195,70 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-09-18T19:43:53Z", t)
 
 	// Verify properties defined in the transform config
+	AssertDeepEqual("affinity", node.Properties["affinity"], map[string]interface{}{
+		"nodeAffinity": map[string]interface{}{
+			"requiredDuringSchedulingIgnoredDuringExecution": map[string]interface{}{
+				"nodeSelectorTerms": []interface{}{
+					map[string]interface{}{
+						"matchExpressions": []interface{}{
+							map[string]interface{}{
+								"key":      "node-role.kubernetes.io/worker",
+								"operator": "Exists",
+							},
+						},
+					},
+				},
+			},
+		},
+		"podAntiAffinity": map[string]interface{}{
+			"preferredDuringSchedulingIgnoredDuringExecution": []interface{}{
+				map[string]interface{}{
+					"PodAffinityTerm": map[string]interface{}{
+						"labelSelector": map[string]interface{}{
+							"matchExpressions": []interface{}{
+								map[string]interface{}{
+									"key":      "kubevirt.io/domain",
+									"operator": "In",
+									"values":   []interface{}{"my-ha-vm"},
+								},
+							},
+						},
+						"topologyKey": "kubernetes.io/hostname",
+					},
+				},
+			},
+		},
+	}, t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
 	AssertEqual("cpuSockets", node.Properties["cpuSockets"], int64(1), t)
 	AssertEqual("cpuThreads", node.Properties["cpuThreads"], int64(1), t)
+	AssertDeepEqual("gpuNames", node.Properties["gpuNames"], []interface{}{"gpu-one", "gpu-two"}, t)
+	AssertEqual("guestOSInfoID", node.Properties["guestOSInfoID"], "centos", t)
+	AssertDeepEqual("hostDeviceNames", node.Properties["hostDeviceNames"], []interface{}{"host-device-one", "host-device-two"}, t)
+	AssertDeepEqual("interfaceNames", node.Properties["interfaceNames"], []interface{}{"default", "non-default"}, t)
+	AssertDeepEqual("interfaceStatusInterfaceNames", node.Properties["interfaceStatusInterfaceNames"], []interface{}{"eth0", "eth0-2"}, t)
+	AssertDeepEqual("interfaceStatusIPAddresses", node.Properties["interfaceStatusIPAddresses"], []interface{}{"10.128.1.193", "10.128.1.194"}, t)
+	AssertDeepEqual("interfaceStatusNames", node.Properties["interfaceStatusNames"], []interface{}{"default", "default2"}, t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
+	AssertEqual("migrationPolicyName", node.Properties["migrationPolicyName"], "my-migration-policy", t)
+	AssertDeepEqual("multusNetworkNames", node.Properties["multusNetworkNames"], []interface{}{"multus-one", "multus-two"}, t)
+	AssertDeepEqual("networkNames", node.Properties["networkNames"], []interface{}{"default", "non-default"}, t)
 	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
 	AssertEqual("osVersion", node.Properties["osVersion"], "7 (Core)", t)
 	AssertEqual("phase", node.Properties["phase"], "Running", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("startStrategy", node.Properties["startStrategy"], "Paused", t)
+	AssertDeepEqual("tolerations", node.Properties["tolerations"], []interface{}{
+		map[string]interface{}{"effect": "NoSchedule", "key": "node-role.kubernetes.io/infra", "operator": "Exists"},
+		map[string]interface{}{"effect": "NoExecute", "key": "dedicated", "operator": "Equal"},
+	}, t)
 	AssertEqual("vmSize", node.Properties["vmSize"], "small", t)
+	AssertDeepEqual("volumes", node.Properties["volumes"], []interface{}{
+		map[string]interface{}{"dataVolume": map[string]interface{}{"name": "centos7-gray-owl-35"}, "name": "rootdisk"},
+		map[string]interface{}{"emptyDisk": map[string]interface{}{"capacity": "2Gi"}, "name": "emptydisk"},
+	}, t)
 }
 
 func Test_genericResourceFromConfigVMIM(t *testing.T) {
@@ -446,6 +516,9 @@ func Test_genericResourceFromConfigNetworkAttachmentDefinition(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2000-04-30T16:22:02Z", t)
 
 	// Verify properties defined in the transform config
+	AssertEqual("config", node.Properties["config"],
+		"{\n  \"cniVersion\": \"0.3.1\",\n  \"name\": \"work-network\",\n  \"namespace\": \"namespace2\","+
+			"\n  \"type\": \"host-device\",\n  \"device\": \"eth1\",\n  \"ipam\": {\n    \"type\": \"dhcp\"\n  }\n}", t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"description": "Definition of a network attachment",
 		"label":       "test",
@@ -504,4 +577,44 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"migrations.kubevirt.io/description": "Migration policy for high-priority workloads",
 	}, t)
+	AssertDeepEqual("selectors", node.Properties["selectors"], map[string]interface{}{
+		"namespaceSelector": map[string]interface{}{
+			"matchNames": []interface{}{"default", "production"},
+		},
+		"virtualMachineInstanceSelector": map[string]interface{}{
+			"matchLabels": map[string]interface{}{"workload": "critical"},
+		},
+	}, t)
+}
+
+func Test_genericResourceFromConfigVirtualMachineSnapshotContent(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachinesnapshotcontent.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "vmsnapshotcontent-asdf", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineSnapshotContent", t)
+	AssertEqual("created", node.Properties["created"], "2025-01-05T14:12:33Z", t)
+}
+
+func Test_genericResourceFromConfigConfigMap(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("configmap.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "app-config", t)
+	AssertEqual("kind", node.Properties["kind"], "ConfigMap", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("statusCompletionTime", node.Properties["statusCompletionTime"], "2026-01-05T15:27:31Z", t)
+	AssertEqual("statusSucceeded", node.Properties["statusSucceeded"], false, t)
+	AssertEqual("statusFailureReason", node.Properties["statusFailureReason"], "it broke", t)
+	AssertEqual("statusStartTime", node.Properties["statusStartTime"], "2023-01-05T15:27:31Z", t)
+	AssertEqual("statusAvgLatency", node.Properties["statusAvgLatency"], "123", t)
+	AssertEqual("statusMaxLatency", node.Properties["statusMaxLatency"], "234", t)
+	AssertEqual("statusMinLatency", node.Properties["statusMinLatency"], "345", t)
+	AssertEqual("statusMeasurementDuration", node.Properties["statusMeasurementDuration"], "456", t)
 }

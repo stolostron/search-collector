@@ -25,6 +25,40 @@
         }
     },
     "spec": {
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "node-role.kubernetes.io/worker",
+                                    "operator": "Exists"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            "podAntiAffinity": {
+                "preferredDuringSchedulingIgnoredDuringExecution": [
+                    {
+                        "PodAffinityTerm": {
+                            "labelSelector": {
+                                "matchExpressions": [
+                                    {
+                                        "key": "kubevirt.io/domain",
+                                        "operator": "In",
+                                        "values": ["my-ha-vm"]
+                                    }
+                                ]
+                            },
+                            "topologyKey": "kubernetes.io/hostname"
+                        }
+                    }
+                ]
+            }
+        },
         "architecture": "amd64",
         "domain": {
             "cpu": {
@@ -48,12 +82,31 @@
                         "name": "cloudinitdisk"
                     }
                 ],
+                "gpus": [
+                    {
+                        "name": "gpu-one"
+                    },
+                    {
+                        "name": "gpu-two"
+                    }
+                ],
+                "hostDevices": [
+                    {
+                        "name": "host-device-one"
+                    },
+                    {
+                        "name": "host-device-two"
+                    }
+                ],
                 "interfaces": [
                     {
                         "macAddress": "02:b8:ac:00:00:01",
                         "masquerade": {},
                         "model": "virtio",
                         "name": "default"
+                    },
+                    {
+                        "name": "non-default"
                     }
                 ],
                 "networkInterfaceMultiqueue": true,
@@ -79,17 +132,45 @@
         "evictionStrategy": "None",
         "networks": [
             {
+                "multus": {
+                    "networkName": "multus-one"
+                },
                 "name": "default",
                 "pod": {}
+            },
+            {
+                "multus": {
+                    "networkName": "multus-two"
+                },
+                "name": "non-default"
             }
         ],
+        "startStrategy": "Paused",
         "terminationGracePeriodSeconds": 180,
+        "tolerations": [
+            {
+                "key": "node-role.kubernetes.io/infra",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+            },
+            {
+                "key": "dedicated",
+                "operator": "Equal",
+                "effect": "NoExecute"
+            }
+        ],
         "volumes": [
             {
                 "dataVolume": {
                     "name": "centos7-gray-owl-35"
                 },
                 "name": "rootdisk"
+            },
+            {
+                "emptyDisk": {
+                    "capacity": "2Gi"
+                },
+                "name": "emptydisk"
             }
         ]
     },
@@ -98,6 +179,9 @@
             "guestAtBoot": "2Gi",
             "guestCurrent": "2Gi",
             "guestRequested": "2Gi"
+        },
+        "migrationState": {
+            "migrationPolicyName": "my-migration-policy"
         },
         "virtualMachineRevisionName": "revision-start-vm-42634581-0cc1-4aa9-bec6-69f59049e2d3-11",
         "qosClass": "Burstable",
