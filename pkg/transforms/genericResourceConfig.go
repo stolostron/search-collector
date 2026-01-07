@@ -68,14 +68,14 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"ConfigMap": {
 		properties: []ExtractProperty{
-			{Name: "statusCompletionTime", JSONPath: `{.data.STATUS_COMPLETION_TIME_STAMP}`},
-			{Name: "statusSucceeded", JSONPath: `{.data.STATUS_SUCCEEDED}`},
-			{Name: "statusFailureReason", JSONPath: `{.data.STATUS_FAILURE_REASON}`},
-			{Name: "statusStartTime", JSONPath: `{.data.STATUS_START_TIME_STAMP}`},
-			{Name: "statusAvgLatency", JSONPath: `{.data.STATUS_AVG_LATENCY_NANO}`},
-			{Name: "statusMaxLatency", JSONPath: `{.data.STATUS_MAX_LATENCY_NANO}`},
-			{Name: "statusMinLatency", JSONPath: `{.data.STATUS_MIN_LATENCY_NANO}`},
-			{Name: "statusMeasurementDuration", JSONPath: `{.data.STATUS_MEASUREMENT_DURATION}`},
+			{Name: "statusTargetNode", JSONPath: `{.data.status.result.targetNode}`},
+			{Name: "statusSourceNode", JSONPath: `{.data.status.result.sourceNode}`},
+			{Name: "configParamTargetNode", JSONPath: `{.data.spec.param.targetNode}`},
+			{Name: "configParamSourceNode", JSONPath: `{.data.spec.param.sourceNode}`},
+			{Name: "configParamSampleDuration", JSONPath: `{.data.spec.param.sampleDurationSeconds}`},
+			{Name: "configParamNADNamespace", JSONPath: `{.data.spec.param.networkAttachmentDefinitionNamespace}`},
+			{Name: "configParamNADName", JSONPath: `{.data.spec.param.networkAttachmentDefinitionName}`},
+			{Name: "configParamMaxDesiredLatency", JSONPath: `{.data.spec.param.maxDesiredLatencyMilliseconds}`},
 		},
 	},
 	"DataSource.cdi.kubevirt.io": {

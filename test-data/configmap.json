@@ -11,13 +11,21 @@
     }
   },
   "data": {
-    "STATUS_COMPLETION_TIME_STAMP":"2026-01-05T15:27:31Z",
-    "STATUS_SUCCEEDED": false,
-    "STATUS_FAILURE_REASON": "it broke",
-    "STATUS_START_TIME_STAMP": "2023-01-05T15:27:31Z",
-    "STATUS_AVG_LATENCY_NANO": "123",
-    "STATUS_MAX_LATENCY_NANO": "234",
-    "STATUS_MIN_LATENCY_NANO": "345",
-    "STATUS_MEASUREMENT_DURATION": "456"
+    "status": {
+      "result": {
+        "targetNode": "result-targeted-node",
+        "sourceNode": "result-sourced-node"
+      }
+    },
+    "spec": {
+      "param": {
+        "targetNode": "param-targeted-node",
+        "sourceNode": "param-sourced-node",
+        "sampleDurationSeconds": 120,
+        "networkAttachmentDefinitionNamespace": "NAD-namespace",
+        "networkAttachmentDefinitionName": "NAD-name",
+        "maxDesiredLatencyMilliseconds": 1000
+      }
+    }
   }
 }
