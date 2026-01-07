@@ -609,13 +609,21 @@ func Test_genericResourceFromConfigConfigMap(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("statusTargetNode", node.Properties["statusTargetNode"], "result-targeted-node", t)
-	AssertEqual("statusSourceNode", node.Properties["statusSourceNode"], "result-sourced-node", t)
-	AssertEqual("configParamTargetNode", node.Properties["configParamTargetNode"], "param-targeted-node", t)
-	AssertEqual("configParamSourceNode", node.Properties["configParamSourceNode"], "param-sourced-node", t)
-	AssertEqual("configParamSampleDuration", node.Properties["configParamSampleDuration"], int64(120), t)
+	AssertEqual("configParamMaxDesiredLatency", node.Properties["configParamMaxDesiredLatency"], int64(234), t)
 	AssertEqual("configParamNADNamespace", node.Properties["configParamNADNamespace"], "NAD-namespace", t)
 	AssertEqual("configParamNADName", node.Properties["configParamNADName"], "NAD-name", t)
-	AssertEqual("configParamMaxDesiredLatency", node.Properties["configParamMaxDesiredLatency"], int64(1000), t)
-
+	AssertEqual("configParamTargetNode", node.Properties["configParamTargetNode"], "spec-param-target-node", t)
+	AssertEqual("configParamSourceNode", node.Properties["configParamSourceNode"], "spec-param-source-node", t)
+	AssertEqual("configParamSampleDuration", node.Properties["configParamSampleDuration"], int64(123), t)
+	AssertEqual("configTimeout", node.Properties["configTimeout"], "10m", t)
+	AssertEqual("configCompletionTimestamp", node.Properties["configCompletionTimestamp"], "2027-01-05T14:27:31Z", t)
+	AssertEqual("configFailureReason", node.Properties["configFailureReason"], "it broke", t)
+	AssertEqual("configStartTimestamp", node.Properties["configStartTimestamp"], "2026-01-05T14:27:31Z", t)
+	AssertEqual("configSucceeded", node.Properties["configSucceeded"], "true", t)
+	AssertEqual("configStatusAVGLatencyNano", node.Properties["configStatusAVGLatencyNano"], int64(12345), t)
+	AssertEqual("configStatusMaxLatencyNano", node.Properties["configStatusMaxLatencyNano"], int64(23456), t)
+	AssertEqual("configStatusMinLatencyNano", node.Properties["configStatusMinLatencyNano"], int64(34567), t)
+	AssertEqual("configStatusMeasurementDuration", node.Properties["configStatusMeasurementDuration"], int64(123), t)
+	AssertEqual("configStatusTargetNode", node.Properties["configStatusTargetNode"], "status-result-target-node", t)
+	AssertEqual("configStatusSourceNode", node.Properties["configStatusSourceNode"], "status-result-source-node", t)
 }
