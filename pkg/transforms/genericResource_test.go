@@ -76,23 +76,6 @@ func Test_edgesFromVirtualMachineInstanceMigration(t *testing.T) {
 	AssertEqual("VMI migrationOf", edges[0].DestKind, "VirtualMachineInstance", t)
 }
 
-func Test_edgesFromVirtualMachineSnapshotContent(t *testing.T) {
-	var r unstructured.Unstructured
-	UnmarshalFile("virtualmachinesnapshotcontent.json", &r, t)
-	node := GenericResourceBuilder(&r).BuildNode()
-
-	nodes := []Node{
-		{UID: "uuid-123-vm", Properties: map[string]interface{}{"kind": "VirtualMachine", "namespace": "openshift-cnv", "name": "source-vm-name"}},
-	}
-	nodeStore := BuildFakeNodeStore(nodes)
-
-	edges := make([]Edge, 0)
-	edges = edgesByDefaultTransformConfig(edges, node, nodeStore)
-
-	AssertEqual("VMSC edge total: ", len(edges), 1, t)
-	AssertEqual("VMSC contentOf", edges[0].DestKind, "VirtualMachine", t)
-}
-
 func Test_edgesFromVirtualMachine(t *testing.T) {
 	var r unstructured.Unstructured
 	UnmarshalFile("virtualmachine.json", &r, t)
@@ -626,4 +609,96 @@ func Test_genericResourceFromConfigConfigMap(t *testing.T) {
 	AssertEqual("configStatusMeasurementDuration", node.Properties["configStatusMeasurementDuration"], int64(123), t)
 	AssertEqual("configStatusTargetNode", node.Properties["configStatusTargetNode"], "status-result-target-node", t)
 	AssertEqual("configStatusSourceNode", node.Properties["configStatusSourceNode"], "status-result-source-node", t)
+}
+
+func Test_genericResourceFromConfigTemplate(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("template.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "centos-stream9-desktop-large", t)
+	AssertEqual("kind", node.Properties["kind"], "Template", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-07T22:12:17Z", t)
+
+	// Verify properties defined in the transform config
+	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
+		"template.kubevirt.io/provider":               "Red Hat",
+		"name.os.template.kubevirt.io/centos-stream9": "CentOS Stream 9 or higher",
+		"template.kubevirt.io/provider-url":           "https://www.centos.org",
+		"template.kubevirt.io/containerdisks":         "quay.io/containerdisks/centos-stream:9\n",
+		"template.kubevirt.io/version":                "v1alpha1",
+	}, t)
+	AssertDeepEqual("objectAnnotations", node.Properties["objectAnnotations"], map[string]interface{}{
+		"vm.kubevirt.io/validations": "[{\"name\":\"minimal-required-memory\",\"path\":\"jsonpath::.spec.domain.memory.guest\",\"rule\":\"integer\",\"message\":\"This VM requires more memory.\",\"min\":1610612736}]",
+	}, t)
+	AssertDeepEqual("objectDataVolumeTemplates", node.Properties["objectDataVolumeTemplates"], []interface{}{
+		map[string]interface{}{
+			"apiVersion": "cdi.kubevirt.io/v1beta1",
+			"kind":       "DataVolume",
+			"metadata": map[string]interface{}{
+				"name": "${NAME}",
+			},
+			"spec": map[string]interface{}{
+				"sourceRef": map[string]interface{}{
+					"kind":      "DataSource",
+					"name":      "${DATA_SOURCE_NAME}",
+					"namespace": "${DATA_SOURCE_NAMESPACE}",
+				},
+				"storage": map[string]interface{}{
+					"resources": map[string]interface{}{
+						"requests": map[string]interface{}{
+							"storage": "30Gi",
+						},
+					},
+				},
+			},
+		},
+	}, t)
+	AssertDeepEqual("objectLabels", node.Properties["objectLabels"], map[string]interface{}{
+		"app": "${NAME}",
+		"kubevirt.io/dynamic-credentials-support": "true",
+		"vm.kubevirt.io/template":                 "centos-stream9-desktop-large",
+		"vm.kubevirt.io/template.revision":        "1",
+		"vm.kubevirt.io/template.version":         "v0.34.1",
+	}, t)
+	AssertEqual("objectVMArchitecture", node.Properties["objectVMArchitecture"], "amd64", t)
+	AssertEqual("objectVMName", node.Properties["objectVMName"], "${NAME}", t)
+	AssertDeepEqual("objectParameters", node.Properties["objectParameters"], []interface{}{
+		map[string]interface{}{
+			"description": "VM name",
+			"from":        "centos-stream9-[a-z0-9]{16}",
+			"generate":    "expression",
+			"name":        "NAME",
+		},
+		map[string]interface{}{
+			"description": "Name of the DataSource to clone",
+			"name":        "DATA_SOURCE_NAME",
+			"value":       "centos-stream9",
+		},
+		map[string]interface{}{
+			"description": "Namespace of the DataSource",
+			"name":        "DATA_SOURCE_NAMESPACE",
+			"value":       "namespace-1",
+		},
+		map[string]interface{}{
+			"description": "Randomized password for the cloud-init user centos",
+			"name":        "CLOUD_USER_PASSWORD",
+			"value":       "asdf",
+		},
+	}, t)
+	AssertDeepEqual("objectVolumes", node.Properties["objectVolumes"], []interface{}{
+		map[string]interface{}{
+			"dataVolume": map[string]interface{}{
+				"name": "${NAME}",
+			},
+			"name": "rootdisk",
+		},
+		map[string]interface{}{
+			"cloudInitNoCloud": map[string]interface{}{
+				"userData": "#cloud-config\nuser: user\npassword: ${CLOUD_USER_PASSWORD}\nchpasswd: { expire: False }\n",
+			},
+			"name": "cloudinitdisk",
+		},
+	}, t)
 }

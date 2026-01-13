@@ -194,6 +194,18 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "phase", JSONPath: "{.status.state}"},
 		},
 	},
+	"Template.template.openshift.io": {
+		properties: []ExtractProperty{
+			{Name: "objectLabels", JSONPath: `{.objects[0].metadata.labels}`},
+			{Name: "objectAnnotations", JSONPath: `{.objects[0].metadata.annotations}`},
+			{Name: "objectDataVolumeTemplates", JSONPath: `{.objects[0].spec.dataVolumeTemplates[]}`, DataType: DataTypeSlice},
+			{Name: "objectVolumes", JSONPath: `{.objects[0].spec.template.spec.volumes}`},
+			{Name: "objectVMName", JSONPath: `{.objects[0].metadata.name}`},
+			{Name: "objectVMArchitecture", JSONPath: `{.objects[0].spec.template.spec.architecture}`},
+			{Name: "objectParameters", JSONPath: `{.parameters[*]}`, DataType: DataTypeSlice},
+		},
+		extractAnnotations: true,
+	},
 	"ValidatingAdmissionPolicy.admissionregistration.k8s.io": {
 		properties: []ExtractProperty{
 			{Name: "paramKind_kind", JSONPath: `{.spec.paramKind.kind}`, metadataOnly: true},
@@ -302,15 +314,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "readyToUse", JSONPath: `{.status.readyToUse}`},
 		},
 		extractConditions: true,
-	},
-	"VirtualMachineSnapshotContent.snapshot.kubevirt.io": {
-		properties: []ExtractProperty{
-			//{Name: "sourceVirtualMachine", JSONPath: `{.spec.source.virtualMachine}`},
-			{Name: "sourceVirtualMachineName", JSONPath: `{.spec.source.virtualMachine.metadata.name}`, metadataOnly: true},
-		},
-		edges: []ExtractEdge{
-			{Name: "sourceVirtualMachineName", ToKind: "VirtualMachine", Type: contentOf},
-		},
 	},
 	"VirtualMachineRestore.snapshot.kubevirt.io": {
 		properties: []ExtractProperty{
