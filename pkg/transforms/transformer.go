@@ -301,7 +301,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = JobResourceBuilder(&typedResource)
+			trans = JobResourceBuilder(&typedResource, event.Resource)
 
 		case [2]string{"Node", ""}:
 			typedResource := core.Node{}
@@ -393,7 +393,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			if err != nil {
 				panic(err) // Will be caught by handleRoutineExit
 			}
-			trans = ServiceResourceBuilder(&typedResource)
+			trans = ServiceResourceBuilder(&typedResource, event.Resource)
 
 		case [2]string{"StatefulSet", "apps"}:
 			typedResource := apps.StatefulSet{}

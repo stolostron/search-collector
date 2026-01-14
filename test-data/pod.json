@@ -62,6 +62,14 @@
                 ]
             }
         ],
+        "initCOntainers": [
+            {
+                "name": "init-container-1"
+            },
+            {
+                "name": "init-container-2"
+            }
+        ],
         "dnsPolicy": "ClusterFirst",
         "nodeName": "1.1.1.1",
         "nodeSelector": {},

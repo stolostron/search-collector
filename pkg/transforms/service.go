@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // ServiceResource ...
@@ -24,7 +25,7 @@ type ServiceResource struct {
 }
 
 // ServiceResourceBuilder ...
-func ServiceResourceBuilder(s *v1.Service) *ServiceResource {
+func ServiceResourceBuilder(s *v1.Service, r *unstructured.Unstructured) *ServiceResource {
 	node := transformCommon(s) // Start off with the common properties
 	var ports []string
 	apiGroupVersion(s.TypeMeta, &node) // add kind, apigroup and version
@@ -45,6 +46,9 @@ func ServiceResourceBuilder(s *v1.Service) *ServiceResource {
 		}
 		node.Properties["port"] = ports
 	}
+
+	node = applyDefaultTransformConfig(node, r)
+
 	return &ServiceResource{node: node, Spec: s.Spec}
 }
 

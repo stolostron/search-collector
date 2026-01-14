@@ -29,10 +29,14 @@ type PodResource struct {
 func PodResourceBuilder(p *corev1.Pod, r *unstructured.Unstructured) *PodResource {
 	// Loop over spec to get the container and image names
 	var containers []string
+	var initContainers []string
 	var images []string
 	for _, container := range p.Spec.Containers {
 		containers = append(containers, container.Name)
 		images = append(images, container.Image)
+	}
+	for _, initContainer := range p.Spec.InitContainers {
+		initContainers = append(initContainers, initContainer.Name)
 	}
 
 	// Loop over init container status or container status to get restarts and build status message
@@ -116,6 +120,7 @@ func PodResourceBuilder(p *corev1.Pod, r *unstructured.Unstructured) *PodResourc
 	node.Properties["status"] = reason
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
+	node.Properties["initContainer"] = initContainers
 	node.Properties["startedAt"] = ""
 	if len(ownerReferences) > 0 &&
 		(ownerReferences[0].Kind == "ReplicationController" || ownerReferences[0].Kind == "ReplicaSet") {
