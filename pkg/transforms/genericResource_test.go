@@ -154,8 +154,10 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 		[]interface{}{"rhel-8-amber-fish-51-volume", "rhel-8-amber-fish-51-volume-2"}, t)
 	AssertEqual("_description", node.Properties["_description"], "some description", t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
+	AssertEqual("instancetype", node.Properties["instancetype"], "instancetype-name", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
 	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
+	AssertEqual("preference", node.Properties["preference"], "preference-name", t)
 	AssertDeepEqual("pvcClaimNames", node.Properties["pvcClaimNames"],
 		[]interface{}{"the-claim-is-persistent", "the-claim-is-too-persistent"}, t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
