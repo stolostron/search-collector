@@ -64,24 +64,29 @@ func genericProperties(r *unstructured.Unstructured) map[string]interface{} {
 		ret["apiversion"] = slice[0]
 	}
 
-	if r.GetLabels() != nil {
-		ret["label"] = r.GetLabels()
+	labels := r.GetLabels()
+	if labels != nil {
+		ret["label"] = labels
 	}
 
 	annotations := commonAnnotations(r)
-
 	if annotations != nil {
 		ret["annotation"] = annotations
 	}
 
-	if r.GetNamespace() != "" {
-		ret["namespace"] = r.GetNamespace()
+	namespace := r.GetNamespace()
+	if namespace != "" {
+		ret["namespace"] = namespace
 	}
-	if r.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"] != "" {
-		ret["_hostingSubscription"] = r.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"]
+
+	hostingSubscription := r.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"]
+	if hostingSubscription != "" {
+		ret["_hostingSubscription"] = hostingSubscription
 	}
-	if r.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"] != "" {
-		ret["_hostingDeployable"] = r.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"]
+
+	hostingDeployable := r.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"]
+	if hostingDeployable != "" {
+		ret["_hostingDeployable"] = hostingDeployable
 	}
 
 	return ret
@@ -96,11 +101,12 @@ func genericMetadata(r *unstructured.Unstructured) map[string]any {
 	}
 
 	metadata["OwnerUID"] = ownerRefUID(r.GetOwnerReferences())
+	ownerReleaseName := r.GetAnnotations()["meta.helm.sh/release-name"]
+	ownerReleaseNamespace := r.GetAnnotations()["meta.helm.sh/release-namespace"]
 	// Adds OwnerReleaseName and Namespace to resources that don't have ownerRef, but are deployed by a release.
-	if metadata["OwnerUID"] == "" && r.GetAnnotations()["meta.helm.sh/release-name"] != "" &&
-		r.GetAnnotations()["meta.helm.sh/release-namespace"] != "" {
-		metadata["OwnerReleaseName"] = r.GetAnnotations()["meta.helm.sh/release-name"]
-		metadata["OwnerReleaseNamespace"] = r.GetAnnotations()["meta.helm.sh/release-namespace"]
+	if metadata["OwnerUID"] == "" && ownerReleaseName != "" && ownerReleaseNamespace != "" {
+		metadata["OwnerReleaseName"] = ownerReleaseName
+		metadata["OwnerReleaseNamespace"] = ownerReleaseNamespace
 	}
 
 	return metadata
