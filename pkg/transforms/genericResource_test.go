@@ -520,6 +520,11 @@ func Test_genericResourceFromConfigConfigMapMatchLabel(t *testing.T) {
 	AssertEqual("name", node.Properties["name"], "app-config", t)
 	AssertEqual("kind", node.Properties["kind"], "ConfigMap", t)
 	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
+	AssertEqual("apiversion", node.Properties["apiversion"], "v1", t)
+	AssertEqual("namespace", node.Properties["namespace"], "default", t)
+	AssertDeepEqual("label", node.Properties["label"], map[string]string{
+		"app": "my-app", "component": "backend", "kiagnose/checkup-type": "true",
+	}, t)
 
 	// Verify properties defined in the transform config
 	AssertEqual("configParamMaxDesiredLatency", node.Properties["configParamMaxDesiredLatency"], int64(234), t)
@@ -539,6 +544,7 @@ func Test_genericResourceFromConfigConfigMapMatchLabel(t *testing.T) {
 	AssertEqual("configStatusMeasurementDuration", node.Properties["configStatusMeasurementDuration"], int64(123), t)
 	AssertEqual("configStatusTargetNode", node.Properties["configStatusTargetNode"], "status-result-target-node", t)
 	AssertEqual("configStatusSourceNode", node.Properties["configStatusSourceNode"], "status-result-source-node", t)
+	assert.Equal(t, 23, len(node.Properties))
 }
 
 func Test_genericResourceFromConfigConfigMapNoMatchLabel(t *testing.T) {

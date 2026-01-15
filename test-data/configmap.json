@@ -28,6 +28,7 @@
     "status.result.measurementDurationSec": 123,
     "status.result.minLatencyNanoSec": 34567,
     "status.result.sourceNode": "status-result-source-node",
-    "status.result.targetNode": "status-result-target-node"
+    "status.result.targetNode": "status-result-target-node",
+    "do.not.collect": "This key won't get collected"
   }
 }
