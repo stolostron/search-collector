@@ -93,6 +93,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		},
 		extractAnnotations: true,
 	},
+	"Job": {
+		properties: []ExtractProperty{
+			{Name: "active", JSONPath: `{.status.active}`},
+			{Name: "failed", JSONPath: `{.status.failed}`},
+		},
+	},
 	"MigrationPolicy.migrations.kubevirt.io": {
 		properties: []ExtractProperty{
 			{Name: "allowAutoConverge", JSONPath: `{.spec.allowAutoConverge}`},
@@ -167,8 +173,10 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "dataVolumeNames", JSONPath: `{.spec.template.spec.volumes[*].dataVolume.name}`, DataType: DataTypeSlice},
 			{Name: "_description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
+			{Name: "instancetype", JSONPath: `{.spec.instancetype.name}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
+			{Name: "preference", JSONPath: `{.spec.preference.name}`},
 			{Name: "pvcClaimNames", JSONPath: `{.spec.template.spec.volumes[*].persistentVolumeClaim.claimName}`, DataType: DataTypeSlice},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "runStrategy", JSONPath: `{.spec.runStrategy}`},

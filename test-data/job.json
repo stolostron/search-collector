@@ -91,6 +91,8 @@
         }
     },
     "status": {
+        "active": 1,
+        "failed": 1,
         "completionTime": "2019-02-21T21:47:45Z",
         "conditions": [
             {
