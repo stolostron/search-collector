@@ -572,6 +572,25 @@ func Test_genericResourceFromConfigConfigMapNoMatchLabel(t *testing.T) {
 	AssertEqual("configStatusSourceNode", node.Properties["configStatusSourceNode"], nil, t)
 }
 
+func Test_genericResourceFromConfigMapNoLabel(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("configmap-two.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "app-config", t)
+	AssertEqual("kind", node.Properties["kind"], "ConfigMap", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
+	AssertEqual("apiversion", node.Properties["apiversion"], "v1", t)
+	AssertEqual("namespace", node.Properties["namespace"], "default", t)
+	AssertDeepEqual("label", node.Properties["label"], map[string]string{
+		"app": "my-app", "component": "backend",
+	}, t)
+
+	// Verify that there's no more indexed properties than the common ones
+	assert.Equal(t, 6, len(node.Properties))
+}
+
 func Test_genericResourceFromConfigTemplateMatchLabel(t *testing.T) {
 	var r unstructured.Unstructured
 	UnmarshalFile("template.json", &r, t)
