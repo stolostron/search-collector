@@ -22,11 +22,6 @@ func TestTransformService(t *testing.T) {
 	node := ServiceResourceBuilder(&s, newUnstructuredService()).BuildNode()
 
 	AssertEqual("kind", node.Properties["kind"], "Service", t)
-	AssertDeepEqual("ips", node.Properties["ips"], []interface{}{"1.2.3.4", "2.3.4.5"}, t)
-	AssertDeepEqual("servicePort", node.Properties["servicePort"], []interface{}{3333, 3334}, t)
-	AssertDeepEqual("nodePort", node.Properties["nodePort"], []interface{}{30005, 30006}, t)
-	AssertDeepEqual("targetPort", node.Properties["targetPort"], []interface{}{3333, 3334}, t)
-	AssertDeepEqual("selector", node.Properties["selector"], map[string]interface{}{"app": "test-fixture-selector", "release": "test-fixture-selector-release"}, t)
 }
 
 func TestServiceBuildEdges(t *testing.T) {

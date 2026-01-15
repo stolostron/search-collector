@@ -448,9 +448,6 @@ func Test_genericResourceFromConfigNetworkAttachmentDefinition(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2000-04-30T16:22:02Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("config", node.Properties["config"],
-		"{\n  \"cniVersion\": \"0.3.1\",\n  \"name\": \"work-network\",\n  \"namespace\": \"namespace2\","+
-			"\n  \"type\": \"host-device\",\n  \"device\": \"eth1\",\n  \"ipam\": {\n    \"type\": \"dhcp\"\n  }\n}", t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"description": "Definition of a network attachment",
 		"label":       "test",
@@ -508,13 +505,5 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertEqual("completionTimeoutPerGiB", node.Properties["completionTimeoutPerGiB"], int64(120), t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"migrations.kubevirt.io/description": "Migration policy for high-priority workloads",
-	}, t)
-	AssertDeepEqual("selector", node.Properties["selector"], map[string]interface{}{
-		"namespaceSelector": map[string]interface{}{
-			"matchNames": []interface{}{"default", "production"},
-		},
-		"virtualMachineInstanceSelector": map[string]interface{}{
-			"matchLabels": map[string]interface{}{"workload": "critical"},
-		},
 	}, t)
 }

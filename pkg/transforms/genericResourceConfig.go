@@ -105,7 +105,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "allowPostCopy", JSONPath: `{.spec.allowPostCopy}`},
 			{Name: "bandwidthPerMigration", JSONPath: `{.spec.bandwidthPerMigration}`, DataType: DataTypeBytes},
 			{Name: "completionTimeoutPerGiB", JSONPath: `{.spec.completionTimeoutPerGiB}`},
-			{Name: "selector", JSONPath: `{.spec.selectors}`},
 		},
 		extractAnnotations: true,
 	},
@@ -121,9 +120,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		extractConditions: true,
 	},
 	"NetworkAttachmentDefinition.k8s.cni.cncf.io": {
-		properties: []ExtractProperty{
-			{Name: "config", JSONPath: `{.spec.config}`},
-		},
 		extractAnnotations: true,
 	},
 	"Node": {
@@ -145,15 +141,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"Search.search.open-cluster-management.io": {
 		extractConditions: true,
-	},
-	"Service": {
-		properties: []ExtractProperty{
-			{Name: "ips", JSONPath: `{.status.loadBalancer.ingress[*].ip}`, DataType: DataTypeSlice},
-			{Name: "nodePort", JSONPath: `{.spec.ports[*].nodePort}`, DataType: DataTypeSlice},
-			{Name: "selector", JSONPath: `{.spec.selector}`},
-			{Name: "servicePort", JSONPath: `{.spec.ports[*].port}`, DataType: DataTypeSlice},
-			{Name: "targetPort", JSONPath: `{.spec.ports[*].targetPort}`, DataType: DataTypeSlice},
-		},
 	},
 	"StorageClass.storage.k8s.io": {
 		properties: []ExtractProperty{
