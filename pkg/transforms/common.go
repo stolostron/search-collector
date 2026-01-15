@@ -709,7 +709,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 
 	for _, prop := range transformConfig.properties {
 		// Skip if property has matchLabel condition and node doesn't contain matching label
-		if prop.matchLabel != "" {
+		if prop.matchLabel != "" && node.Properties["label"] != nil {
 			if _, ok := node.Properties["label"].(map[string]string)[prop.matchLabel]; !ok {
 				continue
 			}
