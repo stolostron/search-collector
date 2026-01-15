@@ -53,6 +53,12 @@
                 }
             }
         ],
+        "instancetype": {
+            "name": "instancetype-name"
+        },
+        "preference": {
+            "name": "preference-name"
+        },
         "running": true,
         "runStrategy": "always",
         "template": {

@@ -1,0 +1,231 @@
+{
+  "kind": "Template",
+  "apiVersion": "template.openshift.io/v1",
+  "metadata": {
+    "name": "centos-stream9-desktop-large",
+    "namespace": "openshift",
+    "uid": "asdf1234-asdf-asdf-asdf-asdf1234ghjk",
+    "resourceVersion": "11",
+    "creationTimestamp": "2026-01-07T22:12:17Z",
+    "labels": {
+      "workload.template.kubevirt.io/desktop": "true",
+      "app.kubernetes.io/part-of": "hyperconverged-cluster",
+      "template.kubevirt.io/architecture": "amd64",
+      "template.kubevirt.io/version": "v0.34.1",
+      "app.kubernetes.io/version": "4.21.0",
+      "template.kubevirt.io/type": "base",
+      "app.kubernetes.io/component": "templating",
+      "app.kubernetes.io/managed-by": "ssp-operator",
+      "app.kubernetes.io/name": "common-templates",
+      "flavor.template.kubevirt.io/large": "true",
+      "os.template.kubevirt.io/centos-stream9": "true"
+    },
+    "annotations": {
+      "template.kubevirt.io/provider": "Red Hat",
+      "name.os.template.kubevirt.io/centos-stream9": "CentOS Stream 9 or higher",
+      "template.kubevirt.io/provider-url": "https://www.centos.org",
+      "template.kubevirt.io/containerdisks": "quay.io/containerdisks/centos-stream:9\n",
+      "template.kubevirt.io/version": "v1alpha1",
+      "template.kubevirt.io/editable": "/objects[0].spec.template.spec.domain.cpu.sockets\n/objects[0].spec.template.spec.domain.cpu.cores\n/objects[0].spec.template.spec.domain.cpu.threads\n/objects[0].spec.template.spec.domain.memory.guest\n/objects[0].spec.template.spec.domain.devices.disks\n/objects[0].spec.template.spec.volumes\n/objects[0].spec.template.spec.networks\n"
+    },
+    "managedFields": [
+      {
+        "manager": "manager",
+        "operation": "Update",
+        "apiVersion": "template.openshift.io/v1",
+        "time": "2026-01-07T22:12:17Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:annotations": {
+              "f:template.kubevirt.io/editable": {},
+              "f:operator-sdk/primary-resource": {},
+              "f:operator-sdk/primary-resource-type": {},
+              "f:defaults.template.kubevirt.io/disk": {},
+              "f:template.kubevirt.io/provider-support-level": {},
+              "f:description": {},
+              "f:template.openshift.io/bindable": {},
+              "f:iconClass": {},
+              "f:openshift.kubevirt.io/pronounceable-suffix-for-name-expression": {},
+              "f:tags": {},
+              ".": {},
+              "f:name.os.template.kubevirt.io/centos-stream9": {},
+              "f:template.kubevirt.io/provider": {},
+              "f:template.kubevirt.io/provider-url": {},
+              "f:template.kubevirt.io/containerdisks": {},
+              "f:openshift.io/support-url": {},
+              "f:openshift.io/provider-display-name": {},
+              "f:template.kubevirt.io/images": {},
+              "f:openshift.io/display-name": {},
+              "f:template.kubevirt.io/version": {},
+              "f:openshift.io/documentation-url": {}
+            },
+            "f:labels": {
+              "f:flavor.template.kubevirt.io/large": {},
+              "f:app.kubernetes.io/managed-by": {},
+              "f:app.kubernetes.io/name": {},
+              ".": {},
+              "f:workload.template.kubevirt.io/desktop": {},
+              "f:app.kubernetes.io/part-of": {},
+              "f:template.kubevirt.io/architecture": {},
+              "f:os.template.kubevirt.io/centos-stream9": {},
+              "f:app.kubernetes.io/version": {},
+              "f:template.kubevirt.io/type": {},
+              "f:template.kubevirt.io/version": {},
+              "f:app.kubernetes.io/component": {}
+            }
+          },
+          "f:objects": {},
+          "f:parameters": {}
+        }
+      }
+    ]
+  },
+  "objects": [
+    {
+      "apiVersion": "kubevirt.io/v1",
+      "kind": "VirtualMachine",
+      "metadata": {
+        "name": "${NAME}",
+        "annotations": {
+          "vm.kubevirt.io/validations": "[{\"name\":\"minimal-required-memory\",\"path\":\"jsonpath::.spec.domain.memory.guest\",\"rule\":\"integer\",\"message\":\"This VM requires more memory.\",\"min\":1610612736}]"
+        },
+        "labels": {
+          "app": "${NAME}",
+          "kubevirt.io/dynamic-credentials-support": "true",
+          "vm.kubevirt.io/template": "centos-stream9-desktop-large",
+          "vm.kubevirt.io/template.revision": "1",
+          "vm.kubevirt.io/template.version": "v0.34.1"
+        }
+      },
+      "spec": {
+        "runStrategy": "Halted",
+        "dataVolumeTemplates": [
+          {
+            "apiVersion": "cdi.kubevirt.io/v1beta1",
+            "kind": "DataVolume",
+            "metadata": {
+              "name": "${NAME}"
+            },
+            "spec": {
+              "sourceRef": {
+                "kind": "DataSource",
+                "name": "${DATA_SOURCE_NAME}",
+                "namespace": "${DATA_SOURCE_NAMESPACE}"
+              },
+              "storage": {
+                "resources": {
+                  "requests": {
+                    "storage": "30Gi"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "template": {
+          "metadata": {
+            "annotations": {
+              "vm.kubevirt.io/flavor": "large",
+              "vm.kubevirt.io/os": "centos-stream9",
+              "vm.kubevirt.io/workload": "desktop"
+            },
+            "labels": {
+              "kubevirt.io/domain": "${NAME}",
+              "kubevirt.io/size": "large"
+            }
+          },
+          "spec": {
+            "architecture": "amd64",
+            "terminationGracePeriodSeconds": 180,
+            "domain": {
+              "cpu": {
+                "cores": 1,
+                "sockets": 2,
+                "threads": 1
+              },
+              "memory": {
+                "guest": "8Gi"
+              },
+              "devices": {
+                "networkInterfaceMultiqueue": true,
+                "rng": {},
+                "disks": [
+                  {
+                    "name": "rootdisk",
+                    "disk": {
+                      "bus": "virtio"
+                    }
+                  },
+                  {
+                    "name": "cloudinitdisk",
+                    "disk": {
+                      "bus": "virtio"
+                    }
+                  }
+                ],
+                "inputs": [
+                  {
+                    "name": "tablet",
+                    "type": "tablet",
+                    "bus": "virtio"
+                  }
+                ],
+                "interfaces": [
+                  {
+                    "name": "default",
+                    "model": "virtio",
+                    "masquerade": {}
+                  }
+                ]
+              }
+            },
+            "networks": [
+              {
+                "name": "default",
+                "pod": {}
+              }
+            ],
+            "volumes": [
+              {
+                "name": "rootdisk",
+                "dataVolume": {
+                  "name": "${NAME}"
+                }
+              },
+              {
+                "name": "cloudinitdisk",
+                "cloudInitNoCloud": {
+                  "userData": "#cloud-config\nuser: user\npassword: ${CLOUD_USER_PASSWORD}\nchpasswd: { expire: False }\n"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "name": "NAME",
+      "description": "VM name",
+      "generate": "expression",
+      "from": "centos-stream9-[a-z0-9]{16}"
+    },
+    {
+      "name": "DATA_SOURCE_NAME",
+      "description": "Name of the DataSource to clone",
+      "value": "centos-stream9"
+    },
+    {
+      "name": "DATA_SOURCE_NAMESPACE",
+      "description": "Namespace of the DataSource",
+      "value": "namespace-1"
+    },
+    {
+      "name": "CLOUD_USER_PASSWORD",
+      "description": "Randomized password for the cloud-init user centos",
+      "value": "asdf"
+    }
+  ]
+}

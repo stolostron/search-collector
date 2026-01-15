@@ -154,8 +154,10 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 		[]interface{}{"rhel-8-amber-fish-51-volume", "rhel-8-amber-fish-51-volume-2"}, t)
 	AssertEqual("_description", node.Properties["_description"], "some description", t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
+	AssertEqual("instancetype", node.Properties["instancetype"], "instancetype-name", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
 	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
+	AssertEqual("preference", node.Properties["preference"], "preference-name", t)
 	AssertDeepEqual("pvcClaimNames", node.Properties["pvcClaimNames"],
 		[]interface{}{"the-claim-is-persistent", "the-claim-is-too-persistent"}, t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
@@ -178,17 +180,70 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2024-09-18T19:43:53Z", t)
 
 	// Verify properties defined in the transform config
+	AssertDeepEqual("affinity", node.Properties["affinity"], map[string]interface{}{
+		"nodeAffinity": map[string]interface{}{
+			"requiredDuringSchedulingIgnoredDuringExecution": map[string]interface{}{
+				"nodeSelectorTerms": []interface{}{
+					map[string]interface{}{
+						"matchExpressions": []interface{}{
+							map[string]interface{}{
+								"key":      "node-role.kubernetes.io/worker",
+								"operator": "Exists",
+							},
+						},
+					},
+				},
+			},
+		},
+		"podAntiAffinity": map[string]interface{}{
+			"preferredDuringSchedulingIgnoredDuringExecution": []interface{}{
+				map[string]interface{}{
+					"PodAffinityTerm": map[string]interface{}{
+						"labelSelector": map[string]interface{}{
+							"matchExpressions": []interface{}{
+								map[string]interface{}{
+									"key":      "kubevirt.io/domain",
+									"operator": "In",
+									"values":   []interface{}{"my-ha-vm"},
+								},
+							},
+						},
+						"topologyKey": "kubernetes.io/hostname",
+					},
+				},
+			},
+		},
+	}, t)
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
 	AssertEqual("cpuSockets", node.Properties["cpuSockets"], int64(1), t)
 	AssertEqual("cpuThreads", node.Properties["cpuThreads"], int64(1), t)
+	AssertDeepEqual("gpuNames", node.Properties["gpuNames"], []interface{}{"gpu-one", "gpu-two"}, t)
+	AssertEqual("guestOSInfoID", node.Properties["guestOSInfoID"], "centos", t)
+	AssertDeepEqual("hostDeviceNames", node.Properties["hostDeviceNames"], []interface{}{"host-device-one", "host-device-two"}, t)
+	AssertDeepEqual("interfaceNames", node.Properties["interfaceNames"], []interface{}{"default", "non-default"}, t)
+	AssertDeepEqual("interfaceStatusInterfaceNames", node.Properties["interfaceStatusInterfaceNames"], []interface{}{"eth0", "eth0-2"}, t)
+	AssertDeepEqual("interfaceStatusIPAddresses", node.Properties["interfaceStatusIPAddresses"], []interface{}{"10.128.1.193", "10.128.1.194"}, t)
+	AssertDeepEqual("interfaceStatusNames", node.Properties["interfaceStatusNames"], []interface{}{"default", "default2"}, t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
+	AssertEqual("migrationPolicyName", node.Properties["migrationPolicyName"], "my-migration-policy", t)
+	AssertDeepEqual("multusNetworkNames", node.Properties["multusNetworkNames"], []interface{}{"multus-one", "multus-two"}, t)
+	AssertDeepEqual("networkNames", node.Properties["networkNames"], []interface{}{"default", "non-default"}, t)
 	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
 	AssertEqual("osVersion", node.Properties["osVersion"], "7 (Core)", t)
 	AssertEqual("phase", node.Properties["phase"], "Running", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("startStrategy", node.Properties["startStrategy"], "Paused", t)
+	AssertDeepEqual("tolerations", node.Properties["tolerations"], []interface{}{
+		map[string]interface{}{"effect": "NoSchedule", "key": "node-role.kubernetes.io/infra", "operator": "Exists"},
+		map[string]interface{}{"effect": "NoExecute", "key": "dedicated", "operator": "Equal"},
+	}, t)
 	AssertEqual("vmSize", node.Properties["vmSize"], "small", t)
+	AssertDeepEqual("volumes", node.Properties["volumes"], []interface{}{
+		map[string]interface{}{"dataVolume": map[string]interface{}{"name": "centos7-gray-owl-35"}, "name": "rootdisk"},
+		map[string]interface{}{"emptyDisk": map[string]interface{}{"capacity": "2Gi"}, "name": "emptydisk"},
+	}, t)
 }
 
 func Test_genericResourceFromConfigVMIM(t *testing.T) {
@@ -446,6 +501,9 @@ func Test_genericResourceFromConfigNetworkAttachmentDefinition(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2000-04-30T16:22:02Z", t)
 
 	// Verify properties defined in the transform config
+	AssertEqual("config", node.Properties["config"],
+		"{\n  \"cniVersion\": \"0.3.1\",\n  \"name\": \"work-network\",\n  \"namespace\": \"namespace2\","+
+			"\n  \"type\": \"host-device\",\n  \"device\": \"eth1\",\n  \"ipam\": {\n    \"type\": \"dhcp\"\n  }\n}", t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"description": "Definition of a network attachment",
 		"label":       "test",
@@ -503,5 +561,177 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertEqual("completionTimeoutPerGiB", node.Properties["completionTimeoutPerGiB"], int64(120), t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"migrations.kubevirt.io/description": "Migration policy for high-priority workloads",
+	}, t)
+	AssertDeepEqual("selectors", node.Properties["selectors"], map[string]interface{}{
+		"namespaceSelector": map[string]interface{}{
+			"matchNames": []interface{}{"default", "production"},
+		},
+		"virtualMachineInstanceSelector": map[string]interface{}{
+			"matchLabels": map[string]interface{}{"workload": "critical"},
+		},
+	}, t)
+}
+
+func Test_genericResourceFromConfigVirtualMachineSnapshotContent(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("virtualmachinesnapshotcontent.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "vmsnapshotcontent-asdf", t)
+	AssertEqual("kind", node.Properties["kind"], "VirtualMachineSnapshotContent", t)
+	AssertEqual("created", node.Properties["created"], "2025-01-05T14:12:33Z", t)
+}
+
+func Test_genericResourceFromConfigConfigMapMatchLabel(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("configmap.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "app-config", t)
+	AssertEqual("kind", node.Properties["kind"], "ConfigMap", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("configParamMaxDesiredLatency", node.Properties["configParamMaxDesiredLatency"], int64(234), t)
+	AssertEqual("configParamNADNamespace", node.Properties["configParamNADNamespace"], "NAD-namespace", t)
+	AssertEqual("configParamNADName", node.Properties["configParamNADName"], "NAD-name", t)
+	AssertEqual("configParamTargetNode", node.Properties["configParamTargetNode"], "spec-param-target-node", t)
+	AssertEqual("configParamSourceNode", node.Properties["configParamSourceNode"], "spec-param-source-node", t)
+	AssertEqual("configParamSampleDuration", node.Properties["configParamSampleDuration"], int64(123), t)
+	AssertEqual("configTimeout", node.Properties["configTimeout"], "10m", t)
+	AssertEqual("configCompletionTimestamp", node.Properties["configCompletionTimestamp"], "2027-01-05T14:27:31Z", t)
+	AssertEqual("configFailureReason", node.Properties["configFailureReason"], "it broke", t)
+	AssertEqual("configStartTimestamp", node.Properties["configStartTimestamp"], "2026-01-05T14:27:31Z", t)
+	AssertEqual("configSucceeded", node.Properties["configSucceeded"], "true", t)
+	AssertEqual("configStatusAVGLatencyNano", node.Properties["configStatusAVGLatencyNano"], int64(12345), t)
+	AssertEqual("configStatusMaxLatencyNano", node.Properties["configStatusMaxLatencyNano"], int64(23456), t)
+	AssertEqual("configStatusMinLatencyNano", node.Properties["configStatusMinLatencyNano"], int64(34567), t)
+	AssertEqual("configStatusMeasurementDuration", node.Properties["configStatusMeasurementDuration"], int64(123), t)
+	AssertEqual("configStatusTargetNode", node.Properties["configStatusTargetNode"], "status-result-target-node", t)
+	AssertEqual("configStatusSourceNode", node.Properties["configStatusSourceNode"], "status-result-source-node", t)
+}
+
+func Test_genericResourceFromConfigConfigMapNoMatchLabel(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("configmap.json", &r, t)
+	r.SetLabels(map[string]string{"asdf": "true"})
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "app-config", t)
+	AssertEqual("kind", node.Properties["kind"], "ConfigMap", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
+
+	// Verify properties defined in the transform config aren't present because they don't match label
+	AssertEqual("configParamMaxDesiredLatency", node.Properties["configParamMaxDesiredLatency"], nil, t)
+	AssertEqual("configParamNADNamespace", node.Properties["configParamNADNamespace"], nil, t)
+	AssertEqual("configParamNADName", node.Properties["configParamNADName"], nil, t)
+	AssertEqual("configParamTargetNode", node.Properties["configParamTargetNode"], nil, t)
+	AssertEqual("configParamSourceNode", node.Properties["configParamSourceNode"], nil, t)
+	AssertEqual("configParamSampleDuration", node.Properties["configParamSampleDuration"], nil, t)
+	AssertEqual("configTimeout", node.Properties["configTimeout"], nil, t)
+	AssertEqual("configCompletionTimestamp", node.Properties["configCompletionTimestamp"], nil, t)
+	AssertEqual("configFailureReason", node.Properties["configFailureReason"], nil, t)
+	AssertEqual("configStartTimestamp", node.Properties["configStartTimestamp"], nil, t)
+	AssertEqual("configSucceeded", node.Properties["configSucceeded"], nil, t)
+	AssertEqual("configStatusAVGLatencyNano", node.Properties["configStatusAVGLatencyNano"], nil, t)
+	AssertEqual("configStatusMaxLatencyNano", node.Properties["configStatusMaxLatencyNano"], nil, t)
+	AssertEqual("configStatusMinLatencyNano", node.Properties["configStatusMinLatencyNano"], nil, t)
+	AssertEqual("configStatusMeasurementDuration", node.Properties["configStatusMeasurementDuration"], nil, t)
+	AssertEqual("configStatusTargetNode", node.Properties["configStatusTargetNode"], nil, t)
+	AssertEqual("configStatusSourceNode", node.Properties["configStatusSourceNode"], nil, t)
+}
+
+func Test_genericResourceFromConfigTemplate(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("template.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "centos-stream9-desktop-large", t)
+	AssertEqual("kind", node.Properties["kind"], "Template", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-07T22:12:17Z", t)
+
+	// Verify properties defined in the transform config
+	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
+		"template.kubevirt.io/provider":               "Red Hat",
+		"name.os.template.kubevirt.io/centos-stream9": "CentOS Stream 9 or higher",
+		"template.kubevirt.io/provider-url":           "https://www.centos.org",
+		"template.kubevirt.io/containerdisks":         "quay.io/containerdisks/centos-stream:9\n",
+		"template.kubevirt.io/version":                "v1alpha1",
+	}, t)
+	AssertDeepEqual("objectAnnotations", node.Properties["objectAnnotations"], map[string]interface{}{
+		"vm.kubevirt.io/validations": "[{\"name\":\"minimal-required-memory\",\"path\":\"jsonpath::.spec.domain.memory.guest\",\"rule\":\"integer\",\"message\":\"This VM requires more memory.\",\"min\":1610612736}]",
+	}, t)
+	AssertDeepEqual("objectDataVolumeTemplates", node.Properties["objectDataVolumeTemplates"], []interface{}{
+		map[string]interface{}{
+			"apiVersion": "cdi.kubevirt.io/v1beta1",
+			"kind":       "DataVolume",
+			"metadata": map[string]interface{}{
+				"name": "${NAME}",
+			},
+			"spec": map[string]interface{}{
+				"sourceRef": map[string]interface{}{
+					"kind":      "DataSource",
+					"name":      "${DATA_SOURCE_NAME}",
+					"namespace": "${DATA_SOURCE_NAMESPACE}",
+				},
+				"storage": map[string]interface{}{
+					"resources": map[string]interface{}{
+						"requests": map[string]interface{}{
+							"storage": "30Gi",
+						},
+					},
+				},
+			},
+		},
+	}, t)
+	AssertDeepEqual("objectLabels", node.Properties["objectLabels"], map[string]interface{}{
+		"app": "${NAME}",
+		"kubevirt.io/dynamic-credentials-support": "true",
+		"vm.kubevirt.io/template":                 "centos-stream9-desktop-large",
+		"vm.kubevirt.io/template.revision":        "1",
+		"vm.kubevirt.io/template.version":         "v0.34.1",
+	}, t)
+	AssertEqual("objectVMArchitecture", node.Properties["objectVMArchitecture"], "amd64", t)
+	AssertEqual("objectVMName", node.Properties["objectVMName"], "${NAME}", t)
+	AssertDeepEqual("objectParameters", node.Properties["objectParameters"], []interface{}{
+		map[string]interface{}{
+			"description": "VM name",
+			"from":        "centos-stream9-[a-z0-9]{16}",
+			"generate":    "expression",
+			"name":        "NAME",
+		},
+		map[string]interface{}{
+			"description": "Name of the DataSource to clone",
+			"name":        "DATA_SOURCE_NAME",
+			"value":       "centos-stream9",
+		},
+		map[string]interface{}{
+			"description": "Namespace of the DataSource",
+			"name":        "DATA_SOURCE_NAMESPACE",
+			"value":       "namespace-1",
+		},
+		map[string]interface{}{
+			"description": "Randomized password for the cloud-init user centos",
+			"name":        "CLOUD_USER_PASSWORD",
+			"value":       "asdf",
+		},
+	}, t)
+	AssertDeepEqual("objectVolumes", node.Properties["objectVolumes"], []interface{}{
+		map[string]interface{}{
+			"dataVolume": map[string]interface{}{
+				"name": "${NAME}",
+			},
+			"name": "rootdisk",
+		},
+		map[string]interface{}{
+			"cloudInitNoCloud": map[string]interface{}{
+				"userData": "#cloud-config\nuser: user\npassword: ${CLOUD_USER_PASSWORD}\nchpasswd: { expire: False }\n",
+			},
+			"name": "cloudinitdisk",
+		},
 	}, t)
 }

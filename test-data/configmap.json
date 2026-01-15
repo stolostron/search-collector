@@ -1,0 +1,33 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "creationTimestamp": "2026-01-05T14:27:31Z",
+    "name": "app-config",
+    "namespace": "default",
+    "labels": {
+      "app": "my-app",
+      "component": "backend",
+      "kiagnose/checkup-type": "true"
+    }
+  },
+  "data": {
+    "spec.param.maxDesiredLatencyMilliseconds": 234,
+    "spec.param.networkAttachmentDefinitionName": "NAD-name",
+    "spec.param.networkAttachmentDefinitionNamespace": "NAD-namespace",
+    "spec.param.targetNode": "spec-param-target-node",
+    "spec.param.sampleDurationSeconds": 123,
+    "spec.param.sourceNode": "spec-param-source-node",
+    "spec.timeout": "10m",
+    "status.completionTimestamp": "2027-01-05T14:27:31Z",
+    "status.failureReason": "it broke",
+    "status.startTimestamp": "2026-01-05T14:27:31Z",
+    "status.succeeded": "true",
+    "status.result.avgLatencyNanoSec": 12345,
+    "status.result.maxLatencyNanoSec": 23456,
+    "status.result.measurementDurationSec": 123,
+    "status.result.minLatencyNanoSec": 34567,
+    "status.result.sourceNode": "status-result-source-node",
+    "status.result.targetNode": "status-result-target-node"
+  }
+}

@@ -12,6 +12,7 @@ package transforms
 
 import (
 	v1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // JobResource ...
@@ -20,7 +21,7 @@ type JobResource struct {
 }
 
 // JobResourceBuilder ...
-func JobResourceBuilder(j *v1.Job) *JobResource {
+func JobResourceBuilder(j *v1.Job, r *unstructured.Unstructured) *JobResource {
 	node := transformCommon(j)         // Start off with the common properties
 	apiGroupVersion(j.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -33,6 +34,8 @@ func JobResourceBuilder(j *v1.Job) *JobResource {
 	if j.Spec.Completions != nil {
 		node.Properties["parallelism"] = int64(*j.Spec.Parallelism)
 	}
+
+	node = applyDefaultTransformConfig(node, r)
 
 	return &JobResource{node: node}
 }
