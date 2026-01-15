@@ -5,7 +5,7 @@ type ExtractProperty struct {
 	Name     string   // `json:"name,omitempty"`
 	JSONPath string   // `json:"jsonpath,omitempty"`
 	DataType DataType // `json:"dataType,omitempty"`
-	// A property to denote that we should only extract this property if this label matches the resource TODO: generalize with matchExpression
+	// A property to denote that we should only extract this property if this label matches the resource FUTURE: generalize with matchExpression
 	matchLabel string // `json:"matchLabel,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
