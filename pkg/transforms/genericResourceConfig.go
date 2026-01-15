@@ -5,6 +5,8 @@ type ExtractProperty struct {
 	Name     string   // `json:"name,omitempty"`
 	JSONPath string   // `json:"jsonpath,omitempty"`
 	DataType DataType // `json:"dataType,omitempty"`
+	// A property to denote that we should only extract this property if this label matches the resource TODO: generalize with matchExpression
+	matchLabel string // `json:"matchLabel,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
 }
@@ -64,6 +66,27 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "available", JSONPath: `{.status.conditions[?(@.type=="Available")].status}`},
 			{Name: "progressing", JSONPath: `{.status.conditions[?(@.type=="Progressing")].status}`},
 			{Name: "degraded", JSONPath: `{.status.conditions[?(@.type=="Degraded")].status}`},
+		},
+	},
+	"ConfigMap": {
+		properties: []ExtractProperty{
+			{Name: "configParamMaxDesiredLatency", JSONPath: `{.data.spec\.param\.maxDesiredLatencyMilliseconds}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamNADNamespace", JSONPath: `{.data.spec\.param\.networkAttachmentDefinitionNamespace}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamNADName", JSONPath: `{.data.spec\.param\.networkAttachmentDefinitionName}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamTargetNode", JSONPath: `{.data.spec\.param\.targetNode}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamSourceNode", JSONPath: `{.data.spec\.param\.sourceNode}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamSampleDuration", JSONPath: `{.data.spec\.param\.sampleDurationSeconds}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configTimeout", JSONPath: `{.data.spec\.timeout}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configCompletionTimestamp", JSONPath: `{.data.status\.completionTimestamp}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configFailureReason", JSONPath: `{.data.status\.failureReason}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStartTimestamp", JSONPath: `{.data.status\.startTimestamp}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configSucceeded", JSONPath: `{.data.status\.succeeded}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusAVGLatencyNano", JSONPath: `{.data.status\.result\.avgLatencyNanoSec}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusMaxLatencyNano", JSONPath: `{.data.status\.result\.maxLatencyNanoSec}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusMinLatencyNano", JSONPath: `{.data.status\.result\.minLatencyNanoSec}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusMeasurementDuration", JSONPath: `{.data.status\.result\.measurementDurationSec}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusTargetNode", JSONPath: `{.data.status\.result\.targetNode}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusSourceNode", JSONPath: `{.data.status\.result\.sourceNode}`, matchLabel: "kiagnose/checkup-type"},
 		},
 	},
 	"DataSource.cdi.kubevirt.io": {
@@ -159,6 +182,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "phase", JSONPath: "{.status.state}"},
 		},
 	},
+	"Template.template.openshift.io": {
+		properties: []ExtractProperty{
+			{Name: "objectVMName", JSONPath: `{.objects[0].metadata.name}`, matchLabel: "template.kubevirt.io/type"},
+			{Name: "objectVMArchitecture", JSONPath: `{.objects[0].spec.template.spec.architecture}`, matchLabel: "template.kubevirt.io/type"},
+		},
+	},
 	"ValidatingAdmissionPolicy.admissionregistration.k8s.io": {
 		properties: []ExtractProperty{
 			{Name: "paramKind_kind", JSONPath: `{.spec.paramKind.kind}`, metadataOnly: true},
@@ -212,13 +241,16 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "cpu", JSONPath: `{.spec.domain.cpu.cores}`},
 			{Name: "cpuSockets", JSONPath: `{.spec.domain.cpu.sockets}`},
 			{Name: "cpuThreads", JSONPath: `{.spec.domain.cpu.threads}`},
+			{Name: "guestOSInfoID", JSONPath: `{.status.guestOSInfo.id}`},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 			{Name: "memory", JSONPath: `{.spec.domain.memory.guest}`, DataType: DataTypeBytes},
+			{Name: "migrationPolicyName", JSONPath: `{.status.migrationState.migrationPolicyName}`},
 			{Name: "node", JSONPath: `{.status.nodeName}`},
 			{Name: "osVersion", JSONPath: `{.status.guestOSInfo.version}`},
 			{Name: "phase", JSONPath: `{.status.phase}`},
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
+			{Name: "startStrategy", JSONPath: `{.spec.startStrategy}`},
 			{Name: "vmSize", JSONPath: `{.metadata.labels.\kubevirt\.io/size}`},
 		},
 	},

@@ -183,13 +183,16 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("cpu", node.Properties["cpu"], int64(1), t)
 	AssertEqual("cpuSockets", node.Properties["cpuSockets"], int64(1), t)
 	AssertEqual("cpuThreads", node.Properties["cpuThreads"], int64(1), t)
+	AssertEqual("guestOSInfoID", node.Properties["guestOSInfoID"], "centos", t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
+	AssertEqual("migrationPolicyName", node.Properties["migrationPolicyName"], "my-migration-policy", t)
 	AssertEqual("node", node.Properties["node"], "sno-0-0", t)
 	AssertEqual("osVersion", node.Properties["osVersion"], "7 (Core)", t)
 	AssertEqual("phase", node.Properties["phase"], "Running", t)
 	AssertEqual("ready", node.Properties["ready"], "True", t)
+	AssertEqual("startStrategy", node.Properties["startStrategy"], "Paused", t)
 	AssertEqual("vmSize", node.Properties["vmSize"], "small", t)
 }
 
@@ -506,4 +509,96 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"migrations.kubevirt.io/description": "Migration policy for high-priority workloads",
 	}, t)
+}
+
+func Test_genericResourceFromConfigConfigMapMatchLabel(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("configmap.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "app-config", t)
+	AssertEqual("kind", node.Properties["kind"], "ConfigMap", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("configParamMaxDesiredLatency", node.Properties["configParamMaxDesiredLatency"], int64(234), t)
+	AssertEqual("configParamNADNamespace", node.Properties["configParamNADNamespace"], "NAD-namespace", t)
+	AssertEqual("configParamNADName", node.Properties["configParamNADName"], "NAD-name", t)
+	AssertEqual("configParamTargetNode", node.Properties["configParamTargetNode"], "spec-param-target-node", t)
+	AssertEqual("configParamSourceNode", node.Properties["configParamSourceNode"], "spec-param-source-node", t)
+	AssertEqual("configParamSampleDuration", node.Properties["configParamSampleDuration"], int64(123), t)
+	AssertEqual("configTimeout", node.Properties["configTimeout"], "10m", t)
+	AssertEqual("configCompletionTimestamp", node.Properties["configCompletionTimestamp"], "2027-01-05T14:27:31Z", t)
+	AssertEqual("configFailureReason", node.Properties["configFailureReason"], "it broke", t)
+	AssertEqual("configStartTimestamp", node.Properties["configStartTimestamp"], "2026-01-05T14:27:31Z", t)
+	AssertEqual("configSucceeded", node.Properties["configSucceeded"], "true", t)
+	AssertEqual("configStatusAVGLatencyNano", node.Properties["configStatusAVGLatencyNano"], int64(12345), t)
+	AssertEqual("configStatusMaxLatencyNano", node.Properties["configStatusMaxLatencyNano"], int64(23456), t)
+	AssertEqual("configStatusMinLatencyNano", node.Properties["configStatusMinLatencyNano"], int64(34567), t)
+	AssertEqual("configStatusMeasurementDuration", node.Properties["configStatusMeasurementDuration"], int64(123), t)
+	AssertEqual("configStatusTargetNode", node.Properties["configStatusTargetNode"], "status-result-target-node", t)
+	AssertEqual("configStatusSourceNode", node.Properties["configStatusSourceNode"], "status-result-source-node", t)
+}
+
+func Test_genericResourceFromConfigConfigMapNoMatchLabel(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("configmap.json", &r, t)
+	r.SetLabels(map[string]string{"asdf": "true"})
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "app-config", t)
+	AssertEqual("kind", node.Properties["kind"], "ConfigMap", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
+
+	// Verify properties defined in the transform config aren't present because they don't match label
+	AssertEqual("configParamMaxDesiredLatency", node.Properties["configParamMaxDesiredLatency"], nil, t)
+	AssertEqual("configParamNADNamespace", node.Properties["configParamNADNamespace"], nil, t)
+	AssertEqual("configParamNADName", node.Properties["configParamNADName"], nil, t)
+	AssertEqual("configParamTargetNode", node.Properties["configParamTargetNode"], nil, t)
+	AssertEqual("configParamSourceNode", node.Properties["configParamSourceNode"], nil, t)
+	AssertEqual("configParamSampleDuration", node.Properties["configParamSampleDuration"], nil, t)
+	AssertEqual("configTimeout", node.Properties["configTimeout"], nil, t)
+	AssertEqual("configCompletionTimestamp", node.Properties["configCompletionTimestamp"], nil, t)
+	AssertEqual("configFailureReason", node.Properties["configFailureReason"], nil, t)
+	AssertEqual("configStartTimestamp", node.Properties["configStartTimestamp"], nil, t)
+	AssertEqual("configSucceeded", node.Properties["configSucceeded"], nil, t)
+	AssertEqual("configStatusAVGLatencyNano", node.Properties["configStatusAVGLatencyNano"], nil, t)
+	AssertEqual("configStatusMaxLatencyNano", node.Properties["configStatusMaxLatencyNano"], nil, t)
+	AssertEqual("configStatusMinLatencyNano", node.Properties["configStatusMinLatencyNano"], nil, t)
+	AssertEqual("configStatusMeasurementDuration", node.Properties["configStatusMeasurementDuration"], nil, t)
+	AssertEqual("configStatusTargetNode", node.Properties["configStatusTargetNode"], nil, t)
+	AssertEqual("configStatusSourceNode", node.Properties["configStatusSourceNode"], nil, t)
+}
+
+func Test_genericResourceFromConfigTemplateMatchLabel(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("template.json", &r, t)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "centos-stream9-desktop-large", t)
+	AssertEqual("kind", node.Properties["kind"], "Template", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-07T22:12:17Z", t)
+
+	// Verify properties defined in the transform config
+	AssertEqual("objectVMArchitecture", node.Properties["objectVMArchitecture"], "amd64", t)
+	AssertEqual("objectVMName", node.Properties["objectVMName"], "${NAME}", t)
+}
+
+func Test_genericResourceFromConfigTemplateNoMatchLabel(t *testing.T) {
+	var r unstructured.Unstructured
+	UnmarshalFile("template.json", &r, t)
+	r.SetLabels(map[string]string{"asdf": "true"})
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "centos-stream9-desktop-large", t)
+	AssertEqual("kind", node.Properties["kind"], "Template", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-07T22:12:17Z", t)
+
+	// Verify properties defined in the transform config aren't present because they don't match label
+	AssertEqual("objectVMArchitecture", node.Properties["objectVMArchitecture"], nil, t)
+	AssertEqual("objectVMName", node.Properties["objectVMName"], nil, t)
 }

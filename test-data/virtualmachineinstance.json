@@ -83,6 +83,7 @@
                 "pod": {}
             }
         ],
+        "startStrategy": "Paused",
         "terminationGracePeriodSeconds": 180,
         "volumes": [
             {
@@ -98,6 +99,9 @@
             "guestAtBoot": "2Gi",
             "guestCurrent": "2Gi",
             "guestRequested": "2Gi"
+        },
+        "migrationState": {
+            "migrationPolicyName": "my-migration-policy"
         },
         "virtualMachineRevisionName": "revision-start-vm-42634581-0cc1-4aa9-bec6-69f59049e2d3-11",
         "qosClass": "Burstable",
