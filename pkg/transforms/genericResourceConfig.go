@@ -5,6 +5,8 @@ type ExtractProperty struct {
 	Name     string   // `json:"name,omitempty"`
 	JSONPath string   // `json:"jsonpath,omitempty"`
 	DataType DataType // `json:"dataType,omitempty"`
+	// A property to denote that we should only extract this property if this label matches the resource TODO: generalize with matchExpression
+	matchLabel string // `json:"matchLabel,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
 }
@@ -68,23 +70,23 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"ConfigMap": {
 		properties: []ExtractProperty{
-			{Name: "configParamMaxDesiredLatency", JSONPath: `{.data.spec\.param\.maxDesiredLatencyMilliseconds}`},
-			{Name: "configParamNADNamespace", JSONPath: `{.data.spec\.param\.networkAttachmentDefinitionNamespace}`},
-			{Name: "configParamNADName", JSONPath: `{.data.spec\.param\.networkAttachmentDefinitionName}`},
-			{Name: "configParamTargetNode", JSONPath: `{.data.spec\.param\.targetNode}`},
-			{Name: "configParamSourceNode", JSONPath: `{.data.spec\.param\.sourceNode}`},
-			{Name: "configParamSampleDuration", JSONPath: `{.data.spec\.param\.sampleDurationSeconds}`},
-			{Name: "configTimeout", JSONPath: `{.data.spec\.timeout}`},
-			{Name: "configCompletionTimestamp", JSONPath: `{.data.status\.completionTimestamp}`},
-			{Name: "configFailureReason", JSONPath: `{.data.status\.failureReason}`},
-			{Name: "configStartTimestamp", JSONPath: `{.data.status\.startTimestamp}`},
-			{Name: "configSucceeded", JSONPath: `{.data.status\.succeeded}`},
-			{Name: "configStatusAVGLatencyNano", JSONPath: `{.data.status\.result\.avgLatencyNanoSec}`},
-			{Name: "configStatusMaxLatencyNano", JSONPath: `{.data.status\.result\.maxLatencyNanoSec}`},
-			{Name: "configStatusMinLatencyNano", JSONPath: `{.data.status\.result\.minLatencyNanoSec}`},
-			{Name: "configStatusMeasurementDuration", JSONPath: `{.data.status\.result\.measurementDurationSec}`},
-			{Name: "configStatusTargetNode", JSONPath: `{.data.status\.result\.targetNode}`},
-			{Name: "configStatusSourceNode", JSONPath: `{.data.status\.result\.sourceNode}`},
+			{Name: "configParamMaxDesiredLatency", JSONPath: `{.data.spec\.param\.maxDesiredLatencyMilliseconds}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamNADNamespace", JSONPath: `{.data.spec\.param\.networkAttachmentDefinitionNamespace}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamNADName", JSONPath: `{.data.spec\.param\.networkAttachmentDefinitionName}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamTargetNode", JSONPath: `{.data.spec\.param\.targetNode}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamSourceNode", JSONPath: `{.data.spec\.param\.sourceNode}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamSampleDuration", JSONPath: `{.data.spec\.param\.sampleDurationSeconds}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configTimeout", JSONPath: `{.data.spec\.timeout}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configCompletionTimestamp", JSONPath: `{.data.status\.completionTimestamp}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configFailureReason", JSONPath: `{.data.status\.failureReason}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStartTimestamp", JSONPath: `{.data.status\.startTimestamp}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configSucceeded", JSONPath: `{.data.status\.succeeded}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusAVGLatencyNano", JSONPath: `{.data.status\.result\.avgLatencyNanoSec}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusMaxLatencyNano", JSONPath: `{.data.status\.result\.maxLatencyNanoSec}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusMinLatencyNano", JSONPath: `{.data.status\.result\.minLatencyNanoSec}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusMeasurementDuration", JSONPath: `{.data.status\.result\.measurementDurationSec}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusTargetNode", JSONPath: `{.data.status\.result\.targetNode}`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusSourceNode", JSONPath: `{.data.status\.result\.sourceNode}`, matchLabel: "kiagnose/checkup-type"},
 		},
 	},
 	"DataSource.cdi.kubevirt.io": {
