@@ -512,6 +512,10 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 }
 
 func Test_genericResourceFromConfigConfigMapMatchLabel(t *testing.T) {
+	config.Cfg.DeployedInHub = false // temporarily set to false else _hubClusterResource gets appended during full test suite
+	defer func() {
+		config.Cfg.DeployedInHub = true
+	}()
 	var r unstructured.Unstructured
 	UnmarshalFile("configmap.json", &r, t)
 	node := GenericResourceBuilder(&r).BuildNode()
@@ -579,6 +583,10 @@ func Test_genericResourceFromConfigConfigMapNoMatchLabel(t *testing.T) {
 }
 
 func Test_genericResourceFromConfigMapNoLabel(t *testing.T) {
+	config.Cfg.DeployedInHub = false // temporarily set to false else _hubClusterResource gets appended during full test suite
+	defer func() {
+		config.Cfg.DeployedInHub = true
+	}()
 	var r unstructured.Unstructured
 	UnmarshalFile("configmap-two.json", &r, t)
 	node := GenericResourceBuilder(&r).BuildNode()
