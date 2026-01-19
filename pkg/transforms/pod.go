@@ -120,7 +120,7 @@ func PodResourceBuilder(p *corev1.Pod, r *unstructured.Unstructured) *PodResourc
 	node.Properties["status"] = reason
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
-	if initContainers != nil && len(initContainers) > 0 {
+	if len(initContainers) > 0 {
 		node.Properties["initContainer"] = initContainers
 	}
 	node.Properties["startedAt"] = ""
