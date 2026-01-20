@@ -120,7 +120,9 @@ func PodResourceBuilder(p *corev1.Pod, r *unstructured.Unstructured) *PodResourc
 	node.Properties["status"] = reason
 	node.Properties["container"] = containers
 	node.Properties["image"] = images
-	node.Properties["initContainer"] = initContainers
+	if len(initContainers) > 0 {
+		node.Properties["initContainer"] = initContainers
+	}
 	node.Properties["startedAt"] = ""
 	if len(ownerReferences) > 0 &&
 		(ownerReferences[0].Kind == "ReplicationController" || ownerReferences[0].Kind == "ReplicaSet") {
