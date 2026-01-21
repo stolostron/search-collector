@@ -515,7 +515,12 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"migrations.kubevirt.io/description": "Migration policy for high-priority workloads",
 	}, t)
-	AssertEqual("_selector", node.Properties["_selector"], "map[namespaceSelector:map[matchNames:[default production]] virtualMachineInstanceSelector:map[matchLabels:map[workload:critical]]]", t)
+	AssertDeepEqual("_namespaceSelector", node.Properties["_namespaceSelector"], map[string]string{
+		"hpc-workloads": "true", "hpc-nonworkloads": "true",
+	}, t)
+	AssertDeepEqual("_virtualMachineInstanceSelector", node.Properties["_virtualMachineInstanceSelector"], map[string]string{
+		"workload-type": "db",
+	}, t)
 }
 
 func Test_genericResourceFromConfigConfigMapMatchLabel(t *testing.T) {

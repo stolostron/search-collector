@@ -12,7 +12,7 @@ package transforms
 
 import (
 	"encoding/json"
-	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -82,8 +82,9 @@ func commonProperties(resource v1.Object) map[string]interface{} {
 		ret["_hubClusterResource"] = true
 	}
 
-	if resource.GetLabels() != nil {
-		ret["label"] = resource.GetLabels()
+	labels := resource.GetLabels()
+	if labels != nil {
+		ret["label"] = labels
 	}
 
 	annotations := commonAnnotations(resource)
@@ -92,15 +93,19 @@ func commonProperties(resource v1.Object) map[string]interface{} {
 		ret["annotation"] = annotations
 	}
 
-	if resource.GetNamespace() != "" {
-		ret["namespace"] = resource.GetNamespace()
+	namespace := resource.GetNamespace()
+	if namespace != "" {
+		ret["namespace"] = namespace
 	}
 
-	if resource.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"] != "" {
-		ret["_hostingSubscription"] = resource.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"]
+	hostingSubscription := resource.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"]
+	if hostingSubscription != "" {
+		ret["_hostingSubscription"] = hostingSubscription
 	}
-	if resource.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"] != "" {
-		ret["_hostingDeployable"] = resource.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"]
+
+	hostingDeployable := resource.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"]
+	if hostingDeployable != "" {
+		ret["_hostingDeployable"] = hostingDeployable
 	}
 	return ret
 }
@@ -799,9 +804,21 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					)
 				}
 				node.Properties[prop.Name] = mem
-			} else if prop.DataType == DataTypeString {
-				strVal := fmt.Sprintf("%v", val)
-				node.Properties[prop.Name] = strVal
+			} else if prop.DataType == DataTypeSelector {
+				if m, ok := val.(map[string]interface{}); ok {
+					selector := make(map[string]string, len(m))
+					for k, v := range m {
+						switch t := v.(type) {
+						case string:
+							selector[k] = t
+						case bool:
+							selector[k] = strconv.FormatBool(t)
+						}
+					}
+					node.Properties[prop.Name] = selector
+				} else {
+					klog.V(1).Infof("Unable to parse selector value [%v] from [%s.%s] Name: [%s]", val, kind, group, r.GetName())
+				}
 			} else {
 				node.Properties[prop.Name] = val
 			}

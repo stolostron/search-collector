@@ -15,15 +15,11 @@
   "spec": {
     "selectors": {
       "namespaceSelector": {
-        "matchNames": [
-          "default",
-          "production"
-        ]
+        "hpc-workloads": "true",
+        "hpc-nonworkloads": "true"
       },
       "virtualMachineInstanceSelector": {
-        "matchLabels": {
-          "workload": "critical"
-        }
+        "workload-type": "db"
       }
     },
     "allowAutoConverge": true,
