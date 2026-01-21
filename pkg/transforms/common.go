@@ -12,6 +12,7 @@ package transforms
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -798,6 +799,9 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					)
 				}
 				node.Properties[prop.Name] = mem
+			} else if prop.DataType == DataTypeString {
+				strVal := fmt.Sprintf("%v", val)
+				node.Properties[prop.Name] = strVal
 			} else {
 				node.Properties[prop.Name] = val
 			}

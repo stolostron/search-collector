@@ -54,6 +54,9 @@
                         "masquerade": {},
                         "model": "virtio",
                         "name": "default"
+                    },
+                    {
+                        "name": "default-2"
                     }
                 ],
                 "networkInterfaceMultiqueue": true,
