@@ -20,11 +20,11 @@ type ExtractEdge struct {
 type DataType string
 
 const (
-	DataTypeBytes    DataType = "bytes"
-	DataTypeSlice    DataType = "slice"
-	DataTypeString   DataType = "string"
-	DataTypeNumber   DataType = "number"
-	DataTypeSelector DataType = "selector"
+	DataTypeBytes           DataType = "bytes"
+	DataTypeSlice           DataType = "slice"
+	DataTypeString          DataType = "string"
+	DataTypeNumber          DataType = "number"
+	DataTypeMapStringString DataType = "mapStringString"
 )
 
 // Declares the properties to extract from a given resource.
@@ -129,8 +129,8 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "allowPostCopy", JSONPath: `{.spec.allowPostCopy}`},
 			{Name: "bandwidthPerMigration", JSONPath: `{.spec.bandwidthPerMigration}`, DataType: DataTypeBytes},
 			{Name: "completionTimeoutPerGiB", JSONPath: `{.spec.completionTimeoutPerGiB}`},
-			{Name: "_namespaceSelector", JSONPath: `{.spec.selectors.namespaceSelector}`, DataType: DataTypeSelector},
-			{Name: "_virtualMachineInstanceSelector", JSONPath: `{.spec.selectors.virtualMachineInstanceSelector}`, DataType: DataTypeSelector},
+			{Name: "_namespaceSelector", JSONPath: `{.spec.selectors.namespaceSelector}`, DataType: DataTypeMapStringString},
+			{Name: "_virtualMachineInstanceSelector", JSONPath: `{.spec.selectors.virtualMachineInstanceSelector}`, DataType: DataTypeMapStringString},
 		},
 		extractAnnotations: true,
 	},

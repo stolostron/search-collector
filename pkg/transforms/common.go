@@ -82,9 +82,8 @@ func commonProperties(resource v1.Object) map[string]interface{} {
 		ret["_hubClusterResource"] = true
 	}
 
-	labels := resource.GetLabels()
-	if labels != nil {
-		ret["label"] = labels
+	if resource.GetLabels() != nil {
+		ret["label"] = resource.GetLabels()
 	}
 
 	annotations := commonAnnotations(resource)
@@ -93,19 +92,15 @@ func commonProperties(resource v1.Object) map[string]interface{} {
 		ret["annotation"] = annotations
 	}
 
-	namespace := resource.GetNamespace()
-	if namespace != "" {
-		ret["namespace"] = namespace
+	if resource.GetNamespace() != "" {
+		ret["namespace"] = resource.GetNamespace()
 	}
 
-	hostingSubscription := resource.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"]
-	if hostingSubscription != "" {
-		ret["_hostingSubscription"] = hostingSubscription
+	if resource.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"] != "" {
+		ret["_hostingSubscription"] = resource.GetAnnotations()["apps.open-cluster-management.io/hosting-subscription"]
 	}
-
-	hostingDeployable := resource.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"]
-	if hostingDeployable != "" {
-		ret["_hostingDeployable"] = hostingDeployable
+	if resource.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"] != "" {
+		ret["_hostingDeployable"] = resource.GetAnnotations()["apps.open-cluster-management.io/hosting-deployable"]
 	}
 	return ret
 }
@@ -804,7 +799,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					)
 				}
 				node.Properties[prop.Name] = mem
-			} else if prop.DataType == DataTypeSelector {
+			} else if prop.DataType == DataTypeMapStringString {
 				if m, ok := val.(map[string]interface{}); ok {
 					selector := make(map[string]string, len(m))
 					for k, v := range m {
