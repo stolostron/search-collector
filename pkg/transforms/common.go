@@ -813,6 +813,10 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 							selector[k] = t
 						case bool:
 							selector[k] = strconv.FormatBool(t)
+						case int:
+							selector[k] = strconv.Itoa(t)
+						default:
+							klog.V(1).Infof("Parsed unsupported type [%T] from [%s.%s] building selector map for Name: %s", t, kind, group, r.GetName())
 						}
 					}
 					node.Properties[prop.Name] = selector
