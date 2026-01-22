@@ -799,22 +799,32 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					)
 				}
 				node.Properties[prop.Name] = mem
-			} else if prop.DataType == DataTypeMapStringString {
+			} else if prop.DataType == DataTypeMapString {
 				if m, ok := val.(map[string]interface{}); ok {
-					selector := make(map[string]string, len(m))
+					dest := make(map[string]string, len(m))
 					for k, v := range m {
 						switch t := v.(type) {
 						case string:
-							selector[k] = t
+							dest[k] = t
 						case bool:
-							selector[k] = strconv.FormatBool(t)
+							dest[k] = strconv.FormatBool(t)
 						case int:
-							selector[k] = strconv.Itoa(t)
+							dest[k] = strconv.Itoa(t)
+						case int64:
+							dest[k] = strconv.FormatInt(t, 10)
+						case float64:
+							if t == float64(int64(t)) {
+								dest[k] = strconv.FormatInt(int64(t), 10)
+							} else {
+								dest[k] = strconv.FormatFloat(t, 'f', -1, 64)
+							}
 						default:
-							klog.V(1).Infof("Parsed unsupported type [%T] from [%s.%s] building selector map for Name: %s", t, kind, group, r.GetName())
+							klog.V(1).Infof("Parsed unsupported type [%T] from [%s.%s] building map for Name: %s", t, kind, group, r.GetName())
 						}
 					}
-					node.Properties[prop.Name] = selector
+					if len(dest) > 0 {
+						node.Properties[prop.Name] = dest
+					}
 				} else {
 					klog.V(1).Infof("Unable to parse selector value [%v] from [%s.%s] Name: [%s]", val, kind, group, r.GetName())
 				}
