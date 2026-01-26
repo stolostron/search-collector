@@ -249,7 +249,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "guestOSInfoID", JSONPath: `{.status.guestOSInfo.id}`},
 			{Name: "interfaceName", JSONPath: `{.spec.domain.devices.interfaces[*].name}`, DataType: DataTypeSlice},
 			{Name: "interfaceStatusInterfaceName", JSONPath: `{.status.interfaces[*].interfaceName}`, DataType: DataTypeSlice},
-			{Name: "interfaceStatusIPAddress", JSONPath: `{.status.interfaces[*].ipAddress}`, DataType: DataTypeSlice},
+			{Name: "interfaceStatusIPAddress", JSONPath: `{.status.interfaces[*].ipAddresses}`, DataType: DataTypeSlice},
 			{Name: "interfaceStatusName", JSONPath: `{.status.interfaces[*].name}`, DataType: DataTypeSlice},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},

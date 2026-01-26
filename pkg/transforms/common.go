@@ -749,7 +749,14 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			if prop.DataType == DataTypeSlice {
 				var slice []interface{}
 				for _, v := range result[0] {
-					slice = append(slice, v.Interface())
+					val := v.Interface()
+					if _, ok := val.([]interface{}); ok { // v is [][]interface{} -> []interface{}
+						for _, vv := range val.([]interface{}) {
+							slice = append(slice, vv)
+						}
+					} else {
+						slice = append(slice, val) // v is presumed []interface{}
+					}
 				}
 				if prop.metadataOnly {
 					node.Metadata[prop.Name] = slice
