@@ -751,9 +751,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				for _, v := range result[0] {
 					val := v.Interface()
 					if _, ok := val.([]interface{}); ok { // v is [][]interface{} -> []interface{}
-						for _, vv := range val.([]interface{}) {
-							slice = append(slice, vv)
-						}
+						slice = append(slice, val.([]interface{})...)
 					} else {
 						slice = append(slice, val) // v is presumed []interface{}
 					}
