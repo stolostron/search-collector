@@ -518,9 +518,10 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	}, t)
 	AssertDeepEqual("_namespaceSelector", node.Properties["_namespaceSelector"], map[string]string{
 		"hpc-workloads": "true", "hpc-nonworkloads": "true",
+		"enabled": "true", "priority": "10", "maxInstances": "9223372036854775807", "cpuThreshold": "0.85",
 	}, t)
 	AssertDeepEqual("_virtualMachineInstanceSelector", node.Properties["_virtualMachineInstanceSelector"], map[string]string{
-		"workload-type": "db",
+		"workload-type": "db", "production": "false", "replicas": "3", "memoryLimit": "4294967296", "diskUsage": "75.5",
 	}, t)
 }
 
