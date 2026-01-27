@@ -20,10 +20,11 @@ type ExtractEdge struct {
 type DataType string
 
 const (
-	DataTypeBytes  DataType = "bytes"
-	DataTypeSlice  DataType = "slice"
-	DataTypeString DataType = "string"
-	DataTypeNumber DataType = "number"
+	DataTypeBytes     DataType = "bytes"
+	DataTypeSlice     DataType = "slice"
+	DataTypeString    DataType = "string"
+	DataTypeNumber    DataType = "number"
+	DataTypeMapString DataType = "mapString"
 )
 
 // Declares the properties to extract from a given resource.
@@ -128,6 +129,8 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "allowPostCopy", JSONPath: `{.spec.allowPostCopy}`},
 			{Name: "bandwidthPerMigration", JSONPath: `{.spec.bandwidthPerMigration}`, DataType: DataTypeBytes},
 			{Name: "completionTimeoutPerGiB", JSONPath: `{.spec.completionTimeoutPerGiB}`},
+			{Name: "_namespaceSelector", JSONPath: `{.spec.selectors.namespaceSelector}`, DataType: DataTypeMapString},
+			{Name: "_virtualMachineInstanceSelector", JSONPath: `{.spec.selectors.virtualMachineInstanceSelector}`, DataType: DataTypeMapString},
 		},
 		extractAnnotations: true,
 	},
@@ -202,6 +205,8 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "dataVolumeNames", JSONPath: `{.spec.template.spec.volumes[*].dataVolume.name}`, DataType: DataTypeSlice},
 			{Name: "_description", JSONPath: `{.metadata.annotations.description}`},
 			{Name: "flavor", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor}`},
+			{Name: "gpuName", JSONPath: `{.spec.template.spec.domain.devices.gpus[*].name}`, DataType: DataTypeSlice},
+			{Name: "hostDeviceName", JSONPath: `{.spec.template.spec.domain.devices.hostDevices[*].name}`, DataType: DataTypeSlice},
 			{Name: "instancetype", JSONPath: `{.spec.instancetype.name}`},
 			{Name: "memory", JSONPath: `{.spec.template.spec.domain.memory.guest}`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/os}`},
@@ -242,6 +247,10 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "cpuSockets", JSONPath: `{.spec.domain.cpu.sockets}`},
 			{Name: "cpuThreads", JSONPath: `{.spec.domain.cpu.threads}`},
 			{Name: "guestOSInfoID", JSONPath: `{.status.guestOSInfo.id}`},
+			{Name: "interfaceName", JSONPath: `{.spec.domain.devices.interfaces[*].name}`, DataType: DataTypeSlice},
+			{Name: "interfaceStatusInterfaceName", JSONPath: `{.status.interfaces[*].interfaceName}`, DataType: DataTypeSlice},
+			{Name: "interfaceStatusIPAddress", JSONPath: `{.status.interfaces[*].ipAddresses}`, DataType: DataTypeSlice},
+			{Name: "interfaceStatusName", JSONPath: `{.status.interfaces[*].name}`, DataType: DataTypeSlice},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 			{Name: "memory", JSONPath: `{.spec.domain.memory.guest}`, DataType: DataTypeBytes},

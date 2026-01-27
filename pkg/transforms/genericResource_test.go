@@ -154,6 +154,8 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 		[]interface{}{"rhel-8-amber-fish-51-volume", "rhel-8-amber-fish-51-volume-2"}, t)
 	AssertEqual("_description", node.Properties["_description"], "some description", t)
 	AssertEqual("flavor", node.Properties["flavor"], "small", t)
+	AssertDeepEqual("gpuName", node.Properties["gpuName"], []interface{}{"gpu-one", "gpu-two"}, t)
+	AssertDeepEqual("hostDeviceName", node.Properties["hostDeviceName"], []interface{}{"host-device-one", "host-device-two"}, t)
 	AssertEqual("instancetype", node.Properties["instancetype"], "instancetype-name", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
 	AssertEqual("osName", node.Properties["osName"], "rhel9", t)
@@ -184,6 +186,11 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("cpuSockets", node.Properties["cpuSockets"], int64(1), t)
 	AssertEqual("cpuThreads", node.Properties["cpuThreads"], int64(1), t)
 	AssertEqual("guestOSInfoID", node.Properties["guestOSInfoID"], "centos", t)
+	AssertDeepEqual("interfaceName", node.Properties["interfaceName"], []interface{}{"default", "default-2"}, t)
+	AssertDeepEqual("interfaceStatusInterfaceName", node.Properties["interfaceStatusInterfaceName"], []interface{}{"eth0", "eth0-2"}, t)
+	AssertDeepEqual("interfaceStatusName", node.Properties["interfaceStatusName"], []interface{}{"default", "default2"}, t)
+	AssertDeepEqual("interfaceStatusIPAddress", node.Properties["interfaceStatusIPAddress"], []interface{}{
+		"10.128.1.193", "fe80::60:ddff:fe00:4", "10.128.1.194", "fe80::60:ddff:fe00:5"}, t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
@@ -508,6 +515,13 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertEqual("completionTimeoutPerGiB", node.Properties["completionTimeoutPerGiB"], int64(120), t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
 		"migrations.kubevirt.io/description": "Migration policy for high-priority workloads",
+	}, t)
+	AssertDeepEqual("_namespaceSelector", node.Properties["_namespaceSelector"], map[string]string{
+		"hpc-workloads": "true", "hpc-nonworkloads": "true",
+		"enabled": "true", "priority": "10", "maxInstances": "9223372036854775807", "cpuThreshold": "0.85",
+	}, t)
+	AssertDeepEqual("_virtualMachineInstanceSelector", node.Properties["_virtualMachineInstanceSelector"], map[string]string{
+		"workload-type": "db", "production": "false", "replicas": "3", "memoryLimit": "4294967296", "diskUsage": "75.5",
 	}, t)
 }
 

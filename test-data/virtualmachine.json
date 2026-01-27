@@ -97,6 +97,22 @@
                                 "name": "cloudinitdisk"
                             }
                         ],
+                        "gpus": [
+                            {
+                                "name": "gpu-one"
+                            },
+                            {
+                                "name": "gpu-two"
+                            }
+                        ],
+                        "hostDevices": [
+                            {
+                                "name": "host-device-one"
+                            },
+                            {
+                                "name": "host-device-two"
+                            }
+                        ],
                         "interfaces": [
                             {
                                 "macAddress": "00:f0:70:00:00:00",

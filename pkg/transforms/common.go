@@ -12,6 +12,7 @@ package transforms
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -748,7 +749,12 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			if prop.DataType == DataTypeSlice {
 				var slice []interface{}
 				for _, v := range result[0] {
-					slice = append(slice, v.Interface())
+					val := v.Interface()
+					if _, ok := val.([]interface{}); ok { // v is [][]interface{} -> []interface{}
+						slice = append(slice, val.([]interface{})...)
+					} else {
+						slice = append(slice, val) // v is presumed []interface{}
+					}
 				}
 				if prop.metadataOnly {
 					node.Metadata[prop.Name] = slice
@@ -798,6 +804,35 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					)
 				}
 				node.Properties[prop.Name] = mem
+			} else if prop.DataType == DataTypeMapString {
+				if m, ok := val.(map[string]interface{}); ok {
+					dest := make(map[string]string, len(m))
+					for k, v := range m {
+						switch t := v.(type) {
+						case string:
+							dest[k] = t
+						case bool:
+							dest[k] = strconv.FormatBool(t)
+						case int:
+							dest[k] = strconv.Itoa(t)
+						case int64:
+							dest[k] = strconv.FormatInt(t, 10)
+						case float64:
+							if t == float64(int64(t)) {
+								dest[k] = strconv.FormatInt(int64(t), 10)
+							} else {
+								dest[k] = strconv.FormatFloat(t, 'f', -1, 64)
+							}
+						default:
+							klog.V(1).Infof("Parsed unsupported type [%T] from [%s.%s] building map for Name: %s", t, kind, group, r.GetName())
+						}
+					}
+					if len(dest) > 0 {
+						node.Properties[prop.Name] = dest
+					}
+				} else {
+					klog.V(1).Infof("Unable to parse selector value [%v] from [%s.%s] Name: [%s]", val, kind, group, r.GetName())
+				}
 			} else {
 				node.Properties[prop.Name] = val
 			}
