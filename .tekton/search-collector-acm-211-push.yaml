@@ -40,7 +40,7 @@ spec:
     value: '[{"type": "gomod", "path": "."}]'
   - name: build-args
     value:
-    - ACM_VERSION=2.16
+    - ACM_VERSION=2.11
   - name: path-context
     value: .
   pipelineRef:
