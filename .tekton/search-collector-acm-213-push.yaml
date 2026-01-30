@@ -38,6 +38,9 @@ spec:
     value: 'true'
   - name: prefetch-input
     value: '[{"type": "gomod", "path": "."}]'
+  - name: build-args
+    value:
+    - ACM_VERSION=2.13
   pipelineRef:
     resolver: git
     params:
