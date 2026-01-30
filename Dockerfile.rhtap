@@ -18,6 +18,8 @@ ENV VCS_REF="$VCS_REF" \
 USER ${USER_UID}
 ENTRYPOINT ["/bin/main"]
 
+ARG ACM_VERSION=${ACM_VERSION}
+
 LABEL com.redhat.component="acm-search-collector-container" \
       description="Search collector service" \
       maintainer="acm-contact@redhat.com" \
@@ -28,4 +30,5 @@ LABEL com.redhat.component="acm-search-collector-container" \
       summary="Search collector service" \
       io.k8s.display-name="Search collector" \
       io.k8s.description="Search collector service" \
-      io.openshift.tags="data,images"
+      io.openshift.tags="data,images"\
+      cpe="cpe:/a:redhat:acm:${ACM_VERSION}::el9"
