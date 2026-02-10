@@ -113,13 +113,13 @@ func (r *Reconciler) Diff() Diff {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	ret := Diff{
-		TotalNodes: len(r.currentNodes),
-		TotalEdges: r.totalEdges,
-	}
+	ret := Diff{}
 
 	if len(r.diffNodes) == 0 {
 		klog.V(5).Info("Reconciler has no events since the last reconcile.")
+		// allEdges() modifies r.totalEdges, so we have to set these fields both here and after allEdges() call
+		ret.TotalNodes = len(r.currentNodes)
+		ret.TotalEdges = r.totalEdges
 		return ret
 	}
 
@@ -191,6 +191,8 @@ func (r *Reconciler) Diff() Diff {
 
 	r.resetDiffs()
 
+	ret.TotalNodes = len(r.currentNodes)
+	ret.TotalEdges = r.totalEdges
 	return ret
 }
 
