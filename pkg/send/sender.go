@@ -153,7 +153,7 @@ func (s *Sender) completePayload() (Payload, int, int) {
 
 // Send will retry after recoverable errors.
 //   - indexer busy
-func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expectedTotalEdges int, isPing bool) error {
+func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
 	retry := 0
 	for {
 		sendError := s.send(payload, expectedTotalResources, expectedTotalEdges)
@@ -167,17 +167,12 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 			continue
 		}
 		// For other errors, wait, reload the config, and re-send the full state payload.
-		if sendError != nil && !isPing {
+		if sendError != nil {
 			klog.Warningf("Received error response [%s] from Indexer. Resetting config and resending in %s.",
 				sendError.Error(), nextRetryWait)
 			time.Sleep(nextRetryWait)
 			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.reloadSender()    // reload sender variables - Aggregator URL, path and client
-		}
-		// If error happened on ping check, log and return
-		if sendError != nil && isPing {
-			klog.V(2).Infof("Received error response [%s] from Indexer on empty payload for heartbeat heartbeat.", sendError.Error())
-			return nil
 		}
 		return sendError
 	}
@@ -257,7 +252,7 @@ func (s *Sender) Sync() error {
 	if s.lastSentTime == -1 { // If we have never sent before, we just send the complete.
 		klog.Info("First time sending or last Sync cycle failed, sending complete payload")
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
-		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges, false)
+		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
 			klog.Error("Sync sender error. ", err)
 			return err
@@ -267,7 +262,6 @@ func (s *Sender) Sync() error {
 		return nil
 	}
 
-	isPing := false
 	// If this isn't the first time we've sent, we can now attempt to send a diff.
 	payload, expectedTotalResources, expectedTotalEdges := s.diffPayload()
 	if payload.empty() {
@@ -276,17 +270,16 @@ func (s *Sender) Sync() error {
 			klog.V(3).Info("Nothing to send, skipping send cycle.")
 			return nil
 		}
-		isPing = true
 		klog.V(2).Info("Sending empty payload for heartbeat.")
 	}
-	err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges, isPing)
+	err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 	if err != nil {
 		// If something went wrong here, form a new complete payload (only necessary because
 		// currentState may have changed since we got it, and we have to keep our diffs synced)
 		klog.Warning("Error on diff payload sending: ", err)
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
 		klog.Warning("Retrying with complete payload")
-		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges, false)
+		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
 		if err != nil {
 			klog.Error("Error resending complete payload.")
 			// If this retry fails, we want to start over with a complete payload next time,
