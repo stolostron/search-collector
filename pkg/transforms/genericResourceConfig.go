@@ -25,7 +25,6 @@ const (
 	DataTypeString    DataType = "string"
 	DataTypeNumber    DataType = "number"
 	DataTypeMapString DataType = "mapString"
-	DataTypeInterface DataType = "interfaceStatus"
 )
 
 // Declares the properties to extract from a given resource.
@@ -249,7 +248,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "cpuThreads", JSONPath: `{.spec.domain.cpu.threads}`},
 			{Name: "guestOSInfoID", JSONPath: `{.status.guestOSInfo.id}`},
 			{Name: "interfaceName", JSONPath: `{.spec.domain.devices.interfaces[*].name}`, DataType: DataTypeSlice},
-			{Name: "_interface", JSONPath: `{.status.interfaces[*]}`, DataType: DataTypeInterface},
+			{Name: "_interface", JSONPath: `{.status.interfaces[*]}`},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 			{Name: "memory", JSONPath: `{.spec.domain.memory.guest}`, DataType: DataTypeBytes},
