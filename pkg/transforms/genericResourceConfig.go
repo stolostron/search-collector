@@ -248,6 +248,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "cpuSockets", JSONPath: `{.spec.domain.cpu.sockets}`},
 			{Name: "cpuThreads", JSONPath: `{.spec.domain.cpu.threads}`},
 			{Name: "guestOSInfoID", JSONPath: `{.status.guestOSInfo.id}`},
+			{Name: "interfaceName", JSONPath: `{.spec.domain.devices.interfaces[*].name}`, DataType: DataTypeSlice},
 			{Name: "_interface", JSONPath: `{.status.interfaces[*]}`, DataType: DataTypeInterface},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},

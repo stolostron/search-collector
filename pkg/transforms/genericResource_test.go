@@ -186,6 +186,7 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("cpuSockets", node.Properties["cpuSockets"], int64(1), t)
 	AssertEqual("cpuThreads", node.Properties["cpuThreads"], int64(1), t)
 	AssertEqual("guestOSInfoID", node.Properties["guestOSInfoID"], "centos", t)
+	AssertDeepEqual("interfaceName", node.Properties["interfaceName"], []interface{}{"default", "default-2"}, t)
 	AssertDeepEqual("_interface", node.Properties["_interface"], []string{
 		"default/eth0[0]=10.128.1.193", "default/eth0[1]=fe80::60:ddff:fe00:4",
 		"default2/eth0-2[0]=10.128.1.194", "default2/eth0-2[1]=fe80::60:ddff:fe00:5",
