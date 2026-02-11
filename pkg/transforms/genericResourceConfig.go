@@ -20,14 +20,12 @@ type ExtractEdge struct {
 type DataType string
 
 const (
-	DataTypeBytes          DataType = "bytes"
-	DataTypeSlice          DataType = "slice"
-	DataTypeString         DataType = "string"
-	DataTypeNumber         DataType = "number"
-	DataTypeMapString      DataType = "mapString"
-	DataTypeInterface      DataType = "interfaceStatus"
-	DataTypeInterfaceTwo   DataType = "interfaceStatusTwo"
-	DataTypeInterfaceThree DataType = "interfaceStatusThree"
+	DataTypeBytes     DataType = "bytes"
+	DataTypeSlice     DataType = "slice"
+	DataTypeString    DataType = "string"
+	DataTypeNumber    DataType = "number"
+	DataTypeMapString DataType = "mapString"
+	DataTypeInterface DataType = "interfaceStatus"
 )
 
 // Declares the properties to extract from a given resource.
@@ -250,9 +248,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "cpuSockets", JSONPath: `{.spec.domain.cpu.sockets}`},
 			{Name: "cpuThreads", JSONPath: `{.spec.domain.cpu.threads}`},
 			{Name: "guestOSInfoID", JSONPath: `{.status.guestOSInfo.id}`},
-			{Name: "interface", JSONPath: `{.status.interfaces[*]}`, DataType: DataTypeInterface},
-			{Name: "interface-2", JSONPath: `{.status.interfaces[*]}`, DataType: DataTypeInterfaceTwo},
-			{Name: "interface-3", JSONPath: `{.status.interfaces[*]}`, DataType: DataTypeInterfaceThree},
+			{Name: "_interface", JSONPath: `{.status.interfaces[*]}`, DataType: DataTypeInterface},
 			{Name: "ipaddress", JSONPath: `{.status.interfaces[0].ipAddress}`},
 			{Name: "liveMigratable", JSONPath: `{.status.conditions[?(@.type=='LiveMigratable')].status}`},
 			{Name: "memory", JSONPath: `{.spec.domain.memory.guest}`, DataType: DataTypeBytes},

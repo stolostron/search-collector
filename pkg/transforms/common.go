@@ -835,17 +835,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					klog.V(1).Infof("Unable to parse selector value [%v] from [%s.%s] Name: [%s]", val, kind, group, r.GetName())
 				}
 			} else if prop.DataType == DataTypeInterface {
-				interfaceMap := processInterfaceStatus(result[0])
-				if len(interfaceMap) > 0 {
-					node.Properties[prop.Name] = interfaceMap
-				}
-			} else if prop.DataType == DataTypeInterfaceTwo {
-				interfaceSlice := processInterfaceStatusTwo(result[0])
-				if len(interfaceSlice) > 0 {
-					node.Properties[prop.Name] = interfaceSlice
-				}
-			} else if prop.DataType == DataTypeInterfaceThree {
-				interfaceSlice := processInterfaceStatusThree(result[0])
+				interfaceSlice := processInterfaceStatus(result[0])
 				if len(interfaceSlice) > 0 {
 					node.Properties[prop.Name] = interfaceSlice
 				}
@@ -917,87 +907,10 @@ func memoryToBytes(memory string) (int64, error) {
 	return quantity.Value(), nil
 }
 
-// processInterfaceStatus collects [] interface objects as map[string][]string{"default": ["eth-0=1.1.1.1", "eth-0=2.2.2.2"], "default-2": ["eth-1=3.3.3.3"]}
-// we don't have any other map[string][]string so this is not desirable. unknown what queries would look like.
-func processInterfaceStatus(interfaces []reflect.Value) map[string][]string {
-	interfaceMap := make(map[string][]string)
-
-	for _, iface := range interfaces {
-		ifaceData, ok := iface.Interface().(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		ifaceName, ok := ifaceData["name"].(string)
-		if !ok || ifaceName == "" {
-			continue
-		}
-
-		interfaceStatusName, ok := ifaceData["interfaceName"].(string)
-		if !ok {
-			continue
-		}
-
-		ipAddresses, ok := ifaceData["ipAddresses"].([]interface{})
-		if !ok {
-			continue
-		}
-
-		// build slice of interfaceName=ip address and add to interface name map {default: eth-0=1.1.1.1}
-		var ipEntries []string
-		for _, ip := range ipAddresses {
-			ipStr, ok := ip.(string)
-			if !ok {
-				continue
-			}
-			ipEntries = append(ipEntries, interfaceStatusName+"="+ipStr)
-		}
-
-		if len(ipEntries) > 0 {
-			interfaceMap[ifaceName] = ipEntries
-		}
-	}
-
-	return interfaceMap
-}
-
-// processInterfaceStatusTwo collects [] interface objects as []string{"interfaceName=ipAddress"} -> ["eth-0=1.1.1.1", "eth-0=2.2.2.2", "eth-1=3.3.3.3"]
-// queried like: 'interfaceName: "eth-0=1.1.1.1"'. Like labels, you need to know these values in advance
-func processInterfaceStatusTwo(interfaces []reflect.Value) []string {
-	var interfaceSlice []string
-
-	for _, iface := range interfaces {
-		ifaceData, ok := iface.Interface().(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		interfaceStatusName, ok := ifaceData["interfaceName"].(string)
-		if !ok {
-			continue
-		}
-
-		ipAddresses, ok := ifaceData["ipAddresses"].([]interface{})
-		if !ok {
-			continue
-		}
-
-		// build slice of interfaceName=ip
-		for _, ip := range ipAddresses {
-			ipStr, ok := ip.(string)
-			if !ok {
-				continue
-			}
-			interfaceSlice = append(interfaceSlice, interfaceStatusName+"="+ipStr)
-		}
-	}
-
-	return interfaceSlice
-}
-
-// processInterfaceStatusThree collects [] interface objects as []string{"name/interfaceName=ipAddress"} -> ["default/eth-0=1.1.1.1", "default/eth-0=2.2.2.2", "default-2/eth-1=3.3.3.3"]
-// queried like: 'interfaceName: "default/eth-0=1.1.1.1"'. Like labels, you need to know these values in advance
-func processInterfaceStatusThree(interfaces []reflect.Value) []string {
+// processInterfaceStatus collects [] interface objects with index to preserve ordering as []string{"name/interfaceName[index]=ipAddress"}
+// -> ["default/eth-0=[0]1.1.1.1", "default/eth-0[1]=2.2.2.2", "default-2/eth-1[0]=3.3.3.3"]
+// queried like: 'interfaceName: "default/eth-0[1]=1.1.1.1"'. Like labels, you need to know these values in advance
+func processInterfaceStatus(interfaces []reflect.Value) []string {
 	var interfaceSlice []string
 
 	for _, iface := range interfaces {
@@ -1022,12 +935,12 @@ func processInterfaceStatusThree(interfaces []reflect.Value) []string {
 		}
 
 		// build slice of name/interfaceName=ip
-		for _, ip := range ipAddresses {
+		for i, ip := range ipAddresses {
 			ipStr, ok := ip.(string)
 			if !ok {
 				continue
 			}
-			interfaceSlice = append(interfaceSlice, ifaceName+"/"+interfaceStatusName+"="+ipStr)
+			interfaceSlice = append(interfaceSlice, ifaceName+"/"+interfaceStatusName+"["+strconv.Itoa(i)+"]"+"="+ipStr)
 		}
 	}
 
