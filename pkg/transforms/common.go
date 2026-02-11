@@ -909,7 +909,6 @@ func memoryToBytes(memory string) (int64, error) {
 
 // processInterfaceStatus collects [] interface objects with index to preserve ordering as []string{"name/interfaceName[index]=ipAddress"}
 // -> ["default/eth-0=[0]1.1.1.1", "default/eth-0[1]=2.2.2.2", "default-2/eth-1[0]=3.3.3.3"]
-// queried like: 'interfaceName: "default/eth-0[1]=1.1.1.1"'. Like labels, you need to know these values in advance
 func processInterfaceStatus(interfaces []reflect.Value) []string {
 	var interfaceSlice []string
 
