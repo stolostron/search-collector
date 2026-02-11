@@ -834,7 +834,14 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 					klog.V(1).Infof("Unable to parse selector value [%v] from [%s.%s] Name: [%s]", val, kind, group, r.GetName())
 				}
 			} else {
-				node.Properties[prop.Name] = val
+				if kind == "VirtualMachineInstance" && group == "kubevirt.io" && prop.Name == "_interface" {
+					interfaceSlice := processInterfaceStatus(result[0])
+					if len(interfaceSlice) > 0 {
+						node.Properties[prop.Name] = interfaceSlice
+					}
+				} else {
+					node.Properties[prop.Name] = val
+				}
 			}
 		} else {
 			// path is valid but has no values, e.g. {status: {conditions: []}} where JSONPath == {.status.conditions[?(@.type=="AgentConnected")].status}

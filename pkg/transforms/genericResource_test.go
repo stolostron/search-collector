@@ -187,10 +187,10 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertEqual("cpuThreads", node.Properties["cpuThreads"], int64(1), t)
 	AssertEqual("guestOSInfoID", node.Properties["guestOSInfoID"], "centos", t)
 	AssertDeepEqual("interfaceName", node.Properties["interfaceName"], []interface{}{"default", "default-2"}, t)
-	AssertDeepEqual("interfaceStatusInterfaceName", node.Properties["interfaceStatusInterfaceName"], []interface{}{"eth0", "eth0-2"}, t)
-	AssertDeepEqual("interfaceStatusName", node.Properties["interfaceStatusName"], []interface{}{"default", "default2"}, t)
-	AssertDeepEqual("interfaceStatusIPAddress", node.Properties["interfaceStatusIPAddress"], []interface{}{
-		"10.128.1.193", "fe80::60:ddff:fe00:4", "10.128.1.194", "fe80::60:ddff:fe00:5"}, t)
+	AssertDeepEqual("_interface", node.Properties["_interface"], []string{
+		"default/eth0[0]=10.128.1.193", "default/eth0[1]=fe80::60:ddff:fe00:4",
+		"default2/eth0-2[0]=10.128.1.194", "default2/eth0-2[1]=fe80::60:ddff:fe00:5",
+	}, t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
 	AssertEqual("memory", node.Properties["memory"], int64(2147483648), t) // 2Gi
