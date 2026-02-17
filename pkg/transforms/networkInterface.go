@@ -19,13 +19,13 @@ func processInterfaceStatus(interfaces []reflect.Value) []string {
 		}
 
 		ifaceName, ok := ifaceData["name"].(string)
-		if !ok || ifaceName == "" {
-			continue
+		if !ok {
+			ifaceName = ""
 		}
 
 		interfaceStatusName, ok := ifaceData["interfaceName"].(string)
 		if !ok {
-			continue
+			interfaceStatusName = ""
 		}
 
 		ipAddresses, ok := ifaceData["ipAddresses"].([]interface{})
