@@ -190,6 +190,9 @@ func Test_genericResourceFromConfigVMI(t *testing.T) {
 	AssertDeepEqual("_interface", node.Properties["_interface"], []string{
 		"default/eth0[0]=10.128.1.193", "default/eth0[1]=fe80::60:ddff:fe00:4",
 		"default2/eth0-2[0]=10.128.1.194", "default2/eth0-2[1]=fe80::60:ddff:fe00:5",
+		"/eth0-2[0]=10.128.1.195", "/eth0-2[1]=fe80::60:ddff:fe00:6",
+		"/[0]=10.128.1.196", "/[1]=fe80::60:ddff:fe00:7",
+		"default3/[0]=10.128.1.197", "default3/[1]=fe80::60:ddff:fe00:8",
 	}, t)
 	AssertEqual("ipaddress", node.Properties["ipaddress"], "10.128.1.193", t)
 	AssertEqual("liveMigratable", node.Properties["liveMigratable"], "False", t)
