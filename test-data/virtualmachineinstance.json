@@ -224,6 +224,38 @@
                 "mac": "02:b8:ac:00:00:01",
                 "name": "default2",
                 "queueCount": 1
+            },
+            {
+                "infoSource": "domain, guest-agent2",
+                "interfaceName": "eth0-2",
+                "ipAddress": "10.128.1.194",
+                "ipAddresses": [
+                    "10.128.1.195",
+                    "fe80::60:ddff:fe00:6"
+                ],
+                "mac": "02:b8:ac:00:00:01",
+                "queueCount": 1
+            },
+            {
+                "infoSource": "domain, guest-agent2",
+                "ipAddress": "10.128.1.194",
+                "ipAddresses": [
+                    "10.128.1.196",
+                    "fe80::60:ddff:fe00:7"
+                ],
+                "mac": "02:b8:ac:00:00:01",
+                "queueCount": 1
+            },
+            {
+                "infoSource": "domain, guest-agent2",
+                "ipAddress": "10.128.1.194",
+                "ipAddresses": [
+                    "10.128.1.197",
+                    "fe80::60:ddff:fe00:8"
+                ],
+                "mac": "02:b8:ac:00:00:01",
+                "name": "default3",
+                "queueCount": 1
             }
         ],
         "phase": "Running",
