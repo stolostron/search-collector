@@ -11,6 +11,7 @@ irrespective of what has been deposited with the U.S. Copyright Office.
 package transforms
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -307,4 +308,76 @@ func TestMemoryToBytes(t *testing.T) {
 		assert.Equal(t, tt.shouldError, err != nil)
 		assert.Equal(t, tt.expected, result)
 	}
+}
+
+func TestGetConditionsNestedSliceFail(t *testing.T) {
+	resource := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "Pod",
+			"metadata": map[string]interface{}{
+				"name": "test-pod",
+			},
+			"status": map[string]interface{}{
+				"conditions": "not-a-slice", // this should cause NestedSlice to return an error
+			},
+		},
+	}
+
+	result, err := getConditions(resource)
+	assert.Error(t, err, "Expected error when status.conditions is not a slice")
+	assert.Nil(t, result, "Expected nil result when error occurs")
+}
+
+func TestGetConditionsMarshalConditionsFail(t *testing.T) {
+	resource := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "Pod",
+			"metadata": map[string]interface{}{
+				"name": "test-pod",
+			},
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"type":               "Ready",
+						"status":             "True",
+						"lastTransitionTime": "2024-01-01T00:00:00Z",
+						"invalidFloat":       math.Inf(1), // this should cause json.Marshal to fail
+					},
+				},
+			},
+		},
+	}
+
+	result, err := getConditions(resource)
+	assert.Error(t, err, "Expected error when marshaling fails due to Infinity value")
+	assert.Nil(t, result, "Expected nil result when marshal error occurs")
+}
+
+func TestGetConditionsUnmarshalFail(t *testing.T) {
+	resource := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "Pod",
+			"metadata": map[string]interface{}{
+				"name": "test-pod",
+			},
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"type":   "Ready",
+						"status": "True",
+						"lastTransitionTime": map[string]interface{}{
+							"invalid": "structure", // this should fail to unmarshal into time
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result, err := getConditions(resource)
+	assert.Error(t, err, "Expected error when unmarshaling fails")
+	assert.Nil(t, result, "Expected nil result when unmarshal error occurs")
 }

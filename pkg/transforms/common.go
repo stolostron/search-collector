@@ -25,6 +25,7 @@ import (
 	apiTypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/jsonpath"
 	"k8s.io/klog/v2"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // An object given to the Edge Building methods in the transforms package.
@@ -859,45 +860,41 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 }
 
 func commonStatusConditions(kind string, group string, r *unstructured.Unstructured) map[string]string {
+	conditions, err := getConditions(r)
 	conditionsMap := make(map[string]string, 0)
-	if group != "" {
-		group = "." + group
-	}
 
-	// FIXME: when on Go 1.24 get via https://pkg.go.dev/sigs.k8s.io/cluster-api@v1.10.4/api/v1beta1#Conditions to simplify
-
-	jp := jsonpath.New("conditions")
-	parseErr := jp.Parse(`{.status.conditions}`)
-	if parseErr != nil {
-		klog.Errorf("Error parsing jsonpath [{.status.conditions}] for [%s.%s] prop: [conditions]. Reason: %v",
-			kind, group, parseErr)
-	}
-
-	result, err := jp.FindResults(r.Object)
 	if err != nil {
-		// This error isn't always indicative of a problem, for example, when the object is created, it
-		// won't have a status yet, so the jsonpath returns an error until controller adds the status.
-		klog.V(4).Infof("Unable to extract prop [condition] from [%s.%s] Name: [%s]. Reason: %v",
-			kind, group, r.GetName(), err)
+		klog.Errorf("Error getting conditions for [%s.%s] prop: [conditions]. Reason: %v",
+			kind, group, err.Error())
 	}
-	if len(result) > 0 && len(result[0]) > 0 {
-		val := result[0][0].Interface()
-		conditions, ok := val.([]interface{})
-		if !ok {
-			klog.V(1).Infof("Unable to extract prop [condition] from [%s.%s] Name: [%s] since it's not []interface: %v",
-				kind, group, r.GetName(), val)
-		}
-		for _, cond := range conditions {
-			condMap, ok := cond.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			condType, _ := condMap["type"].(string)
-			status, _ := condMap["status"].(string)
-			conditionsMap[condType] = status
-		}
+
+	for _, cond := range conditions {
+		conditionsMap[string(cond.Type)] = string(cond.Status)
 	}
+
 	return conditionsMap
+}
+
+func getConditions(r *unstructured.Unstructured) (capiv1beta1.Conditions, error) {
+	conditions, found, err := unstructured.NestedSlice(r.Object, "status", "conditions")
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, nil
+	}
+
+	conditionsJSON, err := json.Marshal(conditions)
+	if err != nil {
+		return nil, err
+	}
+
+	var capiConditions capiv1beta1.Conditions
+	if err := json.Unmarshal(conditionsJSON, &capiConditions); err != nil {
+		return nil, err
+	}
+
+	return capiConditions, nil
 }
 
 func memoryToBytes(memory string) (int64, error) {

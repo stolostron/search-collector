@@ -447,7 +447,7 @@ func RunInformers(
 		}
 	}()
 
-	syncInformersQueue := workqueue.NewWithConfig(workqueue.QueueConfig{})
+	syncInformersQueue := workqueue.NewTypedWithConfig(workqueue.QueueConfig{})
 	defer syncInformersQueue.ShutDown()
 
 	dynSharedInformer, err := getCRDInformer(ctx, &gvrToColumns, syncInformersQueue)
