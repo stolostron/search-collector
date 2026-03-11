@@ -42,25 +42,26 @@ const (
 
 // Configuration options for the search-collector.
 type Config struct {
-	AggregatorConfig         *rest.Config // Config object for hub. Used to get TLS credentials.
-	AggregatorConfigFile     string       `env:"HUB_CONFIG"`                  // Config file for hub. Will be mounted in a secret.
-	AggregatorURL            string       `env:"AGGREGATOR_URL"`              // URL of the Aggregator, includes port but not any path
-	AggregatorHost           string       `env:"AGGREGATOR_HOST"`             // Host of the Aggregator
-	AggregatorPort           string       `env:"AGGREGATOR_PORT"`             // Port of the Aggregator
-	CollectAnnotations       bool         `env:"COLLECT_ANNOTATIONS"`         // Collect all annotations with values <=64 characters
-	CollectCRDPrinterColumns bool         `env:"COLLECT_CRD_PRINTER_COLUMNS"` // Enable collecting additional printer columns in the CRD
-	CollectStatusConditions  bool         `env:"COLLECT_STATUS_CONDITIONS"`   // Collect all status condition types and values if present
-	ClusterName              string       `env:"CLUSTER_NAME"`                // The name of of the cluster where this pod is running
-	DeployedInHub            bool         `env:"DEPLOYED_IN_HUB"`             // Tracks if deployed in the Hub or Managed cluster
-	HeartbeatMS              int          `env:"HEARTBEAT_MS"`                // Interval(ms) to send empty payload to ensure connection
-	HTTPTimeout              int          `env:"HTTP_TIMEOUT"`                // Timeout for http server connections. Default: 5 min
-	KubeConfig               string       `env:"KUBECONFIG"`                  // Local kubeconfig path
-	MaxBackoffMS             int          `env:"MAX_BACKOFF_MS"`              // Maximum backoff in ms to wait after error
-	PodNamespace             string       `env:"POD_NAMESPACE"`               // The namespace of this pod
-	RetryJitterMS            int          `env:"RETRY_JITTER_MS"`             // Random jitter added to backoff wait.
-	ReportRateMS             int          `env:"REPORT_RATE_MS"`              // Interval(ms) to send changes to the aggregator
-	RuntimeMode              string       `env:"RUNTIME_MODE"`                // Running mode (development or production)
-	ServerAddress            string       `env:"SERVER_ADDRESS"`              // Web server address
+	AggregatorConfig              *rest.Config // Config object for hub. Used to get TLS credentials.
+	AggregatorConfigFile          string       `env:"HUB_CONFIG"`                      // Config file for hub. Will be mounted in a secret.
+	AggregatorURL                 string       `env:"AGGREGATOR_URL"`                  // URL of the Aggregator, includes port but not any path
+	AggregatorHost                string       `env:"AGGREGATOR_HOST"`                 // Host of the Aggregator
+	AggregatorPort                string       `env:"AGGREGATOR_PORT"`                 // Port of the Aggregator
+	CollectAnnotations            bool         `env:"COLLECT_ANNOTATIONS"`             // Collect all annotations with values <=64 characters
+	CollectCRDPrinterColumns      bool         `env:"COLLECT_CRD_PRINTER_COLUMNS"`     // Enable collecting additional printer columns in the CRD
+	CollectStatusConditions       bool         `env:"COLLECT_STATUS_CONDITIONS"`       // Collect all status condition types and values if present
+	ClusterName                   string       `env:"CLUSTER_NAME"`                    // The name of of the cluster where this pod is running
+	DeployedInHub                 bool         `env:"DEPLOYED_IN_HUB"`                 // Tracks if deployed in the Hub or Managed cluster
+	FeatureConfigurableCollection bool         `env:"FEATURE_CONFIGURABLE_COLLECTION"` // Enable configurable collection feature to extend transforms config
+	HeartbeatMS                   int          `env:"HEARTBEAT_MS"`                    // Interval(ms) to send empty payload to ensure connection
+	HTTPTimeout                   int          `env:"HTTP_TIMEOUT"`                    // Timeout for http server connections. Default: 5 min
+	KubeConfig                    string       `env:"KUBECONFIG"`                      // Local kubeconfig path
+	MaxBackoffMS                  int          `env:"MAX_BACKOFF_MS"`                  // Maximum backoff in ms to wait after error
+	PodNamespace                  string       `env:"POD_NAMESPACE"`                   // The namespace of this pod
+	RetryJitterMS                 int          `env:"RETRY_JITTER_MS"`                 // Random jitter added to backoff wait.
+	ReportRateMS                  int          `env:"REPORT_RATE_MS"`                  // Interval(ms) to send changes to the aggregator
+	RuntimeMode                   string       `env:"RUNTIME_MODE"`                    // Running mode (development or production)
+	ServerAddress                 string       `env:"SERVER_ADDRESS"`                  // Web server address
 }
 
 var Cfg = Config{}
@@ -131,18 +132,8 @@ func InitConfig() {
 		}
 	}
 
-	// Special logic for setting DEPLOYED_IN_HUB with default to false
-	if val := os.Getenv("DEPLOYED_IN_HUB"); val != "" {
-		klog.Infof("Using DEPLOYED_IN_HUB from environment: %s", val)
-		var err error
-		Cfg.DeployedInHub, err = strconv.ParseBool(val)
-		if err != nil {
-			klog.Error("Error parsing env DEPLOYED_IN_HUB.  Expected a bool.  Original error: ", err)
-			klog.Info("Leaving flag unchanged, assuming it is a Klusterlet")
-		}
-	} else if !Cfg.DeployedInHub {
-		klog.Info("No DEPLOY_IN_HUB from file or environment, assuming it is a Klusterlet")
-	}
+	setDefaultBool(&Cfg.DeployedInHub, "DEPLOYED_IN_HUB", false)
+	setDefaultBool(&Cfg.FeatureConfigurableCollection, "FEATURE_CONFIGURABLE_COLLECTION", false)
 	setDefault(&Cfg.AggregatorConfigFile, "HUB_CONFIG", "")
 
 	if collectCRDPrinterCols := os.Getenv("COLLECT_CRD_PRINTER_COLUMNS"); collectCRDPrinterCols != "" {
@@ -204,4 +195,22 @@ func setDefaultInt(field *int, env string, defaultVal int) {
 		klog.Infof("No %s from file or environment, using default value: %d", env, defaultVal)
 		*field = defaultVal
 	}
+}
+
+func setDefaultBool(field *bool, env string, defaultVal bool) {
+	if val := os.Getenv(env); val != "" {
+		klog.Infof("Using %s from environment: %s", env, val)
+		var err error
+		*field, err = strconv.ParseBool(val)
+		if err != nil {
+			klog.Error("Error parsing env [", env, "]. Expected a bool. Original error: ", err)
+			if env == "DEPLOYED_IN_HUB" {
+				klog.Info("Leaving flag unchanged, assuming it is a Klusterlet")
+			}
+		}
+		return
+	} else if env == "DEPLOYED_IN_HUB" {
+		klog.Info("No DEPLOY_IN_HUB from file or environment, assuming it is a Klusterlet")
+	}
+	*field = defaultVal
 }

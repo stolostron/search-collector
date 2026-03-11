@@ -1,0 +1,21 @@
+apiVersion: search.open-cluster-management.io/v1alpha1
+kind: SearchCollectorCustomizableConfig
+metadata:
+  name: search-collector-configurable-collection
+  namespace: open-cluster-management
+spec:
+  collectFields:
+    - apiGroup: ""
+      kind: "Pod"
+      fields:
+        - name: "dnsPolicy"
+          jsonPath: "{.spec.dnsPolicy}"
+        - name: "enableServiceLinks"
+          jsonPath: "{.spec.enableServiceLinks}"
+          type: "DataTypeBool"
+    - apiGroup: "search.open-cluster-management.io"
+      kind: "Search"
+      fields:
+        - name: "searchPGStorage"
+          jsonPath: "{.spec.dbStorage.size}"
+          type: "DataTypeBytes"
