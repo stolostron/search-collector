@@ -711,7 +711,11 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 
 	for _, prop := range transformConfig.properties {
 		// Skip if property has matchLabel condition and node doesn't contain matching label
-		if prop.matchLabel != "" && node.Properties["label"] != nil {
+		if prop.matchLabel != "" {
+			// Skip if resource doesn't have labels, it won't match the matchLabel.
+			if node.Properties["label"] == nil {
+				continue
+			}
 			if _, ok := node.Properties["label"].(map[string]string)[prop.matchLabel]; !ok {
 				continue
 			}
