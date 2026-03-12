@@ -13,9 +13,27 @@ spec:
         - name: "enableServiceLinks"
           jsonPath: "{.spec.enableServiceLinks}"
           type: "DataTypeBool"
+      inNamespace:
+        - "*open-cluster-management*"
+      notInNamespace:
+        - "openshift-cnv"
+        - "default"
     - apiGroup: "search.open-cluster-management.io"
       kind: "Search"
       fields:
         - name: "searchPGStorage"
           jsonPath: "{.spec.dbStorage.size}"
           type: "DataTypeBytes"
+      collectAnnotations: true
+      collectConditions: true
+      namespace: "open-cluster-management"
+  allowedResources:
+    - apiGroups:
+        - "*"
+      resources:
+        - "*"
+  deniedResources:
+    - apiGroups:
+        - "coordination.k8s.io"
+      resources:
+        - "leases"
