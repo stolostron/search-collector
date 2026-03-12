@@ -455,7 +455,13 @@ func LoadAndMergeConfigurableCollection() {
 				continue
 			}
 
+			/* FIXME: come up with prefix schema before implementation. e.g. The specific configurable collection resource we read from determines the prefix to use
+			user defined: user_myResource
+			grc  defined: grc_thisPolicyThing
+			virt defined: virt_thatVMWhatchamacallit
+			*/
 			name, _ := fieldMap["name"].(string)
+			name = "user_" + name
 			jsonPath, _ := fieldMap["jsonPath"].(string)
 			dataTypeStr, _ := fieldMap["type"].(string)
 			//priority, _ := fieldMap["priority"].(string) // FUTURE: use this for additionalPrinterColumns extensions

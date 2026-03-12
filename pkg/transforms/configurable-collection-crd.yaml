@@ -60,10 +60,14 @@ spec:
                           type: object
                           properties:
                             name:
+                              description: |-
+                                Specified the name of the collected item on the resource.
+                                The system prepends a special character to this name to avoid collisions with built in collected attributes
                               type: string
                             jsonPath:
                               type: string
                             type:
+                              description: Data type of resource field to be indexed by Search Collectors. Default is a string
                               type: string
                               enum: [DataTypeBytes, DataTypeSlice, DataTypeString, DataTypeNumber, DataTypeMapString, DataTypeBool]
                             priority:
@@ -73,7 +77,57 @@ spec:
                           required:
                             - name
                             - jsonPath
+                      collectAnnotations:
+                        description: Specifies to collect annotations for the resource
+                        type: boolean
+                      collectConditions:
+                        description: Specifies to collect status conditions for the resource
+                        type: boolean
+                      inNamespace:
+                        description: Specifies the namespace where resources are to be indexed by Search Collectors
+                        type: array
+                        items:
+                          type: string
+                      notInNamespace:
+                        description: Specifies the namespace where the resources are not to be indexed by Search Collectors
+                        type: array
+                        items:
+                          type: string
+                allowedResources:
+                  description: Specifies a list of resources to be indexed by Search Collectors
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      apiGroups:
+                        description: Specifies apiGroups of resources to be indexed
+                        type: array
+                        items:
+                          type: string
+                      resources:
+                        description: Specifies kinds of resources to be indexed
+                        type: array
+                        items:
+                          type: string
                     required:
-                      - apiGroup
-                      - kind
-                      - fields
+                      - apiGroups
+                      - resources
+                deniedResources:
+                  description: Specifies a list of resources not to be indexed by Search Collectors
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      apiGroups:
+                        description: Specifies apiGroups of resources not to be indexed
+                        type: array
+                        items:
+                          type: string
+                      resources:
+                        description: Specified kinds of resources not to be indexed
+                        type: array
+                        items:
+                          type: string
+                    required:
+                      - apiGroups
+                      - resources
