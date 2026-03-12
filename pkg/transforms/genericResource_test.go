@@ -166,7 +166,7 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	AssertEqual("runStrategy", node.Properties["runStrategy"], "always", t)
 	AssertEqual("status", node.Properties["status"], "Running", t)
 	AssertEqual("workload", node.Properties["workload"], "server", t)
-	AssertEqual("_specRunning", node.Properties["_specRunning"], true, t)
+	AssertEqual("_specRunning", node.Properties["_specRunning"], "true", t)
 	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], "always", t)
 }
 

@@ -20,7 +20,6 @@ type ExtractEdge struct {
 type DataType string
 
 const (
-	DataTypeBool      DataType = "bool"
 	DataTypeBytes     DataType = "bytes"
 	DataTypeSlice     DataType = "slice"
 	DataTypeString    DataType = "string"
@@ -216,7 +215,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "ready", JSONPath: `{.status.conditions[?(@.type=='Ready')].status}`},
 			{Name: "runStrategy", JSONPath: `{.spec.runStrategy}`},
 			{Name: "status", JSONPath: `{.status.printableStatus}`},
-			{Name: "_specRunning", JSONPath: `{.spec.running}`, DataType: DataTypeBool},
+			{Name: "_specRunning", JSONPath: `{.spec.running}`},
 			{Name: "_specRunStrategy", JSONPath: `{.spec.runStrategy}`},
 			{Name: "workload", JSONPath: `{.spec.template.metadata.annotations.\vm\.kubevirt\.io/workload}`},
 		},
