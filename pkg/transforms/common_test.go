@@ -308,3 +308,25 @@ func TestMemoryToBytes(t *testing.T) {
 		assert.Equal(t, tt.expected, result)
 	}
 }
+
+func Test_genericResourceFromConfigMapNoLabelsToMatchMatchLabel(t *testing.T) {
+	config.Cfg.DeployedInHub = false // temporarily set to false else _hubClusterResource gets appended during full test suite
+	defer func() {
+		config.Cfg.DeployedInHub = true
+	}()
+	var r unstructured.Unstructured
+	UnmarshalFile("configmap-two.json", &r, t)
+	// when matchLabel checks against nil labels we skip the configured additional ExtractProperties
+	r.SetLabels(nil)
+	node := GenericResourceBuilder(&r).BuildNode()
+
+	// Verify common properties
+	AssertEqual("name", node.Properties["name"], "app-config", t)
+	AssertEqual("kind", node.Properties["kind"], "ConfigMap", t)
+	AssertEqual("created", node.Properties["created"], "2026-01-05T14:27:31Z", t)
+	AssertEqual("apiversion", node.Properties["apiversion"], "v1", t)
+	AssertEqual("namespace", node.Properties["namespace"], "default", t)
+
+	// Verify that there's no more indexed properties than the common ones
+	assert.Equal(t, 5, len(node.Properties))
+}
