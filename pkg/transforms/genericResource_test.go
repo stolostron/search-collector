@@ -244,7 +244,7 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
 	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
-	AssertEqual("readyToUse", node.Properties["readyToUse"], true, t)
+	AssertEqual("readyToUse", node.Properties["readyToUse"], "true", t)
 	AssertEqual("sourceName", node.Properties["sourceName"], "centos7-gray-owl-35", t)
 	AssertEqual("sourceKind", node.Properties["sourceKind"], "VirtualMachine", t)
 	AssertDeepEqual("indications", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
@@ -252,7 +252,6 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 		"Ready":       "True",
 		"Progressing": "False",
 	}, t)
-
 }
 
 func Test_genericResourceFromConfigVMRestore(t *testing.T) {
@@ -269,7 +268,7 @@ func Test_genericResourceFromConfigVMRestore(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
-	AssertEqual("complete", node.Properties["complete"], true, t)
+	AssertEqual("complete", node.Properties["complete"], "true", t)
 	AssertEqual("targetApiGroup", node.Properties["targetApiGroup"], "kubevirt.io", t)
 	AssertEqual("targetName", node.Properties["targetName"], "centos7-gray-owl-35", t)
 	AssertEqual("targetKind", node.Properties["targetKind"], "VirtualMachine", t)
@@ -329,7 +328,7 @@ func Test_genericResourceFromConfigStorageClass(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2025-03-11T10:24:44Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("allowVolumeExpansion", node.Properties["allowVolumeExpansion"], true, t)
+	AssertEqual("allowVolumeExpansion", node.Properties["allowVolumeExpansion"], "true", t)
 	AssertEqual("provisioner", node.Properties["provisioner"], "ebs.csi.aws.com", t)
 	AssertEqual("reclaimPolicy", node.Properties["reclaimPolicy"], "Delete", t)
 	AssertEqual("volumeBindingMode", node.Properties["volumeBindingMode"], "WaitForFirstConsumer", t)
@@ -512,8 +511,8 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2025-12-15T12:00:00Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("allowAutoConverge", node.Properties["allowAutoConverge"], true, t)
-	AssertEqual("allowPostCopy", node.Properties["allowPostCopy"], false, t)
+	AssertEqual("allowAutoConverge", node.Properties["allowAutoConverge"], "true", t)
+	AssertEqual("allowPostCopy", node.Properties["allowPostCopy"], "false", t)
 	AssertEqual("bandwidthPerMigration", node.Properties["bandwidthPerMigration"], int64(67108864), t)
 	AssertEqual("completionTimeoutPerGiB", node.Properties["completionTimeoutPerGiB"], int64(120), t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{

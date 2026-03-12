@@ -26,7 +26,7 @@ func TestTransformPolicy(t *testing.T) {
 
 	// Test only the fields that exist in policy - the common test will test the other bits
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "enforce", t)
-	AssertEqual("disabled", node.Properties["disabled"], false, t)
+	AssertEqual("disabled", node.Properties["disabled"], "false", t)
 	AssertEqual("numRules", node.Properties["numRules"], 1, t)
 	assert.Len(t, node.Properties["annotation"], 3, "expected 3 annotations on the policy")
 }
@@ -47,7 +47,7 @@ func TestTransformConfigPolicy(t *testing.T) {
 	AssertEqual("compliant", node.Properties["compliant"], "NonCompliant", t)
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "inform", t)
 	AssertEqual("severity", node.Properties["severity"], "low", t)
-	AssertEqual("disabled", node.Properties["disabled"], false, t)
+	AssertEqual("disabled", node.Properties["disabled"], "false", t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], true, t)
 	obj1 := `{"v":"v1","k":"Namespace","n":"default"}`
 	obj2 := `{"v":"v1","k":"Namespace","n":"nonexistent"}`
@@ -73,7 +73,7 @@ func TestTransformOperatorPolicy(t *testing.T) {
 	AssertEqual("severity", node.Properties["severity"], "critical", t)
 	AssertEqual("deploymentAvailable", node.Properties["deploymentAvailable"], false, t)
 	AssertEqual("upgradeAvailable", node.Properties["upgradeAvailable"], true, t)
-	AssertEqual("disabled", node.Properties["disabled"], false, t)
+	AssertEqual("disabled", node.Properties["disabled"], "false", t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], false, t)
 
 	objs := []relatedObject{{
@@ -114,7 +114,7 @@ func TestTransformCertPolicy(t *testing.T) {
 	// Test only the fields that exist in policy - the common test will test the other bits
 	AssertEqual("compliant", node.Properties["compliant"], "NonCompliant", t)
 	AssertEqual("severity", node.Properties["severity"], "low", t)
-	AssertEqual("disabled", node.Properties["disabled"], false, t)
+	AssertEqual("disabled", node.Properties["disabled"], "false", t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], true, t)
 	obj := `{"v":"v1","k":"Secret","ns":"default","n":"sample-secret"}`
 	AssertEqual("relObjs", node.GetMetadata("relObjs"), "["+obj+"]", t)
