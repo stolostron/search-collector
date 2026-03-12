@@ -845,7 +845,11 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 						node.Properties[prop.Name] = interfaceSlice
 					}
 				} else {
-					node.Properties[prop.Name] = val
+					if b, ok := val.(bool); ok { // convert bool to string
+						node.Properties[prop.Name] = strconv.FormatBool(b)
+					} else {
+						node.Properties[prop.Name] = val
+					}
 				}
 			}
 		} else {
