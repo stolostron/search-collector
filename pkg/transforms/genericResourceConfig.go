@@ -34,7 +34,6 @@ const (
 	DataTypeString    DataType = "string"
 	DataTypeNumber    DataType = "number"
 	DataTypeMapString DataType = "mapString"
-	DataTypeBool      DataType = "bool"
 )
 
 func stringToDataType(s string) DataType {
@@ -49,8 +48,6 @@ func stringToDataType(s string) DataType {
 		return DataTypeNumber
 	case "DataTypeMapString":
 		return DataTypeMapString
-	case "DataTypeBool":
-		return DataTypeBool
 	default:
 		return DataTypeString
 	}

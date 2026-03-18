@@ -12,7 +12,6 @@ spec:
           jsonPath: "{.spec.dnsPolicy}"
         - name: "enableServiceLinks"
           jsonPath: "{.spec.enableServiceLinks}"
-          type: "DataTypeBool"
       inNamespace:
         - "*open-cluster-management*"
       notInNamespace:
@@ -27,6 +26,7 @@ spec:
       collectAnnotations: true
       collectConditions: true
       namespace: "open-cluster-management"
+      collectAdditionalPrinterColumnsPriority: 0
   allowedResources:
     - apiGroups:
         - "*"

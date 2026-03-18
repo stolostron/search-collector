@@ -69,7 +69,7 @@ spec:
                             type:
                               description: Data type of resource field to be indexed by Search Collectors. Default is a string
                               type: string
-                              enum: [DataTypeBytes, DataTypeSlice, DataTypeString, DataTypeNumber, DataTypeMapString, DataTypeBool]
+                              enum: [DataTypeBytes, DataTypeSlice, DataTypeString, DataTypeNumber, DataTypeMapString]
                             priority:
                               type: integer
                             displayName:
@@ -83,6 +83,9 @@ spec:
                       collectConditions:
                         description: Specifies to collect status conditions for the resource
                         type: boolean
+                      collectAdditionalPrinterColumnsPriority:
+                        description: Specifies the priority on additionalPrinterColumns for which to collect
+                        type: integer
                       inNamespace:
                         description: Specifies the namespace where resources are to be indexed by Search Collectors
                         type: array
