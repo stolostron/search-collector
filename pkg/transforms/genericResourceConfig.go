@@ -362,7 +362,7 @@ func getTransformConfig(group, kind string) (ResourceConfig, bool) {
 	return val, found
 }
 
-// LoadAndMergeConfigurableCollection loads the SearchCollectorCustomizableConfig resource from the cluster and merges it with defaultTransformConfig
+// LoadAndMergeConfigurableCollection loads the CollectionConfig resource from the cluster and merges it with defaultTransformConfig
 func LoadAndMergeConfigurableCollection() {
 	if !config.Cfg.FeatureConfigurableCollection {
 		klog.Info("Configurable collection feature is disabled, skipping custom config load")
@@ -376,42 +376,42 @@ func LoadAndMergeConfigurableCollection() {
 	gvr := schema.GroupVersionResource{
 		Group:    "search.open-cluster-management.io",
 		Version:  "v1alpha1",
-		Resource: "searchcollectorcustomizableconfigs",
+		Resource: "collectionconfigs",
 	}
 
 	resource, err := dynamicClient.Resource(gvr).Namespace(config.Cfg.PodNamespace).
-		Get(context.Background(), "search-collector-configurable-collection", metav1.GetOptions{})
+		Get(context.Background(), "collection-config", metav1.GetOptions{})
 
 	if err != nil {
-		klog.Warningf("Could not load search-collector-configurable-collection resource: %v. Using default config only", err)
+		klog.Warningf("Could not load collection-config resource: %v. Using default config only", err)
 		return
 	}
 
-	klog.Info("Found search-collector-configurable-collection resource, merging with default config")
+	klog.Info("Found collection-config resource, merging with default config")
 
 	// get spec field from resource
 	spec, specFound, _ := unstructuredNested(resource.Object, "spec")
 	if !specFound {
-		klog.Warning("No spec found in search-collector-configurable-collection resource. Using default config only")
+		klog.Warning("No spec found in collection-config resource. Using default config only")
 		return
 	}
 
 	specMap, ok := spec.(map[string]interface{})
 	if !ok {
-		klog.Warning("spec is not a map in search-collector-configurable-collection resource. Using default config only")
+		klog.Warning("spec is not a map in collection-config resource. Using default config only")
 		return
 	}
 
 	// get collectFields from spec
 	collectFields, fieldsFound, _ := unstructuredNested(specMap, "collectFields")
 	if !fieldsFound {
-		klog.Info("No collectFields found in search-collector-configurable-collection resource")
+		klog.Info("No collectFields found in collection-config resource")
 		return
 	}
 
 	fieldsArray, ok := collectFields.([]interface{})
 	if !ok {
-		klog.Warning("collectFields is not an array in search-collector-configurable-collection resource. Using default config only")
+		klog.Warning("collectFields is not an array in collection-config resource. Using default config only")
 		return
 	}
 
