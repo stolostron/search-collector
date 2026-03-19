@@ -1,7 +1,7 @@
 apiVersion: search.open-cluster-management.io/v1alpha1
-kind: SearchCollectorCustomizableConfig
+kind: CollectionConfig
 metadata:
-  name: search-collector-configurable-collection
+  name: collection-config
   namespace: open-cluster-management
 spec:
   collectFields:
