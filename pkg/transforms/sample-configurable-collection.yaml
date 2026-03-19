@@ -12,11 +12,6 @@ spec:
           jsonPath: "{.spec.dnsPolicy}"
         - name: "enableServiceLinks"
           jsonPath: "{.spec.enableServiceLinks}"
-      inNamespace:
-        - "*open-cluster-management*"
-      notInNamespace:
-        - "openshift-cnv"
-        - "default"
     - apiGroup: "search.open-cluster-management.io"
       kind: "Search"
       fields:
@@ -25,7 +20,13 @@ spec:
           type: "DataTypeBytes"
       collectAnnotations: true
       collectConditions: true
-      namespace: "open-cluster-management"
+      namespaceSelector:
+        include:
+          - "open-cluster-management"
+        exclude:
+          - "closed-cluster-management"
+        matchExpressions: []
+        matchLabels: {}
       collectAdditionalPrinterColumnsPriority: 0
   allowedResources:
     - apiGroups:
