@@ -82,6 +82,9 @@ func main() {
 	// Start metrics server to serve Prometheus metrics
 	go server.StartAndListen()
 
+	// Merge configurable collection config with existing config FUTURE: ACM-21892 combine and merge with search-collector-config configmap
+	tr.LoadAndMergeConfigurableCollection()
+
 	// Create input channel
 	transformChannel := make(chan *tr.Event)
 

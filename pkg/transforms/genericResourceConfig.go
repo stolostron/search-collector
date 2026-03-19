@@ -1,5 +1,14 @@
 package transforms
 
+import (
+	"context"
+
+	"github.com/stolostron/search-collector/pkg/config"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/klog/v2"
+)
+
 // Declares a property to extract from a resource using jsonpath.
 type ExtractProperty struct {
 	Name     string   // `json:"name,omitempty"`
@@ -27,6 +36,23 @@ const (
 	DataTypeMapString DataType = "mapString"
 )
 
+func stringToDataType(s string) DataType {
+	switch s {
+	case "DataTypeBytes":
+		return DataTypeBytes
+	case "DataTypeSlice":
+		return DataTypeSlice
+	case "DataTypeString":
+		return DataTypeString
+	case "DataTypeNumber":
+		return DataTypeNumber
+	case "DataTypeMapString":
+		return DataTypeMapString
+	default:
+		return DataTypeString
+	}
+}
+
 // Declares the properties to extract from a given resource.
 type ResourceConfig struct {
 	properties         []ExtractProperty // `json:"properties,omitempty"`
@@ -52,7 +78,7 @@ var (
 	}
 )
 
-// Declares properties to extract from the resource by default.
+// Declares properties to extract from the resource by default. Extended by configurable collection CR searchcollectorcustomizableconfig
 var defaultTransformConfig = map[string]ResourceConfig{
 	"ClusterServiceVersion.operators.coreos.com": {
 		properties: []ExtractProperty{
@@ -334,4 +360,146 @@ func getTransformConfig(group, kind string) (ResourceConfig, bool) {
 	}
 
 	return val, found
+}
+
+// LoadAndMergeConfigurableCollection loads the CollectionConfig resource from the cluster and merges it with defaultTransformConfig
+func LoadAndMergeConfigurableCollection() {
+	if !config.Cfg.FeatureConfigurableCollection {
+		klog.Info("Configurable collection feature is disabled, skipping custom config load")
+		return
+	}
+
+	klog.Info("Loading configurable collection config from cluster")
+
+	dynamicClient := config.GetDynamicClient()
+	// FUTURE: ACM-20047 watch this for changes and update config dynamically
+	gvr := schema.GroupVersionResource{
+		Group:    "search.open-cluster-management.io",
+		Version:  "v1alpha1",
+		Resource: "collectionconfigs",
+	}
+
+	resource, err := dynamicClient.Resource(gvr).Namespace(config.Cfg.PodNamespace).
+		Get(context.Background(), "collection-config", metav1.GetOptions{})
+
+	if err != nil {
+		klog.Warningf("Could not load collection-config resource: %v. Using default config only", err)
+		return
+	}
+
+	klog.Info("Found collection-config resource, merging with default config")
+
+	// get spec field from resource
+	spec, specFound, _ := unstructuredNested(resource.Object, "spec")
+	if !specFound {
+		klog.Warning("No spec found in collection-config resource. Using default config only")
+		return
+	}
+
+	specMap, ok := spec.(map[string]interface{})
+	if !ok {
+		klog.Warning("spec is not a map in collection-config resource. Using default config only")
+		return
+	}
+
+	// get collectFields from spec
+	collectFields, fieldsFound, _ := unstructuredNested(specMap, "collectFields")
+	if !fieldsFound {
+		klog.Info("No collectFields found in collection-config resource")
+		return
+	}
+
+	fieldsArray, ok := collectFields.([]interface{})
+	if !ok {
+		klog.Warning("collectFields is not an array in collection-config resource. Using default config only")
+		return
+	}
+
+	// merge each field from collectFields with defaultTransformConfig
+	for _, item := range fieldsArray {
+		itemMap, ok := item.(map[string]interface{})
+		if !ok {
+			klog.Warning("collectFields item is not a map, skipping")
+			continue
+		}
+
+		apiGroup, _ := itemMap["apiGroup"].(string)
+		kind, _ := itemMap["kind"].(string)
+		fields, _ := itemMap["fields"].([]interface{})
+
+		if kind == "" {
+			klog.Warning("collectFields item missing kind, skipping")
+			continue
+		}
+
+		resourceKey := kind
+		if apiGroup != "" {
+			resourceKey = kind + "." + apiGroup
+		}
+
+		// get existing key for kind.apiGroup resource
+		resourceConfig, exists := defaultTransformConfig[resourceKey]
+		if !exists {
+			resourceConfig = ResourceConfig{
+				properties: []ExtractProperty{},
+			}
+		}
+
+		// parse and add new fields to resourceConfig
+		for _, field := range fields {
+			fieldMap, ok := field.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			/* FIXME: come up with prefix schema before implementation. e.g. The specific configurable collection resource we read from determines the prefix to use
+			user defined: user_myResource
+			grc  defined: grc_thisPolicyThing
+			virt defined: virt_thatVMWhatchamacallit
+			*/
+			name, _ := fieldMap["name"].(string)
+			name = "user_" + name
+			jsonPath, _ := fieldMap["jsonPath"].(string)
+			dataTypeStr, _ := fieldMap["type"].(string)
+			//priority, _ := fieldMap["priority"].(string) // FUTURE: use this for additionalPrinterColumns extensions
+
+			if name == "" || jsonPath == "" {
+				klog.Warningf("Field missing name or jsonPath for resource %s, skipping", resourceKey)
+				continue
+			}
+
+			extractProp := ExtractProperty{
+				Name:     name,
+				JSONPath: jsonPath,
+				DataType: stringToDataType(dataTypeStr),
+			}
+
+			// FUTURE: collision handling with ExtractProperties that already exist in config, the first ExtractProperty
+			// that gets parsed and stored in the node properties wins, the duplicate gets skipped
+			resourceConfig.properties = append(resourceConfig.properties, extractProp)
+			klog.V(2).Infof("Added custom field %s to resource %s", name, resourceKey)
+		}
+
+		// Update the config
+		defaultTransformConfig[resourceKey] = resourceConfig
+		klog.Infof("Merged %d custom fields for resource %s", len(fields), resourceKey)
+	}
+
+	klog.Info("Successfully merged configurable collection config")
+}
+
+// Helper function to safely access nested fields in unstructured data
+func unstructuredNested(obj map[string]interface{}, fields ...string) (interface{}, bool, error) {
+	var val interface{} = obj
+	for _, field := range fields {
+		m, ok := val.(map[string]interface{})
+		if !ok {
+			return nil, false, nil
+		}
+		val, ok = m[field]
+		if !ok {
+			return nil, false, nil
+		}
+	}
+	return val, true, nil
 }

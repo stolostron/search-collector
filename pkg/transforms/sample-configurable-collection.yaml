@@ -1,0 +1,40 @@
+apiVersion: search.open-cluster-management.io/v1alpha1
+kind: CollectionConfig
+metadata:
+  name: collection-config
+  namespace: open-cluster-management
+spec:
+  collectFields:
+    - apiGroup: ""
+      kind: "Pod"
+      fields:
+        - name: "dnsPolicy"
+          jsonPath: "{.spec.dnsPolicy}"
+        - name: "enableServiceLinks"
+          jsonPath: "{.spec.enableServiceLinks}"
+    - apiGroup: "search.open-cluster-management.io"
+      kind: "Search"
+      fields:
+        - name: "searchPGStorage"
+          jsonPath: "{.spec.dbStorage.size}"
+          type: "DataTypeBytes"
+      collectAnnotations: true
+      collectConditions: true
+      namespaceSelector:
+        include:
+          - "open-cluster-management"
+        exclude:
+          - "closed-cluster-management"
+        matchExpressions: []
+        matchLabels: {}
+      collectAdditionalPrinterColumnsPriority: 0
+  allowedResources:
+    - apiGroups:
+        - "*"
+      resources:
+        - "*"
+  deniedResources:
+    - apiGroups:
+        - "coordination.k8s.io"
+      resources:
+        - "leases"
