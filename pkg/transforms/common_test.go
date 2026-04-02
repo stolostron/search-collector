@@ -120,6 +120,42 @@ func TestKyvernoPolicyEdges(t *testing.T) {
 		},
 	}}
 
+	configmapThree := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "ConfigMap",
+		"metadata": map[string]interface{}{
+			"name":      "generated-secret",
+			"uid":       "888016fe-1931-4e80-95d1-d51d3b936e24",
+			"namespace": "test4",
+			"labels": map[string]interface{}{
+				"app.kubernetes.io/managed-by":          "kyverno",
+				"generate.kyverno.io/policy-name":       "generate-secret-policy",
+				"generate.kyverno.io/policy-namespace":  "",
+				"generate.kyverno.io/trigger-group":     "",
+				"generate.kyverno.io/trigger-kind":      "Namespace",
+				"generate.kyverno.io/trigger-namespace": "",
+			},
+		},
+	}}
+
+	configmapFour := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "ConfigMap",
+		"metadata": map[string]interface{}{
+			"name":      "generated-config",
+			"uid":       "999016fe-1931-4e80-95d1-d51d3b936e24",
+			"namespace": "test3",
+			"labels": map[string]interface{}{
+				"app.kubernetes.io/managed-by":          "kyverno",
+				"generate.kyverno.io/policy-name":       "generate-configmap-policy",
+				"generate.kyverno.io/policy-namespace":  "test4",
+				"generate.kyverno.io/trigger-group":     "",
+				"generate.kyverno.io/trigger-kind":      "Pod",
+				"generate.kyverno.io/trigger-namespace": "test4",
+			},
+		},
+	}}
+
 	kyvernoPolicy := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "kyverno.io/v1",
@@ -143,47 +179,92 @@ func TestKyvernoPolicyEdges(t *testing.T) {
 		},
 	}
 
+	kyvernoGeneratingPolicy := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "policies.kyverno.io/v1",
+			"kind":       "GeneratingPolicy",
+			"metadata": map[string]interface{}{
+				"name": "generate-secret-policy",
+				"uid":  "9fc338fa-0591-44da-8a06-98ea7d74a7f8",
+			},
+		},
+	}
+
+	kyvernoNamespacedGeneratingPolicy := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "policies.kyverno.io/v1",
+			"kind":       "NamespacedGeneratingPolicy",
+			"metadata": map[string]interface{}{
+				"name":      "generate-configmap-policy",
+				"namespace": "test4",
+				"uid":       "afc338fa-0591-44da-8a06-98ea7d74a7f9",
+			},
+		},
+	}
+
 	nodes := []Node{
 		KyvernoPolicyResourceBuilder(kyvernoPolicy).BuildNode(),
 		KyvernoPolicyResourceBuilder(kyvernoClusterpolicy).BuildNode(),
+		KyvernoPolicyResourceBuilder(kyvernoGeneratingPolicy).BuildNode(),
+		KyvernoPolicyResourceBuilder(kyvernoNamespacedGeneratingPolicy).BuildNode(),
 		GenericResourceBuilder(configmap).BuildNode(),
 		GenericResourceBuilder(configmapTwo).BuildNode(),
+		GenericResourceBuilder(configmapThree).BuildNode(),
+		GenericResourceBuilder(configmapFour).BuildNode(),
 	}
 	nodeStore := BuildFakeNodeStore(nodes)
 
-	t.Log("Test Kyverno Cluster Policy")
-	edges := CommonEdges("local-cluster/18b016fe-1931-4e80-95d1-d51d3b936e24", nodeStore)
-	if len(edges) != 1 {
-		t.Fatalf("Expected 1 edge but got %d", len(edges))
+	tests := []struct {
+		name         string
+		resourceUID  string
+		expectedDest string
+		expectedKind string
+	}{
+		{
+			name:         "ClusterPolicy",
+			resourceUID:  "local-cluster/18b016fe-1931-4e80-95d1-d51d3b936e24",
+			expectedDest: "local-cluster/8fc338fa-0591-44da-8a06-98ea7d74a7f7",
+			expectedKind: "ClusterPolicy",
+		},
+		{
+			name:         "namespaced Policy",
+			resourceUID:  "local-cluster/777016fe-1931-4e80-95d1-d51d3b936e24",
+			expectedDest: "local-cluster/777738fa-0591-44da-8a06-98ea7d74a7f7",
+			expectedKind: "Policy",
+		},
+		{
+			name:         "GeneratingPolicy",
+			resourceUID:  "local-cluster/888016fe-1931-4e80-95d1-d51d3b936e24",
+			expectedDest: "local-cluster/9fc338fa-0591-44da-8a06-98ea7d74a7f8",
+			expectedKind: "GeneratingPolicy",
+		},
+		{
+			name:         "NamespacedGeneratingPolicy",
+			resourceUID:  "local-cluster/999016fe-1931-4e80-95d1-d51d3b936e24",
+			expectedDest: "local-cluster/afc338fa-0591-44da-8a06-98ea7d74a7f9",
+			expectedKind: "NamespacedGeneratingPolicy",
+		},
 	}
 
-	edge := edges[0]
-	expectedEdge := Edge{
-		EdgeType:   "generatedBy",
-		SourceUID:  "local-cluster/18b016fe-1931-4e80-95d1-d51d3b936e24",
-		DestUID:    "local-cluster/8fc338fa-0591-44da-8a06-98ea7d74a7f7",
-		SourceKind: "ConfigMap",
-		DestKind:   "ClusterPolicy",
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Log("Test Kyverno " + tt.name)
+			edges := CommonEdges(tt.resourceUID, nodeStore)
+			if len(edges) != 1 {
+				t.Fatalf("Expected 1 edge but got %d", len(edges))
+			}
+
+			expectedEdge := Edge{
+				EdgeType:   "generatedBy",
+				SourceUID:  tt.resourceUID,
+				DestUID:    tt.expectedDest,
+				SourceKind: "ConfigMap",
+				DestKind:   tt.expectedKind,
+			}
+
+			AssertDeepEqual("edge", edges[0], expectedEdge, t)
+		})
 	}
-
-	AssertDeepEqual("edge", edge, expectedEdge, t)
-
-	t.Log("Test Kyverno Policy")
-	edges = CommonEdges("local-cluster/777016fe-1931-4e80-95d1-d51d3b936e24", nodeStore)
-	if len(edges) != 1 {
-		t.Fatalf("Expected 1 edge but got %d", len(edges))
-	}
-
-	edge = edges[0]
-	expectedEdge = Edge{
-		EdgeType:   "generatedBy",
-		SourceUID:  "local-cluster/777016fe-1931-4e80-95d1-d51d3b936e24",
-		DestUID:    "local-cluster/777738fa-0591-44da-8a06-98ea7d74a7f7",
-		SourceKind: "ConfigMap",
-		DestKind:   "Policy",
-	}
-
-	AssertDeepEqual("edge", edge, expectedEdge, t)
 }
 
 func TestGatekeeperMutationEdges(t *testing.T) {

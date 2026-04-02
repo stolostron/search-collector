@@ -253,15 +253,27 @@ func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
 	}
 
 	// For resources created by kyverno
-	policyNamespace := labels["generate.kyverno.io/policy-namespace"]
 	policyName := labels["generate.kyverno.io/policy-name"]
-	// Kyverno Policy
-	policyKind := "Policy"
+	policyNamespace := labels["generate.kyverno.io/policy-namespace"]
+	isNamespaced := policyNamespace != ""
+	isLegacy := labels["generate.kyverno.io/rule-name"] != ""
 
-	if policyNamespace == "" {
-		// Kyverno ClusterPolicy
-		policyKind = "ClusterPolicy"
+	if !isNamespaced {
 		policyNamespace = "_NONE"
+	}
+
+	var policyKind string
+	switch {
+	case isLegacy && isNamespaced:
+		policyKind = "Policy"
+	case isLegacy && !isNamespaced:
+		policyKind = "ClusterPolicy"
+	case !isLegacy && isNamespaced:
+		policyKind = "NamespacedGeneratingPolicy"
+	case !isLegacy && !isNamespaced:
+		policyKind = "GeneratingPolicy"
+	default:
+		policyKind = "ClusterPolicy"
 	}
 
 	policyNode, ok := ns.ByKindNamespaceName[policyKind][policyNamespace][policyName]
@@ -270,7 +282,7 @@ func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
 	}
 
 	// Prevent from policy.policy.open-cluster-management.io
-	if policyNode.Properties["apigroup"] != "kyverno.io" {
+	if policyNode.Properties["apigroup"] != "kyverno.io" && policyNode.Properties["apigroup"] != "policies.kyverno.io" {
 		return ret
 	}
 

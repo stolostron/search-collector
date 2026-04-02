@@ -48,6 +48,34 @@
                 "nanos": 0,
                 "seconds": 1729795789
             }
+        },
+        {
+            "category": "Kubecost",
+            "message": "validation error: The owner label is required. rule require-kubecost-labels failed at path /metadata/labels/owner/",
+            "policy": "require-kubecost-labels",
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "KyvernoValidatingPolicy",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "validation error: The owner label is required. rule require-kubecost-labels failed at path /metadata/labels/owner/",
+            "policy": "test-namespace/require-kubecost-labels",
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "KyvernoValidatingPolicy",
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
         }
     ],
     "scope": {

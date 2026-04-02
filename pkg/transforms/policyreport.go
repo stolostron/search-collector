@@ -80,19 +80,26 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	categoryMap := make(map[string]struct{})
 	policies := sets.Set[string]{}
 	rules := sets.Set[string]{}
+	policyViolationCounts := map[string]int{}
 	critical := 0
 	important := 0
 	moderate := 0
 	low := 0
-
-	policyViolationCounts := map[string]int{}
 
 	for _, result := range results {
 		for _, category := range strings.Split(result.Category, ",") {
 			categoryMap[category] = struct{}{}
 		}
 
-		policies.Insert(result.Policy)
+		policyName := result.Policy
+		isNamespaced := strings.Contains(policyName, "/")
+		kind := sourceToKind(result.Source, isNamespaced)
+
+		// Policy keys match the format "kind/namespace/name" or "kind/name"
+		policyKey := kind + "/" + policyName
+
+		policies.Insert(policyKey)
+
 		if result.Rule != "" {
 			rules.Insert(result.Rule)
 		}
@@ -108,12 +115,18 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 			low++
 		}
 
-		if _, ok := policyViolationCounts[result.Policy]; !ok {
-			policyViolationCounts[result.Policy] = 0
+		// For backwards compatibility, violation keys for Kyverno ClusterPolicy and Policy
+		// are "name" and "namespace/name", respectively
+		if kind == "ClusterPolicy" || kind == "Policy" {
+			policyKey = policyName
+		}
+
+		if _, ok := policyViolationCounts[policyKey]; !ok {
+			policyViolationCounts[policyKey] = 0
 		}
 
 		if result.Result == "fail" || result.Result == "error" {
-			policyViolationCounts[result.Policy]++
+			policyViolationCounts[policyKey]++
 		}
 	}
 	categories := make([]string, 0, len(categoryMap))
@@ -154,21 +167,25 @@ func (pr PolicyReportResource) BuildEdges(ns NodeStore) []Edge {
 		return edges
 	}
 
+	policies := pr.node.Properties["policies"].([]string)
+
 	// "policies" represents the policies
-	for _, policy := range pr.node.Properties["policies"].([]string) {
+	for _, policy := range policies {
 		var kind, namespace, name string
 
-		splitPolicy := strings.SplitN(policy, "/", 2)
+		parts := strings.SplitN(policy, "/", 3)
 
-		// Detect if it's a Policy or ClusterPolicy based on the presence of a namespace
-		if len(splitPolicy) == 2 {
-			kind = "Policy"
-			namespace = splitPolicy[0]
-			name = splitPolicy[1]
-		} else {
-			kind = "ClusterPolicy"
+		switch len(parts) {
+		case 3:
+			kind = parts[0]
+			namespace = parts[1]
+			name = parts[2]
+		case 2:
+			kind = parts[0]
 			namespace = "_NONE"
-			name = policy
+			name = parts[1]
+		default:
+			continue
 		}
 
 		policyNode, ok := ns.ByKindNamespaceName[kind][namespace][name]
@@ -206,4 +223,28 @@ func (pr PolicyReportResource) BuildEdges(ns NodeStore) []Edge {
 	}
 
 	return edges
+}
+
+// sourceToKind converts a report result source to its corresponding policy kind
+func sourceToKind(source string, isNamespaced bool) string {
+	// Kyverno sources defined in https://github.com/kyverno/kyverno/blob/main/pkg/utils/report/source.go
+
+	switch source {
+	case "kyverno":
+		if isNamespaced {
+			return "Policy"
+		} else {
+			return "ClusterPolicy"
+		}
+	case "KyvernoValidatingPolicy", "KyvernoImageValidatingPolicy", "KyvernoGeneratingPolicy", "KyvernoMutatingPolicy":
+		trimmedSource := strings.TrimPrefix(source, "Kyverno")
+
+		if isNamespaced {
+			return "Namespaced" + trimmedSource
+		} else {
+			return trimmedSource
+		}
+	default:
+		return source
+	}
 }
