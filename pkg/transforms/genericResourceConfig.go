@@ -402,33 +402,86 @@ func LoadAndMergeConfigurableCollection() {
 		return
 	}
 
-	// get collectFields from spec
-	collectFields, fieldsFound, _ := unstructuredNested(specMap, "collectFields")
-	if !fieldsFound {
-		klog.Info("No collectFields found in collection-config resource")
+	// get collectionRules from spec
+	collectionRules, rulesFound, _ := unstructuredNested(specMap, "collectionRules")
+	if !rulesFound {
+		klog.Info("No collectionRules found in collection-config resource")
 		return
 	}
 
-	fieldsArray, ok := collectFields.([]interface{})
+	rulesArray, ok := collectionRules.([]interface{})
 	if !ok {
-		klog.Warning("collectFields is not an array in collection-config resource. Using default config only")
+		klog.Warning("collectionRules is not an array in collection-config resource. Using default config only")
 		return
 	}
 
-	// merge each field from collectFields with defaultTransformConfig
-	for _, item := range fieldsArray {
-		itemMap, ok := item.(map[string]interface{})
+	// merge each rule from collectionRules with defaultTransformConfig
+	for _, rule := range rulesArray {
+		ruleMap, ok := rule.(map[string]interface{})
 		if !ok {
-			klog.Warning("collectFields item is not a map, skipping")
+			klog.Warning("collectionRules item is not a map, skipping")
 			continue
 		}
 
-		apiGroup, _ := itemMap["apiGroup"].(string)
-		kind, _ := itemMap["kind"].(string)
-		fields, _ := itemMap["fields"].([]interface{})
+		// FUTURE:
+		// Only process Include actions
+		action, _ := ruleMap["action"].(string)
+		if action != "Include" {
+			klog.V(2).Infof("Skipping non-Include action: %s", action)
+			continue
+		}
 
-		if kind == "" {
-			klog.Warning("collectFields item missing kind, skipping")
+		// Only process rules that have fields specified
+		fields, hasFields := ruleMap["fields"].([]interface{})
+		if !hasFields || len(fields) == 0 {
+			klog.V(2).Info("Skipping Include action without fields specified")
+			continue
+		}
+
+		// Extract resourceSelector
+		resourceSelector, hasSelectorMap := ruleMap["resourceSelector"].(map[string]interface{})
+		if !hasSelectorMap {
+			klog.Warning("collectionRules item missing resourceSelector, skipping")
+			continue
+		}
+
+		apiGroups, _ := resourceSelector["apiGroups"].([]interface{})
+		kinds, _ := resourceSelector["kinds"].([]interface{})
+
+		if len(kinds) == 0 {
+			klog.Warning("collectionRules item missing kinds in resourceSelector, skipping")
+			continue
+		}
+
+		// Extract optional flags
+		// FUTURE: ACM-30891
+		//collectAnnotations, _ := ruleMap["collectAnnotations"].(bool)
+		// FUTURE: ACM-2071
+		//collectConditions, _ := ruleMap["collectConditions"].(bool)
+
+		// validation webhook should ensure there's not >1 apiGroup.kind
+		// When fields are specified, there should be exactly one kind and one apiGroup
+		if len(kinds) != 1 {
+			klog.Warningf("Include action with fields must have exactly 1 kind, found %d. Skipping rule.", len(kinds))
+			continue
+		}
+
+		if len(apiGroups) != 1 {
+			klog.Warningf("Include action with fields must have exactly 1 apiGroup, found %d. Skipping rule.", len(apiGroups))
+			continue
+		}
+
+		// Extract the single kind
+		kind, ok := kinds[0].(string)
+		if !ok || kind == "" {
+			klog.Warning("Kind is not a valid string, skipping rule")
+			continue
+		}
+
+		// Extract the single apiGroup (empty string "" for core API)
+		apiGroup, ok := apiGroups[0].(string)
+		if !ok {
+			klog.Warning("ApiGroup is not a valid string, skipping rule")
 			continue
 		}
 
@@ -445,6 +498,16 @@ func LoadAndMergeConfigurableCollection() {
 			}
 		}
 
+		// Set annotation and condition flags if specified
+		// FUTURE: ACM-30891
+		//if collectAnnotations {
+		//	resourceConfig.extractAnnotations = true
+		//}
+		// FUTURE: ACM-2071
+		//if collectConditions {
+		//	resourceConfig.extractConditions = true
+		//}
+
 		// parse and add new fields to resourceConfig
 		for _, field := range fields {
 			fieldMap, ok := field.(map[string]interface{})
@@ -452,7 +515,7 @@ func LoadAndMergeConfigurableCollection() {
 				continue
 			}
 
-			/* FIXME: come up with prefix schema before implementation. e.g. The specific configurable collection resource we read from determines the prefix to use
+			/* TODO: come up with prefix schema before implementation. e.g. The specific configurable collection resource we read from determines the prefix to use
 			user defined: user_myResource
 			grc  defined: grc_thisPolicyThing
 			virt defined: virt_thatVMWhatchamacallit
@@ -460,7 +523,7 @@ func LoadAndMergeConfigurableCollection() {
 			name, _ := fieldMap["name"].(string)
 			name = "user_" + name
 			jsonPath, _ := fieldMap["jsonPath"].(string)
-			dataTypeStr, _ := fieldMap["type"].(string)
+			dataTypeStr, dataTypeOK := fieldMap["type"].(string)
 			//priority, _ := fieldMap["priority"].(string) // FUTURE: use this for additionalPrinterColumns extensions
 
 			if name == "" || jsonPath == "" {
@@ -471,7 +534,10 @@ func LoadAndMergeConfigurableCollection() {
 			extractProp := ExtractProperty{
 				Name:     name,
 				JSONPath: jsonPath,
-				DataType: stringToDataType(dataTypeStr),
+			}
+
+			if dataTypeOK {
+				extractProp.DataType = stringToDataType(dataTypeStr)
 			}
 
 			// FUTURE: collision handling with ExtractProperties that already exist in config, the first ExtractProperty
