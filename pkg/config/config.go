@@ -198,19 +198,21 @@ func setDefaultInt(field *int, env string, defaultVal int) {
 }
 
 func setDefaultBool(field *bool, env string, defaultVal bool) {
-	if val := os.Getenv(env); val != "" {
+	if val, ok := os.LookupEnv(env); ok && val != "" {
 		klog.Infof("Using %s from environment: %s", env, val)
-		var err error
-		*field, err = strconv.ParseBool(val)
+		parsed, err := strconv.ParseBool(val)
 		if err != nil {
 			klog.Error("Error parsing env [", env, "]. Expected a bool. Original error: ", err)
-			if env == "DEPLOYED_IN_HUB" {
-				klog.Info("Leaving flag unchanged, assuming it is a Klusterlet")
-			}
+			return
 		}
+		*field = parsed
 		return
-	} else if env == "DEPLOYED_IN_HUB" {
-		klog.Info("No DEPLOY_IN_HUB from file or environment, assuming it is a Klusterlet")
 	}
-	*field = defaultVal
+
+	if env == "DEPLOYED_IN_HUB" && !*field {
+		klog.Info("No DEPLOYED_IN_HUB from file or environment, assuming it is a Klusterlet")
+	}
+	if !*field && defaultVal {
+		*field = defaultVal
+	}
 }

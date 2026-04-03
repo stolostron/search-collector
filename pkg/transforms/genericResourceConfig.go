@@ -515,13 +515,7 @@ func LoadAndMergeConfigurableCollection() {
 				continue
 			}
 
-			/* TODO: come up with prefix schema before implementation. e.g. The specific configurable collection resource we read from determines the prefix to use
-			user defined: user_myResource
-			grc  defined: grc_thisPolicyThing
-			virt defined: virt_thatVMWhatchamacallit
-			*/
 			name, _ := fieldMap["name"].(string)
-			name = "user_" + name
 			jsonPath, _ := fieldMap["jsonPath"].(string)
 			dataTypeStr, dataTypeOK := fieldMap["type"].(string)
 			//priority, _ := fieldMap["priority"].(string) // FUTURE: use this for additionalPrinterColumns extensions
@@ -530,6 +524,13 @@ func LoadAndMergeConfigurableCollection() {
 				klog.Warningf("Field missing name or jsonPath for resource %s, skipping", resourceKey)
 				continue
 			}
+
+			/* TODO: come up with prefix schema before implementation. e.g. The specific configurable collection resource we read from determines the prefix to use
+			user defined: user_myResource
+			grc  defined: grc_thisPolicyThing
+			virt defined: virt_thatVMWhatchamacallit
+			*/
+			name = "user_" + name
 
 			extractProp := ExtractProperty{
 				Name:     name,
