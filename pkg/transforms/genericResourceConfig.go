@@ -402,6 +402,15 @@ func LoadAndMergeConfigurableCollection() {
 		return
 	}
 
+	// FUTURE: ACM-21531
+	if collectNamespaces, nsFound, _ := unstructuredNested(specMap, "collectNamespaces"); nsFound {
+		if nsMap, ok := collectNamespaces.(map[string]interface{}); ok {
+			if _, selectorFound, _ := unstructuredNested(nsMap, "namespaceSelector"); selectorFound {
+				klog.V(2).Info("namespaceSelector found in collection-config but not yet implemented. Ignoring.")
+			}
+		}
+	}
+
 	// get collectionRules from spec
 	collectionRules, rulesFound, _ := unstructuredNested(specMap, "collectionRules")
 	if !rulesFound {
@@ -455,9 +464,9 @@ func LoadAndMergeConfigurableCollection() {
 
 		// Extract optional flags
 		// FUTURE: ACM-30891
-		//collectAnnotations, _ := ruleMap["collectAnnotations"].(bool)
+		collectAnnotations, _ := ruleMap["collectAnnotations"].(bool)
 		// FUTURE: ACM-2071
-		//collectConditions, _ := ruleMap["collectConditions"].(bool)
+		collectConditions, _ := ruleMap["collectConditions"].(bool)
 
 		// validation webhook should ensure there's not >1 apiGroup.kind
 		// When fields are specified, there should be exactly one kind and one apiGroup
@@ -500,13 +509,15 @@ func LoadAndMergeConfigurableCollection() {
 
 		// Set annotation and condition flags if specified
 		// FUTURE: ACM-30891
-		//if collectAnnotations {
-		//	resourceConfig.extractAnnotations = true
-		//}
+		if collectAnnotations {
+			klog.V(2).Info("collectAnnotations found in collection-config but not yet implemented. Ignoring.")
+			// resourceConfig.extractAnnotations = true
+		}
 		// FUTURE: ACM-2071
-		//if collectConditions {
-		//	resourceConfig.extractConditions = true
-		//}
+		if collectConditions {
+			klog.V(2).Info("collectConditions found in collection-config but not yet implemented. Ignoring.")
+			// resourceConfig.extractConditions = true
+		}
 
 		// parse and add new fields to resourceConfig
 		for _, field := range fields {
