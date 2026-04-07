@@ -492,3 +492,368 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 	assert.Equal(t, "user_numberField", testResourceConfig.properties[1].Name)
 	assert.Equal(t, DataTypeNumber, testResourceConfig.properties[1].DataType)
 }
+
+func TestLoadAndMergeConfigurableCollection_MissingSpec(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Create a CollectionConfig without spec
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectionConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collection-config",
+				"namespace": "test-namespace",
+			},
+			// No spec field
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	originalLen := len(defaultTransformConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Should not modify config when spec is missing
+	assert.Equal(t, originalLen, len(defaultTransformConfig))
+}
+
+func TestLoadAndMergeConfigurableCollection_SpecNotMap(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Create a CollectionConfig with invalid spec type
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectionConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collection-config",
+				"namespace": "test-namespace",
+			},
+			"spec": "not-a-map", // Invalid type
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	originalLen := len(defaultTransformConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Should not modify config when spec is not a map
+	assert.Equal(t, originalLen, len(defaultTransformConfig))
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectionRulesNotArray(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectionConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collection-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": "not-an-array", // Invalid type
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	originalLen := len(defaultTransformConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.Equal(t, originalLen, len(defaultTransformConfig))
+}
+
+func TestLoadAndMergeConfigurableCollection_RuleNotMap(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectionConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collection-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					"not-a-map", // Invalid rule type
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	originalLen := len(defaultTransformConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.Equal(t, originalLen, len(defaultTransformConfig))
+}
+
+func TestLoadAndMergeConfigurableCollection_MissingResourceSelector(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectionConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collection-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "Include",
+						// Missing resourceSelector
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "test",
+								"jsonPath": "{.spec.test}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	originalLen := len(defaultTransformConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.Equal(t, originalLen, len(defaultTransformConfig))
+}
+
+func TestLoadAndMergeConfigurableCollection_EmptyKinds(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectionConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collection-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "Include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{}, // Empty kinds
+						},
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "test",
+								"jsonPath": "{.spec.test}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	originalLen := len(defaultTransformConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.Equal(t, originalLen, len(defaultTransformConfig))
+}
+
+func TestLoadAndMergeConfigurableCollection_EmptyKind(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectionConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collection-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "Include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{""}, // Empty string kind
+						},
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "test",
+								"jsonPath": "{.spec.test}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	originalLen := len(defaultTransformConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Should skip rules with empty kind string
+	assert.Equal(t, originalLen, len(defaultTransformConfig))
+}
+
+func TestLoadAndMergeConfigurableCollection_FieldMissingNameOrJsonPath(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		delete(defaultTransformConfig, "Service")
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectionConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collection-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "Include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Service"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name": "validField",
+								"jsonPath": "{.spec.valid}",
+							},
+							map[string]interface{}{
+								// Missing name
+								"jsonPath": "{.spec.test}",
+							},
+							map[string]interface{}{
+								"name": "missingJsonPath",
+								// Missing jsonPath
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Should only add the valid field, skipping the ones with missing name or jsonPath
+	serviceConfig, exists := defaultTransformConfig["Service"]
+	assert.True(t, exists)
+	assert.Equal(t, 1, len(serviceConfig.properties), "Should only have 1 valid field")
+	assert.Equal(t, "user_validField", serviceConfig.properties[0].Name)
+}
+
+func TestStringToDataType(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected DataType
+	}{
+		{"DataTypeBytes", "DataTypeBytes", DataTypeBytes},
+		{"DataTypeSlice", "DataTypeSlice", DataTypeSlice},
+		{"DataTypeString", "DataTypeString", DataTypeString},
+		{"DataTypeNumber", "DataTypeNumber", DataTypeNumber},
+		{"DataTypeMapString", "DataTypeMapString", DataTypeMapString},
+		{"Empty String", "", DataTypeString},             // Default
+		{"Unknown Value", "UnknownType", DataTypeString}, // Default
+		{"Invalid Case", "datatypestring", DataTypeString}, // Case sensitive, should default
+		{"Random String", "foobar", DataTypeString},      // Default
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := stringToDataType(tt.input)
+			assert.Equal(t, tt.expected, result, "DataType mismatch for input: %s", tt.input)
+		})
+	}
+}
