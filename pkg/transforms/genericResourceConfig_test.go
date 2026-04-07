@@ -41,7 +41,7 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
 							"kinds":     []interface{}{"Pod"},
@@ -54,12 +54,12 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 							map[string]interface{}{
 								"name":     "enableServiceLinks",
 								"jsonPath": "{.spec.enableServiceLinks}",
-								"type":     "DataTypeString",
+								"type":     "string",
 							},
 						},
 					},
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"search.open-cluster-management.io"},
 							"kinds":     []interface{}{"Search"},
@@ -68,7 +68,7 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 							map[string]interface{}{
 								"name":     "searchPGStorage",
 								"jsonPath": "{.spec.dbStorage.size}",
-								"type":     "DataTypeBytes",
+								"type":     "bytes",
 							},
 						},
 					},
@@ -124,7 +124,7 @@ func TestLoadAndMergeConfigurableCollection_SkipExcludeActions(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Exclude",
+						"action": "exclude",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"coordination.k8s.io"},
 							"kinds":     []interface{}{"leases"},
@@ -170,7 +170,7 @@ func TestLoadAndMergeConfigurableCollection_SkipIncludeWithoutFields(t *testing.
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"*"},
 							"kinds":     []interface{}{"*"},
@@ -214,7 +214,7 @@ func TestLoadAndMergeConfigurableCollection_InvalidMultipleKinds(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
 							"kinds":     []interface{}{"Pod", "Service"}, // Multiple kinds - invalid
@@ -264,7 +264,7 @@ func TestLoadAndMergeConfigurableCollection_InvalidMultipleApiGroups(t *testing.
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"apps", "batch"}, // Multiple apiGroups - invalid
 							"kinds":     []interface{}{"Deployment"},
@@ -381,7 +381,7 @@ func TestLoadAndMergeConfigurableCollection_FieldWithoutDataType(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
 							"kinds":     []interface{}{"Secret"},
@@ -435,7 +435,7 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"test.io"},
 							"kinds":     []interface{}{"TestResource"},
@@ -444,12 +444,12 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 							map[string]interface{}{
 								"name":     "stringField",
 								"jsonPath": "{.spec.stringField}",
-								"type":     "DataTypeString",
+								"type":     "string",
 							},
 							map[string]interface{}{
 								"name":     "numberField",
 								"jsonPath": "{.spec.numberField}",
-								"type":     "DataTypeNumber",
+								"type":     "number",
 							},
 						},
 					},
@@ -637,7 +637,7 @@ func TestLoadAndMergeConfigurableCollection_MissingResourceSelector(t *testing.T
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						// Missing resourceSelector
 						"fields": []interface{}{
 							map[string]interface{}{
@@ -682,7 +682,7 @@ func TestLoadAndMergeConfigurableCollection_EmptyKinds(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
 							"kinds":     []interface{}{}, // Empty kinds
@@ -730,7 +730,7 @@ func TestLoadAndMergeConfigurableCollection_EmptyKind(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
 							"kinds":     []interface{}{""}, // Empty string kind
@@ -780,7 +780,7 @@ func TestLoadAndMergeConfigurableCollection_FieldMissingNameOrJsonPath(t *testin
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "Include",
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
 							"kinds":     []interface{}{"Service"},
@@ -823,14 +823,14 @@ func TestStringToDataType(t *testing.T) {
 		input    string
 		expected DataType
 	}{
-		{"DataTypeBytes", "DataTypeBytes", DataTypeBytes},
-		{"DataTypeSlice", "DataTypeSlice", DataTypeSlice},
-		{"DataTypeString", "DataTypeString", DataTypeString},
-		{"DataTypeNumber", "DataTypeNumber", DataTypeNumber},
-		{"DataTypeMapString", "DataTypeMapString", DataTypeMapString},
+		{"bytes", "bytes", DataTypeBytes},
+		{"slice", "slice", DataTypeSlice},
+		{"string", "string", DataTypeString},
+		{"number", "number", DataTypeNumber},
+		{"mapString", "mapString", DataTypeMapString},
 		{"Empty String", "", DataTypeString},             // Default
 		{"Unknown Value", "UnknownType", DataTypeString}, // Default
-		{"Invalid Case", "datatypestring", DataTypeString}, // Case sensitive, should default
+		{"Invalid Case", "Bytes", DataTypeString}, // Case sensitive, should default
 		{"Random String", "foobar", DataTypeString},      // Default
 	}
 

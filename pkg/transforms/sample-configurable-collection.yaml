@@ -15,21 +15,21 @@ spec:
   #     matchLabels: {}
   collectionRules:
     # Allow all resources by default
-    - action: Include
+    - action: include
       resourceSelector:
         apiGroups:
           - "*"
         kinds:
           - "*"
     # Exclude coordination.k8s.io leases
-    - action: Exclude
+    - action: exclude
       resourceSelector:
         apiGroups:
           - "coordination.k8s.io"
         kinds:
           - "leases"
     # Collect additional fields for Pods
-    - action: Include
+    - action: include
       resourceSelector:
         apiGroups:
           - ""
@@ -41,7 +41,7 @@ spec:
         - name: "enableServiceLinks"
           jsonPath: "{.spec.enableServiceLinks}"
     # Collect additional fields and metadata for Search resources
-    - action: Include
+    - action: include
       resourceSelector:
         apiGroups:
           - "search.open-cluster-management.io"
@@ -50,7 +50,7 @@ spec:
       fields:
         - name: "searchPGStorage"
           jsonPath: "{.spec.dbStorage.size}"
-          type: "DataTypeBytes"
+          type: "bytes"
       # FUTURE: collectAnnotations not yet implemented (ACM-30891)
       # collectAnnotations: true
       # FUTURE: collectConditions not yet implemented (ACM-2071)

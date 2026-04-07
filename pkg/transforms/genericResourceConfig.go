@@ -39,15 +39,15 @@ const (
 
 func stringToDataType(s string) DataType {
 	switch s {
-	case "DataTypeBytes":
+	case "bytes":
 		return DataTypeBytes
-	case "DataTypeSlice":
+	case "slice":
 		return DataTypeSlice
-	case "DataTypeString":
+	case "string":
 		return DataTypeString
-	case "DataTypeNumber":
+	case "number":
 		return DataTypeNumber
-	case "DataTypeMapString":
+	case "mapString":
 		return DataTypeMapString
 	default:
 		return DataTypeString
@@ -432,8 +432,8 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		// FUTURE:
 		// Only process Include actions
 		action, _ := ruleMap["action"].(string)
-		if action != "Include" {
-			klog.V(2).Infof("Skipping non-Include action: %s", action)
+		if action != "include" {
+			klog.V(2).Infof("Skipping non-include action: %s", action)
 			continue
 		}
 
