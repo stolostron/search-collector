@@ -813,23 +813,10 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				if m, ok := val.(map[string]interface{}); ok {
 					dest := make(map[string]string, len(m))
 					for k, v := range m {
-						switch t := v.(type) {
-						case string:
-							dest[k] = t
-						case bool:
-							dest[k] = strconv.FormatBool(t)
-						case int:
-							dest[k] = strconv.Itoa(t)
-						case int64:
-							dest[k] = strconv.FormatInt(t, 10)
-						case float64:
-							if t == float64(int64(t)) {
-								dest[k] = strconv.FormatInt(int64(t), 10)
-							} else {
-								dest[k] = strconv.FormatFloat(t, 'f', -1, 64)
-							}
-						default:
-							klog.V(1).Infof("Parsed unsupported type [%T] from [%s.%s] building map for Name: %s", t, kind, group, r.GetName())
+						if strVal, ok := convertToString(v); ok {
+							dest[k] = strVal
+						} else {
+							klog.V(1).Infof("Parsed unsupported type [%T] from [%s.%s] building map for Name: %s", v, kind, group, r.GetName())
 						}
 					}
 					if len(dest) > 0 {
@@ -838,7 +825,39 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				} else {
 					klog.V(1).Infof("Unable to parse selector value [%v] from [%s.%s] Name: [%s]", val, kind, group, r.GetName())
 				}
+			} else if prop.DataType == DataTypeString {
+				// DataTypeString: ensure value is stored as a string
+				if strVal, ok := convertToString(val); ok {
+					node.Properties[prop.Name] = strVal
+				} else {
+					klog.V(1).Infof(
+						"Unable to convert prop [%s] from [%s.%s] Name: [%s] to string, unsupported type: %T",
+						prop.Name, kind, group, r.GetName(), val,
+					)
+				}
+			} else if prop.DataType == DataTypeNumber {
+				// DataTypeNumber: accept numeric types
+				switch v := val.(type) {
+				case int, int64, float64:
+					node.Properties[prop.Name] = v
+				case string:
+					// Attempt to parse string as number
+					if num, err := strconv.ParseFloat(v, 64); err == nil {
+						node.Properties[prop.Name] = num
+					} else {
+						klog.V(1).Infof(
+							"Unable to parse prop [%s] from [%s.%s] Name: [%s] as number: %v",
+							prop.Name, kind, group, r.GetName(), err,
+						)
+					}
+				default:
+					klog.V(1).Infof(
+						"Unable to convert prop [%s] from [%s.%s] Name: [%s] to number, unsupported type: %T",
+						prop.Name, kind, group, r.GetName(), val,
+					)
+				}
 			} else {
+				// Fallback for unspecified or unknown DataTypes
 				if kind == "VirtualMachineInstance" && group == "kubevirt.io" && prop.Name == "_interface" {
 					interfaceSlice := processInterfaceStatus(result[0])
 					if len(interfaceSlice) > 0 {
@@ -907,4 +926,27 @@ func memoryToBytes(memory string) (int64, error) {
 		return 0, err
 	}
 	return quantity.Value(), nil
+}
+
+// convertToString converts various types to their string representation.
+// Returns (convertedString, true) on success, ("", false) on failure.
+func convertToString(val interface{}) (string, bool) {
+	switch v := val.(type) {
+	case string:
+		return v, true
+	case bool:
+		return strconv.FormatBool(v), true
+	case int:
+		return strconv.Itoa(v), true
+	case int64:
+		return strconv.FormatInt(v, 10), true
+	case float64:
+		// Format floats without decimals as integers for cleaner output
+		if v == float64(int64(v)) {
+			return strconv.FormatInt(int64(v), 10), true
+		}
+		return strconv.FormatFloat(v, 'f', -1, 64), true
+	default:
+		return "", false
+	}
 }

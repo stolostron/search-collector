@@ -6,6 +6,7 @@ import (
 	"github.com/stolostron/search-collector/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
 )
 
@@ -372,6 +373,11 @@ func LoadAndMergeConfigurableCollection() {
 	klog.Info("Loading configurable collection config from cluster")
 
 	dynamicClient := config.GetDynamicClient()
+	loadAndMergeConfigurableCollectionWithClient(dynamicClient)
+}
+
+// loadAndMergeConfigurableCollectionWithClient is a helper function that accepts a dynamic client for testability
+func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interface) {
 	// FUTURE: ACM-20047 watch this for changes and update config dynamically
 	gvr := schema.GroupVersionResource{
 		Group:    "search.open-cluster-management.io",
@@ -406,7 +412,7 @@ func LoadAndMergeConfigurableCollection() {
 	if collectNamespaces, nsFound, _ := unstructuredNested(specMap, "collectNamespaces"); nsFound {
 		if nsMap, ok := collectNamespaces.(map[string]interface{}); ok {
 			if _, selectorFound, _ := unstructuredNested(nsMap, "namespaceSelector"); selectorFound {
-				klog.V(2).Info("namespaceSelector found in collection-config but not yet implemented. Ignoring.")
+				klog.Info("namespaceSelector found in collection-config but not yet implemented. Ignoring.")
 			}
 		}
 	}
@@ -510,12 +516,12 @@ func LoadAndMergeConfigurableCollection() {
 		// Set annotation and condition flags if specified
 		// FUTURE: ACM-30891
 		if collectAnnotations {
-			klog.V(2).Info("collectAnnotations found in collection-config but not yet implemented. Ignoring.")
+			klog.Info("collectAnnotations found in collection-config but not yet implemented. Ignoring.")
 			// resourceConfig.extractAnnotations = true
 		}
 		// FUTURE: ACM-2071
 		if collectConditions {
-			klog.V(2).Info("collectConditions found in collection-config but not yet implemented. Ignoring.")
+			klog.Info("collectConditions found in collection-config but not yet implemented. Ignoring.")
 			// resourceConfig.extractConditions = true
 		}
 
@@ -546,6 +552,7 @@ func LoadAndMergeConfigurableCollection() {
 			extractProp := ExtractProperty{
 				Name:     name,
 				JSONPath: jsonPath,
+				DataType: DataTypeString, // Default to string, matching CRD default
 			}
 
 			if dataTypeOK {

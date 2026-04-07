@@ -403,3 +403,51 @@ func Test_genericResourceFromConfigMapNoLabelsToMatchMatchLabel(t *testing.T) {
 	// Verify that there's no more indexed properties than the common ones
 	assert.Equal(t, 5, len(node.Properties))
 }
+
+func TestConvertToString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected string
+		success  bool
+	}{
+		// String types
+		{"String", "hello", "hello", true},
+		{"Empty String", "", "", true},
+
+		// Boolean types
+		{"Bool True", true, "true", true},
+		{"Bool False", false, "false", true},
+
+		// Integer types
+		{"Int", 42, "42", true},
+		{"Int Negative", -100, "-100", true},
+		{"Int Zero", 0, "0", true},
+		{"Int64", int64(9223372036854775807), "9223372036854775807", true},
+		{"Int64 Negative", int64(-9223372036854775808), "-9223372036854775808", true},
+
+		// Float types
+		{"Float64 Integer Value", 100.0, "100", true},         // Should format as integer
+		{"Float64 With Decimals", 3.14159, "3.14159", true},   // Should format as float
+		{"Float64 Negative", -2.5, "-2.5", true},              // Negative float
+		{"Float64 Zero", 0.0, "0", true},                      // Zero as integer
+		{"Float64 Large Integer", 1000000.0, "1000000", true}, // Large integer value
+		{"Float64 Small Decimal", 0.001, "0.001", true},       // Small decimal
+
+		// Unsupported types
+		{"Nil", nil, "", false},
+		{"Slice", []string{"a", "b"}, "", false},
+		{"Map", map[string]string{"key": "value"}, "", false},
+		{"Struct", struct{ Name string }{Name: "test"}, "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, ok := convertToString(tt.input)
+			assert.Equal(t, tt.success, ok, "Success flag mismatch for %s", tt.name)
+			if tt.success {
+				assert.Equal(t, tt.expected, result, "Result mismatch for %s", tt.name)
+			}
+		})
+	}
+}
