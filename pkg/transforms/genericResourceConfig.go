@@ -408,15 +408,6 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		return
 	}
 
-	// FUTURE: ACM-21531
-	if collectNamespaces, nsFound, _ := unstructuredNested(specMap, "collectNamespaces"); nsFound {
-		if nsMap, ok := collectNamespaces.(map[string]interface{}); ok {
-			if _, selectorFound, _ := unstructuredNested(nsMap, "namespaceSelector"); selectorFound {
-				klog.Info("namespaceSelector found in collection-config but not yet implemented. Ignoring.")
-			}
-		}
-	}
-
 	// get collectionRules from spec
 	collectionRules, rulesFound, _ := unstructuredNested(specMap, "collectionRules")
 	if !rulesFound {
@@ -468,12 +459,6 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 			continue
 		}
 
-		// Extract optional flags
-		// FUTURE: ACM-30891
-		collectAnnotations, _ := ruleMap["collectAnnotations"].(bool)
-		// FUTURE: ACM-2071
-		collectConditions, _ := ruleMap["collectConditions"].(bool)
-
 		// validation webhook should ensure there's not >1 apiGroup.kind
 		// When fields are specified, there should be exactly one kind and one apiGroup
 		if len(kinds) != 1 {
@@ -511,18 +496,6 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 			resourceConfig = ResourceConfig{
 				properties: []ExtractProperty{},
 			}
-		}
-
-		// Set annotation and condition flags if specified
-		// FUTURE: ACM-30891
-		if collectAnnotations {
-			klog.Info("collectAnnotations found in collection-config but not yet implemented. Ignoring.")
-			// resourceConfig.extractAnnotations = true
-		}
-		// FUTURE: ACM-2071
-		if collectConditions {
-			klog.Info("collectConditions found in collection-config but not yet implemented. Ignoring.")
-			// resourceConfig.extractConditions = true
 		}
 
 		// parse and add new fields to resourceConfig

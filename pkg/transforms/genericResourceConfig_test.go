@@ -312,6 +312,29 @@ func TestLoadAndMergeConfigurableCollection_FeatureDisabled(t *testing.T) {
 	assert.Equal(t, originalLen, len(defaultTransformConfig), "Config should not change when feature is disabled")
 }
 
+func TestLoadAndMergeConfigurableCollection_PublicMethodRespectsFeatureFlag(t *testing.T) {
+	// This test verifies the public method actually checks the feature flag
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalPodConfig := defaultTransformConfig["Pod"]
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		defaultTransformConfig["Pod"] = originalPodConfig
+	}()
+
+	// Test with feature DISABLED
+	config.Cfg.FeatureConfigurableCollection = false
+	originalLen := len(defaultTransformConfig)
+
+	// Call the PUBLIC method (not the internal helper)
+	LoadAndMergeConfigurableCollection()
+
+	// Should not have attempted to load anything
+	assert.Equal(t, originalLen, len(defaultTransformConfig), "Public method should respect feature flag when disabled")
+
+	// Test with feature ENABLED would require a real k8s client or more complex mocking
+	// The internal method tests cover the enabled case with fake clients
+}
+
 func TestLoadAndMergeConfigurableCollection_ResourceNotFound(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
@@ -333,45 +356,6 @@ func TestLoadAndMergeConfigurableCollection_ResourceNotFound(t *testing.T) {
 
 	// Verify nothing changed (should log warning but not fail)
 	assert.Equal(t, originalLen, len(defaultTransformConfig), "Config should not change when resource not found")
-}
-
-func TestLoadAndMergeConfigurableCollection_WithNamespaceSelector(t *testing.T) {
-	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
-	originalNamespace := config.Cfg.PodNamespace
-	defer func() {
-		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
-		config.Cfg.PodNamespace = originalNamespace
-	}()
-
-	config.Cfg.FeatureConfigurableCollection = true
-	config.Cfg.PodNamespace = "test-namespace"
-
-	collectionConfig := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
-			"metadata": map[string]interface{}{
-				"name":      "collection-config",
-				"namespace": "test-namespace",
-			},
-			"spec": map[string]interface{}{
-				"collectNamespaces": map[string]interface{}{
-					"namespaceSelector": map[string]interface{}{
-						"include": []interface{}{"open-cluster-management"},
-						"exclude": []interface{}{"closed-cluster-management"},
-					},
-				},
-				"collectionRules": []interface{}{},
-			},
-		},
-	}
-
-	scheme := runtime.NewScheme()
-	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
-
-	// This should just log that namespaceSelector is not implemented
-	// We can't easily assert the log, but we verify it doesn't crash
-	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 }
 
 func TestLoadAndMergeConfigurableCollection_FieldWithoutDataType(t *testing.T) {

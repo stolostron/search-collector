@@ -4,14 +4,15 @@ metadata:
   name: collection-config
   namespace: open-cluster-management
 spec:
-  collectNamespaces:
-    namespaceSelector:
-      include:
-        - "open-cluster-management"
-      exclude:
-        - "closed-cluster-management"
-      matchExpressions: []
-      matchLabels: {}
+  # FUTURE: collectNamespaces is not yet implemented (ACM-21531)
+  # collectNamespaces:
+  #   namespaceSelector:
+  #     include:
+  #       - "open-cluster-management"
+  #     exclude:
+  #       - "closed-cluster-management"
+  #     matchExpressions: []
+  #     matchLabels: {}
   collectionRules:
     # Allow all resources by default
     - action: Include
@@ -50,6 +51,9 @@ spec:
         - name: "searchPGStorage"
           jsonPath: "{.spec.dbStorage.size}"
           type: "DataTypeBytes"
-      collectAnnotations: true
-      collectConditions: true
-      collectAdditionalPrinterColumnsPriority: 0
+      # FUTURE: collectAnnotations not yet implemented (ACM-30891)
+      # collectAnnotations: true
+      # FUTURE: collectConditions not yet implemented (ACM-2071)
+      # collectConditions: true
+      # FUTURE: collectAdditionalPrinterColumnsPriority not yet implemented
+      # collectAdditionalPrinterColumnsPriority: 0
