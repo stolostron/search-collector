@@ -29,13 +29,13 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 	config.Cfg.PodNamespace = "test-namespace"
 
-	// Create a mock CollectionConfig
+	// Create a mock CollectorConfig
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -116,9 +116,9 @@ func TestLoadAndMergeConfigurableCollection_SkipExcludeActions(t *testing.T) {
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -162,9 +162,9 @@ func TestLoadAndMergeConfigurableCollection_SkipIncludeWithoutFields(t *testing.
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -206,9 +206,9 @@ func TestLoadAndMergeConfigurableCollection_InvalidMultipleKinds(t *testing.T) {
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -256,9 +256,9 @@ func TestLoadAndMergeConfigurableCollection_InvalidMultipleApiGroups(t *testing.
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -373,9 +373,9 @@ func TestLoadAndMergeConfigurableCollection_FieldWithoutDataType(t *testing.T) {
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -427,9 +427,9 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -488,13 +488,13 @@ func TestLoadAndMergeConfigurableCollection_MissingSpec(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 	config.Cfg.PodNamespace = "test-namespace"
 
-	// Create a CollectionConfig without spec
+	// Create a CollectorConfig without spec
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			// No spec field
@@ -522,13 +522,13 @@ func TestLoadAndMergeConfigurableCollection_SpecNotMap(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 	config.Cfg.PodNamespace = "test-namespace"
 
-	// Create a CollectionConfig with invalid spec type
+	// Create a CollectorConfig with invalid spec type
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": "not-a-map", // Invalid type
@@ -559,9 +559,9 @@ func TestLoadAndMergeConfigurableCollection_CollectionRulesNotArray(t *testing.T
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -593,9 +593,9 @@ func TestLoadAndMergeConfigurableCollection_RuleNotMap(t *testing.T) {
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -629,9 +629,9 @@ func TestLoadAndMergeConfigurableCollection_MissingResourceSelector(t *testing.T
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -674,9 +674,9 @@ func TestLoadAndMergeConfigurableCollection_EmptyKinds(t *testing.T) {
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -722,9 +722,9 @@ func TestLoadAndMergeConfigurableCollection_EmptyKind(t *testing.T) {
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -772,9 +772,9 @@ func TestLoadAndMergeConfigurableCollection_FieldMissingNameOrJsonPath(t *testin
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectionConfig",
+			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collection-config",
+				"name":      "collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{

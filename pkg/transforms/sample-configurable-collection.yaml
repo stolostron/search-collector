@@ -1,7 +1,7 @@
 apiVersion: search.open-cluster-management.io/v1alpha1
-kind: CollectionConfig
+kind: CollectorConfig
 metadata:
-  name: collection-config
+  name: collector-config
   namespace: open-cluster-management
 spec:
   # FUTURE: collectNamespaces is not yet implemented (ACM-21531)
