@@ -1,15 +1,5 @@
 package transforms
 
-import (
-	"context"
-
-	"github.com/stolostron/search-collector/pkg/config"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/klog/v2"
-)
-
 // Declares a property to extract from a resource using jsonpath.
 type ExtractProperty struct {
 	Name     string   // `json:"name,omitempty"`
@@ -79,7 +69,7 @@ var (
 	}
 )
 
-// Declares properties to extract from the resource by default. Extended by configurable collection CR searchcollectorcustomizableconfig
+// Declares properties to extract from the resource by default. Extended by configurable collection CR collectorconfigs.search.open-cluster-management.io
 var defaultTransformConfig = map[string]ResourceConfig{
 	"ClusterServiceVersion.operators.coreos.com": {
 		properties: []ExtractProperty{
@@ -344,12 +334,15 @@ var defaultTransformConfig = map[string]ResourceConfig{
 }
 
 // Get the properties to extract from a resource.
+// Uses mergedTransformConfig which contains default config merged with CollectorConfig CR customizations.
 func getTransformConfig(group, kind string) (ResourceConfig, bool) {
-	transformConfig := defaultTransformConfig
-
-	// FUTURE: We want to create this dynamically by reading from:
-	// 	  1. ConfigMap where it can be customized by the users.
-	// 	  2. CRD "additionalPrinterColumns" field.
+	// Use mergedTransformConfig which is populated by LoadAndMergeConfigurableCollection
+	// Falls back to defaultTransformConfig if configurable collection is disabled
+	transformConfig := mergedTransformConfig
+	if transformConfig == nil {
+		// Safety fallback if LoadAndMergeConfigurableCollection hasn't been called yet
+		transformConfig = defaultTransformConfig
+	}
 
 	var val ResourceConfig
 	var found bool
@@ -361,203 +354,4 @@ func getTransformConfig(group, kind string) (ResourceConfig, bool) {
 	}
 
 	return val, found
-}
-
-// LoadAndMergeConfigurableCollection loads the CollectorConfig resource from the cluster and merges it with defaultTransformConfig
-func LoadAndMergeConfigurableCollection() {
-	if !config.Cfg.FeatureConfigurableCollection {
-		klog.Info("Configurable collection feature is disabled, skipping custom config load")
-		return
-	}
-
-	klog.Info("Loading configurable collection config from cluster")
-
-	dynamicClient := config.GetDynamicClient()
-	loadAndMergeConfigurableCollectionWithClient(dynamicClient)
-}
-
-// loadAndMergeConfigurableCollectionWithClient is a helper function that accepts a dynamic client for testability
-func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interface) {
-	// FUTURE: ACM-20047 watch this for changes and update config dynamically
-	gvr := schema.GroupVersionResource{
-		Group:    "search.open-cluster-management.io",
-		Version:  "v1alpha1",
-		Resource: "collectorconfigs",
-	}
-
-	resource, err := dynamicClient.Resource(gvr).Namespace(config.Cfg.PodNamespace).
-		Get(context.Background(), "collector-config", metav1.GetOptions{})
-
-	if err != nil {
-		klog.Warningf("Could not load collector-config resource: %v. Using default config only", err)
-		return
-	}
-
-	klog.Info("Found collector-config resource, merging with default config")
-
-	// get spec field from resource
-	spec, specFound, _ := unstructuredNested(resource.Object, "spec")
-	if !specFound {
-		klog.Warning("No spec found in collector-config resource. Using default config only")
-		return
-	}
-
-	specMap, ok := spec.(map[string]interface{})
-	if !ok {
-		klog.Warning("spec is not a map in collector-config resource. Using default config only")
-		return
-	}
-
-	// get collectionRules from spec
-	collectionRules, rulesFound, _ := unstructuredNested(specMap, "collectionRules")
-	if !rulesFound {
-		klog.Info("No collectionRules found in collector-config resource")
-		return
-	}
-
-	rulesArray, ok := collectionRules.([]interface{})
-	if !ok {
-		klog.Warning("collectionRules is not an array in collector-config resource. Using default config only")
-		return
-	}
-
-	// merge each rule from collectionRules with defaultTransformConfig
-	for _, rule := range rulesArray {
-		ruleMap, ok := rule.(map[string]interface{})
-		if !ok {
-			klog.Warning("collectionRules item is not a map, skipping")
-			continue
-		}
-
-		// FUTURE:
-		// Only process Include actions
-		action, _ := ruleMap["action"].(string)
-		if action != "include" {
-			klog.V(2).Infof("Skipping non-include action: %s", action)
-			continue
-		}
-
-		// Only process rules that have fields specified
-		fields, hasFields := ruleMap["fields"].([]interface{})
-		if !hasFields || len(fields) == 0 {
-			klog.V(2).Info("Skipping Include action without fields specified")
-			continue
-		}
-
-		// Extract resourceSelector
-		resourceSelector, hasSelectorMap := ruleMap["resourceSelector"].(map[string]interface{})
-		if !hasSelectorMap {
-			klog.Warning("collectionRules item missing resourceSelector, skipping")
-			continue
-		}
-
-		apiGroups, _ := resourceSelector["apiGroups"].([]interface{})
-		kinds, _ := resourceSelector["kinds"].([]interface{})
-
-		if len(kinds) == 0 {
-			klog.Warning("collectionRules item missing kinds in resourceSelector, skipping")
-			continue
-		}
-
-		// validation webhook should ensure there's not >1 apiGroup.kind
-		// When fields are specified, there should be exactly one kind and one apiGroup
-		if len(kinds) != 1 {
-			klog.Warningf("Include action with fields must have exactly 1 kind, found %d. Skipping rule.", len(kinds))
-			continue
-		}
-
-		if len(apiGroups) != 1 {
-			klog.Warningf("Include action with fields must have exactly 1 apiGroup, found %d. Skipping rule.", len(apiGroups))
-			continue
-		}
-
-		// Extract the single kind
-		kind, ok := kinds[0].(string)
-		if !ok || kind == "" {
-			klog.Warning("Kind is not a valid string, skipping rule")
-			continue
-		}
-
-		// Extract the single apiGroup (empty string "" for core API)
-		apiGroup, ok := apiGroups[0].(string)
-		if !ok {
-			klog.Warning("ApiGroup is not a valid string, skipping rule")
-			continue
-		}
-
-		resourceKey := kind
-		if apiGroup != "" {
-			resourceKey = kind + "." + apiGroup
-		}
-
-		// get existing key for kind.apiGroup resource
-		resourceConfig, exists := defaultTransformConfig[resourceKey]
-		if !exists {
-			resourceConfig = ResourceConfig{
-				properties: []ExtractProperty{},
-			}
-		}
-
-		// parse and add new fields to resourceConfig
-		for _, field := range fields {
-			fieldMap, ok := field.(map[string]interface{})
-			if !ok {
-				continue
-			}
-
-			name, _ := fieldMap["name"].(string)
-			jsonPath, _ := fieldMap["jsonPath"].(string)
-			dataTypeStr, dataTypeOK := fieldMap["type"].(string)
-			//priority, _ := fieldMap["priority"].(string) // FUTURE: use this for additionalPrinterColumns extensions
-
-			if name == "" || jsonPath == "" {
-				klog.Warningf("Field missing name or jsonPath for resource %s, skipping", resourceKey)
-				continue
-			}
-
-			/* TODO: come up with prefix schema before implementation. e.g. The specific configurable collection resource we read from determines the prefix to use
-			user defined: user_myResource
-			grc  defined: grc_thisPolicyThing
-			virt defined: virt_thatVMWhatchamacallit
-			*/
-			name = "user_" + name
-
-			extractProp := ExtractProperty{
-				Name:     name,
-				JSONPath: jsonPath,
-				DataType: DataTypeString, // Default to string, matching CRD default
-			}
-
-			if dataTypeOK {
-				extractProp.DataType = stringToDataType(dataTypeStr)
-			}
-
-			// FUTURE: collision handling with ExtractProperties that already exist in config, the first ExtractProperty
-			// that gets parsed and stored in the node properties wins, the duplicate gets skipped
-			resourceConfig.properties = append(resourceConfig.properties, extractProp)
-			klog.V(2).Infof("Added custom field %s to resource %s", name, resourceKey)
-		}
-
-		// Update the config
-		defaultTransformConfig[resourceKey] = resourceConfig
-		klog.Infof("Merged %d custom fields for resource %s", len(fields), resourceKey)
-	}
-
-	klog.Info("Successfully merged configurable collection config")
-}
-
-// Helper function to safely access nested fields in unstructured data
-func unstructuredNested(obj map[string]interface{}, fields ...string) (interface{}, bool, error) {
-	var val interface{} = obj
-	for _, field := range fields {
-		m, ok := val.(map[string]interface{})
-		if !ok {
-			return nil, false, nil
-		}
-		val, ok = m[field]
-		if !ok {
-			return nil, false, nil
-		}
-	}
-	return val, true, nil
 }

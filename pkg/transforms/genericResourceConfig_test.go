@@ -16,14 +16,11 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 	// Save original config and restore after test
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
-	originalPodConfig := defaultTransformConfig["Pod"]
-	originalSearchConfig := defaultTransformConfig["Search.search.open-cluster-management.io"]
 	defer func() {
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
-		// Restore defaultTransformConfig to original state
-		defaultTransformConfig["Pod"] = originalPodConfig
-		defaultTransformConfig["Search.search.open-cluster-management.io"] = originalSearchConfig
+		// Clear mergedTransformConfig after test
+		mergedTransformConfig = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -84,8 +81,8 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 	// Call the function with the fake client
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	// Verify Pod config was updated
-	podConfig, exists := defaultTransformConfig["Pod"]
+	// Verify Pod config was updated in mergedTransformConfig
+	podConfig, exists := mergedTransformConfig["Pod"]
 	assert.True(t, exists, "Pod config should exist")
 	assert.Equal(t, 2, len(podConfig.properties), "Pod should have 2 custom properties")
 	assert.Equal(t, "user_dnsPolicy", podConfig.properties[0].Name)
@@ -93,8 +90,8 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 	assert.Equal(t, "user_enableServiceLinks", podConfig.properties[1].Name)
 	assert.Equal(t, DataTypeString, podConfig.properties[1].DataType)
 
-	// Verify Search config was updated
-	searchConfig, exists := defaultTransformConfig["Search.search.open-cluster-management.io"]
+	// Verify Search config was updated in mergedTransformConfig
+	searchConfig, exists := mergedTransformConfig["Search.search.open-cluster-management.io"]
 	assert.True(t, exists, "Search config should exist")
 	assert.Equal(t, 1, len(searchConfig.properties), "Search should have 1 custom property")
 	assert.Equal(t, "user_searchPGStorage", searchConfig.properties[0].Name)
@@ -138,13 +135,10 @@ func TestLoadAndMergeConfigurableCollection_SkipExcludeActions(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	// Store original length
-	originalLen := len(defaultTransformConfig)
-
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	// Verify no new entries were added
-	assert.Equal(t, originalLen, len(defaultTransformConfig), "Exclude actions should not modify config")
+	// Verify no custom entries were added - should equal defaultTransformConfig
+	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig), "Exclude actions should not add custom config")
 }
 
 // FUTURE: this should eventually appropriately include when search-collector-config merged
@@ -184,12 +178,12 @@ func TestLoadAndMergeConfigurableCollection_SkipIncludeWithoutFields(t *testing.
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Verify no new entries were added
-	assert.Equal(t, originalLen, len(defaultTransformConfig), "Include actions without fields should not modify config")
+	assert.Equal(t, originalLen, len(mergedTransformConfig), "Include actions without fields should not modify config")
 }
 
 func TestLoadAndMergeConfigurableCollection_InvalidMultipleKinds(t *testing.T) {
@@ -234,12 +228,12 @@ func TestLoadAndMergeConfigurableCollection_InvalidMultipleKinds(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Verify no new entries were added (rule should be skipped)
-	assert.Equal(t, originalLen, len(defaultTransformConfig), "Rules with multiple kinds should be skipped")
+	assert.Equal(t, originalLen, len(mergedTransformConfig), "Rules with multiple kinds should be skipped")
 }
 
 func TestLoadAndMergeConfigurableCollection_InvalidMultipleApiGroups(t *testing.T) {
@@ -284,12 +278,12 @@ func TestLoadAndMergeConfigurableCollection_InvalidMultipleApiGroups(t *testing.
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Verify no new entries were added (rule should be skipped)
-	assert.Equal(t, originalLen, len(defaultTransformConfig), "Rules with multiple apiGroups should be skipped")
+	assert.Equal(t, originalLen, len(mergedTransformConfig), "Rules with multiple apiGroups should be skipped")
 }
 
 func TestLoadAndMergeConfigurableCollection_FeatureDisabled(t *testing.T) {
@@ -304,32 +298,31 @@ func TestLoadAndMergeConfigurableCollection_FeatureDisabled(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Verify nothing changed
-	assert.Equal(t, originalLen, len(defaultTransformConfig), "Config should not change when feature is disabled")
+	assert.Equal(t, originalLen, len(mergedTransformConfig), "Config should not change when feature is disabled")
 }
 
 func TestLoadAndMergeConfigurableCollection_PublicMethodRespectsFeatureFlag(t *testing.T) {
 	// This test verifies the public method actually checks the feature flag
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
-	originalPodConfig := defaultTransformConfig["Pod"]
 	defer func() {
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
-		defaultTransformConfig["Pod"] = originalPodConfig
+		mergedTransformConfig = nil
 	}()
 
 	// Test with feature DISABLED
 	config.Cfg.FeatureConfigurableCollection = false
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 
 	// Call the PUBLIC method (not the internal helper)
 	LoadAndMergeConfigurableCollection()
 
 	// Should not have attempted to load anything
-	assert.Equal(t, originalLen, len(defaultTransformConfig), "Public method should respect feature flag when disabled")
+	assert.Equal(t, originalLen, len(mergedTransformConfig), "Public method should respect feature flag when disabled")
 
 	// Test with feature ENABLED would require a real k8s client or more complex mocking
 	// The internal method tests cover the enabled case with fake clients
@@ -350,12 +343,10 @@ func TestLoadAndMergeConfigurableCollection_ResourceNotFound(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme)
 
-	originalLen := len(defaultTransformConfig)
-
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	// Verify nothing changed (should log warning but not fail)
-	assert.Equal(t, originalLen, len(defaultTransformConfig), "Config should not change when resource not found")
+	// Verify mergedTransformConfig equals defaultTransformConfig (no custom config applied)
+	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig), "Config should equal defaultTransformConfig when resource not found")
 }
 
 func TestLoadAndMergeConfigurableCollection_FieldWithoutDataType(t *testing.T) {
@@ -405,7 +396,7 @@ func TestLoadAndMergeConfigurableCollection_FieldWithoutDataType(t *testing.T) {
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Verify Secret config was updated with default DataType (DataTypeString)
-	secretConfig, exists := defaultTransformConfig["Secret"]
+	secretConfig, exists := mergedTransformConfig["Secret"]
 	assert.True(t, exists, "Secret config should exist")
 	assert.Equal(t, 1, len(secretConfig.properties), "Secret should have 1 custom property")
 	assert.Equal(t, "user_data", secretConfig.properties[0].Name)
@@ -464,7 +455,7 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Verify TestResource config was created with correct DataTypes
-	testResourceConfig, exists := defaultTransformConfig["TestResource.test.io"]
+	testResourceConfig, exists := mergedTransformConfig["TestResource.test.io"]
 	assert.True(t, exists, "TestResource config should exist")
 	assert.Equal(t, 2, len(testResourceConfig.properties), "TestResource should have 2 custom properties")
 
@@ -504,11 +495,10 @@ func TestLoadAndMergeConfigurableCollection_MissingSpec(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	// Should not modify config when spec is missing
-	assert.Equal(t, originalLen, len(defaultTransformConfig))
+	// Should not add custom config when spec is missing, should equal defaultTransformConfig
+	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig))
 }
 
 func TestLoadAndMergeConfigurableCollection_SpecNotMap(t *testing.T) {
@@ -538,11 +528,11 @@ func TestLoadAndMergeConfigurableCollection_SpecNotMap(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Should not modify config when spec is not a map
-	assert.Equal(t, originalLen, len(defaultTransformConfig))
+	assert.Equal(t, originalLen, len(mergedTransformConfig))
 }
 
 func TestLoadAndMergeConfigurableCollection_CollectionRulesNotArray(t *testing.T) {
@@ -573,10 +563,10 @@ func TestLoadAndMergeConfigurableCollection_CollectionRulesNotArray(t *testing.T
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	assert.Equal(t, originalLen, len(defaultTransformConfig))
+	assert.Equal(t, originalLen, len(mergedTransformConfig))
 }
 
 func TestLoadAndMergeConfigurableCollection_RuleNotMap(t *testing.T) {
@@ -609,10 +599,10 @@ func TestLoadAndMergeConfigurableCollection_RuleNotMap(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	assert.Equal(t, originalLen, len(defaultTransformConfig))
+	assert.Equal(t, originalLen, len(mergedTransformConfig))
 }
 
 func TestLoadAndMergeConfigurableCollection_MissingResourceSelector(t *testing.T) {
@@ -654,10 +644,10 @@ func TestLoadAndMergeConfigurableCollection_MissingResourceSelector(t *testing.T
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	assert.Equal(t, originalLen, len(defaultTransformConfig))
+	assert.Equal(t, originalLen, len(mergedTransformConfig))
 }
 
 func TestLoadAndMergeConfigurableCollection_EmptyKinds(t *testing.T) {
@@ -702,10 +692,10 @@ func TestLoadAndMergeConfigurableCollection_EmptyKinds(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	assert.Equal(t, originalLen, len(defaultTransformConfig))
+	assert.Equal(t, originalLen, len(mergedTransformConfig))
 }
 
 func TestLoadAndMergeConfigurableCollection_EmptyKind(t *testing.T) {
@@ -750,11 +740,11 @@ func TestLoadAndMergeConfigurableCollection_EmptyKind(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(defaultTransformConfig)
+	originalLen := len(mergedTransformConfig)
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Should skip rules with empty kind string
-	assert.Equal(t, originalLen, len(defaultTransformConfig))
+	assert.Equal(t, originalLen, len(mergedTransformConfig))
 }
 
 func TestLoadAndMergeConfigurableCollection_FieldMissingNameOrJsonPath(t *testing.T) {
@@ -811,7 +801,7 @@ func TestLoadAndMergeConfigurableCollection_FieldMissingNameOrJsonPath(t *testin
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
 	// Should only add the valid field, skipping the ones with missing name or jsonPath
-	serviceConfig, exists := defaultTransformConfig["Service"]
+	serviceConfig, exists := mergedTransformConfig["Service"]
 	assert.True(t, exists)
 	assert.Equal(t, 1, len(serviceConfig.properties), "Should only have 1 valid field")
 	assert.Equal(t, "user_validField", serviceConfig.properties[0].Name)
