@@ -1,0 +1,14 @@
+knowledge_base:
+  linked_repositories:
+    - repository: "stolostron/search-indexer"
+      instructions: "Receives data from collectors and writes to the database"
+    - repository: "stolostron/search-v2-api"
+      instructions: "Provides the API for the search service. Queries the database. Enforces RBAC."
+    - repository: "stolostron/search-v2-operator"
+      instructions: "Deploys and manages the search service components"
+    - repository: "stolostron/search-e2e-test"
+      instructions: "Tests the search service"
+    - repository: "stolostron/search-mcp-server"
+      instructions: "Provides the MCP server for the search service"
+    - repository: "stolostron/search-postgres"
+      instructions: "Provides the database for the search service"
