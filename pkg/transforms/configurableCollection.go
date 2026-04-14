@@ -26,7 +26,7 @@ func LoadAndMergeConfigurableCollection() {
 		return
 	}
 
-	klog.Info("Loading configurable collection config from cluster")
+	klog.V(1).Info("Loading configurable collection config from cluster")
 
 	dynamicClient := config.GetDynamicClient()
 	loadAndMergeConfigurableCollectionWithClient(dynamicClient)
@@ -45,7 +45,7 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 	}).Namespace(config.Cfg.PodNamespace).Get(context.Background(), "collector-config", metav1.GetOptions{})
 
 	if err != nil {
-		klog.Warningf("Could not load collector-config resource: %v. Using default config only", err)
+		klog.Infof("Could not load collector-config resource: %v. Using default config only", err)
 		return
 	}
 
@@ -56,12 +56,12 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		return
 	}
 
-	klog.Info("Found collector-config resource, merging with default config")
+	klog.V(1).Info("Found collector-config resource, merging with default config")
 
 	// Get collection rules from spec
 	collectionRules := collectorConfig.Spec.CollectionRules
 	if len(collectionRules) == 0 {
-		klog.Info("No collectionRules found in collector-config resource")
+		klog.Warning("No collectionRules found in collector-config resource")
 		return
 	}
 
@@ -150,7 +150,7 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 
 		// Update the merged config (not defaultTransformConfig)
 		mergedTransformConfig[resourceKey] = resourceConfig
-		klog.Infof("Merged %d custom fields for resource %s", len(rule.Fields), resourceKey)
+		klog.V(1).Infof("Merged %d custom fields for resource %s", len(rule.Fields), resourceKey)
 	}
 
 	klog.Info("Successfully merged configurable collection config")

@@ -24,7 +24,7 @@ lint:
 	gosec ./...
 	
 run:
-	GOGC=25 go run main.go --v=2
+	GOGC=25 go run -tags development main.go --v=2
 
 run-race:
 	GOGC=25 go run -race main.go --v=2
