@@ -149,3 +149,59 @@ func getValidationAction(policy map[string]interface{}) string {
 	// "emitWarning" is not collected
 	return ""
 }
+
+// Function to create an edge linking any resource with a Kyverno Policy or ClusterPolicy that generates the resource.
+func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
+	labels, ok := currNode.Properties["label"].(map[string]string)
+	if !ok {
+		return ret
+	}
+
+	if labels["app.kubernetes.io/managed-by"] != "kyverno" || labels["generate.kyverno.io/policy-name"] == "" {
+		return ret
+	}
+
+	// For resources created by kyverno
+	policyName := labels["generate.kyverno.io/policy-name"]
+	policyNamespace := labels["generate.kyverno.io/policy-namespace"]
+	isNamespaced := policyNamespace != ""
+	isLegacy := labels["generate.kyverno.io/rule-name"] != ""
+
+	if !isNamespaced {
+		policyNamespace = "_NONE"
+	}
+
+	var policyKind string
+	switch {
+	case isLegacy && isNamespaced:
+		policyKind = "Policy"
+	case isLegacy && !isNamespaced:
+		policyKind = "ClusterPolicy"
+	case !isLegacy && isNamespaced:
+		policyKind = "NamespacedGeneratingPolicy"
+	case !isLegacy && !isNamespaced:
+		policyKind = "GeneratingPolicy"
+	default:
+		policyKind = "ClusterPolicy"
+	}
+
+	policyNode, ok := ns.ByKindNamespaceName[policyKind][policyNamespace][policyName]
+	if !ok {
+		return ret
+	}
+
+	// Prevent from policy.policy.open-cluster-management.io
+	if policyNode.Properties["apigroup"] != "kyverno.io" && policyNode.Properties["apigroup"] != "policies.kyverno.io" {
+		return ret
+	}
+
+	ret = append(ret, Edge{
+		SourceKind: currNode.Properties["kind"].(string),
+		SourceUID:  currNode.UID,
+		EdgeType:   "generatedBy",
+		DestUID:    policyNode.UID,
+		DestKind:   policyNode.Properties["kind"].(string),
+	})
+
+	return ret
+}

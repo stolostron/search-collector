@@ -105,7 +105,7 @@ func InitConfig() {
 	setDefaultInt(&Cfg.RetryJitterMS, "RETRY_JITTER_MS", DEFAULT_RETRY_JITTER_MS)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) {
+	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) { // #nosec G703
 		// set default to empty string if path does not reslove
 		defaultKubePath = ""
 	}
