@@ -1,0 +1,63 @@
+apiVersion: search.open-cluster-management.io/v1alpha1
+kind: CollectorConfig
+metadata:
+  name: sample-collector-config
+  namespace: open-cluster-management
+spec:
+  # FUTURE: collectNamespaces is not yet implemented (ACM-21531)
+  # collectNamespaces:
+  #   namespaceSelector:
+  #     include:
+  #       - "open-cluster-management"
+  #     exclude:
+  #       - "closed-cluster-management"
+  #     matchExpressions: []
+  #     matchLabels: {}
+  collectionRules:
+    # Allow all resources by default
+    - action: include
+      resourceSelector:
+        apiGroups:
+          - "*"
+        kinds:
+          - "*"
+    # Exclude coordination.k8s.io leases
+    - action: exclude
+      resourceSelector:
+        apiGroups:
+          - "coordination.k8s.io"
+        kinds:
+          - "leases"
+    # Collect additional fields for Pods
+    - action: include
+      resourceSelector:
+        apiGroups:
+          - ""
+        kinds:
+          - "Pod"
+      # Optional: Suffix appended to custom field names in this rule to avoid collisions.
+      # For example, fieldSuffix: "grc" makes "status" become "status.grc".
+      # Defaults to "" (no suffix). This allows different extensions to use different suffixes.
+      # fieldSuffix: "grc"
+      fields:
+        - name: "dnsPolicy"
+          jsonPath: "{.spec.dnsPolicy}"
+        - name: "enableServiceLinks"
+          jsonPath: "{.spec.enableServiceLinks}"
+    # Collect additional fields and metadata for Search resources
+    - action: include
+      resourceSelector:
+        apiGroups:
+          - "search.open-cluster-management.io"
+        kinds:
+          - "Search"
+      fields:
+        - name: "searchPGStorage"
+          jsonPath: "{.spec.dbStorage.size}"
+          type: "bytes"
+      # FUTURE: collectAnnotations not yet implemented (ACM-30891)
+      # collectAnnotations: true
+      # FUTURE: collectConditions not yet implemented (ACM-2071)
+      # collectConditions: true
+      # FUTURE: collectAdditionalPrinterColumnsPriority not yet implemented
+      # collectAdditionalPrinterColumnsPriority: 0

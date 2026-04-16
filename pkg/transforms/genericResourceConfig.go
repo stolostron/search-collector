@@ -27,6 +27,23 @@ const (
 	DataTypeMapString DataType = "mapString"
 )
 
+func stringToDataType(s string) DataType {
+	switch s {
+	case "bytes":
+		return DataTypeBytes
+	case "slice":
+		return DataTypeSlice
+	case "string":
+		return DataTypeString
+	case "number":
+		return DataTypeNumber
+	case "mapString":
+		return DataTypeMapString
+	default:
+		return DataTypeString
+	}
+}
+
 // Declares the properties to extract from a given resource.
 type ResourceConfig struct {
 	properties         []ExtractProperty // `json:"properties,omitempty"`
@@ -52,7 +69,7 @@ var (
 	}
 )
 
-// Declares properties to extract from the resource by default.
+// Declares properties to extract from the resource by default. Extended by configurable collection CR collectorconfigs.search.open-cluster-management.io
 var defaultTransformConfig = map[string]ResourceConfig{
 	"ClusterServiceVersion.operators.coreos.com": {
 		properties: []ExtractProperty{
@@ -317,12 +334,15 @@ var defaultTransformConfig = map[string]ResourceConfig{
 }
 
 // Get the properties to extract from a resource.
+// Uses mergedTransformConfig which contains default config merged with CollectorConfig CR customizations.
 func getTransformConfig(group, kind string) (ResourceConfig, bool) {
-	transformConfig := defaultTransformConfig
-
-	// FUTURE: We want to create this dynamically by reading from:
-	// 	  1. ConfigMap where it can be customized by the users.
-	// 	  2. CRD "additionalPrinterColumns" field.
+	// Use mergedTransformConfig which is populated by LoadAndMergeConfigurableCollection
+	// Falls back to defaultTransformConfig if configurable collection is disabled
+	transformConfig := mergedTransformConfig
+	if transformConfig == nil {
+		// Safety fallback if LoadAndMergeConfigurableCollection hasn't been called yet
+		transformConfig = defaultTransformConfig
+	}
 
 	var val ResourceConfig
 	var found bool
