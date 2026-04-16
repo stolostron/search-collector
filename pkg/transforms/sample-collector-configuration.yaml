@@ -1,7 +1,7 @@
 apiVersion: search.open-cluster-management.io/v1alpha1
 kind: CollectorConfig
 metadata:
-  name: collector-config
+  name: sample-collector-config
   namespace: open-cluster-management
 spec:
   # FUTURE: collectNamespaces is not yet implemented (ACM-21531)
@@ -36,9 +36,9 @@ spec:
         kinds:
           - "Pod"
       # Optional: Suffix appended to custom field names in this rule to avoid collisions.
-      # For example, fieldSuffix: "custom" makes "dnsPolicy" become "dnsPolicy.custom".
-      # Defaults to "" (no suffix). This allows different teams to use different suffixes.
-      # fieldSuffix: "custom"
+      # For example, fieldSuffix: "grc" makes "status" become "status.grc".
+      # Defaults to "" (no suffix). This allows different extensions to use different suffixes.
+      # fieldSuffix: "grc"
       fields:
         - name: "dnsPolicy"
           jsonPath: "{.spec.dnsPolicy}"

@@ -73,13 +73,13 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		// FUTURE: Only Include actions are currently supported
 		// Only process Include actions
 		if rule.Action != v1alpha1.ActionInclude {
-			klog.V(2).Infof("Skipping non-include action. Only \"include\" action supported at this time: %s", rule.Action)
+			klog.Warningf("Skipping collection rule. Only \"include\" action supported at this time: %s", rule.Action)
 			continue
 		}
 
 		// Only process rules that have fields specified
 		if len(rule.Fields) == 0 {
-			klog.V(2).Info("Skipping Include action without fields specified")
+			klog.Warning("Skipping collection rule. Include action without fields specified.")
 			continue
 		}
 
@@ -87,19 +87,19 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		kinds := rule.ResourceSelector.Kinds
 
 		if len(kinds) == 0 {
-			klog.Warning("collectionRules item missing kinds in resourceSelector, skipping")
+			klog.Warning("Skipping collection rule. Item missing kinds in resourceSelector.")
 			continue
 		}
 
 		// validation webhook should ensure there's not >1 apiGroup.kind
 		// When fields are specified, there should be exactly one kind and one apiGroup
 		if len(kinds) != 1 {
-			klog.Warningf("Include action with fields must have exactly 1 kind, found %d. Skipping rule.", len(kinds))
+			klog.Warningf("Skipping collection rule. Include action with fields must have exactly 1 kind, found %d.", len(kinds))
 			continue
 		}
 
 		if len(apiGroups) != 1 {
-			klog.Warningf("Include action with fields must have exactly 1 apiGroup, found %d. Skipping rule.", len(apiGroups))
+			klog.Warningf("Skipping collection rule. Include action with fields must have exactly 1 apiGroup, found %d.", len(apiGroups))
 			continue
 		}
 
@@ -108,7 +108,7 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		apiGroup := apiGroups[0]
 
 		if kind == "" {
-			klog.Warning("Kind is empty, skipping rule")
+			klog.Warning("Skipping collection rule. Kind is empty.")
 			continue
 		}
 
@@ -128,7 +128,7 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		// parse and add new fields to resourceConfig
 		for _, field := range rule.Fields {
 			if field.Name == "" || field.JSONPath == "" {
-				klog.Warningf("Field missing name or jsonPath for resource %s, skipping", resourceKey)
+				klog.Warningf("Skipping collection rule. Field missing name or jsonPath for resource %s.", resourceKey)
 				continue
 			}
 
@@ -149,7 +149,7 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 			}
 
 			if collision {
-				klog.Warningf("Field name '%s' collides with existing property for resource %s. Skipping this field. Built-in field takes precedence. Consider using fieldSuffix in the CollectionRule.", name, resourceKey)
+				klog.Warningf("Skipping collection rule. Field name '%s' collides with existing property for resource %s. Built-in field takes precedence. Consider using fieldSuffix in the CollectionRule.", name, resourceKey)
 				continue
 			}
 
