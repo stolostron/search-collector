@@ -67,6 +67,9 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 
 	// merge each rule from collectionRules with mergedTransformConfig
 	for _, rule := range collectionRules {
+		// Get field suffix for this rule (defaults to empty string)
+		fieldSuffix := rule.FieldSuffix
+
 		// FUTURE: Only Include actions are currently supported
 		// Only process Include actions
 		if rule.Action != v1alpha1.ActionInclude {
@@ -129,12 +132,26 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 				continue
 			}
 
-			/* TODO: come up with prefix schema before implementation. e.g. The specific configurable collection resource we read from determines the prefix to use
-			user defined: user_myResource
-			grc  defined: grc_thisPolicyThing
-			virt defined: virt_thatVMWhatchamacallit
-			*/
-			name := "user_" + field.Name
+			// Apply field suffix (if configured) to avoid collisions
+			// User provides suffix without dot (e.g., "grc"), we prepend the dot to get "field.grc"
+			name := field.Name
+			if fieldSuffix != "" {
+				name = name + "." + fieldSuffix
+			}
+
+			// Check for collision with existing properties in the resource config
+			collision := false
+			for _, existingProp := range resourceConfig.properties {
+				if existingProp.Name == name {
+					collision = true
+					break
+				}
+			}
+
+			if collision {
+				klog.Warningf("Field name '%s' collides with existing property for resource %s. Skipping this field. Built-in field takes precedence. Consider using fieldSuffix in the CollectionRule.", name, resourceKey)
+				continue
+			}
 
 			extractProp := ExtractProperty{
 				Name:     name,
@@ -142,8 +159,6 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 				DataType: dataTypeFromCRD(field.Type),
 			}
 
-			// FUTURE: collision handling with ExtractProperties that already exist in config, the first ExtractProperty
-			// that gets parsed and stored in the node properties wins, the duplicate gets skipped
 			resourceConfig.properties = append(resourceConfig.properties, extractProp)
 			klog.V(2).Infof("Added custom field %s to resource %s", name, resourceKey)
 		}

@@ -85,16 +85,16 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 	podConfig, exists := mergedTransformConfig["Pod"]
 	assert.True(t, exists, "Pod config should exist")
 	assert.Equal(t, 2, len(podConfig.properties), "Pod should have 2 custom properties")
-	assert.Equal(t, "user_dnsPolicy", podConfig.properties[0].Name)
+	assert.Equal(t, "dnsPolicy", podConfig.properties[0].Name)
 	assert.Equal(t, "{.spec.dnsPolicy}", podConfig.properties[0].JSONPath)
-	assert.Equal(t, "user_enableServiceLinks", podConfig.properties[1].Name)
+	assert.Equal(t, "enableServiceLinks", podConfig.properties[1].Name)
 	assert.Equal(t, DataTypeString, podConfig.properties[1].DataType)
 
 	// Verify Search config was updated in mergedTransformConfig
 	searchConfig, exists := mergedTransformConfig["Search.search.open-cluster-management.io"]
 	assert.True(t, exists, "Search config should exist")
 	assert.Equal(t, 1, len(searchConfig.properties), "Search should have 1 custom property")
-	assert.Equal(t, "user_searchPGStorage", searchConfig.properties[0].Name)
+	assert.Equal(t, "searchPGStorage", searchConfig.properties[0].Name)
 	assert.Equal(t, DataTypeBytes, searchConfig.properties[0].DataType)
 }
 
@@ -399,7 +399,7 @@ func TestLoadAndMergeConfigurableCollection_FieldWithoutDataType(t *testing.T) {
 	secretConfig, exists := mergedTransformConfig["Secret"]
 	assert.True(t, exists, "Secret config should exist")
 	assert.Equal(t, 1, len(secretConfig.properties), "Secret should have 1 custom property")
-	assert.Equal(t, "user_data", secretConfig.properties[0].Name)
+	assert.Equal(t, "data", secretConfig.properties[0].Name)
 	assert.Equal(t, DataTypeString, secretConfig.properties[0].DataType, "DataType should default to string when not specified, matching CRD default")
 }
 
@@ -460,11 +460,11 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 	assert.Equal(t, 2, len(testResourceConfig.properties), "TestResource should have 2 custom properties")
 
 	// Verify DataTypeString
-	assert.Equal(t, "user_stringField", testResourceConfig.properties[0].Name)
+	assert.Equal(t, "stringField", testResourceConfig.properties[0].Name)
 	assert.Equal(t, DataTypeString, testResourceConfig.properties[0].DataType)
 
 	// Verify DataTypeNumber
-	assert.Equal(t, "user_numberField", testResourceConfig.properties[1].Name)
+	assert.Equal(t, "numberField", testResourceConfig.properties[1].Name)
 	assert.Equal(t, DataTypeNumber, testResourceConfig.properties[1].DataType)
 }
 
@@ -804,7 +804,206 @@ func TestLoadAndMergeConfigurableCollection_FieldMissingNameOrJsonPath(t *testin
 	serviceConfig, exists := mergedTransformConfig["Service"]
 	assert.True(t, exists)
 	assert.Equal(t, 1, len(serviceConfig.properties), "Should only have 1 valid field")
-	assert.Equal(t, "user_validField", serviceConfig.properties[0].Name)
+	assert.Equal(t, "validField", serviceConfig.properties[0].Name)
+}
+
+func TestLoadAndMergeConfigurableCollection_FieldSuffix(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Create a mock CollectorConfig with fieldSuffix
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fieldSuffix": "grc",
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "status",
+								"jsonPath": "{.status.phase}",
+							},
+							map[string]interface{}{
+								"name":     "customField",
+								"jsonPath": "{.metadata.annotations.custom}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Verify that fieldSuffix was applied: "status" + "." + "grc" = "status.grc"
+	podConfig, exists := mergedTransformConfig["Pod"]
+	assert.True(t, exists, "Pod config should exist")
+	assert.Equal(t, 2, len(podConfig.properties), "Pod should have 2 custom properties")
+	assert.Equal(t, "status.grc", podConfig.properties[0].Name, "Field should have suffix with dot separator")
+	assert.Equal(t, "{.status.phase}", podConfig.properties[0].JSONPath)
+	assert.Equal(t, "customField.grc", podConfig.properties[1].Name, "Field should have suffix with dot separator")
+}
+
+func TestLoadAndMergeConfigurableCollection_EmptyFieldSuffix(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Create a mock CollectorConfig with empty fieldSuffix
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fieldSuffix": "",
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "customField",
+								"jsonPath": "{.metadata.annotations.custom}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Verify that no suffix was applied when fieldSuffix is empty
+	podConfig, exists := mergedTransformConfig["Pod"]
+	assert.True(t, exists, "Pod config should exist")
+	assert.Equal(t, 1, len(podConfig.properties), "Pod should have 1 custom property")
+	assert.Equal(t, "customField", podConfig.properties[0].Name, "Field should not have suffix when fieldSuffix is empty")
+}
+
+func TestLoadAndMergeConfigurableCollection_FieldCollisionWithSuffix(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Create two rules for the same resource:
+	// Rule 1: Adds "status.grc" field
+	// Rule 2: Tries to add "status" with suffix "grc" (which becomes "status.grc") - should be skipped due to collision
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					// First rule: add status.grc
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fieldSuffix": "grc",
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "status",
+								"jsonPath": "{.status.phase}",
+							},
+						},
+					},
+					// Second rule: try to add status.grc again (should be skipped)
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fieldSuffix": "grc",
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "status",
+								"jsonPath": "{.different.status}",
+							},
+							map[string]interface{}{
+								"name":     "validField",
+								"jsonPath": "{.metadata.annotations.valid}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Verify collision detection:
+	// - First rule adds "status.grc"
+	// - Second rule tries to add "status.grc" again (collision, skipped) and "validField.grc" (no collision, added)
+	podConfig, exists := mergedTransformConfig["Pod"]
+	assert.True(t, exists, "Pod config should exist")
+	assert.Equal(t, 2, len(podConfig.properties), "Pod should have 2 properties (status.grc from rule 1, validField.grc from rule 2)")
+
+	// Verify the first status.grc is from rule 1 (not overwritten by rule 2)
+	assert.Equal(t, "status.grc", podConfig.properties[0].Name)
+	assert.Equal(t, "{.status.phase}", podConfig.properties[0].JSONPath, "Should keep the first rule's jsonPath, not the second")
+
+	// Verify validField.grc was added from rule 2
+	assert.Equal(t, "validField.grc", podConfig.properties[1].Name)
+	assert.Equal(t, "{.metadata.annotations.valid}", podConfig.properties[1].JSONPath)
 }
 
 func TestStringToDataType(t *testing.T) {

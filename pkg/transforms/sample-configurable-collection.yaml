@@ -35,6 +35,10 @@ spec:
           - ""
         kinds:
           - "Pod"
+      # Optional: Suffix appended to custom field names in this rule to avoid collisions.
+      # For example, fieldSuffix: "custom" makes "dnsPolicy" become "dnsPolicy.custom".
+      # Defaults to "" (no suffix). This allows different teams to use different suffixes.
+      # fieldSuffix: "custom"
       fields:
         - name: "dnsPolicy"
           jsonPath: "{.spec.dnsPolicy}"

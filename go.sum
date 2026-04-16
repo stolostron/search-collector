@@ -439,8 +439,8 @@ github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0 
 github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0/go.mod h1:LpFJFL0NWlVrR7fdjX/ObbXfrjYbcSj/CuMu8lmjD6s=
 github.com/stolostron/multicloud-operators-placementrule v1.2.4-1-20220311-8eedb3f h1:9ROHVCzeeiIBWOPnvYyiGXeTvowUKnxApyAdj24526M=
 github.com/stolostron/multicloud-operators-placementrule v1.2.4-1-20220311-8eedb3f/go.mod h1:uMTaz9cMLe5N+yJ/PpHPtSOdlBFB00WdxAW+K5TfkVw=
-github.com/stolostron/search-v2-operator v0.0.0-20260409195334-b9cde8fad7f6 h1:sAS24jbyJWEqGvbWsDNy1G1YUyQ05n7SLoWEZ7mlfG8=
-github.com/stolostron/search-v2-operator v0.0.0-20260409195334-b9cde8fad7f6/go.mod h1:qroKXjU0Em7HL0wuXM7DtBaAw59vKo2oBQYPtuuUxdM=
+github.com/stolostron/search-v2-operator v0.0.0-20260415203933-81b1842d7866 h1:fZ9Qz9E6LPIShjaAaXbp20LwsNo1yyQsM713Fdr+1YY=
+github.com/stolostron/search-v2-operator v0.0.0-20260415203933-81b1842d7866/go.mod h1:qroKXjU0Em7HL0wuXM7DtBaAw59vKo2oBQYPtuuUxdM=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=

@@ -32,7 +32,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20221125104750-d4b167d5fae6
-	github.com/stolostron/search-v2-operator v0.0.0-20260409195334-b9cde8fad7f6
+	github.com/stolostron/search-v2-operator v0.0.0-20260415203933-81b1842d7866
 	sigs.k8s.io/cluster-api v1.10.4
 )
 
