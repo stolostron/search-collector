@@ -598,7 +598,7 @@ func syncInformers(
 			informer.UpdateFunc = createInformerUpdateHandler(gvr)
 			informer.DeleteFunc = informerDeleteHandler
 
-			informerCtx, informerCancel := context.WithCancel(ctx)
+			informerCtx, informerCancel := context.WithCancel(ctx) // #nosec G118
 			stoppers[gvr] = informerCancel
 			go informer.Run(informerCtx)
 			// This wait serializes the informer initialization. It is needed to avoid a

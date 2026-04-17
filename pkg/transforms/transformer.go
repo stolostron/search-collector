@@ -426,6 +426,14 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			trans = VapBindingResourceBuilder(event.Resource)
 
 		case [2]string{"Policy", "kyverno.io"}, [2]string{"ClusterPolicy", "kyverno.io"}:
+			fallthrough
+		case [2]string{"NamespacedGeneratingPolicy", "policies.kyverno.io"}, [2]string{"GeneratingPolicy", "policies.kyverno.io"}:
+			fallthrough
+		case [2]string{"NamespacedImageValidatingPolicy", "policies.kyverno.io"}, [2]string{"ImageValidatingPolicy", "policies.kyverno.io"}:
+			fallthrough
+		case [2]string{"NamespacedMutatingPolicy", "policies.kyverno.io"}, [2]string{"MutatingPolicy", "policies.kyverno.io"}:
+			fallthrough
+		case [2]string{"NamespacedValidatingPolicy", "policies.kyverno.io"}, [2]string{"ValidatingPolicy", "policies.kyverno.io"}:
 			trans = KyvernoPolicyResourceBuilder(event.Resource)
 
 		default:

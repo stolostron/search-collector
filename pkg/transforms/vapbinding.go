@@ -43,7 +43,7 @@ func VapBindingResourceBuilder(v *unstructured.Unstructured) *VapBindingResource
 			break
 		}
 
-		if strings.HasPrefix(o.APIVersion, "kyverno.io") {
+		if strings.HasPrefix(o.APIVersion, "kyverno.io") || strings.HasPrefix(o.APIVersion, "policies.kyverno.io") {
 			node.Properties["_ownedBy"] = "Kyverno"
 
 			break

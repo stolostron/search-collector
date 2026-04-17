@@ -1,0 +1,207 @@
+{
+    "apiVersion": "wgpolicyk8s.io/v1beta1",
+    "kind": "PolicyReport",
+    "metadata": {
+        "creationTimestamp": "2024-10-24T18:49:30Z",
+        "generation": 1,
+        "labels": {
+            "app.kubernetes.io/managed-by": "kyverno"
+        },
+        "name": "019db722-d5c7-4085-9778-d8ebc33e95f2",
+        "namespace": "open-cluster-management-agent-addon",
+        "ownerReferences": [
+            {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": "test-pod",
+                "uid": "019db722-d5c7-4085-9778-d8ebc33e95f2"
+            }
+        ],
+        "resourceVersion": "1539107",
+        "uid": "53cd0e2e-34e0-454b-a0c4-e4dbf9306470"
+    },
+    "results": [
+        {
+            "category": "Kubecost",
+            "message": "validation error: The owner label is required. rule require-kubecost-labels failed at path /metadata/labels/owner/",
+            "policy": "require-kubecost-labels",
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "KyvernoValidatingPolicy",
+            "properties": {
+                "created_at": "2024-10-24T18:49:30Z",
+                "details": "Pod is missing the owner label",
+                "total_risk": "2",
+                "reason": "Label validation failed",
+                "resolution": "Add the owner label to the Pod"
+            },
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "mutation rule 'add-app-label' passed.",
+            "policy": "add-app-labels",
+            "result": "pass",
+            "rule": "add-app-label",
+            "scored": true,
+            "severity": "medium",
+            "source": "KyvernoMutatingPolicy",
+            "properties": {
+                "created_at": "2024-10-24T18:49:30Z",
+                "details": "App label added to Pod",
+                "total_risk": "1",
+                "reason": "Mutation applied successfully",
+                "resolution": "Mutation passed"
+            },
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "Image Validation",
+            "message": "image verification error: image 'nginx:latest' failed signature verification. rule verify-image failed at path /spec/containers/0/image/",
+            "policy": "verify-image-signature",
+            "result": "fail",
+            "rule": "verify-image",
+            "scored": true,
+            "severity": "high",
+            "source": "KyvernoImageValidatingPolicy",
+            "properties": {
+                "created_at": "2024-10-24T18:49:30Z",
+                "details": "Image signature verification failed",
+                "total_risk": "3",
+                "reason": "Image signature not found",
+                "resolution": "Use a signed image or add exception"
+            },
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "RBAC",
+            "message": "generate rule 'create-network-policy' passed.",
+            "policy": "generate-network-policy",
+            "result": "pass",
+            "rule": "create-network-policy",
+            "scored": true,
+            "severity": "low",
+        "source": "KyvernoGeneratingPolicy",
+            "properties": {
+                "created_at": "2024-10-24T18:49:30Z",
+                "details": "Network policy generated for Pod",
+                "total_risk": "1",
+                "reason": "Policy generation applied successfully",
+                "resolution": "Generation passed"
+            },
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "validation error: The owner label is required. rule require-kubecost-labels failed at path /metadata/labels/owner/",
+            "policy": "test-namespace/require-kubecost-labels",
+            "result": "fail",
+            "rule": "require-labels",
+            "scored": true,
+            "severity": "medium",
+            "source": "KyvernoValidatingPolicy",
+            "properties": {
+                "created_at": "2024-10-24T18:49:30Z",
+                "details": "Pod is missing the owner label",
+                "total_risk": "2",
+                "reason": "Label validation failed",
+                "resolution": "Add the owner label to the Pod"
+            },
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "Kubecost",
+            "message": "mutation rule 'add-app-label' passed.",
+            "policy": "test-namespace/add-app-labels",
+            "result": "pass",
+            "rule": "add-app-label",
+            "scored": true,
+            "severity": "medium",
+            "source": "KyvernoMutatingPolicy",
+            "properties": {
+                "created_at": "2024-10-24T18:49:30Z",
+                "details": "App label added to Pod",
+                "total_risk": "1",
+                "reason": "Mutation applied successfully",
+                "resolution": "Mutation passed"
+            },
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "Image Validation",
+            "message": "image verification error: image 'nginx:latest' failed signature verification. rule verify-image failed at path /spec/containers/0/image/",
+            "policy": "test-namespace/verify-image-signature",
+            "result": "fail",
+            "rule": "verify-image",
+            "scored": true,
+            "severity": "high",
+            "source": "KyvernoImageValidatingPolicy",
+            "properties": {
+                "created_at": "2024-10-24T18:49:30Z",
+                "details": "Image signature verification failed",
+                "total_risk": "3",
+                "reason": "Image signature not found",
+                "resolution": "Use a signed image or add exception"
+            },
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        },
+        {
+            "category": "RBAC",
+            "message": "generate rule 'create-network-policy' passed.",
+            "policy": "test-namespace/generate-network-policy",
+            "result": "pass",
+            "rule": "create-network-policy",
+            "scored": true,
+            "severity": "low",
+            "source": "KyvernoGeneratingPolicy",
+            "properties": {
+                "created_at": "2024-10-24T18:49:30Z",
+                "details": "Network policy generated for Pod",
+                "total_risk": "1",
+                "reason": "Policy generation applied successfully",
+                "resolution": "Generation passed"
+            },
+            "timestamp": {
+                "nanos": 0,
+                "seconds": 1729797680
+            }
+        }
+    ],
+    "scope": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "test-pod",
+        "namespace": "open-cluster-management-agent-addon",
+        "uid": "019db722-d5c7-4085-9778-d8ebc33e95f2"
+    },
+    "summary": {
+        "error": 0,
+        "fail": 4,
+        "pass": 4,
+        "skip": 0,
+        "warn": 0
+    }
+}
