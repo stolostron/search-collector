@@ -155,48 +155,33 @@ func (r *Reconciler) Diff() Diff {
 		newEdges = r.incrementalEdges()
 	}
 
-	// TODO combine the following 2 loops?
-
-	// Find elements that are in both new and old, and delete them from previous. After this, only the edges
-	// to be deleted will remain in previous.
-	// TODO shortcut this by checking whether one of the src/dest doesn't exist any more
-	// (could delete the whole map in the case of srcUID missing)
+	// Edges added: present in newEdges but absent from previousEdges.
 	for srcUID, destMap := range newEdges {
 		for destUID, newEdge := range destMap {
-			// If it's present in this loop it's obviously in the new set, so check the old.
-			if _, ok := r.previousEdges[srcUID][destUID]; ok {
-				delete(r.previousEdges[srcUID], destUID)
-			} else { // If it's in the new and NOT the old, it's an edge that's been added
+			if _, ok := r.previousEdges[srcUID][destUID]; !ok {
 				ret.AddEdges = append(ret.AddEdges, newEdge)
 			}
 		}
 	}
 
-	// Now go back through the remains of the previous and coerce to slice of edges to be deleted
+	// Edges deleted: present in previousEdges but absent from newEdges, and whose source/dest
+	// node is not already in ret.DeleteNodes (the indexer removes edges automatically when a
+	// node is deleted, so we only need to send explicit DeleteEdges for orphaned edges).
 	for srcUID, destMap := range r.previousEdges {
-		srcDeleted := false // flag to check if the sourceNode is in ret.DeleteNodes
 		for destUID, oldEdge := range destMap {
-			destDeleted := false // flag to check if the destNode is in ret.DeleteNodes
-			// Loop through ret.DeleteNodes and check if the source or destination nodes are up for delete.
-			// Since the associated edges gets deleted automatically when the node is deleted,
-			// we won't add the edges to ret.DeleteEdges
+			if _, ok := newEdges[srcUID][destUID]; ok {
+				continue // edge still exists
+			}
+			srcDeleted, destDeleted := false, false
 			for _, delNode := range ret.DeleteNodes {
 				if srcUID == delNode.UID {
-					// If srcUID is in ret.DeleteNodes, delete the whole sourceUID map from previousEdges and break
-					delete(r.previousEdges, srcUID)
 					srcDeleted = true
 					break
 				} else if destUID == delNode.UID {
-					// If the srcUID is in ret.DeleteNodes, delete the edge from previousEdges
-					delete(r.previousEdges[srcUID], destUID)
 					destDeleted = true
 				}
 			}
-			if srcDeleted {
-				break //break out of the inner for loop since the whole sourceUID map is already deleted
-			}
 			if !srcDeleted && !destDeleted {
-				//Add the edge to be deleted only if the source and destination nodes are not in ret.DeleteNodes
 				ret.DeleteEdges = append(ret.DeleteEdges, oldEdge)
 			}
 		}
@@ -263,26 +248,64 @@ func (r *Reconciler) incrementalEdges() map[string]map[string]tr.Edge {
 		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
 	}
 
-	// Deep-copy previousEdges as the starting point so we don't mutate the stored state.
+	// Start with shallow references to every bucket in previousEdges. Buckets are deep-copied
+	// the first time they are modified (copy-on-write), so r.previousEdges is never mutated.
+	// This avoids the O(|currentEdges|) full deep-copy and only pays for the buckets touched
+	// by diffNodes — typically O(|diffNodes|) in the common case.
 	newEdges := make(map[string]map[string]tr.Edge, len(r.previousEdges))
 	for srcUID, destMap := range r.previousEdges {
-		newEdges[srcUID] = make(map[string]tr.Edge, len(destMap))
-		for destUID, edge := range destMap {
-			newEdges[srcUID][destUID] = edge
+		newEdges[srcUID] = destMap // shallow reference
+	}
+
+	// Track which buckets have already been independently copied.
+	cloned := make(map[string]bool, len(r.diffNodes))
+
+	// ensureCloned deep-copies a bucket on its first write so we never modify a shared reference.
+	ensureCloned := func(srcUID string) {
+		if cloned[srcUID] {
+			return
+		}
+		if existing, ok := newEdges[srcUID]; ok {
+			copied := make(map[string]tr.Edge, len(existing))
+			for k, v := range existing {
+				copied[k] = v
+			}
+			newEdges[srcUID] = copied
+		}
+		cloned[srcUID] = true
+	}
+
+	// Apply Application-first ordering from diffNodes, matching allEdges() behavior.
+	// This ensures _hostingApplication metadata is populated before Subscription edges are built
+	// when both Application and Subscription nodes are updated in the same diff cycle.
+	var appUIDs, otherUIDs []string
+	for uid, ne := range r.diffNodes {
+		if kind, _ := ne.Properties["kind"].(string); kind == "Application" { //nolint:staticcheck // "could remove embedded field 'Node' from selector"
+			appUIDs = append(appUIDs, uid)
+		} else {
+			otherUIDs = append(otherUIDs, uid)
 		}
 	}
 
-	for uid, ne := range r.diffNodes {
-		// Remove all outgoing edges FROM this node; they will be re-added below if the node still exists.
+	for _, uid := range append(appUIDs, otherUIDs...) {
+		ne := r.diffNodes[uid]
+
+		// Remove outgoing edges FROM this node; it will be recomputed below or is being deleted.
 		delete(newEdges, uid)
+		cloned[uid] = true // bucket is gone; any new writes will create a fresh map
 
 		switch ne.Operation {
 		case tr.Delete:
-			// Remove all incoming edges TO this deleted node from every source.
-			for srcUID := range newEdges {
+			// Remove all incoming edges TO this deleted node from every source bucket.
+			for srcUID, destMap := range newEdges {
+				if _, ok := destMap[uid]; !ok {
+					continue
+				}
+				ensureCloned(srcUID)
 				delete(newEdges[srcUID], uid)
 				if len(newEdges[srcUID]) == 0 {
 					delete(newEdges, srcUID)
+					delete(cloned, srcUID)
 				}
 			}
 		default: // Create or Update
@@ -292,6 +315,9 @@ func (r *Reconciler) incrementalEdges() map[string]map[string]tr.Edge {
 				for _, edge := range edges {
 					if _, ok := newEdges[edge.SourceUID]; !ok {
 						newEdges[edge.SourceUID] = make(map[string]tr.Edge)
+						cloned[edge.SourceUID] = true
+					} else {
+						ensureCloned(edge.SourceUID)
 					}
 					newEdges[edge.SourceUID][edge.DestUID] = edge
 				}
