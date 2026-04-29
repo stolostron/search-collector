@@ -26,15 +26,15 @@ import (
 
 // Out of box defaults
 const (
-	COLLECTOR_API_VERSION      = "2.15.0"
-	DEFAULT_AGGREGATOR_URL     = "https://localhost:3010" // this will be deprecated in the future
-	DEFAULT_AGGREGATOR_HOST    = "https://localhost"
-	DEFAULT_AGGREGATOR_PORT    = "3010"
-	DEFAULT_CLUSTER_NAME       = "local-cluster"
-	DEFAULT_POD_NAMESPACE      = "open-cluster-management"
+	COLLECTOR_API_VERSION       = "2.15.0"
+	DEFAULT_AGGREGATOR_URL      = "https://localhost:3010" // this will be deprecated in the future
+	DEFAULT_AGGREGATOR_HOST     = "https://localhost"
+	DEFAULT_AGGREGATOR_PORT     = "3010"
+	DEFAULT_CLUSTER_NAME        = "local-cluster"
+	DEFAULT_POD_NAMESPACE       = "open-cluster-management"
 	DEFAULT_HEARTBEAT_MS        = 300000 // 5 min
 	DEFAULT_MAX_BACKOFF_MS      = 600000 // 10 min
-	DEFAULT_REDISCOVER_RATE_MS  = 120000 // 2 min
+	DEFAULT_REDISCOVER_RATE_MS  = 60000  // 1 min
 	DEFAULT_REPORT_RATE_MS      = 5000   // 5 seconds
 	DEFAULT_RETRY_JITTER_MS     = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE        = "production"
@@ -60,6 +60,7 @@ type Config struct {
 	KubeConfig                    string       `env:"KUBECONFIG"`                      // Local kubeconfig path
 	MaxBackoffMS                  int          `env:"MAX_BACKOFF_MS"`                  // Maximum backoff in ms to wait after error
 	PodNamespace                  string       `env:"POD_NAMESPACE"`                   // The namespace of this pod
+	RediscoverRateMS              int          `env:"REDISCOVER_RATE_MS"`              // Interval(ms) between CRD discovery syncs
 	RetryJitterMS                 int          `env:"RETRY_JITTER_MS"`                 // Random jitter added to backoff wait.
 	ReportRateMS                  int          `env:"REPORT_RATE_MS"`                  // Interval(ms) to send changes to the aggregator
 	RuntimeMode                   string       `env:"RUNTIME_MODE"`                    // Running mode (development or production)
@@ -105,6 +106,7 @@ func InitConfig() {
 	setDefaultInt(&Cfg.EdgeResyncRateMS, "EDGE_RESYNC_RATE_MS", DEFAULT_EDGE_RESYNC_RATE_MS)
 	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
 	setDefaultInt(&Cfg.MaxBackoffMS, "MAX_BACKOFF_MS", DEFAULT_MAX_BACKOFF_MS)
+	setDefaultInt(&Cfg.RediscoverRateMS, "REDISCOVER_RATE_MS", DEFAULT_REDISCOVER_RATE_MS)
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 	setDefaultInt(&Cfg.RetryJitterMS, "RETRY_JITTER_MS", DEFAULT_RETRY_JITTER_MS)
 
