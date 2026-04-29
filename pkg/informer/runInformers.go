@@ -511,7 +511,7 @@ func RunInformers(
 	close(initialized)
 
 	lastSynced := time.Now()
-	minBetweenSyncs := 5 * time.Second
+	minBetweenSyncs := time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond
 
 	// Keep the informers synchronized when CRDs are added or deleted in the cluster.
 	for {
@@ -536,7 +536,8 @@ func RunInformers(
 			return
 		}
 
-		// Add up to a 5 second delay to account for things such as a new operator adding multiple CRDs.
+		// Enforce a minimum delay between syncs (configurable via REDISCOVER_RATE_MS, default 60s)
+		// to avoid excessive API server calls when multiple CRDs are added or deleted in quick succession.
 		sinceLastSync := time.Since(lastSynced)
 
 		if sinceLastSync < minBetweenSyncs {
