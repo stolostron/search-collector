@@ -32,12 +32,13 @@ const (
 	DEFAULT_AGGREGATOR_PORT    = "3010"
 	DEFAULT_CLUSTER_NAME       = "local-cluster"
 	DEFAULT_POD_NAMESPACE      = "open-cluster-management"
-	DEFAULT_HEARTBEAT_MS       = 300000 // 5 min
-	DEFAULT_MAX_BACKOFF_MS     = 600000 // 10 min
-	DEFAULT_REDISCOVER_RATE_MS = 120000 // 2 min
-	DEFAULT_REPORT_RATE_MS     = 5000   // 5 seconds
-	DEFAULT_RETRY_JITTER_MS    = 5000   // 5 seconds
-	DEFAULT_RUNTIME_MODE       = "production"
+	DEFAULT_HEARTBEAT_MS        = 300000 // 5 min
+	DEFAULT_MAX_BACKOFF_MS      = 600000 // 10 min
+	DEFAULT_REDISCOVER_RATE_MS  = 120000 // 2 min
+	DEFAULT_REPORT_RATE_MS      = 5000   // 5 seconds
+	DEFAULT_RETRY_JITTER_MS     = 5000   // 5 seconds
+	DEFAULT_RUNTIME_MODE        = "production"
+	DEFAULT_EDGE_RESYNC_RATE_MS = 60000 // 1 min
 )
 
 // Configuration options for the search-collector.
@@ -52,6 +53,7 @@ type Config struct {
 	CollectStatusConditions       bool         `env:"COLLECT_STATUS_CONDITIONS"`       // Collect all status condition types and values if present
 	ClusterName                   string       `env:"CLUSTER_NAME"`                    // The name of of the cluster where this pod is running
 	DeployedInHub                 bool         `env:"DEPLOYED_IN_HUB"`                 // Tracks if deployed in the Hub or Managed cluster
+	EdgeResyncRateMS              int          `env:"EDGE_RESYNC_RATE_MS"`             // Interval(ms) for full edge recomputation to catch missed incremental edges
 	FeatureConfigurableCollection bool         `env:"FEATURE_CONFIGURABLE_COLLECTION"` // Enable configurable collection feature to extend transforms config
 	HeartbeatMS                   int          `env:"HEARTBEAT_MS"`                    // Interval(ms) to send empty payload to ensure connection
 	HTTPTimeout                   int          `env:"HTTP_TIMEOUT"`                    // Timeout for http server connections. Default: 5 min
@@ -100,6 +102,7 @@ func InitConfig() {
 		setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
 	}
 
+	setDefaultInt(&Cfg.EdgeResyncRateMS, "EDGE_RESYNC_RATE_MS", DEFAULT_EDGE_RESYNC_RATE_MS)
 	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
 	setDefaultInt(&Cfg.MaxBackoffMS, "MAX_BACKOFF_MS", DEFAULT_MAX_BACKOFF_MS)
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)

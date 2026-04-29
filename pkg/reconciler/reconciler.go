@@ -14,8 +14,10 @@ package reconciler
 import (
 	"reflect"
 	"sync"
+	"time"
 
 	lru "github.com/golang/groupcache/lru"
+	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stolostron/search-collector/pkg/metrics"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 	"k8s.io/klog/v2"
@@ -82,6 +84,8 @@ type Reconciler struct {
 	previousEdges map[string]map[string]tr.Edge // Keyed by source then dest so we can quickly compare the new list
 	totalEdges    int                           // Save the total count as we build to avoid looping when needed
 
+	lastFullEdgeSync int64 // Unix timestamp of the last full allEdges() call within Diff()
+
 	Input       chan tr.NodeEvent
 	mutex       sync.Mutex // Used to protect currentState and diffState as they are accessed by multiple goroutines
 	purgedNodes *lru.Cache // Tracks deleted nodes, so the reconciler can prevent out of order processing of events
@@ -135,8 +139,21 @@ func (r *Reconciler) Diff() Diff {
 		}
 	}
 
-	// Fill out edges
-	newEdges := r.allEdges()
+	// Hybrid edge computation: use incrementalEdges() every diff cycle for CPU efficiency,
+	// and fall back to allEdges() periodically (EDGE_RESYNC_RATE_MS, default 60s) to catch
+	// edges that the incremental approach misses — for example, a Service whose selector
+	// matches a Pod whose labels were updated, where the Service is not in diffNodes.
+	// Missed edges are corrected within one resync interval; only the delta is sent to the
+	// indexer (no ClearAll / complete payload).
+	var newEdges map[string]map[string]tr.Edge
+	edgeResyncInterval := int64(config.Cfg.EdgeResyncRateMS / 1000)
+	if time.Now().Unix()-r.lastFullEdgeSync >= edgeResyncInterval {
+		klog.V(4).Info("Periodic full edge recomputation to catch any missed incremental edges.")
+		newEdges = r.allEdges()
+		r.lastFullEdgeSync = time.Now().Unix()
+	} else {
+		newEdges = r.incrementalEdges()
+	}
 
 	// TODO combine the following 2 loops?
 
@@ -229,6 +246,66 @@ func (r *Reconciler) Complete() CompleteState {
 	ret.TotalNodes = len(r.currentNodes)
 	ret.TotalEdges = r.totalEdges
 	return ret
+}
+
+// incrementalEdges builds an updated edge map by starting from previousEdges and recomputing
+// edges only for nodes in diffNodes. This is O(|diffNodes|) instead of O(N) for a full
+// recomputation, making it suitable for the Diff() hot path between periodic full resyncs.
+//
+// Trade-off: edges from unchanged nodes that reference a node whose properties changed
+// (e.g. a Service whose selector now matches a Pod with updated labels) will not be updated
+// until the next periodic allEdges() call (controlled by EDGE_RESYNC_RATE_MS, default 60s).
+func (r *Reconciler) incrementalEdges() map[string]map[string]tr.Edge {
+	klog.V(4).Info("Reconciler is updating edges incrementally for changed nodes.")
+
+	ns := tr.NodeStore{
+		ByUID:               r.currentNodes,
+		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
+	}
+
+	// Deep-copy previousEdges as the starting point so we don't mutate the stored state.
+	newEdges := make(map[string]map[string]tr.Edge, len(r.previousEdges))
+	for srcUID, destMap := range r.previousEdges {
+		newEdges[srcUID] = make(map[string]tr.Edge, len(destMap))
+		for destUID, edge := range destMap {
+			newEdges[srcUID][destUID] = edge
+		}
+	}
+
+	for uid, ne := range r.diffNodes {
+		// Remove all outgoing edges FROM this node; they will be re-added below if the node still exists.
+		delete(newEdges, uid)
+
+		switch ne.Operation {
+		case tr.Delete:
+			// Remove all incoming edges TO this deleted node from every source.
+			for srcUID := range newEdges {
+				delete(newEdges[srcUID], uid)
+				if len(newEdges[srcUID]) == 0 {
+					delete(newEdges, srcUID)
+				}
+			}
+		default: // Create or Update
+			if edgeFunc, ok := r.edgeFuncs[uid]; ok {
+				edges := edgeFunc(ns)
+				edges = append(edges, tr.CommonEdges(uid, ns)...)
+				for _, edge := range edges {
+					if _, ok := newEdges[edge.SourceUID]; !ok {
+						newEdges[edge.SourceUID] = make(map[string]tr.Edge)
+					}
+					newEdges[edge.SourceUID][edge.DestUID] = edge
+				}
+			}
+		}
+	}
+
+	totalEdges := 0
+	for _, destMap := range newEdges {
+		totalEdges += len(destMap)
+	}
+	r.totalEdges = totalEdges
+
+	return newEdges
 }
 
 // Builds all edges for all the nodes.
