@@ -511,7 +511,7 @@ func RunInformers(
 	close(initialized)
 
 	lastSynced := time.Now()
-	minBetweenSyncs := 5 * time.Second
+	minBetweenSyncs := time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond
 
 	// Keep the informers synchronized when CRDs are added or deleted in the cluster.
 	for {
