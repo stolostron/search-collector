@@ -5,17 +5,18 @@ package informer
 
 import (
 	"context"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
 	"github.com/stolostron/search-collector/pkg/config"
+	"github.com/stolostron/search-v2-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 )
 
 // GenericInformer ...
@@ -68,10 +69,12 @@ func (inform *GenericInformer) Run(ctx context.Context) {
 				inform.client = config.GetDynamicClient()
 			}
 
-			err := inform.listAndResync()
+			collectNamespaces := getCollectNamespaces()
+
+			err := inform.listAndResync(collectNamespaces)
 			if err == nil {
 				inform.initialized.Store(true)
-				inform.watch(ctx.Done())
+				inform.watch(ctx.Done(), collectNamespaces)
 			}
 		}
 	}
@@ -89,9 +92,110 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 	}
 }
 
+// getCollectNamespaces resolves the CollectorConfig namespaceSelector to a flat list of namespace names.
+// Follows the config-policy-controller pattern: labels first, then include globs, then exclude globs.
+func getCollectNamespaces() map[string]bool {
+	if !config.Cfg.FeatureConfigurableCollection {
+		return nil
+	}
+
+	unstructuredConfig, err := config.GetDynamicClient().Resource(schema.GroupVersionResource{
+		Group:    "search.open-cluster-management.io",
+		Version:  "v1alpha1",
+		Resource: "collectorconfigs",
+	}).Namespace(config.Cfg.PodNamespace).Get(context.Background(), "collector-config", metav1.GetOptions{})
+	if err != nil {
+		klog.Infof("Could not load collector-config resource: %v. Using default config only.", err)
+		return nil
+	}
+
+	var collectorConfig v1alpha1.CollectorConfig
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredConfig.Object, &collectorConfig); err != nil {
+		klog.Warningf("Could not convert collector-config to typed object: %v. Using default config only.", err)
+		return nil
+	}
+
+	// No collectNamespaces or namespaceSelector configured — collect everything
+	if collectorConfig.Spec.CollectNamespaces == nil || collectorConfig.Spec.CollectNamespaces.NamespaceSelector == nil {
+		return nil
+	}
+	nsSelector := collectorConfig.Spec.CollectNamespaces.NamespaceSelector
+
+	// Nothing specified — collect everything
+	if len(nsSelector.Include) == 0 && len(nsSelector.Exclude) == 0 &&
+		len(nsSelector.MatchLabels) == 0 && len(nsSelector.MatchExpressions) == 0 {
+		return nil
+	}
+
+	// Build a label selector from matchLabels and matchExpressions
+	labelSelector := ""
+	if len(nsSelector.MatchLabels) > 0 || len(nsSelector.MatchExpressions) > 0 {
+		ls := &metav1.LabelSelector{
+			MatchLabels:      nsSelector.MatchLabels,
+			MatchExpressions: nsSelector.MatchExpressions,
+		}
+		selector, err := metav1.LabelSelectorAsSelector(ls)
+		if err != nil {
+			klog.Warningf("Error parsing namespace label selector: %v. Skipping label filtering.", err)
+		} else {
+			labelSelector = selector.String()
+		}
+	}
+
+	// List namespaces filtered by labels
+	kubeClient := config.GetKubeClient(config.GetKubeConfig())
+	nsList, err := kubeClient.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		klog.Warningf("Error listing namespaces: %v. Skipping namespace filtering.", err)
+		return nil
+	}
+
+	// Apply include/exclude filepath globs
+	result := make(map[string]bool, 0)
+	for _, ns := range nsList.Items {
+		name := ns.Name
+
+		// Include filter: if include list is specified, namespace must match at least one pattern
+		if len(nsSelector.Include) > 0 {
+			matched := false
+			for _, pattern := range nsSelector.Include {
+				if ok, _ := filepath.Match(pattern, name); ok {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				continue
+			}
+		}
+
+		// Exclude filter: if namespace matches any exclude pattern, skip it
+		if len(nsSelector.Exclude) > 0 {
+			excluded := false
+			for _, pattern := range nsSelector.Exclude {
+				if ok, _ := filepath.Match(pattern, name); ok {
+					excluded = true
+					break
+				}
+			}
+			if excluded {
+				continue
+			}
+		}
+
+		// Add namespace to map that met labels, expressions, includes, and excludes
+		result[name] = true
+	}
+
+	klog.V(3).Infof("Resolved collectNamespaces to %d namespaces: %v", len(result), result)
+	return result
+}
+
 // List current resources and fires ADDED events. Then sync the current state with the previous
 // state and delete any resources that are still in our cache, but no longer exist in the cluster.
-func (inform *GenericInformer) listAndResync() error {
+func (inform *GenericInformer) listAndResync(collectNamespaces map[string]bool) error {
 
 	// Keep track of new resources added to consolidate against the previous state.
 	newResourceIndex := make(map[string]string)
@@ -107,8 +211,12 @@ func (inform *GenericInformer) listAndResync() error {
 			return listError
 		}
 
-		// Add all resources.
+		// Add all resources filtered by namespace
 		for i := range resources.Items {
+			if !isNamespaceAllowed(collectNamespaces, resources.Items[i].GetNamespace()) {
+				continue
+			}
+
 			klog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
 				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 			inform.AddFunc(&resources.Items[i])
@@ -140,7 +248,7 @@ func (inform *GenericInformer) listAndResync() error {
 }
 
 // Watch resources and process events.
-func (inform *GenericInformer) watch(stopper <-chan struct{}) {
+func (inform *GenericInformer) watch(stopper <-chan struct{}, collectNamespaces map[string]bool) {
 	watch, watchError := inform.client.Resource(inform.gvr).Watch(context.TODO(), metav1.ListOptions{})
 	if watchError != nil {
 		klog.Warningf("Error watching resources for %s.  Error: %s", inform.gvr.String(), watchError)
@@ -171,6 +279,11 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 						inform.gvr.Resource)
 					continue
 				}
+
+				if !isNamespaceAllowed(collectNamespaces, obj.GetNamespace()) {
+					continue
+				}
+
 				inform.AddFunc(obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
@@ -183,6 +296,10 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 
+				if !isNamespaceAllowed(collectNamespaces, obj.GetNamespace()) {
+					continue
+				}
+
 				inform.UpdateFunc(nil, obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
@@ -192,6 +309,10 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 				if !ok {
 					klog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event",
 						inform.gvr.Resource)
+					continue
+				}
+
+				if !isNamespaceAllowed(collectNamespaces, obj.GetNamespace()) {
 					continue
 				}
 
@@ -221,4 +342,13 @@ func (inform *GenericInformer) WaitUntilInitialized(timeout time.Duration) {
 		}
 		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
+}
+
+func isNamespaceAllowed(allowedNSMap map[string]bool, namespace string) bool {
+	if !config.Cfg.FeatureConfigurableCollection {
+		return true
+	}
+
+	_, ok := allowedNSMap[namespace]
+	return ok
 }
