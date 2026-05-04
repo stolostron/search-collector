@@ -370,6 +370,10 @@ func isNamespaceAllowed(allowedNSMap map[string]bool, namespace string) bool {
 		return true
 	}
 
+	if allowedNSMap == nil { // error in processing allowedNamespaceMap: collect everywhere
+		return true
+	}
+
 	_, ok := allowedNSMap[namespace]
 	return ok
 }

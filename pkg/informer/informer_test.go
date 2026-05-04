@@ -5,6 +5,7 @@ package informer
 
 import (
 	"context"
+	"github.com/stolostron/search-collector/pkg/config"
 	"testing"
 	"time"
 
@@ -532,21 +533,82 @@ func TestFilterBySelectorsThenGlobs(t *testing.T) {
 
 func TestFilterByEmptySelectors(t *testing.T) {
 	// Given: a list of namespaces: [foo, bar, baz] with no filters
-	namespaceList := &corev1.NamespaceList{
-		Items: []corev1.Namespace{
-			{ObjectMeta: v1.ObjectMeta{Name: "foo"}},
-			{ObjectMeta: v1.ObjectMeta{Name: "bar"}},
-			{ObjectMeta: v1.ObjectMeta{Name: "baz"}},
-		},
-	}
+	fc := fakeClient.NewSimpleClientset(
+		&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "foo"}},
+		&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "bar"}},
+		&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "baz"}},
+	)
 	namespaceSelector := &v1alpha1.NamespaceSelector{}
 
 	// When: we filter on namespaceList
-	result := filterByGlobs(namespaceList, namespaceSelector)
+	interim, err := filterBySelectors(fc, namespaceSelector)
+	result := filterByGlobs(interim, namespaceSelector)
 
 	// Then: foo, bar, and baz remain
+	assert.NoError(t, err)
 	assert.Equal(t, 3, len(result))
 	assert.Equal(t, true, result["foo"])
 	assert.Equal(t, true, result["bar"])
 	assert.Equal(t, true, result["baz"])
+}
+
+// Feature flag disabled: allow everything regardless of map contents.
+func TestIsNamespaceAllowed_FeatureDisabled(t *testing.T) {
+	original := config.Cfg.FeatureConfigurableCollection
+	defer func() { config.Cfg.FeatureConfigurableCollection = original }()
+	config.Cfg.FeatureConfigurableCollection = false
+
+	assert.True(t, isNamespaceAllowed(nil, "any-ns"))
+	assert.True(t, isNamespaceAllowed(map[string]bool{}, "any-ns"))
+	assert.True(t, isNamespaceAllowed(map[string]bool{"other": true}, "any-ns"))
+}
+
+// Nil map means no filter was configured: allow all namespaces.
+func TestIsNamespaceAllowed_NilMap(t *testing.T) {
+	original := config.Cfg.FeatureConfigurableCollection
+	defer func() { config.Cfg.FeatureConfigurableCollection = original }()
+	config.Cfg.FeatureConfigurableCollection = true
+
+	assert.True(t, isNamespaceAllowed(nil, "any-ns"))
+}
+
+// Empty map means selector matched zero namespaces: block everything.
+func TestIsNamespaceAllowed_EmptyMap(t *testing.T) {
+	original := config.Cfg.FeatureConfigurableCollection
+	defer func() { config.Cfg.FeatureConfigurableCollection = original }()
+	config.Cfg.FeatureConfigurableCollection = true
+
+	assert.False(t, isNamespaceAllowed(map[string]bool{}, "any-ns"))
+}
+
+// Cluster-scoped resources (empty namespace) always pass.
+func TestIsNamespaceAllowed_ClusterScoped(t *testing.T) {
+	original := config.Cfg.FeatureConfigurableCollection
+	defer func() { config.Cfg.FeatureConfigurableCollection = original }()
+	config.Cfg.FeatureConfigurableCollection = true
+
+	assert.True(t, isNamespaceAllowed(map[string]bool{"ns1": true}, ""))
+	assert.True(t, isNamespaceAllowed(map[string]bool{}, ""))
+}
+
+// Namespace in the allowed map passes.
+func TestIsNamespaceAllowed_Allowed(t *testing.T) {
+	original := config.Cfg.FeatureConfigurableCollection
+	defer func() { config.Cfg.FeatureConfigurableCollection = original }()
+	config.Cfg.FeatureConfigurableCollection = true
+
+	allowed := map[string]bool{"ns1": true, "ns2": true}
+	assert.True(t, isNamespaceAllowed(allowed, "ns1"))
+	assert.True(t, isNamespaceAllowed(allowed, "ns2"))
+}
+
+// Namespace not in the allowed map is blocked.
+func TestIsNamespaceAllowed_NotAllowed(t *testing.T) {
+	original := config.Cfg.FeatureConfigurableCollection
+	defer func() { config.Cfg.FeatureConfigurableCollection = original }()
+	config.Cfg.FeatureConfigurableCollection = true
+
+	allowed := map[string]bool{"ns1": true}
+	assert.False(t, isNamespaceAllowed(allowed, "ns2"))
+	assert.False(t, isNamespaceAllowed(allowed, "kube-system"))
 }
