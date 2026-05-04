@@ -11,11 +11,13 @@ import (
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stolostron/search-v2-operator/api/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
 
@@ -92,41 +94,7 @@ func newUnstructured(kind, uid string) *unstructured.Unstructured {
 	}
 }
 
-// getCollectNamespaces resolves the CollectorConfig namespaceSelector to a flat list of namespace names.
-// Follows the config-policy-controller pattern: labels first, then include globs, then exclude globs.
-func getCollectNamespaces() map[string]bool {
-	if !config.Cfg.FeatureConfigurableCollection {
-		return nil
-	}
-
-	unstructuredConfig, err := config.GetDynamicClient().Resource(schema.GroupVersionResource{
-		Group:    "search.open-cluster-management.io",
-		Version:  "v1alpha1",
-		Resource: "collectorconfigs",
-	}).Namespace(config.Cfg.PodNamespace).Get(context.Background(), "collector-config", metav1.GetOptions{})
-	if err != nil {
-		klog.Infof("Could not load collector-config resource: %v. Using default config only.", err)
-		return nil
-	}
-
-	var collectorConfig v1alpha1.CollectorConfig
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredConfig.Object, &collectorConfig); err != nil {
-		klog.Warningf("Could not convert collector-config to typed object: %v. Using default config only.", err)
-		return nil
-	}
-
-	// No collectNamespaces or namespaceSelector configured — collect everything
-	if collectorConfig.Spec.CollectNamespaces == nil || collectorConfig.Spec.CollectNamespaces.NamespaceSelector == nil {
-		return nil
-	}
-	nsSelector := collectorConfig.Spec.CollectNamespaces.NamespaceSelector
-
-	// Nothing specified — collect everything
-	if len(nsSelector.Include) == 0 && len(nsSelector.Exclude) == 0 &&
-		len(nsSelector.MatchLabels) == 0 && len(nsSelector.MatchExpressions) == 0 {
-		return nil
-	}
-
+func filterBySelectors(kubeClient kubernetes.Interface, nsSelector *v1alpha1.NamespaceSelector) (*v1.NamespaceList, error) {
 	// Build a label selector from matchLabels and matchExpressions
 	labelSelector := ""
 	if len(nsSelector.MatchLabels) > 0 || len(nsSelector.MatchExpressions) > 0 {
@@ -143,16 +111,18 @@ func getCollectNamespaces() map[string]bool {
 	}
 
 	// List namespaces filtered by labels
-	kubeClient := config.GetKubeClient(config.GetKubeConfig())
 	nsList, err := kubeClient.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
 		klog.Warningf("Error listing namespaces: %v. Skipping namespace filtering.", err)
-		return nil
+		return nil, nil
 	}
 
-	// Apply include/exclude filepath globs
+	return nsList, nil
+}
+
+func filterByGlobs(nsList *v1.NamespaceList, nsSelector *v1alpha1.NamespaceSelector) map[string]bool {
 	result := make(map[string]bool, 0)
 	for _, ns := range nsList.Items {
 		name := ns.Name
@@ -188,6 +158,53 @@ func getCollectNamespaces() map[string]bool {
 		// Add namespace to map that met labels, expressions, includes, and excludes
 		result[name] = true
 	}
+	return result
+}
+
+// getCollectNamespaces resolves the CollectorConfig namespaceSelector to a flat list of namespace names.
+// Follows the config-policy-controller pattern: labels first, then include globs, then exclude globs.
+func getCollectNamespaces() map[string]bool {
+	if !config.Cfg.FeatureConfigurableCollection {
+		return nil
+	}
+
+	unstructuredConfig, err := config.GetDynamicClient().Resource(schema.GroupVersionResource{
+		Group:    "search.open-cluster-management.io",
+		Version:  "v1alpha1",
+		Resource: "collectorconfigs",
+	}).Namespace(config.Cfg.PodNamespace).Get(context.Background(), "collector-config", metav1.GetOptions{})
+	if err != nil {
+		klog.Infof("Could not load collector-config resource: %v. Using default config only.", err)
+		return nil
+	}
+
+	var collectorConfig v1alpha1.CollectorConfig
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredConfig.Object, &collectorConfig); err != nil {
+		klog.Warningf("Could not convert collector-config to typed object: %v. Using default config only.", err)
+		return nil
+	}
+
+	// No collectNamespaces or namespaceSelector configured — collect everywhere
+	if collectorConfig.Spec.CollectNamespaces == nil || collectorConfig.Spec.CollectNamespaces.NamespaceSelector == nil {
+		return nil
+	}
+	nsSelector := collectorConfig.Spec.CollectNamespaces.NamespaceSelector
+
+	// Nothing specified — collect everywhere
+	if len(nsSelector.Include) == 0 && len(nsSelector.Exclude) == 0 &&
+		len(nsSelector.MatchLabels) == 0 && len(nsSelector.MatchExpressions) == 0 {
+		return nil
+	}
+
+	// List namespaces filtered by labelSelectors and matchExpressions
+	nsList, err := filterBySelectors(config.GetKubeClient(config.GetKubeConfig()), nsSelector)
+	if err != nil {
+		klog.Warningf("Error listing namespaces: %v. Skipping namespace filtering.", err)
+		return nil
+	}
+
+	// Filter namespaces by include and exclude namespace globs
+	result := filterByGlobs(nsList, nsSelector)
 
 	klog.V(3).Infof("Resolved collectNamespaces to %d namespaces: %v", len(result), result)
 	return result
