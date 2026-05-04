@@ -116,7 +116,7 @@ func filterBySelectors(kubeClient kubernetes.Interface, nsSelector *v1alpha1.Nam
 	})
 	if err != nil {
 		klog.Warningf("Error listing namespaces: %v. Skipping namespace filtering.", err)
-		return nil, nil
+		return nil, err
 	}
 
 	return nsList, nil
@@ -363,6 +363,10 @@ func (inform *GenericInformer) WaitUntilInitialized(timeout time.Duration) {
 
 func isNamespaceAllowed(allowedNSMap map[string]bool, namespace string) bool {
 	if !config.Cfg.FeatureConfigurableCollection {
+		return true
+	}
+
+	if namespace == "" { // cluster-scoped resources don't have namespace
 		return true
 	}
 

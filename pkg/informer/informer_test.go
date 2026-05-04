@@ -293,7 +293,7 @@ func TestFilterByGlobsIncludeNoExclude(t *testing.T) {
 	result := filterByGlobs(namespaceList, namespaceSelector)
 
 	// Then: foo remains
-	assert.Equal(t, len(result), 1)
+	assert.Equal(t, 1, len(result))
 	assert.Equal(t, true, result["foo"])
 }
 
@@ -315,7 +315,7 @@ func TestFilterByGlobsExcludeNoInclude(t *testing.T) {
 	result := filterByGlobs(namespaceList, namespaceSelector)
 
 	// Then: bar remains
-	assert.Equal(t, len(result), 1)
+	assert.Equal(t, 1, len(result))
 	assert.Equal(t, true, result["bar"])
 }
 
@@ -337,7 +337,7 @@ func TestFilterByGlobsIncludeMatchExclude(t *testing.T) {
 	result := filterByGlobs(namespaceList, namespaceSelector)
 
 	// Then: no namespaces to collect
-	assert.Equal(t, len(result), 0)
+	assert.Equal(t, 0, len(result))
 }
 
 func TestFilterByGlobsIncludeExclude(t *testing.T) {
@@ -358,7 +358,7 @@ func TestFilterByGlobsIncludeExclude(t *testing.T) {
 	result := filterByGlobs(namespaceList, namespaceSelector)
 
 	// Then: foo remains
-	assert.Equal(t, len(result), 1)
+	assert.Equal(t, 1, len(result))
 	assert.Equal(t, true, result["foo"])
 }
 
@@ -381,7 +381,7 @@ func TestFilterByGlobsIncludeWildcardNoExclude(t *testing.T) {
 	result := filterByGlobs(namespaceList, namespaceSelector)
 
 	// Then: bar and baz remain
-	assert.Equal(t, len(result), 2)
+	assert.Equal(t, 2, len(result))
 	assert.Equal(t, true, result["bar"])
 	assert.Equal(t, true, result["baz"])
 }
@@ -405,7 +405,7 @@ func TestFilterByGlobsExcludeWildcardNoInclude(t *testing.T) {
 	result := filterByGlobs(namespaceList, namespaceSelector)
 
 	// Then: foo
-	assert.Equal(t, len(result), 1)
+	assert.Equal(t, 1, len(result))
 	assert.Equal(t, true, result["foo"])
 }
 
@@ -528,4 +528,25 @@ func TestFilterBySelectorsThenGlobs(t *testing.T) {
 	assert.Equal(t, 2, len(result))
 	assert.Equal(t, true, result["dev-app"])
 	assert.Equal(t, true, result["dev-app-2"])
+}
+
+func TestFilterByEmptySelectors(t *testing.T) {
+	// Given: a list of namespaces: [foo, bar, baz] with no filters
+	namespaceList := &corev1.NamespaceList{
+		Items: []corev1.Namespace{
+			{ObjectMeta: v1.ObjectMeta{Name: "foo"}},
+			{ObjectMeta: v1.ObjectMeta{Name: "bar"}},
+			{ObjectMeta: v1.ObjectMeta{Name: "baz"}},
+		},
+	}
+	namespaceSelector := &v1alpha1.NamespaceSelector{}
+
+	// When: we filter on namespaceList
+	result := filterByGlobs(namespaceList, namespaceSelector)
+
+	// Then: foo, bar, and baz remain
+	assert.Equal(t, 3, len(result))
+	assert.Equal(t, true, result["foo"])
+	assert.Equal(t, true, result["bar"])
+	assert.Equal(t, true, result["baz"])
 }
