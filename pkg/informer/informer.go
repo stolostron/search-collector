@@ -6,6 +6,7 @@ package informer
 import (
 	"context"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -20,6 +21,36 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
+
+type namespaceCache struct {
+	mu        sync.RWMutex
+	allowed   map[string]bool
+	expiresAt time.Time
+	ttl       time.Duration
+}
+
+// get returns the cached namespace map, refreshing it if the TTL has expired.
+func (c *namespaceCache) get() map[string]bool {
+	c.mu.RLock()
+	if time.Now().Before(c.expiresAt) {
+		defer c.mu.RUnlock()
+		return c.allowed
+	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	// Double-check: another goroutine may have refreshed while we waited for the write lock.
+	if time.Now().Before(c.expiresAt) {
+		return c.allowed
+	}
+
+	c.allowed = resolveCollectNamespaces()
+	c.expiresAt = time.Now().Add(c.ttl)
+	return c.allowed
+}
+
+var nsCache = &namespaceCache{ttl: 2 * time.Minute}
 
 // GenericInformer ...
 type GenericInformer struct {
@@ -71,7 +102,7 @@ func (inform *GenericInformer) Run(ctx context.Context) {
 				inform.client = config.GetDynamicClient()
 			}
 
-			collectNamespaces := getCollectNamespaces()
+			collectNamespaces := nsCache.get()
 
 			err := inform.listAndResync(collectNamespaces)
 			if err == nil {
@@ -171,9 +202,9 @@ func filterByGlobs(nsList *v1.NamespaceList, nsSelector *v1alpha1.NamespaceSelec
 	return result
 }
 
-// getCollectNamespaces resolves the CollectorConfig namespaceSelector to a flat list of namespace names.
-// Follows the config-policy-controller pattern: labels first, then include globs, then exclude globs.
-func getCollectNamespaces() map[string]bool {
+// resolveCollectNamespaces fetches the CollectorConfig and resolves the namespaceSelector
+// to a flat map of allowed namespace names. Called by nsCache.get() when the TTL expires.
+func resolveCollectNamespaces() map[string]bool {
 	if !config.Cfg.FeatureConfigurableCollection {
 		return nil
 	}
