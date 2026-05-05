@@ -10,12 +10,10 @@ import (
 
 	"github.com/stolostron/search-collector/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 )
 
 // GenericInformer ...
@@ -107,8 +105,12 @@ func (inform *GenericInformer) listAndResync() error {
 			return listError
 		}
 
-		// Add all resources.
+		// Add all resources filtered by namespace
 		for i := range resources.Items {
+			if !isNamespaceAllowed(resources.Items[i].GetNamespace()) {
+				continue
+			}
+
 			klog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
 				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 			inform.AddFunc(&resources.Items[i])
@@ -171,8 +173,18 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 						inform.gvr.Resource)
 					continue
 				}
+
+				if !isNamespaceAllowed(obj.GetNamespace()) {
+					continue
+				}
+
 				inform.AddFunc(obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
+
+				// Namespace changes affect which resources pass the namespace filter.
+				if inform.gvr.Resource == "namespaces" {
+					nsFilterCache.invalidate()
+				}
 
 			case "MODIFIED":
 				klog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
@@ -183,8 +195,17 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 
+				if !isNamespaceAllowed(obj.GetNamespace()) {
+					continue
+				}
+
 				inform.UpdateFunc(nil, obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
+
+				// Label changes on namespaces can affect label selector results.
+				if inform.gvr.Resource == "namespaces" {
+					nsFilterCache.invalidate()
+				}
 
 			case "DELETED":
 				klog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
@@ -195,8 +216,17 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 
+				if !isNamespaceAllowed(obj.GetNamespace()) {
+					continue
+				}
+
 				inform.DeleteFunc(obj)
 				delete(inform.resourceIndex, string(obj.GetUID()))
+
+				// Namespace deletion affects the allowed namespace set.
+				if inform.gvr.Resource == "namespaces" {
+					nsFilterCache.invalidate()
+				}
 
 			case "ERROR":
 				klog.V(2).Infof("Received ERROR event. Ending listAndWatch() for %s event: %s", inform.gvr.String(), event)
