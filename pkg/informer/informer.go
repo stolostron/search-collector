@@ -131,7 +131,12 @@ func filterByGlobs(nsList *v1.NamespaceList, nsSelector *v1alpha1.NamespaceSelec
 		if len(nsSelector.Include) > 0 {
 			matched := false
 			for _, pattern := range nsSelector.Include {
-				if ok, _ := filepath.Match(pattern, name); ok {
+				ok, err := filepath.Match(pattern, name)
+				if err != nil {
+					klog.Warningf("Invalid include glob pattern %q: %v", pattern, err)
+					continue
+				}
+				if ok {
 					matched = true
 					break
 				}
@@ -145,7 +150,12 @@ func filterByGlobs(nsList *v1.NamespaceList, nsSelector *v1alpha1.NamespaceSelec
 		if len(nsSelector.Exclude) > 0 {
 			excluded := false
 			for _, pattern := range nsSelector.Exclude {
-				if ok, _ := filepath.Match(pattern, name); ok {
+				ok, err := filepath.Match(pattern, name)
+				if err != nil {
+					klog.Warningf("Invalid exclude glob pattern %q: %v", pattern, err)
+					continue
+				}
+				if ok {
 					excluded = true
 					break
 				}
