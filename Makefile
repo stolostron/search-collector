@@ -21,6 +21,7 @@ lint:
 	GOPATH=$(go env GOPATH)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "${GOPATH}/bin" v2.4.0
 	CGO_ENABLED=1 GOGC=25 golangci-lint run --timeout=3m
+	curl -sSfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b "${GOPATH}/bin" v2.22.4
 	gosec ./...
 	
 run:
