@@ -1,0 +1,34 @@
+# Copyright Contributors to the Open Cluster Management project
+
+FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:v1.25.8 AS builder
+
+WORKDIR /go/src/github.com/stolostron/search-collector
+COPY . .
+RUN go mod vendor
+RUN CGO_ENABLED=1 GOGC=25 GOEXPERIMENT=strictfipsruntime go build -trimpath -o main main.go
+
+FROM registry-proxy.engineering.redhat.com/ubi9/ubi-minimal:latest
+
+COPY --from=builder /go/src/github.com/stolostron/search-collector/main /bin/main
+
+ENV VCS_REF="$VCS_REF" \
+    USER_UID=1001 \
+    GOGC=25
+
+USER ${USER_UID}
+ENTRYPOINT ["/bin/main"]
+
+ARG ACM_VERSION=${ACM_VERSION}
+
+LABEL com.redhat.component="acm-search-collector-container" \
+      url="https://github.com/stolostron/search-collector" \
+      description="Search collector service" \
+      maintainer="acm-contact@redhat.com" \
+      name="rhacm2/search-collector-rhel9" \
+      org.label-schema.license="Red Hat Advanced Cluster Management for Kubernetes EULA" \
+      org.label-schema.schema-version="1.0" \
+      summary="Search collector service" \
+      io.k8s.display-name="Search collector" \
+      io.k8s.description="Search collector service" \
+      io.openshift.tags="data,images" \
+      cpe="cpe:/a:redhat:acm:${ACM_VERSION}::el9"
