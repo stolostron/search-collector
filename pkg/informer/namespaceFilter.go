@@ -47,17 +47,18 @@ func (c *namespaceFilterCache) get() map[string]bool {
 	return c.allowed
 }
 
-// invalidate forces the next get() call to refresh the cache.
-func (c *namespaceFilterCache) invalidate() {
+// regenerate recomputes the namespace filter cache and resets TTL
+func (c *namespaceFilterCache) regenerate() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.expiresAt = time.Time{} // zero time is always before now
+	c.allowed = resolveCollectNamespaces()
+	c.expiresAt = time.Now().Add(time.Duration(config.Cfg.NSFilterCacheTTLMS) * time.Millisecond)
 }
 
 var nsFilterCache = &namespaceFilterCache{}
 
 // isNamespaceAllowed checks whether a resource in the given namespace should be collected.
-func isNamespaceAllowed(namespace string) bool {
+func (c *namespaceFilterCache) isNamespaceAllowed(namespace string) bool {
 	if !config.Cfg.FeatureConfigurableCollection {
 		return true
 	}
@@ -66,7 +67,9 @@ func isNamespaceAllowed(namespace string) bool {
 		return true
 	}
 
-	allowedNSMap := nsFilterCache.get()
+	allowedNSMap := c.get()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if allowedNSMap == nil { // error in processing allowedNamespaceMap: collect everywhere
 		return true
 	}
@@ -155,7 +158,11 @@ func filterByGlobs(nsList *v1.NamespaceList, nsSelector *v1alpha1.NamespaceSelec
 }
 
 // resolveCollectNamespaces fetches the CollectorConfig and resolves the namespaceSelector
-// to a flat map of allowed namespace names. Called by nsCache.get() when the cache has expired.
+// to a flat map of allowed namespace names. Called by nsFilterCache.get() when the cache has expired.
+// three-step process:
+// 1. build a selector that ANDs matchLabels and matchExpressions, returning set of all namespaces that match
+// 2. check if include list namespaces are in the list, and if so,
+// 3. check if they should then be removed via the excludes list
 func resolveCollectNamespaces() map[string]bool {
 	if !config.Cfg.FeatureConfigurableCollection {
 		return nil

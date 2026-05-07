@@ -308,13 +308,13 @@ func TestIsNamespaceAllowed_FeatureDisabled(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = false
 
 	defer setNSFilterCache(nil)()
-	assert.True(t, isNamespaceAllowed("any-ns"))
+	assert.True(t, nsFilterCache.isNamespaceAllowed("any-ns"))
 
 	defer setNSFilterCache(map[string]bool{})()
-	assert.True(t, isNamespaceAllowed("any-ns"))
+	assert.True(t, nsFilterCache.isNamespaceAllowed("any-ns"))
 
 	defer setNSFilterCache(map[string]bool{"other": true})()
-	assert.True(t, isNamespaceAllowed("any-ns"))
+	assert.True(t, nsFilterCache.isNamespaceAllowed("any-ns"))
 }
 
 // Nil map means no filter was configured: allow all namespaces.
@@ -324,7 +324,7 @@ func TestIsNamespaceAllowed_NilMap(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 
 	defer setNSFilterCache(nil)()
-	assert.True(t, isNamespaceAllowed("any-ns"))
+	assert.True(t, nsFilterCache.isNamespaceAllowed("any-ns"))
 }
 
 // Empty map means selector matched zero namespaces: block everything.
@@ -334,7 +334,7 @@ func TestIsNamespaceAllowed_EmptyMap(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 
 	defer setNSFilterCache(map[string]bool{})()
-	assert.False(t, isNamespaceAllowed("any-ns"))
+	assert.False(t, nsFilterCache.isNamespaceAllowed("any-ns"))
 }
 
 // Cluster-scoped resources (empty namespace) always pass.
@@ -344,10 +344,10 @@ func TestIsNamespaceAllowed_ClusterScoped(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 
 	defer setNSFilterCache(map[string]bool{"ns1": true})()
-	assert.True(t, isNamespaceAllowed(""))
+	assert.True(t, nsFilterCache.isNamespaceAllowed(""))
 
 	defer setNSFilterCache(map[string]bool{})()
-	assert.True(t, isNamespaceAllowed(""))
+	assert.True(t, nsFilterCache.isNamespaceAllowed(""))
 }
 
 // Namespace in the allowed map passes.
@@ -357,8 +357,8 @@ func TestIsNamespaceAllowed_Allowed(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 
 	defer setNSFilterCache(map[string]bool{"ns1": true, "ns2": true})()
-	assert.True(t, isNamespaceAllowed("ns1"))
-	assert.True(t, isNamespaceAllowed("ns2"))
+	assert.True(t, nsFilterCache.isNamespaceAllowed("ns1"))
+	assert.True(t, nsFilterCache.isNamespaceAllowed("ns2"))
 }
 
 // Namespace not in the allowed map is blocked.
@@ -368,6 +368,6 @@ func TestIsNamespaceAllowed_NotAllowed(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 
 	defer setNSFilterCache(map[string]bool{"ns1": true})()
-	assert.False(t, isNamespaceAllowed("ns2"))
-	assert.False(t, isNamespaceAllowed("kube-system"))
+	assert.False(t, nsFilterCache.isNamespaceAllowed("ns2"))
+	assert.False(t, nsFilterCache.isNamespaceAllowed("kube-system"))
 }

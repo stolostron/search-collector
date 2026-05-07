@@ -107,8 +107,10 @@ func (inform *GenericInformer) listAndResync() error {
 
 		// Add all resources filtered by namespace
 		for i := range resources.Items {
-			if !isNamespaceAllowed(resources.Items[i].GetNamespace()) {
-				continue
+			if config.Cfg.FeatureConfigurableCollection {
+				if !nsFilterCache.isNamespaceAllowed(resources.Items[i].GetNamespace()) {
+					continue
+				}
 			}
 
 			klog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
@@ -174,17 +176,21 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 
-				if !isNamespaceAllowed(obj.GetNamespace()) {
+				// FUTURE: Better handing on namespace additions
+				//   on startup and when we restart informers we will get a lot of namespaces being ADDED
+				//   results in lots of invalidation and computation of namespace filter cache
+				//   for example check if namespace is already in filter and skip invalidation on ADDED
+				//   https://github.com/stolostron/search-collector/pull/866#discussion_r3196919607
+				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
 					continue
+				}
+				// Namespace additions affect which resources pass the namespace filter.
+				if inform.gvr.Resource == "namespaces" && inform.gvr.Group == "" {
+					nsFilterCache.regenerate()
 				}
 
 				inform.AddFunc(obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
-
-				// Namespace changes affect which resources pass the namespace filter.
-				if inform.gvr.Resource == "namespaces" {
-					nsFilterCache.invalidate()
-				}
 
 			case "MODIFIED":
 				klog.V(5).Infof("Received MODIFY event. Kind: %s ", inform.gvr.Resource)
@@ -195,17 +201,19 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 
-				if !isNamespaceAllowed(obj.GetNamespace()) {
+				// FUTURE: Better handling on namespace modifications
+				//   for example invalidate the namespace filter cache on CollectorConfig changes
+				//   https://github.com/stolostron/search-collector/pull/866#discussion_r3196850432
+				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
 					continue
+				}
+				// Namespace changes affect which resources pass the namespace filter.
+				if inform.gvr.Resource == "namespaces" && inform.gvr.Group == "" {
+					nsFilterCache.regenerate()
 				}
 
 				inform.UpdateFunc(nil, obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
-
-				// Label changes on namespaces can affect label selector results.
-				if inform.gvr.Resource == "namespaces" {
-					nsFilterCache.invalidate()
-				}
 
 			case "DELETED":
 				klog.V(5).Infof("Received DELETED event. Kind: %s ", inform.gvr.Resource)
@@ -216,17 +224,19 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 
-				if !isNamespaceAllowed(obj.GetNamespace()) {
+				// FUTURE: better handling on namespace deletion
+				//   for example remove the namespace key from the map
+				//   https://github.com/stolostron/search-collector/pull/866#discussion_r3196773820
+				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
 					continue
+				}
+				// Namespace deletions affect which resources pass the namespace filter.
+				if inform.gvr.Resource == "namespaces" && inform.gvr.Group == "" {
+					nsFilterCache.regenerate()
 				}
 
 				inform.DeleteFunc(obj)
 				delete(inform.resourceIndex, string(obj.GetUID()))
-
-				// Namespace deletion affects the allowed namespace set.
-				if inform.gvr.Resource == "namespaces" {
-					nsFilterCache.invalidate()
-				}
 
 			case "ERROR":
 				klog.V(2).Infof("Received ERROR event. Ending listAndWatch() for %s event: %s", inform.gvr.String(), event)
