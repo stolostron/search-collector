@@ -36,7 +36,7 @@ const (
 	DEFAULT_MAX_BACKOFF_MS         = 600000 // 10 min
 	DEFAULT_REDISCOVER_RATE_MS     = 60000  // 1 min
 	DEFAULT_REPORT_RATE_MS         = 5000   // 5 seconds
-	DEFAULT_NS_FILTER_CACHE_TTL_MS = 60000  // 1 min
+	DEFAULT_NS_FILTER_CACHE_TTL_MS = 300000 // 5 min
 	DEFAULT_RETRY_JITTER_MS        = 5000   // 5 seconds
 	DEFAULT_RUNTIME_MODE           = "production"
 )

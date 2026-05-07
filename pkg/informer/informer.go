@@ -230,10 +230,6 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
 					continue
 				}
-				// Namespace deletions affect which resources pass the namespace filter.
-				if inform.gvr.Resource == "namespaces" && inform.gvr.Group == "" {
-					nsFilterCache.regenerate()
-				}
 
 				inform.DeleteFunc(obj)
 				delete(inform.resourceIndex, string(obj.GetUID()))
