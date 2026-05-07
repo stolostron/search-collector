@@ -107,10 +107,8 @@ func (inform *GenericInformer) listAndResync() error {
 
 		// Add all resources filtered by namespace
 		for i := range resources.Items {
-			if config.Cfg.FeatureConfigurableCollection {
-				if !nsFilterCache.isNamespaceAllowed(resources.Items[i].GetNamespace()) {
-					continue
-				}
+			if !nsFilterCache.isNamespaceAllowed(resources.Items[i].GetNamespace()) {
+				continue
 			}
 
 			klog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
