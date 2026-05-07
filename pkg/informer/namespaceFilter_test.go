@@ -306,8 +306,8 @@ func setNSFilterCache(allowed map[string]bool) func() {
 	}
 }
 
-// refreshWith resolves and caches the result.
-func TestRefreshWith(t *testing.T) {
+// get() refreshes the cache on miss using clients from the struct.
+func TestGet_CacheMiss(t *testing.T) {
 	original := config.Cfg.FeatureConfigurableCollection
 	defer func() { config.Cfg.FeatureConfigurableCollection = original }()
 	config.Cfg.FeatureConfigurableCollection = true
@@ -317,36 +317,22 @@ func TestRefreshWith(t *testing.T) {
 	config.Cfg.PodNamespace = "open-cluster-management"
 	config.Cfg.NSFilterCacheTTLMS = 300000
 
-	dc := fakeDynamicClientWithCollectorConfig(map[string]interface{}{
-		"include": []interface{}{"prod-*"},
-	})
-	kc := fakeClient.NewSimpleClientset(
-		&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "prod-app"}},
-		&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "dev-app"}},
-	)
+	c := &namespaceFilterCache{
+		dynamicClient: fakeDynamicClientWithCollectorConfig(map[string]interface{}{
+			"include": []interface{}{"prod-*"},
+		}),
+		kubeClient: fakeClient.NewSimpleClientset(
+			&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "prod-app"}},
+			&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "dev-app"}},
+		),
+	}
 
-	c := &namespaceFilterCache{}
-
-	result := c.refreshWith(dc, kc)
+	result := c.get()
 	assert.Equal(t, map[string]bool{"prod-app": true}, result)
 	assert.True(t, time.Now().Before(c.expiresAt), "expiresAt should be set in the future")
 }
 
-// refreshWith skips resolve if another goroutine already refreshed (double-check path).
-func TestRefreshWith_DoubleCheck(t *testing.T) {
-	config.Cfg.NSFilterCacheTTLMS = 300000
-
-	c := &namespaceFilterCache{
-		allowed:   map[string]bool{"already-refreshed": true},
-		expiresAt: time.Now().Add(10 * time.Minute),
-	}
-
-	// Clients are nil — they should never be used since the cache is still valid.
-	result := c.refreshWith(nil, nil)
-	assert.Equal(t, map[string]bool{"already-refreshed": true}, result)
-}
-
-// regenerate() refreshes cache and resets TTL.
+// regenerate() refreshes cache and resets TTL using clients from the struct.
 func TestRegenerate(t *testing.T) {
 	original := config.Cfg.FeatureConfigurableCollection
 	defer func() { config.Cfg.FeatureConfigurableCollection = original }()
@@ -357,21 +343,20 @@ func TestRegenerate(t *testing.T) {
 	config.Cfg.PodNamespace = "open-cluster-management"
 	config.Cfg.NSFilterCacheTTLMS = 300000
 
-	dc := fakeDynamicClientWithCollectorConfig(map[string]interface{}{
-		"include": []interface{}{"ns-*"},
-	})
-	kc := fakeClient.NewSimpleClientset(
-		&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "ns-one"}},
-		&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "ns-two"}},
-		&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "other"}},
-	)
-
 	c := &namespaceFilterCache{
+		dynamicClient: fakeDynamicClientWithCollectorConfig(map[string]interface{}{
+			"include": []interface{}{"ns-*"},
+		}),
+		kubeClient: fakeClient.NewSimpleClientset(
+			&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "ns-one"}},
+			&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "ns-two"}},
+			&corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: "other"}},
+		),
 		allowed:   map[string]bool{"old": true},
 		expiresAt: time.Now().Add(10 * time.Minute),
 	}
 
-	c.regenerateWith(dc, kc)
+	c.regenerate()
 
 	assert.Equal(t, map[string]bool{"ns-one": true, "ns-two": true}, c.allowed)
 	assert.True(t, time.Now().Before(c.expiresAt))

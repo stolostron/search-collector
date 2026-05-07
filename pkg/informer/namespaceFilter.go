@@ -22,9 +22,11 @@ import (
 // namespaceFilterCache caches the resolved namespace map with a TTL so that
 // informers don't each have to fetch and resolve the CollectorConfig.
 type namespaceFilterCache struct {
-	mu        sync.RWMutex
-	allowed   map[string]bool
-	expiresAt time.Time
+	dynamicClient dynamic.Interface
+	kubeClient    kubernetes.Interface
+	mu            sync.RWMutex
+	allowed       map[string]bool
+	expiresAt     time.Time
 }
 
 // get returns the cached namespace map, refreshing it if it has expired.
@@ -36,11 +38,6 @@ func (c *namespaceFilterCache) get() map[string]bool {
 	}
 	c.mu.RUnlock()
 
-	return c.refreshWith(config.GetDynamicClient(), config.GetKubeClient(config.GetKubeConfig()))
-}
-
-// refreshWith acquires a write lock, double-checks expiry, and resolves if still needed.
-func (c *namespaceFilterCache) refreshWith(dc dynamic.Interface, kc kubernetes.Interface) map[string]bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	// Double-check: another goroutine may have refreshed while we waited for the write lock.
@@ -48,21 +45,16 @@ func (c *namespaceFilterCache) refreshWith(dc dynamic.Interface, kc kubernetes.I
 		return c.allowed
 	}
 
-	c.allowed = resolveCollectNamespaces(dc, kc)
+	c.allowed = resolveCollectNamespaces(c.dynamicClient, c.kubeClient)
 	c.expiresAt = time.Now().Add(time.Duration(config.Cfg.NSFilterCacheTTLMS) * time.Millisecond)
 	return c.allowed
 }
 
 // regenerate recomputes the namespace filter cache and resets TTL
 func (c *namespaceFilterCache) regenerate() {
-	c.regenerateWith(config.GetDynamicClient(), config.GetKubeClient(config.GetKubeConfig()))
-}
-
-// regenerateWith recomputes the namespace filter cache with the given clients and resets TTL.
-func (c *namespaceFilterCache) regenerateWith(dc dynamic.Interface, kc kubernetes.Interface) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.allowed = resolveCollectNamespaces(dc, kc)
+	c.allowed = resolveCollectNamespaces(c.dynamicClient, c.kubeClient)
 	c.expiresAt = time.Now().Add(time.Duration(config.Cfg.NSFilterCacheTTLMS) * time.Millisecond)
 }
 
