@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
@@ -35,6 +36,11 @@ func (c *namespaceFilterCache) get() map[string]bool {
 	}
 	c.mu.RUnlock()
 
+	return c.refreshWith(config.GetDynamicClient(), config.GetKubeClient(config.GetKubeConfig()))
+}
+
+// refreshWith acquires a write lock, double-checks expiry, and resolves if still needed.
+func (c *namespaceFilterCache) refreshWith(dc dynamic.Interface, kc kubernetes.Interface) map[string]bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	// Double-check: another goroutine may have refreshed while we waited for the write lock.
@@ -42,16 +48,21 @@ func (c *namespaceFilterCache) get() map[string]bool {
 		return c.allowed
 	}
 
-	c.allowed = resolveCollectNamespaces()
+	c.allowed = resolveCollectNamespaces(dc, kc)
 	c.expiresAt = time.Now().Add(time.Duration(config.Cfg.NSFilterCacheTTLMS) * time.Millisecond)
 	return c.allowed
 }
 
 // regenerate recomputes the namespace filter cache and resets TTL
 func (c *namespaceFilterCache) regenerate() {
+	c.regenerateWith(config.GetDynamicClient(), config.GetKubeClient(config.GetKubeConfig()))
+}
+
+// regenerateWith recomputes the namespace filter cache with the given clients and resets TTL.
+func (c *namespaceFilterCache) regenerateWith(dc dynamic.Interface, kc kubernetes.Interface) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.allowed = resolveCollectNamespaces()
+	c.allowed = resolveCollectNamespaces(dc, kc)
 	c.expiresAt = time.Now().Add(time.Duration(config.Cfg.NSFilterCacheTTLMS) * time.Millisecond)
 }
 
@@ -166,12 +177,12 @@ func filterByGlobs(nsList *v1.NamespaceList, nsSelector *v1alpha1.NamespaceSelec
 //  1. build a selector that ANDs matchLabels and matchExpressions, returning set of all namespaces that match
 //  2. check if include list namespaces are in the list, and if so,
 //  3. check if they should then be removed via the excludes list
-func resolveCollectNamespaces() map[string]bool {
+func resolveCollectNamespaces(dynamicClient dynamic.Interface, kubeClient kubernetes.Interface) map[string]bool {
 	if !config.Cfg.FeatureConfigurableCollection {
 		return nil
 	}
 
-	unstructuredConfig, err := config.GetDynamicClient().Resource(schema.GroupVersionResource{
+	unstructuredConfig, err := dynamicClient.Resource(schema.GroupVersionResource{
 		Group:    "search.open-cluster-management.io",
 		Version:  "v1alpha1",
 		Resource: "collectorconfigs",
@@ -202,7 +213,7 @@ func resolveCollectNamespaces() map[string]bool {
 	}
 
 	// List namespaces filtered by labelSelectors and matchExpressions
-	nsList, err := filterBySelectors(config.GetKubeClient(config.GetKubeConfig()), nsSelector)
+	nsList, err := filterBySelectors(kubeClient, nsSelector)
 	if err != nil {
 		klog.Warningf("Error listing namespaces by matchLabel or matchExpression. Skipping namespace filtering. Error: %v. ", err)
 		return nil
