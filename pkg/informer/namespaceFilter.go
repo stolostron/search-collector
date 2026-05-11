@@ -71,8 +71,6 @@ func (c *namespaceFilterCache) isNamespaceAllowed(namespace string) bool {
 	}
 
 	allowedNSMap := c.get()
-	c.mu.RLock()
-	defer c.mu.RUnlock()
 	if allowedNSMap == nil { // error in processing allowedNamespaceMap: collect everywhere
 		return true
 	}
