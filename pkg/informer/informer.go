@@ -10,12 +10,10 @@ import (
 
 	"github.com/stolostron/search-collector/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 )
 
 // GenericInformer ...
@@ -107,8 +105,12 @@ func (inform *GenericInformer) listAndResync() error {
 			return listError
 		}
 
-		// Add all resources.
+		// Add all resources filtered by namespace
 		for i := range resources.Items {
+			if !nsFilterCache.isNamespaceAllowed(resources.Items[i].GetNamespace()) {
+				continue
+			}
+
 			klog.V(5).Infof("KIND: %s UUID: %s, ResourceVersion: %s",
 				inform.gvr.Resource, resources.Items[i].GetUID(), resources.Items[i].GetResourceVersion())
 			inform.AddFunc(&resources.Items[i])
@@ -171,6 +173,20 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 						inform.gvr.Resource)
 					continue
 				}
+
+				// FUTURE: Better handing on namespace additions
+				//   on startup and when we restart informers we will get a lot of namespaces being ADDED
+				//   results in lots of invalidation and computation of namespace filter cache
+				//   for example check if namespace is already in filter and skip invalidation on ADDED
+				//   https://github.com/stolostron/search-collector/pull/866#discussion_r3196919607
+				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
+					continue
+				}
+				// Namespace additions affect which resources pass the namespace filter.
+				if inform.gvr.Resource == "namespaces" && inform.gvr.Group == "" {
+					nsFilterCache.regenerate()
+				}
+
 				inform.AddFunc(obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
@@ -183,6 +199,17 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 
+				// FUTURE: Better handling on namespace modifications
+				//   for example invalidate the namespace filter cache on CollectorConfig changes
+				//   https://github.com/stolostron/search-collector/pull/866#discussion_r3196850432
+				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
+					continue
+				}
+				// Namespace changes affect which resources pass the namespace filter.
+				if inform.gvr.Resource == "namespaces" && inform.gvr.Group == "" {
+					nsFilterCache.regenerate()
+				}
+
 				inform.UpdateFunc(nil, obj)
 				inform.resourceIndex[string(obj.GetUID())] = obj.GetResourceVersion()
 
@@ -192,6 +219,13 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 				if !ok {
 					klog.Warningf("Error converting %s event.Object to unstructured.Unstructured on DELETED event",
 						inform.gvr.Resource)
+					continue
+				}
+
+				// FUTURE: better handling on namespace deletion
+				//   for example remove the namespace key from the map
+				//   https://github.com/stolostron/search-collector/pull/866#discussion_r3196773820
+				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
 					continue
 				}
 

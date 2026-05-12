@@ -447,6 +447,12 @@ func RunInformers(
 		}
 	}()
 
+	if config.Cfg.FeatureConfigurableCollection {
+		// init clients for use by namespaceFilter
+		nsFilterCache.dynamicClient = config.GetDynamicClient()
+		nsFilterCache.kubeClient = config.GetKubeClient(config.GetKubeConfig())
+	}
+
 	syncInformersQueue := workqueue.NewTypedWithConfig(workqueue.QueueConfig{})
 	defer syncInformersQueue.ShutDown()
 
