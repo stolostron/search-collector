@@ -21,4 +21,10 @@ var (
 		Name: "search_collector_resources_sent_to_indexer_count",
 		Help: "Total resources sent to indexer after reconciliation",
 	}, []string{"resource_kind"})
+
+	// SyncRequestTotal total number of HTTP requests sent to indexer
+	SyncRequestTotal = promauto.With(PromRegistry).NewCounterVec(prometheus.CounterOpts{
+		Name: "search_collector_sync_requests_total",
+		Help: "Total number of HTTP requests sent",
+	}, []string{"status_code", "sync_type"})
 )
