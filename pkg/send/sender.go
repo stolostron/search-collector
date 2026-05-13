@@ -28,6 +28,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/stolostron/search-collector/pkg/config"
+	"github.com/stolostron/search-collector/pkg/metrics"
 	"github.com/stolostron/search-collector/pkg/reconciler"
 	tr "github.com/stolostron/search-collector/pkg/transforms"
 )
@@ -186,6 +187,11 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources),
 		len(payload.AddEdges), len(payload.DeleteEdges))
 
+	syncType := "sync"
+	if payload.ClearAll {
+		syncType = "resync"
+	}
+
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -211,6 +217,8 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 		klog.Error("httpClient error: ", err)
 		return err
 	}
+
+	metrics.SyncRequestTotal.WithLabelValues(strconv.Itoa(resp.StatusCode), syncType).Inc()
 	if resp.StatusCode == http.StatusTooManyRequests {
 		return errors.New("indexer busy")
 	} else if resp.StatusCode != http.StatusOK {
