@@ -2,10 +2,13 @@ package transforms
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/stolostron/search-collector/pkg/config"
 	v1alpha1 "github.com/stolostron/search-v2-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -32,27 +35,46 @@ func LoadAndMergeConfigurableCollection() {
 	loadAndMergeConfigurableCollectionWithClient(dynamicClient)
 }
 
+// Status condition constants for the CollectorConfig CR.
+// These mirror the constants defined in the search-v2-operator API types.
+const (
+	collectorConfigConditionApplied       = "Applied"
+	collectorConfigReasonApplied          = "Applied"
+	collectorConfigReasonRulesSkipped     = "RulesSkipped"
+	collectorConfigReasonLoadError        = "LoadError"
+)
+
+// collectorConfigGVR is the GroupVersionResource for CollectorConfig.
+var collectorConfigGVR = schema.GroupVersionResource{
+	Group:    "search.open-cluster-management.io",
+	Version:  "v1alpha1",
+	Resource: "collectorconfigs",
+}
+
 // loadAndMergeConfigurableCollectionWithClient is a helper function that accepts a dynamic client for testability.
 func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interface) {
 	// Start with a deep copy of defaultTransformConfig
 	mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
 
+	namespace := config.Cfg.PodNamespace
+
 	// FUTURE: ACM-20047 watch this for changes and update config dynamically
-	unstructuredConfig, err := dynamicClient.Resource(schema.GroupVersionResource{
-		Group:    "search.open-cluster-management.io",
-		Version:  "v1alpha1",
-		Resource: "collectorconfigs",
-	}).Namespace(config.Cfg.PodNamespace).Get(context.Background(), "collector-config", metav1.GetOptions{})
+	configObj, err := dynamicClient.Resource(collectorConfigGVR).
+		Namespace(namespace).
+		Get(context.Background(), "collector-config", metav1.GetOptions{})
 
 	if err != nil {
+		// CR not found or not accessible — no status to update, just log and return.
 		klog.Infof("Could not load collector-config resource: %v. Using default config only", err)
 		return
 	}
 
 	// Convert unstructured to typed CollectorConfig
 	var collectorConfig v1alpha1.CollectorConfig
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredConfig.Object, &collectorConfig); err != nil {
-		klog.Warningf("Could not convert collector-config to typed object: %v. Using default config only", err)
+	if convErr := runtime.DefaultUnstructuredConverter.FromUnstructured(configObj.Object, &collectorConfig); convErr != nil {
+		msg := fmt.Sprintf("Could not convert collector-config to typed object: %v. Using default config only", convErr)
+		klog.Warning(msg)
+		updateCollectorConfigStatus(dynamicClient, namespace, configObj, []string{msg}, collectorConfigReasonLoadError)
 		return
 	}
 
@@ -62,8 +84,14 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 	collectionRules := collectorConfig.Spec.CollectionRules
 	if len(collectionRules) == 0 {
 		klog.Warning("No collectionRules found in collector-config resource")
+		// Empty rules is a valid (though unusual) configuration — mark as Applied.
+		updateCollectorConfigStatus(dynamicClient, namespace, configObj, nil, collectorConfigReasonApplied)
 		return
 	}
+
+	// warnings accumulates messages for rules or fields that were skipped.
+	// These become the status condition message so users can see issues via `oc describe`.
+	var warnings []string
 
 	// merge each rule from collectionRules with mergedTransformConfig
 	for _, rule := range collectionRules {
@@ -71,15 +99,18 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		fieldSuffix := rule.FieldSuffix
 
 		// FUTURE: Only Include actions are currently supported
-		// Only process Include actions
 		if rule.Action != v1alpha1.ActionInclude {
+			msg := fmt.Sprintf("Rule skipped: only \"include\" action is supported, found %q", rule.Action)
 			klog.Warningf("Skipping collection rule. Only \"include\" action supported at this time: %s", rule.Action)
+			warnings = append(warnings, msg)
 			continue
 		}
 
 		// Only process rules that have fields specified
 		if len(rule.Fields) == 0 {
+			msg := "Rule skipped: include action requires at least one field"
 			klog.Warning("Skipping collection rule. Include action without fields specified.")
+			warnings = append(warnings, msg)
 			continue
 		}
 
@@ -87,19 +118,25 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		kinds := rule.ResourceSelector.Kinds
 
 		if len(kinds) == 0 {
+			msg := "Rule skipped: resourceSelector is missing kinds"
 			klog.Warning("Skipping collection rule. Item missing kinds in resourceSelector.")
+			warnings = append(warnings, msg)
 			continue
 		}
 
 		// validation webhook should ensure there's not >1 apiGroup.kind
 		// When fields are specified, there should be exactly one kind and one apiGroup
 		if len(kinds) != 1 {
+			msg := fmt.Sprintf("Rule skipped: include action with fields must specify exactly 1 kind, found %d", len(kinds))
 			klog.Warningf("Skipping collection rule. Include action with fields must have exactly 1 kind, found %d.", len(kinds))
+			warnings = append(warnings, msg)
 			continue
 		}
 
 		if len(apiGroups) != 1 {
+			msg := fmt.Sprintf("Rule skipped: include action with fields must specify exactly 1 apiGroup, found %d", len(apiGroups))
 			klog.Warningf("Skipping collection rule. Include action with fields must have exactly 1 apiGroup, found %d.", len(apiGroups))
+			warnings = append(warnings, msg)
 			continue
 		}
 
@@ -108,7 +145,9 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		apiGroup := apiGroups[0]
 
 		if kind == "" {
+			msg := "Rule skipped: kind is empty"
 			klog.Warning("Skipping collection rule. Kind is empty.")
+			warnings = append(warnings, msg)
 			continue
 		}
 
@@ -128,7 +167,9 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		// parse and add new fields to resourceConfig
 		for _, field := range rule.Fields {
 			if field.Name == "" || field.JSONPath == "" {
+				msg := fmt.Sprintf("Field skipped for %s: name or jsonPath is empty", resourceKey)
 				klog.Warningf("Skipping collection rule. Field missing name or jsonPath for resource %s.", resourceKey)
+				warnings = append(warnings, msg)
 				continue
 			}
 
@@ -149,7 +190,9 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 			}
 
 			if collision {
+				msg := fmt.Sprintf("Field %q skipped for %s: collides with a built-in field. Use fieldSuffix to avoid collisions", name, resourceKey)
 				klog.Warningf("Skipping collection rule. Field name '%s' collides with existing property for resource %s. Built-in field takes precedence. Consider using fieldSuffix in the CollectionRule.", name, resourceKey)
+				warnings = append(warnings, msg)
 				continue
 			}
 
@@ -168,7 +211,66 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		klog.V(1).Infof("Merged %d custom fields for resource %s", len(rule.Fields), resourceKey)
 	}
 
+	// Determine final condition reason based on whether any rules were skipped.
+	reason := collectorConfigReasonApplied
+	if len(warnings) > 0 {
+		reason = collectorConfigReasonRulesSkipped
+	}
+	updateCollectorConfigStatus(dynamicClient, namespace, configObj, warnings, reason)
+
 	klog.Info("Successfully merged configurable collection config")
+}
+
+// updateCollectorConfigStatus writes an "Applied" status condition to the CollectorConfig CR.
+// warnings contains human-readable messages for any rules or fields that were skipped.
+// lastTransitionTime is only updated when the condition status (True/False) changes, following
+// the Kubernetes convention that lastTransitionTime reflects the last state *transition*, not
+// the last time the condition was evaluated.
+// This is best-effort: failures are logged but do not abort the collector.
+func updateCollectorConfigStatus(dynamicClient dynamic.Interface, namespace string,
+	configObj *unstructured.Unstructured, warnings []string, reason string) {
+
+	conditionStatus := metav1.ConditionTrue
+	message := "Configuration applied successfully."
+	if len(warnings) > 0 {
+		conditionStatus = metav1.ConditionFalse
+		message = strings.Join(warnings, "; ")
+	}
+
+	// Preserve lastTransitionTime if the condition status hasn't changed.
+	// Only update it when True→False or False→True to follow Kubernetes conventions.
+	lastTransitionTime := metav1.Now().UTC().Format("2006-01-02T15:04:05Z")
+	if existing, ok := configObj.Object["status"].(map[string]interface{}); ok {
+		if conditions, ok := existing["conditions"].([]interface{}); ok && len(conditions) > 0 {
+			if cond, ok := conditions[0].(map[string]interface{}); ok {
+				if cond["type"] == collectorConfigConditionApplied &&
+					cond["status"] == string(conditionStatus) {
+					if t, ok := cond["lastTransitionTime"].(string); ok && t != "" {
+						lastTransitionTime = t
+					}
+				}
+			}
+		}
+	}
+
+	condition := map[string]interface{}{
+		"type":               collectorConfigConditionApplied,
+		"status":             string(conditionStatus),
+		"reason":             reason,
+		"message":            message,
+		"lastTransitionTime": lastTransitionTime,
+	}
+
+	configObj.Object["status"] = map[string]interface{}{
+		"conditions": []interface{}{condition},
+	}
+
+	if _, err := dynamicClient.Resource(collectorConfigGVR).Namespace(namespace).
+		Update(context.Background(), configObj, metav1.UpdateOptions{}, "status"); err != nil {
+		klog.Warningf("Could not update CollectorConfig status conditions: %v", err)
+		return
+	}
+	klog.V(2).Infof("Updated CollectorConfig status: Applied=%s reason=%s", conditionStatus, reason)
 }
 
 // dataTypeFromCRD converts v1alpha1.DataType to internal DataType
