@@ -1017,7 +1017,6 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithSpecificKind(t 
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		conditionsApiGroups = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1064,7 +1063,6 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithMultipleKinds(t
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		conditionsApiGroups = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1108,14 +1106,13 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithMultipleKinds(t
 	assert.True(t, ssConfig.extractConditions, "StatefulSet extractConditions should be true")
 }
 
-func TestLoadAndMergeConfigurableCollection_CollectConditionsWithoutKinds(t *testing.T) {
+func TestLoadAndMergeConfigurableCollection_CollectConditionsWildcardKind(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
 	defer func() {
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		conditionsApiGroups = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1137,7 +1134,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithoutKinds(t *tes
 						"collectConditions": collectConditions,
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"apps"},
-							"kinds":     []interface{}{},
+							"kinds":     []interface{}{"*"},
 						},
 					},
 				},
@@ -1150,7 +1147,10 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithoutKinds(t *tes
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	assert.True(t, conditionsApiGroups["apps"], "apps apiGroup should be in conditionsApiGroups")
+	// Wildcard kind "*" with apiGroup "apps" creates a "*.apps" entry in mergedTransformConfig
+	wildcardConfig, exists := mergedTransformConfig["*.apps"]
+	assert.True(t, exists, "*.apps wildcard config should exist in mergedTransformConfig")
+	assert.True(t, wildcardConfig.extractConditions, "*.apps extractConditions should be true")
 }
 
 func TestLoadAndMergeConfigurableCollection_CollectConditionsMultipleApiGroups(t *testing.T) {
@@ -1160,7 +1160,6 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsMultipleApiGroups(t
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		conditionsApiGroups = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1182,7 +1181,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsMultipleApiGroups(t
 						"collectConditions": collectConditions,
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"apps", "batch"},
-							"kinds":     []interface{}{},
+							"kinds":     []interface{}{"*"},
 						},
 					},
 				},
@@ -1195,8 +1194,13 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsMultipleApiGroups(t
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	assert.True(t, conditionsApiGroups["apps"], "apps apiGroup should be in conditionsApiGroups")
-	assert.True(t, conditionsApiGroups["batch"], "batch apiGroup should be in conditionsApiGroups")
+	appsConfig, exists := mergedTransformConfig["*.apps"]
+	assert.True(t, exists, "*.apps wildcard config should exist")
+	assert.True(t, appsConfig.extractConditions, "*.apps extractConditions should be true")
+
+	batchConfig, exists := mergedTransformConfig["*.batch"]
+	assert.True(t, exists, "*.batch wildcard config should exist")
+	assert.True(t, batchConfig.extractConditions, "*.batch extractConditions should be true")
 }
 
 func TestLoadAndMergeConfigurableCollection_CollectConditionsWithFieldsAndKind(t *testing.T) {
@@ -1206,7 +1210,6 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithFieldsAndKind(t
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		conditionsApiGroups = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1263,7 +1266,6 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsPreservesDefaults(t
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		conditionsApiGroups = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1306,7 +1308,6 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsCoreApiGroup(t *tes
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		conditionsApiGroups = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1328,7 +1329,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsCoreApiGroup(t *tes
 						"collectConditions": collectConditions,
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
-							"kinds":     []interface{}{},
+							"kinds":     []interface{}{"*"},
 						},
 					},
 				},
@@ -1341,8 +1342,10 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsCoreApiGroup(t *tes
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	// Core API group is empty string - should be tracked
-	assert.True(t, conditionsApiGroups[""], "Core API group should be in conditionsApiGroups")
+	// Core API group is empty string - wildcard key is just "*" (no dot prefix)
+	coreConfig, exists := mergedTransformConfig["*"]
+	assert.True(t, exists, "* wildcard config should exist for core API group")
+	assert.True(t, coreConfig.extractConditions, "* extractConditions should be true")
 }
 
 func TestLoadAndMergeConfigurableCollection_CollectConditionsMixedRules(t *testing.T) {
@@ -1352,7 +1355,6 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsMixedRules(t *testi
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		conditionsApiGroups = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1369,13 +1371,13 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsMixedRules(t *testi
 			},
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
-					// Rule 1: collect conditions for all resources in apps and batch apiGroups
+					// Rule 1: collect conditions for all resources in apps and batch apiGroups (wildcard)
 					map[string]interface{}{
 						"action":            "include",
 						"collectConditions": collectConditions,
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"apps", "batch"},
-							"kinds":     []interface{}{},
+							"kinds":     []interface{}{"*"},
 						},
 					},
 					// Rule 2: collect conditions for a specific kind in a third apiGroup
@@ -1397,18 +1399,24 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsMixedRules(t *testi
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	// Rule 1: both apiGroups should be in conditionsApiGroups
-	assert.True(t, conditionsApiGroups["apps"], "apps apiGroup should be in conditionsApiGroups")
-	assert.True(t, conditionsApiGroups["batch"], "batch apiGroup should be in conditionsApiGroups")
+	// Rule 1: wildcard entries should exist in mergedTransformConfig
+	appsConfig, exists := mergedTransformConfig["*.apps"]
+	assert.True(t, exists, "*.apps wildcard config should exist")
+	assert.True(t, appsConfig.extractConditions, "*.apps extractConditions should be true")
+
+	batchConfig, exists := mergedTransformConfig["*.batch"]
+	assert.True(t, exists, "*.batch wildcard config should exist")
+	assert.True(t, batchConfig.extractConditions, "*.batch extractConditions should be true")
 
 	// Rule 2: specific kind should have extractConditions set in mergedTransformConfig
 	policyConfig, exists := mergedTransformConfig["Policy.policy.open-cluster-management.io"]
 	assert.True(t, exists, "Policy config should exist")
 	assert.True(t, policyConfig.extractConditions, "Policy extractConditions should be true")
 
-	// The third apiGroup (policy.open-cluster-management.io) should NOT be in conditionsApiGroups (it was kind-specific)
-	assert.False(t, conditionsApiGroups["policy.open-cluster-management.io"],
-		"policy apiGroup should not be in conditionsApiGroups since it was specified with a kind")
+	// The policy apiGroup should NOT have a wildcard entry (it was kind-specific)
+	_, wildcardExists := mergedTransformConfig["*.policy.open-cluster-management.io"]
+	assert.False(t, wildcardExists,
+		"policy apiGroup should not have wildcard entry since it was specified with a specific kind")
 }
 
 // ─── Status condition tests (ACM-33146) ───────────────────────────────────────

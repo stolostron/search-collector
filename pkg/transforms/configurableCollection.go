@@ -17,11 +17,8 @@ import (
 
 // mergedTransformConfig contains the merged configuration from defaultTransformConfig plus CollectorConfig CR customizations.
 // This is populated by LoadAndMergeConfigurableCollection and used by getTransformConfig.
+// Wildcard entries like "*" (core group) or "*.apps" are used for apigroup-wide collectConditions.
 var mergedTransformConfig map[string]ResourceConfig
-
-// conditionsApiGroups tracks API groups where ALL resources should have conditions extracted.
-// Populated by CollectorConfig rules that have collectConditions=true with no specific kinds.
-var conditionsApiGroups map[string]bool
 
 // LoadAndMergeConfigurableCollection loads the CollectorConfig resource from the cluster and merges it with defaultTransformConfig.
 // The merged result is stored in mergedTransformConfig.
@@ -30,7 +27,6 @@ func LoadAndMergeConfigurableCollection() {
 		klog.Info("Configurable collection feature is disabled, skipping custom config load")
 		// Initialize mergedTransformConfig to a copy of defaultTransformConfig
 		mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
-		conditionsApiGroups = make(map[string]bool)
 		return
 	}
 
@@ -60,7 +56,6 @@ var collectorConfigGVR = schema.GroupVersionResource{
 func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interface) {
 	// Start with a deep copy of defaultTransformConfig
 	mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
-	conditionsApiGroups = make(map[string]bool)
 
 	namespace := config.Cfg.PodNamespace
 
@@ -133,6 +128,15 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 				continue
 			}
 		}
+
+		// Filter out wildcard kinds before fields processing — fields require a specific kind.
+		specificKinds := make([]string, 0, len(kinds))
+		for _, k := range kinds {
+			if k != "*" {
+				specificKinds = append(specificKinds, k)
+			}
+		}
+		kinds = specificKinds
 
 		if len(kinds) == 0 {
 			msg := "Rule skipped: resourceSelector is missing kinds"
@@ -319,17 +323,10 @@ func updateCollectorConfigStatus(dynamicClient dynamic.Interface, namespace stri
 }
 
 // mergeCollectConditions enables condition extraction for the given apiGroups and kinds.
-// If kinds is empty, all resources in the given apiGroups will have conditions extracted at runtime.
-// If kinds is specified, extractConditions is set for each kind+apiGroup combination in mergedTransformConfig.
+// When kind is "*", a wildcard entry (e.g., "*" or "*.apps") is stored in mergedTransformConfig,
+// enabling condition extraction for all resources in that apiGroup at runtime.
+// For specific kinds, extractConditions is set for each kind+apiGroup combination.
 func mergeCollectConditions(apiGroups, kinds []string) {
-	if len(kinds) == 0 {
-		for _, apiGroup := range apiGroups {
-			conditionsApiGroups[apiGroup] = true
-			klog.V(1).Infof("Enabled status conditions collection for all resources in apiGroup: %q", apiGroup)
-		}
-		return
-	}
-
 	for _, apiGroup := range apiGroups {
 		for _, kind := range kinds {
 			if kind == "" {

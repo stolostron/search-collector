@@ -650,7 +650,14 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	// Check if a transform config exists for this resource and extract the additional properties.
 	transformConfig, found := getTransformConfig(group, kind)
 
-	if config.Cfg.CollectStatusConditions || (found && transformConfig.extractConditions) || conditionsApiGroups[group] {
+	// Check for apigroup-wide wildcard condition extraction (e.g., "*" for core or "*.apps" for apps group)
+	wildcardKey := "*"
+	if group != "" {
+		wildcardKey = "*." + group
+	}
+	wildcardConfig, wildcardFound := mergedTransformConfig[wildcardKey]
+
+	if config.Cfg.CollectStatusConditions || (found && transformConfig.extractConditions) || (wildcardFound && wildcardConfig.extractConditions) {
 		conditionsMap := commonStatusConditions(kind, group, r)
 		if len(conditionsMap) > 0 {
 			node.Properties["condition"] = conditionsMap
