@@ -650,7 +650,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	// Check if a transform config exists for this resource and extract the additional properties.
 	transformConfig, found := getTransformConfig(group, kind)
 
-	if config.Cfg.CollectStatusConditions || (found && transformConfig.extractConditions) {
+	if config.Cfg.CollectStatusConditions || (found && transformConfig.extractConditions) || conditionsApiGroups[group] {
 		conditionsMap := commonStatusConditions(kind, group, r)
 		if len(conditionsMap) > 0 {
 			node.Properties["condition"] = conditionsMap

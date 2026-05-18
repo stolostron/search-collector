@@ -19,6 +19,10 @@ import (
 // This is populated by LoadAndMergeConfigurableCollection and used by getTransformConfig.
 var mergedTransformConfig map[string]ResourceConfig
 
+// conditionsApiGroups tracks API groups where ALL resources should have conditions extracted.
+// Populated by CollectorConfig rules that have collectConditions=true with no specific kinds.
+var conditionsApiGroups map[string]bool
+
 // LoadAndMergeConfigurableCollection loads the CollectorConfig resource from the cluster and merges it with defaultTransformConfig.
 // The merged result is stored in mergedTransformConfig.
 func LoadAndMergeConfigurableCollection() {
@@ -26,6 +30,7 @@ func LoadAndMergeConfigurableCollection() {
 		klog.Info("Configurable collection feature is disabled, skipping custom config load")
 		// Initialize mergedTransformConfig to a copy of defaultTransformConfig
 		mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
+		conditionsApiGroups = make(map[string]bool)
 		return
 	}
 
@@ -38,10 +43,10 @@ func LoadAndMergeConfigurableCollection() {
 // Status condition constants for the CollectorConfig CR.
 // These mirror the constants defined in the search-v2-operator API types.
 const (
-	collectorConfigConditionApplied       = "Applied"
-	collectorConfigReasonApplied          = "Applied"
-	collectorConfigReasonRulesSkipped     = "RulesSkipped"
-	collectorConfigReasonLoadError        = "LoadError"
+	collectorConfigConditionApplied   = "Applied"
+	collectorConfigReasonApplied      = "Applied"
+	collectorConfigReasonRulesSkipped = "RulesSkipped"
+	collectorConfigReasonLoadError    = "LoadError"
 )
 
 // collectorConfigGVR is the GroupVersionResource for CollectorConfig.
@@ -55,6 +60,7 @@ var collectorConfigGVR = schema.GroupVersionResource{
 func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interface) {
 	// Start with a deep copy of defaultTransformConfig
 	mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
+	conditionsApiGroups = make(map[string]bool)
 
 	namespace := config.Cfg.PodNamespace
 
@@ -106,16 +112,27 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 			continue
 		}
 
+		hasFields := len(rule.Fields) > 0
+		hasCollectConditions := rule.CollectConditions != nil && *rule.CollectConditions
+
 		// Only process rules that have fields specified
-		if len(rule.Fields) == 0 {
-			msg := "Rule skipped: include action requires at least one field"
-			klog.Warning("Skipping collection rule. Include action without fields specified.")
+		if !hasFields && !hasCollectConditions {
+			msg := "Rule skipped: include action requires at least one field or collectConditions"
+			klog.Warning("Skipping collection rule. Include action without fields or collectConditions specified.")
 			warnings = append(warnings, msg)
 			continue
 		}
 
 		apiGroups := rule.ResourceSelector.APIGroups
 		kinds := rule.ResourceSelector.Kinds
+
+		// Process collectConditions
+		if hasCollectConditions {
+			mergeCollectConditions(apiGroups, kinds)
+			if !hasFields {
+				continue
+			}
+		}
 
 		if len(kinds) == 0 {
 			msg := "Rule skipped: resourceSelector is missing kinds"
@@ -299,6 +316,40 @@ func updateCollectorConfigStatus(dynamicClient dynamic.Interface, namespace stri
 		return
 	}
 	klog.V(2).Infof("Updated CollectorConfig status: Applied=%s reason=%s", conditionStatus, reason)
+}
+
+// mergeCollectConditions enables condition extraction for the given apiGroups and kinds.
+// If kinds is empty, all resources in the given apiGroups will have conditions extracted at runtime.
+// If kinds is specified, extractConditions is set for each kind+apiGroup combination in mergedTransformConfig.
+func mergeCollectConditions(apiGroups, kinds []string) {
+	if len(kinds) == 0 {
+		for _, apiGroup := range apiGroups {
+			conditionsApiGroups[apiGroup] = true
+			klog.V(1).Infof("Enabled status conditions collection for all resources in apiGroup: %q", apiGroup)
+		}
+		return
+	}
+
+	for _, apiGroup := range apiGroups {
+		for _, kind := range kinds {
+			if kind == "" {
+				continue
+			}
+			resourceKey := kind
+			if apiGroup != "" {
+				resourceKey = kind + "." + apiGroup
+			}
+			resourceConfig, exists := mergedTransformConfig[resourceKey]
+			if !exists {
+				resourceConfig = ResourceConfig{
+					properties: []ExtractProperty{},
+				}
+			}
+			resourceConfig.extractConditions = true
+			mergedTransformConfig[resourceKey] = resourceConfig
+			klog.V(2).Infof("Enabled condition collection for resource %s", resourceKey)
+		}
+	}
 }
 
 // dataTypeFromCRD converts v1alpha1.DataType to internal DataType
