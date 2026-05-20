@@ -1670,18 +1670,6 @@ func TestStatusCondition_LastTransitionTime_UpdatedWhenStatusChanges(t *testing.
 
 // ─── Warning truncation tests (maxStatusWarnings) ─────────────────────────────
 
-// makeExcludeRule returns a broken CollectorConfig rule that produces exactly one
-// warning ("only 'include' action is supported"). Used to generate N warnings easily.
-func makeExcludeRule(apiGroup, kind string) map[string]interface{} {
-	return map[string]interface{}{
-		"action": "exclude",
-		"resourceSelector": map[string]interface{}{
-			"apiGroups": []interface{}{apiGroup},
-			"kinds":     []interface{}{kind},
-		},
-	}
-}
-
 // TestStatusCondition_WarningTruncation verifies all combinations of warning count
 // against the maxStatusWarnings (3) limit.
 func TestStatusCondition_WarningTruncation(t *testing.T) {
