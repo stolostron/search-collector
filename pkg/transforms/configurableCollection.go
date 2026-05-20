@@ -238,17 +238,22 @@ func updateCollectorConfigStatus(dynamicClient dynamic.Interface, namespace stri
 	}
 
 	// Preserve lastTransitionTime if the condition status hasn't changed.
-	// Only update it when True→False or False→True to follow Kubernetes conventions.
+	// Search by type (not by index) so other conditions don't affect the lookup.
+	// Only update the timestamp on True↔False transitions per Kubernetes conventions.
 	lastTransitionTime := metav1.Now().UTC().Format("2006-01-02T15:04:05Z")
-	if existing, ok := configObj.Object["status"].(map[string]interface{}); ok {
-		if conditions, ok := existing["conditions"].([]interface{}); ok && len(conditions) > 0 {
-			if cond, ok := conditions[0].(map[string]interface{}); ok {
-				if cond["type"] == collectorConfigConditionApplied &&
-					cond["status"] == string(conditionStatus) {
-					if t, ok := cond["lastTransitionTime"].(string); ok && t != "" {
-						lastTransitionTime = t
-					}
+	existingStatus, _ := configObj.Object["status"].(map[string]interface{})
+	if existingStatus == nil {
+		existingStatus = map[string]interface{}{}
+	}
+	if conditions, ok := existingStatus["conditions"].([]interface{}); ok {
+		for _, c := range conditions {
+			if cond, ok := c.(map[string]interface{}); ok &&
+				cond["type"] == collectorConfigConditionApplied &&
+				cond["status"] == string(conditionStatus) {
+				if t, ok := cond["lastTransitionTime"].(string); ok && t != "" {
+					lastTransitionTime = t
 				}
+				break
 			}
 		}
 	}
@@ -261,9 +266,22 @@ func updateCollectorConfigStatus(dynamicClient dynamic.Interface, namespace stri
 		"lastTransitionTime": lastTransitionTime,
 	}
 
-	configObj.Object["status"] = map[string]interface{}{
-		"conditions": []interface{}{condition},
+	// Upsert the Applied condition — replace it if it already exists, otherwise append.
+	// This preserves any other conditions or status fields already present on the CR.
+	existingConditions, _ := existingStatus["conditions"].([]interface{})
+	upserted := false
+	for i, c := range existingConditions {
+		if cond, ok := c.(map[string]interface{}); ok && cond["type"] == collectorConfigConditionApplied {
+			existingConditions[i] = condition
+			upserted = true
+			break
+		}
 	}
+	if !upserted {
+		existingConditions = append(existingConditions, condition)
+	}
+	existingStatus["conditions"] = existingConditions
+	configObj.Object["status"] = existingStatus
 
 	if _, err := dynamicClient.Resource(collectorConfigGVR).Namespace(namespace).
 		Update(context.Background(), configObj, metav1.UpdateOptions{}, "status"); err != nil {

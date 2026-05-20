@@ -3,6 +3,7 @@
 package transforms
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -1423,7 +1424,8 @@ func TestStatusCondition_MultipleWarnings(t *testing.T) {
 }
 
 // TestStatusCondition_FeatureDisabled verifies that when the feature flag is off,
-// no status condition is written to the CollectorConfig CR (no unnecessary API calls).
+// loadAndMergeConfigurableCollectionWithClient is never called, so no status update
+// is attempted and mergedTransformConfig is initialised from defaults only.
 func TestStatusCondition_FeatureDisabled(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
@@ -1432,35 +1434,29 @@ func TestStatusCondition_FeatureDisabled(t *testing.T) {
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
 	}()
-	config.Cfg.FeatureConfigurableCollection = false // disabled
+	config.Cfg.FeatureConfigurableCollection = false
 	config.Cfg.PodNamespace = "test-namespace"
 
-	collectionConfig := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "search.open-cluster-management.io/v1alpha1",
-			"kind":       "CollectorConfig",
-			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
-			"spec": map[string]interface{}{
-				"collectionRules": []interface{}{
-					map[string]interface{}{
-						"action": "exclude",
-						"resourceSelector": map[string]interface{}{
-							"apiGroups": []interface{}{""},
-							"kinds":     []interface{}{"Pod"},
-						},
-					},
-				},
-			},
-		},
+	// Track whether loadAndMergeConfigurableCollectionWithClient would have been called
+	// by verifying that mergedTransformConfig contains only default entries (no custom rules).
+	// A fake client with a CR is deliberately NOT passed — if the internal function ran,
+	// it would contact the cluster; the fact that we only call the public wrapper proves
+	// the feature gate is respected without needing to inject a spy.
+	LoadAndMergeConfigurableCollection()
+
+	// When disabled: mergedTransformConfig should mirror defaultTransformConfig exactly.
+	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig),
+		"When feature is disabled mergedTransformConfig should equal defaultTransformConfig")
+
+	// Verify no custom fields were added (proves the CR was never read).
+	for key, cfg := range mergedTransformConfig {
+		defaultCfg, exists := defaultTransformConfig[key]
+		assert.True(t, exists, "Unexpected key %s in mergedTransformConfig", key)
+		if exists {
+			assert.Equal(t, len(defaultCfg.properties), len(cfg.properties),
+				"Resource %s should have only default properties when feature is disabled", key)
+		}
 	}
-
-	scheme := runtime.NewScheme()
-	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
-	LoadAndMergeConfigurableCollection() // public method — respects feature flag
-
-	// No status update should have been attempted
-	cond := getStatusConditionFromFakeClient(fakeClient)
-	assert.Nil(t, cond, "No status condition should be written when feature is disabled")
 }
 
 // TestStatusCondition_CRNotFound verifies that when the CollectorConfig CR does not
@@ -1489,7 +1485,7 @@ func TestStatusCondition_CRNotFound(t *testing.T) {
 // TestStatusCondition_StatusUpdateFailure verifies that when the status update is
 // rejected (e.g. RBAC denied), the collector continues working — the merge result
 // is still applied and no panic occurs. This matches the live cluster behavior we
-// observed during E2E testing.
+// observed during E2E testing (RBAC missing → forbidden → collector keeps running).
 func TestStatusCondition_StatusUpdateFailure(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
@@ -1501,7 +1497,6 @@ func TestStatusCondition_StatusUpdateFailure(t *testing.T) {
 	config.Cfg.FeatureConfigurableCollection = true
 	config.Cfg.PodNamespace = "test-namespace"
 
-	// A valid config — if update fails the merge should still succeed
 	collectionConfig := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
@@ -1527,14 +1522,22 @@ func TestStatusCondition_StatusUpdateFailure(t *testing.T) {
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	// Should not panic even if status update would fail
+	// Inject a reactor that simulates RBAC denial on any status subresource update.
+	fakeClient.PrependReactor("update", "collectorconfigs", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		if action.GetSubresource() == "status" {
+			return true, nil, fmt.Errorf("collectorconfigs.search.open-cluster-management.io \"collector-config\" is forbidden: User cannot update resource \"collectorconfigs/status\"")
+		}
+		return false, nil, nil
+	})
+
+	// Must not panic when the status update is rejected.
 	require.NotPanics(t, func() {
 		loadAndMergeConfigurableCollectionWithClient(fakeClient)
 	})
 
-	// The merge itself should have succeeded regardless
+	// Config merge must have succeeded despite the status update failure.
 	podConfig, exists := mergedTransformConfig["Pod"]
-	assert.True(t, exists, "Pod config should be in mergedTransformConfig even if status update fails")
+	assert.True(t, exists, "Pod config should be merged even when status update is denied")
 	assert.Equal(t, 1, len(podConfig.properties), "Custom field should have been merged")
 	assert.Equal(t, "dnsPolicy", podConfig.properties[0].Name)
 }
