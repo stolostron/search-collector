@@ -1699,15 +1699,87 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 		{"6 warnings — double the limit, truncated", 6, true, 3},
 	}
 
-	// Use distinct apiGroups/kinds so each rule produces a unique warning message
-	// (makes it easy to assert which warnings appear and which are truncated).
-	ruleTargets := []struct{ apiGroup, kind string }{
-		{"coordination.k8s.io", "Lease"},
-		{"apps", "Deployment"},
-		{"batch", "Job"},
-		{"networking.k8s.io", "Ingress"},
-		{"rbac.authorization.k8s.io", "Role"},
-		{"storage.k8s.io", "StorageClass"},
+	// distinctWarningRules defines 6 rule types that each produce a UNIQUE warning message.
+	// This is essential: using the same rule type (e.g. all "exclude") would make all
+	// warning strings identical, preventing us from asserting which ones are truncated.
+	type warningRule struct {
+		rule            interface{} // the CollectorConfig rule that triggers the warning
+		uniqueSubstring string      // a substring unique to that warning's message
+	}
+	distinctWarningRules := []warningRule{
+		{
+			rule: map[string]interface{}{
+				"action": "exclude",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{"coordination.k8s.io"},
+					"kinds":     []interface{}{"Lease"},
+				},
+			},
+			uniqueSubstring: `found "exclude"`,
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{"Pod"},
+				},
+				// no fields — triggers "requires at least one field"
+			},
+			uniqueSubstring: "requires at least one field",
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{"apps"},
+					"kinds":     []interface{}{"DaemonSet", "StatefulSet"}, // 2 kinds
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
+				},
+			},
+			uniqueSubstring: "exactly 1 kind",
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{"apps", "batch"}, // 2 apiGroups
+					"kinds":     []interface{}{"Job"},
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "y", "jsonPath": "{.y}"},
+				},
+			},
+			uniqueSubstring: "exactly 1 apiGroup",
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{}, // empty kinds
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "z", "jsonPath": "{.z}"},
+				},
+			},
+			uniqueSubstring: "missing kinds",
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{""}, // empty kind string
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "w", "jsonPath": "{.w}"},
+				},
+			},
+			uniqueSubstring: "kind is empty",
+		},
 	}
 
 	for _, tc := range tests {
@@ -1724,8 +1796,7 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 
 			rules := make([]interface{}, tc.numRules)
 			for i := 0; i < tc.numRules; i++ {
-				target := ruleTargets[i%len(ruleTargets)]
-				rules[i] = makeExcludeRule(target.apiGroup, target.kind)
+				rules[i] = distinctWarningRules[i].rule
 			}
 
 			collectionConfig := &unstructured.Unstructured{
@@ -1748,36 +1819,34 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 			msg, _ := cond["message"].(string)
 
 			if tc.expectTruncated {
-				// The message must end with the truncation suffix
+				// Truncation suffix must be present
 				expectedSuffix := fmt.Sprintf("; ... and %d more", tc.expectedMore)
 				assert.True(t, strings.Contains(msg, expectedSuffix),
-					"Expected truncation suffix %q in message, got: %s", expectedSuffix, msg)
+					"Expected suffix %q in message, got: %s", expectedSuffix, msg)
 
-				// Exactly 3 warning segments should appear before the suffix
-				// (count "; " separators before "... and" — should be exactly 2 between 3 items)
-				beforeSuffix := msg[:strings.Index(msg, "; ... and")]
-				separators := strings.Count(beforeSuffix, "; ")
-				assert.Equal(t, 2, separators,
-					"Expected exactly 2 '; ' separators among first 3 warnings, got %d in: %s", separators, beforeSuffix)
+				// First 3 warning unique substrings MUST appear
+				for i := 0; i < 3; i++ {
+					assert.True(t, strings.Contains(msg, distinctWarningRules[i].uniqueSubstring),
+						"Warning %d (%q) should be in message, got: %s",
+						i+1, distinctWarningRules[i].uniqueSubstring, msg)
+				}
 
-				// The truncated warnings must NOT appear as full entries in the message
+				// Warnings beyond the limit MUST NOT appear as full entries
 				for i := 3; i < tc.numRules; i++ {
-					target := ruleTargets[i%len(ruleTargets)]
-					// Each excluded rule produces a warning containing the kind name
-					// The 4th+ warnings should not appear as additional full entries
-					_ = target // We've already verified the count via separator check
+					assert.False(t, strings.Contains(msg, distinctWarningRules[i].uniqueSubstring),
+						"Truncated warning %d (%q) should NOT be in message, got: %s",
+						i+1, distinctWarningRules[i].uniqueSubstring, msg)
 				}
 			} else {
-				// No truncation: all warnings present, no "... and N more" suffix
+				// No truncation: all warnings present, no suffix
 				assert.False(t, strings.Contains(msg, "... and"),
 					"Expected no truncation for %d warnings (limit is 3), got: %s", tc.numRules, msg)
 
-				// All warning segments should be present (count separators = numRules - 1)
-				if tc.numRules > 1 {
-					separators := strings.Count(msg, "; ")
-					assert.Equal(t, tc.numRules-1, separators,
-						"Expected %d '; ' separators for %d warnings, got %d in: %s",
-						tc.numRules-1, tc.numRules, separators, msg)
+				// Every warning unique substring must be present
+				for i := 0; i < tc.numRules; i++ {
+					assert.True(t, strings.Contains(msg, distinctWarningRules[i].uniqueSubstring),
+						"Warning %d (%q) should be in message, got: %s",
+						i+1, distinctWarningRules[i].uniqueSubstring, msg)
 				}
 			}
 		})
