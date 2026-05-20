@@ -230,11 +230,21 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 func updateCollectorConfigStatus(dynamicClient dynamic.Interface, namespace string,
 	configObj *unstructured.Unstructured, warnings []string, reason string) {
 
+	// maxStatusWarnings is the maximum number of individual warning messages to include
+	// in the condition Message before truncating with "... and N more". This keeps the
+	// message readable while still surfacing the most actionable errors first.
+	const maxStatusWarnings = 3
+
 	conditionStatus := metav1.ConditionTrue
 	message := "Configuration applied successfully."
 	if len(warnings) > 0 {
 		conditionStatus = metav1.ConditionFalse
-		message = strings.Join(warnings, "; ")
+		if len(warnings) > maxStatusWarnings {
+			message = strings.Join(warnings[:maxStatusWarnings], "; ") +
+				fmt.Sprintf("; ... and %d more", len(warnings)-maxStatusWarnings)
+		} else {
+			message = strings.Join(warnings, "; ")
+		}
 	}
 
 	// Preserve lastTransitionTime if the condition status hasn't changed.

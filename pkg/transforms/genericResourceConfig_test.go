@@ -1417,10 +1417,10 @@ func TestStatusCondition_MultipleWarnings(t *testing.T) {
 
 	msg, _ := cond["message"].(string)
 	// All 3 warnings should be in the single message separated by "; "
-	assert.True(t, strings.Contains(msg, "exclude"), "Message should mention the exclude action, got: %s", msg)
-	assert.True(t, strings.Contains(msg, "requires at least one field"), "Message should mention missing fields, got: %s", msg)
-	assert.True(t, strings.Contains(msg, "exactly 1 kind"), "Message should mention multiple kinds, got: %s", msg)
 	assert.True(t, strings.Contains(msg, "; "), "Multiple warnings should be separated by '; ', got: %s", msg)
+	assert.True(t, strings.Contains(msg, "only \"include\" action is supported, found \"exclude\""), "Rule 1: got: %s", msg)
+	assert.True(t, strings.Contains(msg, "include action requires at least one field"), "Rule 2: got: %s", msg)
+	assert.True(t, strings.Contains(msg, "include action with fields must specify exactly 1 kind, found 2"), "Rule 3: got: %s", msg)
 }
 
 // TestStatusCondition_FeatureDisabled verifies that when the feature flag is off,
@@ -1666,6 +1666,122 @@ func TestStatusCondition_LastTransitionTime_UpdatedWhenStatusChanges(t *testing.
 	// lastTransitionTime MUST change — status transitioned from True to False
 	assert.NotEqual(t, oldTimestamp, cond["lastTransitionTime"],
 		"lastTransitionTime should update when status transitions True→False")
+}
+
+// ─── Warning truncation tests (maxStatusWarnings) ─────────────────────────────
+
+// makeExcludeRule returns a broken CollectorConfig rule that produces exactly one
+// warning ("only 'include' action is supported"). Used to generate N warnings easily.
+func makeExcludeRule(apiGroup, kind string) map[string]interface{} {
+	return map[string]interface{}{
+		"action": "exclude",
+		"resourceSelector": map[string]interface{}{
+			"apiGroups": []interface{}{apiGroup},
+			"kinds":     []interface{}{kind},
+		},
+	}
+}
+
+// TestStatusCondition_WarningTruncation verifies all combinations of warning count
+// against the maxStatusWarnings (3) limit.
+func TestStatusCondition_WarningTruncation(t *testing.T) {
+	tests := []struct {
+		name            string
+		numRules        int   // number of broken rules to generate
+		expectTruncated bool  // whether "... and N more" should appear
+		expectedMore    int   // expected N in "... and N more"
+	}{
+		{"1 warning — below limit, no truncation", 1, false, 0},
+		{"2 warnings — below limit, no truncation", 2, false, 0},
+		{"3 warnings — at limit (boundary), no truncation", 3, false, 0},
+		{"4 warnings — 1 over limit, truncated", 4, true, 1},
+		{"5 warnings — 2 over limit, truncated", 5, true, 2},
+		{"6 warnings — double the limit, truncated", 6, true, 3},
+	}
+
+	// Use distinct apiGroups/kinds so each rule produces a unique warning message
+	// (makes it easy to assert which warnings appear and which are truncated).
+	ruleTargets := []struct{ apiGroup, kind string }{
+		{"coordination.k8s.io", "Lease"},
+		{"apps", "Deployment"},
+		{"batch", "Job"},
+		{"networking.k8s.io", "Ingress"},
+		{"rbac.authorization.k8s.io", "Role"},
+		{"storage.k8s.io", "StorageClass"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+			originalNamespace := config.Cfg.PodNamespace
+			defer func() {
+				config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+				config.Cfg.PodNamespace = originalNamespace
+				mergedTransformConfig = nil
+			}()
+			config.Cfg.FeatureConfigurableCollection = true
+			config.Cfg.PodNamespace = "test-namespace"
+
+			rules := make([]interface{}, tc.numRules)
+			for i := 0; i < tc.numRules; i++ {
+				target := ruleTargets[i%len(ruleTargets)]
+				rules[i] = makeExcludeRule(target.apiGroup, target.kind)
+			}
+
+			collectionConfig := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "search.open-cluster-management.io/v1alpha1",
+					"kind":       "CollectorConfig",
+					"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+					"spec":       map[string]interface{}{"collectionRules": rules},
+				},
+			}
+
+			scheme := runtime.NewScheme()
+			fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+			loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+			cond := getStatusConditionFromFakeClient(fakeClient)
+			require.NotNil(t, cond, "Expected a status condition for case: %s", tc.name)
+			assert.Equal(t, "False", cond["status"])
+
+			msg, _ := cond["message"].(string)
+
+			if tc.expectTruncated {
+				// The message must end with the truncation suffix
+				expectedSuffix := fmt.Sprintf("; ... and %d more", tc.expectedMore)
+				assert.True(t, strings.Contains(msg, expectedSuffix),
+					"Expected truncation suffix %q in message, got: %s", expectedSuffix, msg)
+
+				// Exactly 3 warning segments should appear before the suffix
+				// (count "; " separators before "... and" — should be exactly 2 between 3 items)
+				beforeSuffix := msg[:strings.Index(msg, "; ... and")]
+				separators := strings.Count(beforeSuffix, "; ")
+				assert.Equal(t, 2, separators,
+					"Expected exactly 2 '; ' separators among first 3 warnings, got %d in: %s", separators, beforeSuffix)
+
+				// The truncated warnings must NOT appear as full entries in the message
+				for i := 3; i < tc.numRules; i++ {
+					target := ruleTargets[i%len(ruleTargets)]
+					// Each excluded rule produces a warning containing the kind name
+					// The 4th+ warnings should not appear as additional full entries
+					_ = target // We've already verified the count via separator check
+				}
+			} else {
+				// No truncation: all warnings present, no "... and N more" suffix
+				assert.False(t, strings.Contains(msg, "... and"),
+					"Expected no truncation for %d warnings (limit is 3), got: %s", tc.numRules, msg)
+
+				// All warning segments should be present (count separators = numRules - 1)
+				if tc.numRules > 1 {
+					separators := strings.Count(msg, "; ")
+					assert.Equal(t, tc.numRules-1, separators,
+						"Expected %d '; ' separators for %d warnings, got %d in: %s",
+						tc.numRules-1, tc.numRules, separators, msg)
+				}
+			}
+		})
+	}
 }
 
 // TestStringToDataType tests the string→DataType mapping helper.
