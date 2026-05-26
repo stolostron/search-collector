@@ -3,13 +3,17 @@
 package transforms
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
@@ -1006,6 +1010,838 @@ func TestLoadAndMergeConfigurableCollection_FieldCollisionWithSuffix(t *testing.
 	assert.Equal(t, "{.metadata.annotations.valid}", podConfig.properties[1].JSONPath)
 }
 
+// ─── Status condition tests (ACM-33146) ───────────────────────────────────────
+// These tests verify that loadAndMergeConfigurableCollectionWithClient writes
+// an "Applied" status condition back to the CollectorConfig CR via the dynamic
+// client so that users can see configuration errors with `oc describe`.
+
+// getStatusConditionFromFakeClient inspects the fake client's recorded actions
+// and returns the first "Applied" condition written to the status subresource.
+// Returns nil if no status update was recorded.
+func getStatusConditionFromFakeClient(fakeClient *fake.FakeDynamicClient) map[string]interface{} {
+	for _, action := range fakeClient.Actions() {
+		if action.GetVerb() != "update" || action.GetSubresource() != "status" {
+			continue
+		}
+		ua, ok := action.(k8stesting.UpdateAction)
+		if !ok {
+			continue
+		}
+		obj, ok := ua.GetObject().(*unstructured.Unstructured)
+		if !ok {
+			continue
+		}
+		status, ok := obj.Object["status"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		conditions, ok := status["conditions"].([]interface{})
+		if !ok || len(conditions) == 0 {
+			continue
+		}
+		if cond, ok := conditions[0].(map[string]interface{}); ok {
+			return cond
+		}
+	}
+	return nil
+}
+
+// TestStatusCondition_Applied_ValidConfig verifies that a well-formed config
+// results in Applied=True written to the CollectorConfig status.
+func TestStatusCondition_Applied_ValidConfig(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "dnsPolicy",
+								"jsonPath": "{.spec.dnsPolicy}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	cond := getStatusConditionFromFakeClient(fakeClient)
+	require.NotNil(t, cond, "Expected a status condition to be written to the CollectorConfig CR")
+
+	assert.Equal(t, "Applied", cond["type"], "Condition type should be 'Applied'")
+	assert.Equal(t, "True", cond["status"], "Condition status should be True for a valid config")
+	assert.Equal(t, "Applied", cond["reason"], "Condition reason should be 'Applied'")
+	assert.Equal(t, "Configuration applied successfully.", cond["message"])
+}
+
+// TestStatusCondition_Applied_SkippedRule verifies that a rule with an
+// unsupported action results in Applied=False with a descriptive warning message.
+func TestStatusCondition_Applied_SkippedRule(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						// "exclude" is not yet supported — rule should be skipped
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	cond := getStatusConditionFromFakeClient(fakeClient)
+	require.NotNil(t, cond, "Expected a status condition to be written to the CollectorConfig CR")
+
+	assert.Equal(t, "Applied", cond["type"])
+	assert.Equal(t, "False", cond["status"], "Condition status should be False when a rule is skipped")
+	assert.Equal(t, "RulesSkipped", cond["reason"])
+	// Message should mention the skipped action
+	msg, _ := cond["message"].(string)
+	assert.True(t, strings.Contains(msg, "exclude"), "Message should mention the unsupported 'exclude' action, got: %s", msg)
+}
+
+// TestStatusCondition_Applied_FieldCollision verifies that when two rules both
+// try to add a field with the same name to the same resource, the second rule
+// is skipped and Applied=False is written with a descriptive message.
+// (Note: built-in properties like "name" are added at transform runtime via
+// commonProperties(), not via the config layer, so collisions with them are not
+// detected here. Config-layer collisions happen between CollectorConfig rules.)
+func TestStatusCondition_Applied_FieldCollision(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					// Rule 1: adds "dnsPolicy" for Pod
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "dnsPolicy",
+								"jsonPath": "{.spec.dnsPolicy}",
+							},
+						},
+					},
+					// Rule 2: also tries to add "dnsPolicy" for Pod — collision
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "dnsPolicy",
+								"jsonPath": "{.spec.dnsPolicy}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	cond := getStatusConditionFromFakeClient(fakeClient)
+	require.NotNil(t, cond, "Expected a status condition to be written to the CollectorConfig CR")
+
+	assert.Equal(t, "Applied", cond["type"])
+	assert.Equal(t, "False", cond["status"], "Condition status should be False when a field collision is detected")
+	assert.Equal(t, "RulesSkipped", cond["reason"])
+	msg, _ := cond["message"].(string)
+	assert.True(t, strings.Contains(msg, "dnsPolicy"), "Message should mention the colliding field 'dnsPolicy', got: %s", msg)
+	assert.True(t, strings.Contains(msg, "collides"), "Message should mention the collision, got: %s", msg)
+}
+
+// ─── Additional status condition coverage (gap analysis) ──────────────────────
+
+// TestStatusCondition_AllWarningPaths verifies that every warning path in
+// loadAndMergeConfigurableCollectionWithClient sets Applied=False. Uses a config
+// with one broken rule of each type to exercise each code path.
+func TestStatusCondition_AllWarningPaths(t *testing.T) {
+	tests := []struct {
+		name          string
+		rule          map[string]interface{}
+		wantSubstring string // expected in condition message
+	}{
+		{
+			name: "include without fields",
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{"Pod"},
+				},
+				// no fields key
+			},
+			wantSubstring: "requires at least one field",
+		},
+		{
+			name: "missing kinds",
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{}, // empty
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
+				},
+			},
+			wantSubstring: "missing kinds",
+		},
+		{
+			name: "multiple kinds",
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{"Pod", "Deployment"},
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
+				},
+			},
+			wantSubstring: "exactly 1 kind",
+		},
+		{
+			name: "multiple apiGroups",
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{"", "apps"},
+					"kinds":     []interface{}{"Pod"},
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
+				},
+			},
+			wantSubstring: "exactly 1 apiGroup",
+		},
+		{
+			name: "field missing jsonPath",
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{"Pod"},
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "myField", "jsonPath": ""},
+				},
+			},
+			wantSubstring: "name or jsonPath is empty",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+			originalNamespace := config.Cfg.PodNamespace
+			defer func() {
+				config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+				config.Cfg.PodNamespace = originalNamespace
+				mergedTransformConfig = nil
+			}()
+			config.Cfg.FeatureConfigurableCollection = true
+			config.Cfg.PodNamespace = "test-namespace"
+
+			collectionConfig := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "search.open-cluster-management.io/v1alpha1",
+					"kind":       "CollectorConfig",
+					"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+					"spec": map[string]interface{}{
+						"collectionRules": []interface{}{tc.rule},
+					},
+				},
+			}
+
+			scheme := runtime.NewScheme()
+			fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+			loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+			cond := getStatusConditionFromFakeClient(fakeClient)
+			require.NotNil(t, cond, "Expected a status condition for case: %s", tc.name)
+			assert.Equal(t, "Applied", cond["type"])
+			assert.Equal(t, "False", cond["status"], "Should be False for: %s", tc.name)
+			assert.Equal(t, "RulesSkipped", cond["reason"])
+			msg, _ := cond["message"].(string)
+			assert.True(t, strings.Contains(msg, tc.wantSubstring),
+				"Message for %s should contain %q, got: %s", tc.name, tc.wantSubstring, msg)
+		})
+	}
+}
+
+// TestStatusCondition_MultipleWarnings verifies that when multiple rules are
+// skipped, all warning messages are concatenated into a single condition message
+// separated by "; " so users see all issues at once.
+func TestStatusCondition_MultipleWarnings(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					// Rule 1: unsupported action
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+					},
+					// Rule 2: include without fields
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Deployment"},
+						},
+					},
+					// Rule 3: multiple kinds
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps"},
+							"kinds":     []interface{}{"DaemonSet", "StatefulSet"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	cond := getStatusConditionFromFakeClient(fakeClient)
+	require.NotNil(t, cond, "Expected a status condition")
+
+	assert.Equal(t, "False", cond["status"])
+	assert.Equal(t, "RulesSkipped", cond["reason"])
+
+	msg, _ := cond["message"].(string)
+	// All 3 warnings should be in the single message separated by "; "
+	assert.True(t, strings.Contains(msg, "; "), "Multiple warnings should be separated by '; ', got: %s", msg)
+	assert.True(t, strings.Contains(msg, "only \"include\" action is supported, found \"exclude\""), "Rule 1: got: %s", msg)
+	assert.True(t, strings.Contains(msg, "include action requires at least one field"), "Rule 2: got: %s", msg)
+	assert.True(t, strings.Contains(msg, "include action with fields must specify exactly 1 kind, found 2"), "Rule 3: got: %s", msg)
+}
+
+// TestStatusCondition_FeatureDisabled verifies that when the feature flag is off,
+// loadAndMergeConfigurableCollectionWithClient is never called, so no status update
+// is attempted and mergedTransformConfig is initialised from defaults only.
+func TestStatusCondition_FeatureDisabled(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+	config.Cfg.FeatureConfigurableCollection = false
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Track whether loadAndMergeConfigurableCollectionWithClient would have been called
+	// by verifying that mergedTransformConfig contains only default entries (no custom rules).
+	// A fake client with a CR is deliberately NOT passed — if the internal function ran,
+	// it would contact the cluster; the fact that we only call the public wrapper proves
+	// the feature gate is respected without needing to inject a spy.
+	LoadAndMergeConfigurableCollection()
+
+	// When disabled: mergedTransformConfig should mirror defaultTransformConfig exactly.
+	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig),
+		"When feature is disabled mergedTransformConfig should equal defaultTransformConfig")
+
+	// Verify no custom fields were added (proves the CR was never read).
+	for key, cfg := range mergedTransformConfig {
+		defaultCfg, exists := defaultTransformConfig[key]
+		assert.True(t, exists, "Unexpected key %s in mergedTransformConfig", key)
+		if exists {
+			assert.Equal(t, len(defaultCfg.properties), len(cfg.properties),
+				"Resource %s should have only default properties when feature is disabled", key)
+		}
+	}
+}
+
+// TestStatusCondition_CRNotFound verifies that when the CollectorConfig CR does not
+// exist, no status update is attempted (there's nothing to write to).
+func TestStatusCondition_CRNotFound(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Empty fake client — no CollectorConfig CR
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// No update action should have been recorded
+	cond := getStatusConditionFromFakeClient(fakeClient)
+	assert.Nil(t, cond, "No status condition should be written when CollectorConfig CR does not exist")
+}
+
+// TestStatusCondition_StatusUpdateFailure verifies that when the status update is
+// rejected (e.g. RBAC denied), the collector continues working — the merge result
+// is still applied and no panic occurs. This matches the live cluster behavior we
+// observed during E2E testing (RBAC missing → forbidden → collector keeps running).
+func TestStatusCondition_StatusUpdateFailure(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{"name": "dnsPolicy", "jsonPath": "{.spec.dnsPolicy}"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	// Inject a reactor that simulates RBAC denial on any status subresource update.
+	fakeClient.PrependReactor("update", "collectorconfigs", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		if action.GetSubresource() == "status" {
+			return true, nil, fmt.Errorf("collectorconfigs.search.open-cluster-management.io \"collector-config\" is forbidden: User cannot update resource \"collectorconfigs/status\"")
+		}
+		return false, nil, nil
+	})
+
+	// Must not panic when the status update is rejected.
+	require.NotPanics(t, func() {
+		loadAndMergeConfigurableCollectionWithClient(fakeClient)
+	})
+
+	// Config merge must have succeeded despite the status update failure.
+	podConfig, exists := mergedTransformConfig["Pod"]
+	assert.True(t, exists, "Pod config should be merged even when status update is denied")
+	assert.Equal(t, 1, len(podConfig.properties), "Custom field should have been merged")
+	assert.Equal(t, "dnsPolicy", podConfig.properties[0].Name)
+}
+
+// TestStatusCondition_LastTransitionTime_PreservedWhenStatusUnchanged verifies that
+// lastTransitionTime is only updated when the condition status (True/False) changes.
+// If the collector restarts and the config is still valid (True→True), the timestamp
+// should remain unchanged — following the Kubernetes convention that lastTransitionTime
+// reflects the last state *transition*, not the last evaluation.
+func TestStatusCondition_LastTransitionTime_PreservedWhenStatusUnchanged(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	existingTimestamp := "2026-01-01T10:00:00Z"
+
+	// CollectorConfig that already has Applied=True in its status (simulating a prior run)
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{"name": "dnsPolicy", "jsonPath": "{.spec.dnsPolicy}"},
+						},
+					},
+				},
+			},
+			// Pre-existing status with a known timestamp
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"type":               "Applied",
+						"status":             "True",
+						"reason":             "Applied",
+						"message":            "Configuration applied successfully.",
+						"lastTransitionTime": existingTimestamp,
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	cond := getStatusConditionFromFakeClient(fakeClient)
+	require.NotNil(t, cond)
+
+	assert.Equal(t, "True", cond["status"])
+	// lastTransitionTime must be preserved — status didn't change (True→True)
+	assert.Equal(t, existingTimestamp, cond["lastTransitionTime"],
+		"lastTransitionTime should NOT change when status stays True")
+}
+
+// TestStatusCondition_LastTransitionTime_UpdatedWhenStatusChanges verifies that
+// lastTransitionTime IS updated when the condition status transitions (True→False).
+func TestStatusCondition_LastTransitionTime_UpdatedWhenStatusChanges(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	oldTimestamp := "2026-01-01T10:00:00Z"
+
+	// Config was True before, now we have a broken rule (True → False transition)
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "exclude", // broken rule — triggers False
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"Pod"},
+						},
+					},
+				},
+			},
+			// Pre-existing status was True
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"type":               "Applied",
+						"status":             "True",
+						"reason":             "Applied",
+						"message":            "Configuration applied successfully.",
+						"lastTransitionTime": oldTimestamp,
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	cond := getStatusConditionFromFakeClient(fakeClient)
+	require.NotNil(t, cond)
+
+	assert.Equal(t, "False", cond["status"])
+	// lastTransitionTime MUST change — status transitioned from True to False
+	assert.NotEqual(t, oldTimestamp, cond["lastTransitionTime"],
+		"lastTransitionTime should update when status transitions True→False")
+}
+
+// ─── Warning truncation tests (maxStatusWarnings) ─────────────────────────────
+
+// TestStatusCondition_WarningTruncation verifies all combinations of warning count
+// against the maxStatusWarnings (3) limit.
+func TestStatusCondition_WarningTruncation(t *testing.T) {
+	tests := []struct {
+		name            string
+		numRules        int   // number of broken rules to generate
+		expectTruncated bool  // whether "... and N more" should appear
+		expectedMore    int   // expected N in "... and N more"
+	}{
+		{"1 warning — below limit, no truncation", 1, false, 0},
+		{"2 warnings — below limit, no truncation", 2, false, 0},
+		{"3 warnings — at limit (boundary), no truncation", 3, false, 0},
+		{"4 warnings — 1 over limit, truncated", 4, true, 1},
+		{"5 warnings — 2 over limit, truncated", 5, true, 2},
+		{"6 warnings — double the limit, truncated", 6, true, 3},
+	}
+
+	// distinctWarningRules defines 6 rule types that each produce a UNIQUE warning message.
+	// This is essential: using the same rule type (e.g. all "exclude") would make all
+	// warning strings identical, preventing us from asserting which ones are truncated.
+	type warningRule struct {
+		rule            interface{} // the CollectorConfig rule that triggers the warning
+		uniqueSubstring string      // a substring unique to that warning's message
+	}
+	distinctWarningRules := []warningRule{
+		{
+			rule: map[string]interface{}{
+				"action": "exclude",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{"coordination.k8s.io"},
+					"kinds":     []interface{}{"Lease"},
+				},
+			},
+			uniqueSubstring: `found "exclude"`,
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{"Pod"},
+				},
+				// no fields — triggers "requires at least one field"
+			},
+			uniqueSubstring: "requires at least one field",
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{"apps"},
+					"kinds":     []interface{}{"DaemonSet", "StatefulSet"}, // 2 kinds
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
+				},
+			},
+			uniqueSubstring: "exactly 1 kind",
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{"apps", "batch"}, // 2 apiGroups
+					"kinds":     []interface{}{"Job"},
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "y", "jsonPath": "{.y}"},
+				},
+			},
+			uniqueSubstring: "exactly 1 apiGroup",
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{}, // empty kinds
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "z", "jsonPath": "{.z}"},
+				},
+			},
+			uniqueSubstring: "missing kinds",
+		},
+		{
+			rule: map[string]interface{}{
+				"action": "include",
+				"resourceSelector": map[string]interface{}{
+					"apiGroups": []interface{}{""},
+					"kinds":     []interface{}{""}, // empty kind string
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "w", "jsonPath": "{.w}"},
+				},
+			},
+			uniqueSubstring: "kind is empty",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+			originalNamespace := config.Cfg.PodNamespace
+			defer func() {
+				config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+				config.Cfg.PodNamespace = originalNamespace
+				mergedTransformConfig = nil
+			}()
+			config.Cfg.FeatureConfigurableCollection = true
+			config.Cfg.PodNamespace = "test-namespace"
+
+			rules := make([]interface{}, tc.numRules)
+			for i := 0; i < tc.numRules; i++ {
+				rules[i] = distinctWarningRules[i].rule
+			}
+
+			collectionConfig := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "search.open-cluster-management.io/v1alpha1",
+					"kind":       "CollectorConfig",
+					"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+					"spec":       map[string]interface{}{"collectionRules": rules},
+				},
+			}
+
+			scheme := runtime.NewScheme()
+			fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+			loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+			cond := getStatusConditionFromFakeClient(fakeClient)
+			require.NotNil(t, cond, "Expected a status condition for case: %s", tc.name)
+			assert.Equal(t, "False", cond["status"])
+
+			msg, _ := cond["message"].(string)
+
+			if tc.expectTruncated {
+				// Truncation suffix must be present
+				expectedSuffix := fmt.Sprintf("; ... and %d more", tc.expectedMore)
+				assert.True(t, strings.Contains(msg, expectedSuffix),
+					"Expected suffix %q in message, got: %s", expectedSuffix, msg)
+
+				// First 3 warning unique substrings MUST appear
+				for i := 0; i < 3; i++ {
+					assert.True(t, strings.Contains(msg, distinctWarningRules[i].uniqueSubstring),
+						"Warning %d (%q) should be in message, got: %s",
+						i+1, distinctWarningRules[i].uniqueSubstring, msg)
+				}
+
+				// Warnings beyond the limit MUST NOT appear as full entries
+				for i := 3; i < tc.numRules; i++ {
+					assert.False(t, strings.Contains(msg, distinctWarningRules[i].uniqueSubstring),
+						"Truncated warning %d (%q) should NOT be in message, got: %s",
+						i+1, distinctWarningRules[i].uniqueSubstring, msg)
+				}
+			} else {
+				// No truncation: all warnings present, no suffix
+				assert.False(t, strings.Contains(msg, "... and"),
+					"Expected no truncation for %d warnings (limit is 3), got: %s", tc.numRules, msg)
+
+				// Every warning unique substring must be present
+				for i := 0; i < tc.numRules; i++ {
+					assert.True(t, strings.Contains(msg, distinctWarningRules[i].uniqueSubstring),
+						"Warning %d (%q) should be in message, got: %s",
+						i+1, distinctWarningRules[i].uniqueSubstring, msg)
+				}
+			}
+		})
+	}
+}
+
+// TestStringToDataType tests the string→DataType mapping helper.
 func TestStringToDataType(t *testing.T) {
 	tests := []struct {
 		name     string
