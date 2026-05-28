@@ -13,6 +13,7 @@ package transforms
 import (
 	"encoding/json"
 	"slices"
+	"strconv"
 	"strings"
 
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
@@ -37,7 +38,7 @@ func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 	node.Properties["remediationAction"] = string(p.Spec.RemediationAction)
-	node.Properties["disabled"] = p.Spec.Disabled
+	node.Properties["disabled"] = strconv.FormatBool(p.Spec.Disabled)
 	node.Properties["numRules"] = len(p.Spec.PolicyTemplates)
 	// For the root policy (on hub, in non cluster ns), it doesn't have an overall status. it has status per cluster.
 	// On managed cluster, compliance is reported by status.compliant
@@ -83,7 +84,8 @@ func getPolicyCommonProperties(c *unstructured.Unstructured, node Node) Node {
 
 	node.Properties["remediationAction"], _, _ = unstructured.NestedString(c.Object, "spec", "remediationAction")
 
-	node.Properties["disabled"], _, _ = unstructured.NestedBool(c.Object, "spec", "disabled")
+	disabled, _, _ := unstructured.NestedBool(c.Object, "spec", "disabled")
+	node.Properties["disabled"] = strconv.FormatBool(disabled)
 
 	return node
 }

@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"strconv"
 	"time"
 
 	v1 "k8s.io/api/batch/v1beta1"
@@ -33,10 +34,11 @@ func CronJobResourceBuilder(c *v1.CronJob) *CronJobResource {
 	if c.Status.LastScheduleTime != nil {
 		node.Properties["lastSchedule"] = c.Status.LastScheduleTime.UTC().Format(time.RFC3339)
 	}
-	node.Properties["suspend"] = false
+	suspend := false
 	if c.Spec.Suspend != nil {
-		node.Properties["suspend"] = *c.Spec.Suspend
+		suspend = *c.Spec.Suspend
 	}
+	node.Properties["suspend"] = strconv.FormatBool(suspend)
 
 	return &CronJobResource{node: node}
 }

@@ -31,8 +31,8 @@ func TestTransformKyvernoPolicy(t *testing.T) {
 	node := rv.node
 
 	AssertEqual("validationFailureAction", node.Properties["validationFailureAction"], "Enforce", t)
-	AssertEqual("background", node.Properties["background"], true, t)
-	AssertEqual("admission", node.Properties["admission"], true, t)
+	AssertEqual("background", node.Properties["background"], "true", t)
+	AssertEqual("admission", node.Properties["admission"], "true", t)
 	AssertEqual("severity", node.Properties["severity"], "medium", t)
 
 	// Check the default value for spec.validationFailureAction
@@ -42,6 +42,58 @@ func TestTransformKyvernoPolicy(t *testing.T) {
 	node = rv.node
 	AssertEqual("validationFailureAction", node.Properties["validationFailureAction"], "Audit", t)
 }
+
+// TestBooleanFieldsStoredAsStrings_Kyverno verifies that background and admission
+// fields are stored as strings so the search API can query "background:true" correctly.
+func TestBooleanFieldsStoredAsStrings_Kyverno(t *testing.T) {
+	tests := []struct {
+		name               string
+		specBackground     *bool
+		specAdmission      *bool
+		expectedBackground string
+		expectedAdmission  string
+	}{
+		{"defaults (both true)", nil, nil, "true", "true"},
+		{"background=false, admission=false", boolPtr(false), boolPtr(false), "false", "false"},
+		{"background=true, admission=false", boolPtr(true), boolPtr(false), "true", "false"},
+		{"background=false, admission=true", boolPtr(false), boolPtr(true), "false", "true"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := map[string]interface{}{}
+			if tc.specBackground != nil {
+				spec["background"] = *tc.specBackground
+			}
+			if tc.specAdmission != nil {
+				spec["admission"] = *tc.specAdmission
+			}
+			p := unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "kyverno.io/v1",
+				"kind":       "Policy",
+				"metadata":   map[string]interface{}{"name": "test"},
+				"spec":       spec,
+			}}
+			node := KyvernoPolicyResourceBuilder(&p).node
+
+			bgVal, bgOk := node.Properties["background"].(string)
+			if !bgOk {
+				t.Fatalf("background should be a string, got %T: %v",
+					node.Properties["background"], node.Properties["background"])
+			}
+			adVal, adOk := node.Properties["admission"].(string)
+			if !adOk {
+				t.Fatalf("admission should be a string, got %T: %v",
+					node.Properties["admission"], node.Properties["admission"])
+			}
+			AssertEqual("background", bgVal, tc.expectedBackground, t)
+			AssertEqual("admission", adVal, tc.expectedAdmission, t)
+		})
+	}
+}
+
+// boolPtr is a helper to get a pointer to a bool literal.
+func boolPtr(b bool) *bool { return &b }
 
 func TestTransformKyvernoClusterPolicy(t *testing.T) {
 	p := unstructured.Unstructured{
@@ -66,8 +118,8 @@ func TestTransformKyvernoClusterPolicy(t *testing.T) {
 	node := rv.node
 
 	AssertEqual("validationFailureAction", node.Properties["validationFailureAction"], "Enforce", t)
-	AssertEqual("background", node.Properties["background"], false, t)
-	AssertEqual("admission", node.Properties["admission"], false, t)
+	AssertEqual("background", node.Properties["background"], "false", t)
+	AssertEqual("admission", node.Properties["admission"], "false", t)
 	AssertEqual("severity", node.Properties["severity"], "critical", t)
 }
 
@@ -325,64 +377,64 @@ func TestTransformKyvernoValidationAction(t *testing.T) {
 		testName           string
 		policy             *unstructured.Unstructured
 		expectedValidation string
-		expectedBackground bool
-		expectedAdmission  bool
+		expectedBackground string
+		expectedAdmission  string
 		expectedSeverity   string
 	}{
 		{
 			testName:           "Test ValidatingPolicy with Deny action",
 			policy:             validatingPolicy,
 			expectedValidation: "Deny",
-			expectedBackground: true,
-			expectedAdmission:  true,
+			expectedBackground: "true",
+			expectedAdmission:  "true",
 			expectedSeverity:   "medium",
 		},
 		{
 			testName:           "Test MutatingPolicy",
 			policy:             mutatingPolicy,
 			expectedValidation: "",
-			expectedBackground: true,
-			expectedAdmission:  true,
+			expectedBackground: "true",
+			expectedAdmission:  "true",
 			expectedSeverity:   "medium",
 		},
 		{
 			testName:           "Test ImageValidatingPolicy",
 			policy:             imageValidatingPolicy,
 			expectedValidation: "Audit/Deny",
-			expectedBackground: true,
-			expectedAdmission:  true,
+			expectedBackground: "true",
+			expectedAdmission:  "true",
 			expectedSeverity:   "high",
 		},
 		{
 			testName:           "Test GeneratingPolicy",
 			policy:             generatingPolicy,
 			expectedValidation: "",
-			expectedBackground: true,
-			expectedAdmission:  true,
+			expectedBackground: "true",
+			expectedAdmission:  "true",
 			expectedSeverity:   "low",
 		},
 		{
 			testName:           "Test ValidatingPolicy with evaluation disabled",
 			policy:             validatingPolicyDisabled,
 			expectedValidation: "Audit",
-			expectedBackground: false,
-			expectedAdmission:  false,
+			expectedBackground: "false",
+			expectedAdmission:  "false",
 			expectedSeverity:   "medium",
 		},
 		{
 			testName:           "Test ImageValidatingPolicy with evaluation disabled",
 			policy:             imageValidatingPolicyDisabled,
 			expectedValidation: "Audit/Deny",
-			expectedBackground: false,
-			expectedAdmission:  false,
+			expectedBackground: "false",
+			expectedAdmission:  "false",
 			expectedSeverity:   "high",
 		},
 		{
 			testName:           "Test NamespacedValidatingPolicy",
 			policy:             namespacedValidatingPolicy,
 			expectedValidation: "Deny",
-			expectedBackground: true,
-			expectedAdmission:  true,
+			expectedBackground: "true",
+			expectedAdmission:  "true",
 			expectedSeverity:   "medium",
 		},
 	}

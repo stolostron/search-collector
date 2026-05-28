@@ -30,7 +30,37 @@ func TestTransformCronJob(t *testing.T) {
 	AssertEqual("active", node.Properties["active"], int64(0), t)
 	AssertEqual("lastSchedule", node.Properties["lastSchedule"], date.UTC().Format(time.RFC3339), t)
 	AssertEqual("schedule", node.Properties["schedule"], "30 23 * * *", t)
-	AssertEqual("suspend", node.Properties["suspend"], false, t)
+	AssertEqual("suspend", node.Properties["suspend"], "false", t)
+}
+
+// TestBooleanFieldsStoredAsStrings_CronJob verifies that the suspend field on
+// CronJob is stored as a string so the search API can query it correctly.
+func TestBooleanFieldsStoredAsStrings_CronJob(t *testing.T) {
+	trueVal := true
+	falseVal := false
+
+	tests := []struct {
+		name     string
+		suspend  *bool
+		expected string
+	}{
+		{"nil pointer defaults to false", nil, "false"},
+		{"false pointer", &falseVal, "false"},
+		{"true pointer", &trueVal, "true"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := v1.CronJob{}
+			c.Spec.Suspend = tc.suspend
+			node := CronJobResourceBuilder(&c).BuildNode()
+			val, ok := node.Properties["suspend"].(string)
+			if !ok {
+				t.Fatalf("suspend should be a string, got %T: %v", node.Properties["suspend"], node.Properties["suspend"])
+			}
+			AssertEqual("suspend", val, tc.expected, t)
+		})
+	}
 }
 
 func TestCronJobBuildEdges(t *testing.T) {

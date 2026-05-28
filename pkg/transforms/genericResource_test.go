@@ -3,6 +3,7 @@
 package transforms
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stolostron/search-collector/pkg/config"
@@ -166,7 +167,7 @@ func Test_genericResourceFromConfigVM(t *testing.T) {
 	AssertEqual("runStrategy", node.Properties["runStrategy"], "always", t)
 	AssertEqual("status", node.Properties["status"], "Running", t)
 	AssertEqual("workload", node.Properties["workload"], "server", t)
-	AssertEqual("_specRunning", node.Properties["_specRunning"], true, t)
+	AssertEqual("_specRunning", node.Properties["_specRunning"], "true", t)
 	AssertEqual("_specRunStrategy", node.Properties["_specRunStrategy"], "always", t)
 }
 
@@ -244,7 +245,7 @@ func Test_genericResourceFromConfigVMSnapshot(t *testing.T) {
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
 	AssertEqual("phase", node.Properties["phase"], "Succeeded", t)
-	AssertEqual("readyToUse", node.Properties["readyToUse"], true, t)
+	AssertEqual("readyToUse", node.Properties["readyToUse"], "true", t)
 	AssertEqual("sourceName", node.Properties["sourceName"], "centos7-gray-owl-35", t)
 	AssertEqual("sourceKind", node.Properties["sourceKind"], "VirtualMachine", t)
 	AssertDeepEqual("indications", node.Properties["indications"], []interface{}{"Online", "NoGuestAgent"}, t)
@@ -269,7 +270,7 @@ func Test_genericResourceFromConfigVMRestore(t *testing.T) {
 	// Verify properties defined in the transform config
 	AssertEqual("ready", node.Properties["ready"], "True", t)
 	AssertEqual("_conditionReadyReason", node.Properties["_conditionReadyReason"], "Operation complete", t)
-	AssertEqual("complete", node.Properties["complete"], true, t)
+	AssertEqual("complete", node.Properties["complete"], "true", t)
 	AssertEqual("targetApiGroup", node.Properties["targetApiGroup"], "kubevirt.io", t)
 	AssertEqual("targetName", node.Properties["targetName"], "centos7-gray-owl-35", t)
 	AssertEqual("targetKind", node.Properties["targetKind"], "VirtualMachine", t)
@@ -329,7 +330,7 @@ func Test_genericResourceFromConfigStorageClass(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2025-03-11T10:24:44Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("allowVolumeExpansion", node.Properties["allowVolumeExpansion"], true, t)
+	AssertEqual("allowVolumeExpansion", node.Properties["allowVolumeExpansion"], "true", t)
 	AssertEqual("provisioner", node.Properties["provisioner"], "ebs.csi.aws.com", t)
 	AssertEqual("reclaimPolicy", node.Properties["reclaimPolicy"], "Delete", t)
 	AssertEqual("volumeBindingMode", node.Properties["volumeBindingMode"], "WaitForFirstConsumer", t)
@@ -512,8 +513,8 @@ func Test_genericResourceFromConfigMigrationPolicy(t *testing.T) {
 	AssertEqual("created", node.Properties["created"], "2025-12-15T12:00:00Z", t)
 
 	// Verify properties defined in the transform config
-	AssertEqual("allowAutoConverge", node.Properties["allowAutoConverge"], true, t)
-	AssertEqual("allowPostCopy", node.Properties["allowPostCopy"], false, t)
+	AssertEqual("allowAutoConverge", node.Properties["allowAutoConverge"], "true", t)
+	AssertEqual("allowPostCopy", node.Properties["allowPostCopy"], "false", t)
 	AssertEqual("bandwidthPerMigration", node.Properties["bandwidthPerMigration"], int64(67108864), t)
 	AssertEqual("completionTimeoutPerGiB", node.Properties["completionTimeoutPerGiB"], int64(120), t)
 	AssertDeepEqual("annotation", node.Properties["annotation"], map[string]string{
@@ -651,4 +652,201 @@ func Test_genericResourceFromConfigTemplateNoMatchLabel(t *testing.T) {
 	// Verify properties defined in the transform config aren't present because they don't match label
 	AssertEqual("objectVMArchitecture", node.Properties["objectVMArchitecture"], nil, t)
 	AssertEqual("objectVMName", node.Properties["objectVMName"], nil, t)
+}
+
+// TestBooleanFieldsStoredAsStrings_GenericConfig verifies that boolean fields
+// extracted via genericResourceConfig (using DataType: DataTypeString) are stored
+// as their string representations so the search API can query them correctly.
+func TestBooleanFieldsStoredAsStrings_GenericConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		resource *unstructured.Unstructured
+		field    string
+		expected string
+	}{
+		{
+			name:     "StorageClass allowVolumeExpansion=true",
+			field:    "allowVolumeExpansion",
+			expected: "true",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "storage.k8s.io/v1", "kind": "StorageClass",
+				"metadata":             map[string]interface{}{"name": "test"},
+				"allowVolumeExpansion": true,
+			}},
+		},
+		{
+			name:     "StorageClass allowVolumeExpansion=false",
+			field:    "allowVolumeExpansion",
+			expected: "false",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "storage.k8s.io/v1", "kind": "StorageClass",
+				"metadata":             map[string]interface{}{"name": "test"},
+				"allowVolumeExpansion": false,
+			}},
+		},
+		{
+			name:     "MigrationPolicy allowAutoConverge=true",
+			field:    "allowAutoConverge",
+			expected: "true",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "migrations.kubevirt.io/v1alpha1", "kind": "MigrationPolicy",
+				"metadata": map[string]interface{}{"name": "test"},
+				"spec":     map[string]interface{}{"allowAutoConverge": true},
+			}},
+		},
+		{
+			name:     "MigrationPolicy allowAutoConverge=false",
+			field:    "allowAutoConverge",
+			expected: "false",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "migrations.kubevirt.io/v1alpha1", "kind": "MigrationPolicy",
+				"metadata": map[string]interface{}{"name": "test"},
+				"spec":     map[string]interface{}{"allowAutoConverge": false},
+			}},
+		},
+		{
+			name:     "MigrationPolicy allowPostCopy=true",
+			field:    "allowPostCopy",
+			expected: "true",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "migrations.kubevirt.io/v1alpha1", "kind": "MigrationPolicy",
+				"metadata": map[string]interface{}{"name": "test"},
+				"spec":     map[string]interface{}{"allowPostCopy": true},
+			}},
+		},
+		{
+			name:     "MigrationPolicy allowPostCopy=false",
+			field:    "allowPostCopy",
+			expected: "false",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "migrations.kubevirt.io/v1alpha1", "kind": "MigrationPolicy",
+				"metadata": map[string]interface{}{"name": "test"},
+				"spec":     map[string]interface{}{"allowPostCopy": false},
+			}},
+		},
+		{
+			name:     "VirtualMachineSnapshot readyToUse=true",
+			field:    "readyToUse",
+			expected: "true",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "snapshot.kubevirt.io/v1beta1", "kind": "VirtualMachineSnapshot",
+				"metadata": map[string]interface{}{"name": "test"},
+				"status":   map[string]interface{}{"readyToUse": true},
+			}},
+		},
+		{
+			name:     "VirtualMachineSnapshot readyToUse=false",
+			field:    "readyToUse",
+			expected: "false",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "snapshot.kubevirt.io/v1beta1", "kind": "VirtualMachineSnapshot",
+				"metadata": map[string]interface{}{"name": "test"},
+				"status":   map[string]interface{}{"readyToUse": false},
+			}},
+		},
+		{
+			name:     "VirtualMachineRestore complete=true",
+			field:    "complete",
+			expected: "true",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "snapshot.kubevirt.io/v1beta1", "kind": "VirtualMachineRestore",
+				"metadata": map[string]interface{}{"name": "test"},
+				"status":   map[string]interface{}{"complete": true},
+			}},
+		},
+		{
+			name:     "VirtualMachineRestore complete=false",
+			field:    "complete",
+			expected: "false",
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "snapshot.kubevirt.io/v1beta1", "kind": "VirtualMachineRestore",
+				"metadata": map[string]interface{}{"name": "test"},
+				"status":   map[string]interface{}{"complete": false},
+			}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			node := GenericResourceBuilder(tc.resource).BuildNode()
+			val, ok := node.Properties[tc.field].(string)
+			if !ok {
+				t.Fatalf("%s should be a string, got %T: %v",
+					tc.field, node.Properties[tc.field], node.Properties[tc.field])
+			}
+			AssertEqual(tc.field, val, tc.expected, t)
+		})
+	}
+}
+
+// TestBooleanFieldsNotStoredAsRawBool_RegressionPrevention is a regression test
+// that explicitly documents WHY booleans must be stored as strings.
+//
+// The search API queries JSONB fields using the '?' key-exists operator, which
+// only matches string keys inside a JSONB object. A raw JSON boolean (true/false)
+// is NOT a key and cannot be found by the '?' operator. Storing booleans as
+// strings ("true"/"false") makes them queryable as:
+//
+//   WHERE data->'allowVolumeExpansion' ? 'true'   -- works for string "true"
+//
+// If a value were stored as a raw boolean, that SQL would return 0 rows even
+// though the field is set. This test prevents that regression by asserting:
+// 1. The stored type is string, not bool.
+// 2. The stored value equals the expected string ("true" or "false").
+func TestBooleanFieldsNotStoredAsRawBool_RegressionPrevention(t *testing.T) {
+	fields := []struct {
+		resource *unstructured.Unstructured
+		field    string
+		rawBool  bool
+	}{
+		{
+			field:   "allowVolumeExpansion",
+			rawBool: true,
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "storage.k8s.io/v1", "kind": "StorageClass",
+				"metadata": map[string]interface{}{"name": "test"}, "allowVolumeExpansion": true,
+			}},
+		},
+		{
+			field:   "readyToUse",
+			rawBool: true,
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "snapshot.kubevirt.io/v1beta1", "kind": "VirtualMachineSnapshot",
+				"metadata": map[string]interface{}{"name": "test"},
+				"status":   map[string]interface{}{"readyToUse": true},
+			}},
+		},
+		{
+			field:   "complete",
+			rawBool: false,
+			resource: &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": "snapshot.kubevirt.io/v1beta1", "kind": "VirtualMachineRestore",
+				"metadata": map[string]interface{}{"name": "test"},
+				"status":   map[string]interface{}{"complete": false},
+			}},
+		},
+	}
+
+	for _, tc := range fields {
+		t.Run(tc.field, func(t *testing.T) {
+			node := GenericResourceBuilder(tc.resource).BuildNode()
+			stored := node.Properties[tc.field]
+
+			// Regression check 1: must NOT be stored as a raw bool.
+			// If this assertion fails it means the search API query
+			// "WHERE data->'field' ? 'true'" will return 0 results.
+			if _, isBool := stored.(bool); isBool {
+				t.Fatalf(
+					"REGRESSION: %s is stored as raw bool %v — the search API "+
+						"cannot query it. Must be stored as string %q instead.",
+					tc.field, tc.rawBool, fmt.Sprintf("%v", tc.rawBool))
+			}
+
+			// Regression check 2: must be the correct string value.
+			expected := fmt.Sprintf("%v", tc.rawBool)
+			if stored != expected {
+				t.Fatalf("%s: expected string %q, got %T %v", tc.field, expected, stored, stored)
+			}
+		})
+	}
 }

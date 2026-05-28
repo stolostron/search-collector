@@ -3,6 +3,7 @@
 package transforms
 
 import (
+	"strconv"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,8 +53,8 @@ func KyvernoPolicyResourceBuilder(p *unstructured.Unstructured) *KyvernoPolicyRe
 		}
 	}
 
-	node.Properties["background"] = background
-	node.Properties["admission"] = admission
+	node.Properties["background"] = strconv.FormatBool(background)
+	node.Properties["admission"] = strconv.FormatBool(admission)
 	node.Properties["severity"] = p.GetAnnotations()["policies.kyverno.io/severity"]
 
 	return &KyvernoPolicyResource{node: node}
