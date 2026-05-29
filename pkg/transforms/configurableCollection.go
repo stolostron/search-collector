@@ -62,7 +62,7 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 	// FUTURE: ACM-20047 watch this for changes and update config dynamically
 	configObj, err := dynamicClient.Resource(collectorConfigGVR).
 		Namespace(namespace).
-		Get(context.Background(), "collector-config", metav1.GetOptions{})
+		Get(context.Background(), "merged-collector-config", metav1.GetOptions{})
 
 	if err != nil {
 		// CR not found or not accessible — no status to update, just log and return.

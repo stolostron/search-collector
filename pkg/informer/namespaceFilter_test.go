@@ -455,7 +455,7 @@ func fakeDynamicClientWithCollectorConfig(nsSelector map[string]interface{}) *dy
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "open-cluster-management",
 			},
 			"spec": spec,

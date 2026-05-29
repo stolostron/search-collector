@@ -36,7 +36,7 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -119,7 +119,7 @@ func TestLoadAndMergeConfigurableCollection_SkipExcludeActions(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -162,7 +162,7 @@ func TestLoadAndMergeConfigurableCollection_SkipIncludeWithoutFields(t *testing.
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -206,7 +206,7 @@ func TestLoadAndMergeConfigurableCollection_InvalidMultipleKinds(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -256,7 +256,7 @@ func TestLoadAndMergeConfigurableCollection_InvalidMultipleApiGroups(t *testing.
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -370,7 +370,7 @@ func TestLoadAndMergeConfigurableCollection_FieldWithoutDataType(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -424,7 +424,7 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -489,7 +489,7 @@ func TestLoadAndMergeConfigurableCollection_MissingSpec(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			// No spec field
@@ -522,7 +522,7 @@ func TestLoadAndMergeConfigurableCollection_SpecNotMap(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": "not-a-map", // Invalid type
@@ -555,7 +555,7 @@ func TestLoadAndMergeConfigurableCollection_CollectionRulesNotArray(t *testing.T
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -589,7 +589,7 @@ func TestLoadAndMergeConfigurableCollection_RuleNotMap(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -625,7 +625,7 @@ func TestLoadAndMergeConfigurableCollection_MissingResourceSelector(t *testing.T
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -670,7 +670,7 @@ func TestLoadAndMergeConfigurableCollection_EmptyKinds(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -718,7 +718,7 @@ func TestLoadAndMergeConfigurableCollection_EmptyKind(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -768,7 +768,7 @@ func TestLoadAndMergeConfigurableCollection_FieldMissingNameOrJsonPath(t *testin
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -829,7 +829,7 @@ func TestLoadAndMergeConfigurableCollection_FieldSuffix(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -889,7 +889,7 @@ func TestLoadAndMergeConfigurableCollection_EmptyFieldSuffix(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -945,7 +945,7 @@ func TestLoadAndMergeConfigurableCollection_FieldCollisionWithSuffix(t *testing.
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1028,7 +1028,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithSpecificKind(t 
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1074,7 +1074,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithMultipleKinds(t
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1124,7 +1124,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWildcardKind(t *tes
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1171,7 +1171,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsMultipleApiGroups(t
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1221,7 +1221,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithFieldsAndKind(t
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1277,7 +1277,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsPreservesDefaults(t
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1319,7 +1319,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsCoreApiGroup(t *tes
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1366,7 +1366,7 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsMixedRules(t *testi
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1474,7 +1474,7 @@ func TestStatusCondition_Applied_ValidConfig(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1530,7 +1530,7 @@ func TestStatusCondition_Applied_SkippedRule(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1587,7 +1587,7 @@ func TestStatusCondition_Applied_FieldCollision(t *testing.T) {
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
 			"metadata": map[string]interface{}{
-				"name":      "collector-config",
+				"name":      "merged-collector-config",
 				"namespace": "test-namespace",
 			},
 			"spec": map[string]interface{}{
@@ -1738,7 +1738,7 @@ func TestStatusCondition_AllWarningPaths(t *testing.T) {
 				Object: map[string]interface{}{
 					"apiVersion": "search.open-cluster-management.io/v1alpha1",
 					"kind":       "CollectorConfig",
-					"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+					"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 					"spec": map[string]interface{}{
 						"collectionRules": []interface{}{tc.rule},
 					},
@@ -1779,7 +1779,7 @@ func TestStatusCondition_MultipleWarnings(t *testing.T) {
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
-			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+			"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					// Rule 1: unsupported action
@@ -1910,7 +1910,7 @@ func TestStatusCondition_StatusUpdateFailure(t *testing.T) {
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
-			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+			"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
@@ -1974,7 +1974,7 @@ func TestStatusCondition_LastTransitionTime_PreservedWhenStatusUnchanged(t *test
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
-			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+			"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
@@ -2037,7 +2037,7 @@ func TestStatusCondition_LastTransitionTime_UpdatedWhenStatusChanges(t *testing.
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
 			"kind":       "CollectorConfig",
-			"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+			"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
@@ -2200,7 +2200,7 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 				Object: map[string]interface{}{
 					"apiVersion": "search.open-cluster-management.io/v1alpha1",
 					"kind":       "CollectorConfig",
-					"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+					"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 					"spec":       map[string]interface{}{"collectionRules": rules},
 				},
 			}
