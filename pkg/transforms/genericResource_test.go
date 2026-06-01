@@ -655,8 +655,10 @@ func Test_genericResourceFromConfigTemplateNoMatchLabel(t *testing.T) {
 }
 
 // TestBooleanFieldsStoredAsStrings_GenericConfig verifies that boolean fields
-// extracted via genericResourceConfig (using DataType: DataTypeString) are stored
-// as their string representations so the search API can query them correctly.
+// extracted via genericResourceConfig are stored as their string representations
+// so the search API can query them correctly. The API queries JSONB fields using
+// the '?' key-exists operator which only matches strings — a raw JSON boolean
+// is unreachable via "field:true" queries. See: https://issues.redhat.com/browse/ACM-30764
 func TestBooleanFieldsStoredAsStrings_GenericConfig(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -779,74 +781,3 @@ func TestBooleanFieldsStoredAsStrings_GenericConfig(t *testing.T) {
 	}
 }
 
-// TestBooleanFieldsNotStoredAsRawBool_RegressionPrevention is a regression test
-// that explicitly documents WHY booleans must be stored as strings.
-//
-// The search API queries JSONB fields using the '?' key-exists operator, which
-// only matches string keys inside a JSONB object. A raw JSON boolean (true/false)
-// is NOT a key and cannot be found by the '?' operator. Storing booleans as
-// strings ("true"/"false") makes them queryable as:
-//
-//   WHERE data->'allowVolumeExpansion' ? 'true'   -- works for string "true"
-//
-// If a value were stored as a raw boolean, that SQL would return 0 rows even
-// though the field is set. This test prevents that regression by asserting:
-// 1. The stored type is string, not bool.
-// 2. The stored value equals the expected string ("true" or "false").
-func TestBooleanFieldsNotStoredAsRawBool_RegressionPrevention(t *testing.T) {
-	fields := []struct {
-		resource *unstructured.Unstructured
-		field    string
-		rawBool  bool
-	}{
-		{
-			field:   "allowVolumeExpansion",
-			rawBool: true,
-			resource: &unstructured.Unstructured{Object: map[string]interface{}{
-				"apiVersion": "storage.k8s.io/v1", "kind": "StorageClass",
-				"metadata": map[string]interface{}{"name": "test"}, "allowVolumeExpansion": true,
-			}},
-		},
-		{
-			field:   "readyToUse",
-			rawBool: true,
-			resource: &unstructured.Unstructured{Object: map[string]interface{}{
-				"apiVersion": "snapshot.kubevirt.io/v1beta1", "kind": "VirtualMachineSnapshot",
-				"metadata": map[string]interface{}{"name": "test"},
-				"status":   map[string]interface{}{"readyToUse": true},
-			}},
-		},
-		{
-			field:   "complete",
-			rawBool: false,
-			resource: &unstructured.Unstructured{Object: map[string]interface{}{
-				"apiVersion": "snapshot.kubevirt.io/v1beta1", "kind": "VirtualMachineRestore",
-				"metadata": map[string]interface{}{"name": "test"},
-				"status":   map[string]interface{}{"complete": false},
-			}},
-		},
-	}
-
-	for _, tc := range fields {
-		t.Run(tc.field, func(t *testing.T) {
-			node := GenericResourceBuilder(tc.resource).BuildNode()
-			stored := node.Properties[tc.field]
-
-			// Regression check 1: must NOT be stored as a raw bool.
-			// If this assertion fails it means the search API query
-			// "WHERE data->'field' ? 'true'" will return 0 results.
-			if _, isBool := stored.(bool); isBool {
-				t.Fatalf(
-					"REGRESSION: %s is stored as raw bool %v — the search API "+
-						"cannot query it. Must be stored as string %q instead.",
-					tc.field, tc.rawBool, fmt.Sprintf("%v", tc.rawBool))
-			}
-
-			// Regression check 2: must be the correct string value.
-			expected := fmt.Sprintf("%v", tc.rawBool)
-			if stored != expected {
-				t.Fatalf("%s: expected string %q, got %T %v", tc.field, expected, stored, stored)
-			}
-		})
-	}
-}
