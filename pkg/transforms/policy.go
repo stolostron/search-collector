@@ -131,8 +131,8 @@ func OperatorPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource
 		}
 	}
 
-	node.Properties["deploymentAvailable"] = deploymentAvailable
-	node.Properties["upgradeAvailable"] = upgradeAvailable
+	node.Properties["deploymentAvailable"] = strconv.FormatBool(deploymentAvailable)
+	node.Properties["upgradeAvailable"] = strconv.FormatBool(upgradeAvailable)
 
 	return &PolicyResource{
 		node: node,

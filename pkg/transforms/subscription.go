@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"strconv"
 	"strings"
 
 	app "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
@@ -47,10 +48,11 @@ func SubscriptionResourceBuilder(s *app.Subscription) *SubscriptionResource {
 		node.Properties["timeWindow"] = s.Spec.TimeWindow.WindowType
 	}
 	// Add localPlacement property
-	node.Properties["localPlacement"] = false
+	localPlacement := false
 	if s.Spec.Placement != nil && s.Spec.Placement.Local != nil {
-		node.Properties["localPlacement"] = *s.Spec.Placement.Local
+		localPlacement = *s.Spec.Placement.Local
 	}
+	node.Properties["localPlacement"] = strconv.FormatBool(localPlacement)
 	// Add hidden properties for app annotations
 	const appAnnotationPrefix string = "apps.open-cluster-management.io/"
 	const gitType = "git"

@@ -71,8 +71,8 @@ func TestTransformOperatorPolicy(t *testing.T) {
 	AssertEqual("compliant", node.Properties["compliant"], "NonCompliant", t)
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "inform", t)
 	AssertEqual("severity", node.Properties["severity"], "critical", t)
-	AssertEqual("deploymentAvailable", node.Properties["deploymentAvailable"], false, t)
-	AssertEqual("upgradeAvailable", node.Properties["upgradeAvailable"], true, t)
+	AssertEqual("deploymentAvailable", node.Properties["deploymentAvailable"], "false", t)
+	AssertEqual("upgradeAvailable", node.Properties["upgradeAvailable"], "true", t)
 	AssertEqual("disabled", node.Properties["disabled"], "false", t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], false, t)
 
