@@ -3,7 +3,6 @@
 package transforms
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stolostron/search-collector/pkg/config"
