@@ -198,7 +198,7 @@ func resolveCollectNamespaces(dynamicClient dynamic.Interface, kubeClient kubern
 	// Nothing specified — collect everywhere
 	if len(nsSelector.Include) == 0 && len(nsSelector.Exclude) == 0 &&
 		len(nsSelector.MatchLabels) == 0 && len(nsSelector.MatchExpressions) == 0 {
-		klog.V(2).Info("No include, exclude, matchLabel, or matchExpression on collector-config. Will collect data from all namespaces.")
+		klog.V(2).Info("No include, exclude, matchLabel, or matchExpression on merged-collector-config. Will collect data from all namespaces.")
 		return nil
 	}
 
