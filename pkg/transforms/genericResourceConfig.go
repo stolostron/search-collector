@@ -30,6 +30,9 @@ const (
 	DataTypeMapString DataType = "mapString"
 )
 
+// matchLabelKiagnose is the label used to identify kiagnose network-latency checkup ConfigMaps.
+const matchLabelKiagnose = "kiagnose/checkup-type"
+
 func stringToDataType(s string) DataType {
 	switch s {
 	case "bytes":
@@ -77,9 +80,9 @@ var (
 var defaultTransformConfig = map[string]ResourceConfig{
 	"ClusterServiceVersion.operators.coreos.com": {
 		properties: []ExtractProperty{
-			{Name: "version", JSONPath: "{.spec.version}"},
-			{Name: "display", JSONPath: "{.spec.displayName}"},
-			{Name: "phase", JSONPath: "{.status.phase}"},
+			{Name: "version", JSONPath: ".spec.version"},
+			{Name: "display", JSONPath: ".spec.displayName"},
+			{Name: "phase", JSONPath: ".status.phase"},
 		},
 	},
 	"ClusterOperator.config.openshift.io": {
@@ -95,56 +98,56 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{
 				Name: "configParamMaxDesiredLatency",
 				JSONPath:   `.data.spec\.param\.maxDesiredLatencyMilliseconds`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
 			{
 				Name: "configParamNADNamespace",
 				JSONPath:   `.data.spec\.param\.networkAttachmentDefinitionNamespace`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
 			{
 				Name:       "configParamNADName",
 				JSONPath:   `.data.spec\.param\.networkAttachmentDefinitionName`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
-			{Name: "configParamTargetNode", JSONPath: `.data.spec\.param\.targetNode`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configParamSourceNode", JSONPath: `.data.spec\.param\.sourceNode`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configParamTargetNode", JSONPath: `.data.spec\.param\.targetNode`, matchLabel: matchLabelKiagnose},
+			{Name: "configParamSourceNode", JSONPath: `.data.spec\.param\.sourceNode`, matchLabel: matchLabelKiagnose},
 			{
 				Name:       "configParamSampleDuration",
 				JSONPath:   `.data.spec\.param\.sampleDurationSeconds`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
-			{Name: "configTimeout", JSONPath: `.data.spec\.timeout`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configTimeout", JSONPath: `.data.spec\.timeout`, matchLabel: matchLabelKiagnose},
 			{
 				Name:       "configCompletionTimestamp",
 				JSONPath:   `.data.status\.completionTimestamp`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
-			{Name: "configFailureReason", JSONPath: `.data.status\.failureReason`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configStartTimestamp", JSONPath: `.data.status\.startTimestamp`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configSucceeded", JSONPath: `.data.status\.succeeded`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configFailureReason", JSONPath: `.data.status\.failureReason`, matchLabel: matchLabelKiagnose},
+			{Name: "configStartTimestamp", JSONPath: `.data.status\.startTimestamp`, matchLabel: matchLabelKiagnose},
+			{Name: "configSucceeded", JSONPath: `.data.status\.succeeded`, matchLabel: matchLabelKiagnose},
 			{
 				Name:       "configStatusAVGLatencyNano",
 				JSONPath:   `.data.status\.result\.avgLatencyNanoSec`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
 			{
 				Name:       "configStatusMaxLatencyNano",
 				JSONPath:   `.data.status\.result\.maxLatencyNanoSec`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
 			{
 				Name:       "configStatusMinLatencyNano",
 				JSONPath:   `.data.status\.result\.minLatencyNanoSec`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
 			{
 				Name:       "configStatusMeasurementDuration",
 				JSONPath:   `.data.status\.result\.measurementDurationSec`,
-				matchLabel: "kiagnose/checkup-type",
+				matchLabel: matchLabelKiagnose,
 			},
-			{Name: "configStatusTargetNode", JSONPath: `.data.status\.result\.targetNode`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configStatusSourceNode", JSONPath: `.data.status\.result\.sourceNode`, matchLabel: "kiagnose/checkup-type"},
+			{Name: "configStatusTargetNode", JSONPath: `.data.status\.result\.targetNode`, matchLabel: matchLabelKiagnose},
+			{Name: "configStatusSourceNode", JSONPath: `.data.status\.result\.sourceNode`, matchLabel: matchLabelKiagnose},
 		},
 	},
 	"DataSource.cdi.kubevirt.io": {
@@ -239,11 +242,11 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"Subscription.operators.coreos.com": {
 		properties: []ExtractProperty{
-			{Name: "source", JSONPath: "{.spec.source}"},
-			{Name: "package", JSONPath: "{.spec.name}"},
-			{Name: "channel", JSONPath: "{.spec.channel}"},
-			{Name: "installplan", JSONPath: "{.status.installedCSV}"},
-			{Name: "phase", JSONPath: "{.status.state}"},
+			{Name: "source", JSONPath: ".spec.source"},
+			{Name: "package", JSONPath: ".spec.name"},
+			{Name: "channel", JSONPath: ".spec.channel"},
+			{Name: "installplan", JSONPath: ".status.installedCSV"},
+			{Name: "phase", JSONPath: ".status.state"},
 		},
 	},
 	"Template.template.openshift.io": {
