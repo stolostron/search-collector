@@ -2263,12 +2263,20 @@ func TestNormalizeJSONPath(t *testing.T) {
 		// Users who know the convention — unchanged
 		{"already has braces", "{.spec.dnsPolicy}", "{.spec.dnsPolicy}"},
 		{"nested path with braces", "{.metadata.labels.app}", "{.metadata.labels.app}"},
-		{"filter expression with braces", "{.status.conditions[?(@.type=='Ready')].status}", "{.status.conditions[?(@.type=='Ready')].status}"},
+		{
+			"filter expression with braces",
+			"{.status.conditions[?(@.type=='Ready')].status}",
+			"{.status.conditions[?(@.type=='Ready')].status}",
+		},
 
 		// Users who omit braces — should be auto-wrapped
 		{"no braces — simple path", ".spec.dnsPolicy", "{.spec.dnsPolicy}"},
 		{"no braces — nested path", ".metadata.labels.app", "{.metadata.labels.app}"},
-		{"no braces — filter expression", ".status.conditions[?(@.type=='Ready')].status", "{.status.conditions[?(@.type=='Ready')].status}"},
+		{
+			"no braces — filter expression",
+			".status.conditions[?(@.type=='Ready')].status",
+			"{.status.conditions[?(@.type=='Ready')].status}",
+		},
 	}
 
 	for _, tc := range tests {
