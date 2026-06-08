@@ -143,6 +143,7 @@ func addReleaseOwnerUID(node Node, ns NodeStore) {
 	}
 }
 
+// CommonEdges returns edges that are common to all resource types.
 func CommonEdges(uid string, ns NodeStore) []Edge {
 	ret := []Edge{}
 	currNode := ns.ByUID[uid]
@@ -295,6 +296,7 @@ func ownerRefUID(ownerReferences []v1.OwnerReference) string {
 	return ownerUID
 }
 
+// NodeInfo holds identifying information about a Kubernetes resource node.
 type NodeInfo struct {
 	EdgeType
 	Name, NameSpace, UID, Kind string
@@ -696,8 +698,12 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			continue
 		}
 
+		// Normalize the jsonPath before parsing — accept both "{.spec.field}" and
+		// ".spec.field" formats so internal configs and user-provided configs are
+		// stored consistently without braces and wrapped here only for the library.
+		jsonPathExpr := "{" + strings.TrimSuffix(strings.TrimPrefix(prop.JSONPath, "{"), "}") + "}"
 		jp := jsonpath.New(prop.Name)
-		parseErr := jp.Parse(prop.JSONPath)
+		parseErr := jp.Parse(jsonPathExpr)
 		if parseErr != nil {
 			klog.Errorf("Error parsing jsonpath [%s] for [%s.%s] prop: [%s]. Reason: %v",
 				prop.JSONPath, kind, group, prop.Name, parseErr)

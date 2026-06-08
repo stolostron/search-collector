@@ -2249,3 +2249,83 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 		})
 	}
 }
+
+// TestNormalizeJSONPath verifies that the collector accepts jsonPath values both
+// with and without curly-brace wrapping, normalizing them automatically so users
+// don't need to know the k8s jsonpath library convention.
+// See: https://issues.redhat.com/browse/ACM-33144
+func TestNormalizeJSONPath(t *testing.T) {
+	tests := []struct {
+		name             string
+		jsonPath         string   // as the user writes it in the CollectorConfig
+		expectedJSONPath string   // what should actually be stored and used
+	}{
+		// Users who know the convention — unchanged
+		{"already has braces", "{.spec.dnsPolicy}", "{.spec.dnsPolicy}"},
+		{"nested path with braces", "{.metadata.labels.app}", "{.metadata.labels.app}"},
+		{
+			"filter expression with braces",
+			"{.status.conditions[?(@.type=='Ready')].status}",
+			"{.status.conditions[?(@.type=='Ready')].status}",
+		},
+
+		// Users who omit braces — should be auto-wrapped
+		{"no braces — simple path", ".spec.dnsPolicy", "{.spec.dnsPolicy}"},
+		{"no braces — nested path", ".metadata.labels.app", "{.metadata.labels.app}"},
+		{
+			"no braces — filter expression",
+			".status.conditions[?(@.type=='Ready')].status",
+			"{.status.conditions[?(@.type=='Ready')].status}",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+			originalNamespace := config.Cfg.PodNamespace
+			defer func() {
+				config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+				config.Cfg.PodNamespace = originalNamespace
+				mergedTransformConfig = nil
+			}()
+			config.Cfg.FeatureConfigurableCollection = true
+			config.Cfg.PodNamespace = "test-namespace"
+
+			collectionConfig := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "search.open-cluster-management.io/v1alpha1",
+					"kind":       "CollectorConfig",
+					"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+					"spec": map[string]interface{}{
+						"collectionRules": []interface{}{
+							map[string]interface{}{
+								"action": "include",
+								"resourceSelector": map[string]interface{}{
+									"apiGroups": []interface{}{""},
+									"kinds":     []interface{}{"Pod"},
+								},
+								"fields": []interface{}{
+									map[string]interface{}{
+										"name":     "testField",
+										"jsonPath": tc.jsonPath,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			scheme := runtime.NewScheme()
+			fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+			loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+			podConfig, exists := mergedTransformConfig["Pod"]
+			assert.True(t, exists, "Pod config should exist in mergedTransformConfig")
+			require.Equal(t, 1, len(podConfig.properties), "Pod should have 1 custom property")
+			assert.Equal(t, "testField", podConfig.properties[0].Name)
+			assert.Equal(t, tc.expectedJSONPath, podConfig.properties[0].JSONPath,
+				"jsonPath should be normalized to %q regardless of input format", tc.expectedJSONPath)
+		})
+	}
+}

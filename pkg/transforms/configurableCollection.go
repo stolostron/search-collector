@@ -217,9 +217,16 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 				continue
 			}
 
+			// Normalize the jsonPath: the k8s jsonpath library requires expressions to be
+			// wrapped in curly braces (e.g. "{.spec.myField}"), but users unfamiliar with
+			// this library convention may omit them. Strip any partial braces and
+			// re-wrap consistently so ".spec.myField", "{.spec.myField}", and
+			// malformed inputs like "{.spec.myField" all produce "{.spec.myField}".
+			jsonPath := "{" + strings.TrimSuffix(strings.TrimPrefix(field.JSONPath, "{"), "}") + "}"
+
 			extractProp := ExtractProperty{
 				Name:     name,
-				JSONPath: field.JSONPath,
+				JSONPath: jsonPath,
 				DataType: dataTypeFromCRD(field.Type),
 			}
 
