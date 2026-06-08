@@ -143,6 +143,7 @@ func addReleaseOwnerUID(node Node, ns NodeStore) {
 	}
 }
 
+// CommonEdges returns edges that are common to all resource types.
 func CommonEdges(uid string, ns NodeStore) []Edge {
 	ret := []Edge{}
 	currNode := ns.ByUID[uid]
@@ -295,6 +296,7 @@ func ownerRefUID(ownerReferences []v1.OwnerReference) string {
 	return ownerUID
 }
 
+// NodeInfo holds identifying information about a Kubernetes resource node.
 type NodeInfo struct {
 	EdgeType
 	Name, NameSpace, UID, Kind string

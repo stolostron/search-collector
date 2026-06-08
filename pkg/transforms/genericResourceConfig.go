@@ -5,18 +5,21 @@ type ExtractProperty struct {
 	Name     string   // `json:"name,omitempty"`
 	JSONPath string   // `json:"jsonpath,omitempty"`
 	DataType DataType // `json:"dataType,omitempty"`
-	// A property to denote that we should only extract this property if this label matches the resource FUTURE: generalize with matchExpression
+	// matchLabel limits extraction to resources with this label.
+	// FUTURE: generalize with matchExpression
 	matchLabel string // `json:"matchLabel,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
 }
 
+// ExtractEdge declares an edge relationship to extract from a resource.
 type ExtractEdge struct {
 	Name   string   // `json:"name,omitempty"`
 	ToKind string   // `json:"toKind,omitempty"`
 	Type   EdgeType // `json:"type,omitempty"`
 }
 
+// DataType indicates the type coercion to apply when extracting a property value.
 type DataType string
 
 const (
@@ -69,7 +72,8 @@ var (
 	}
 )
 
-// Declares properties to extract from the resource by default. Extended by configurable collection CR collectorconfigs.search.open-cluster-management.io
+// defaultTransformConfig declares the properties to extract from each resource kind.
+// It is extended at runtime by CollectorConfig CRs (collectorconfigs.search.open-cluster-management.io).
 var defaultTransformConfig = map[string]ResourceConfig{
 	"ClusterServiceVersion.operators.coreos.com": {
 		properties: []ExtractProperty{
@@ -88,21 +92,57 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"ConfigMap": {
 		properties: []ExtractProperty{
-			{Name: "configParamMaxDesiredLatency", JSONPath: `.data.spec\.param\.maxDesiredLatencyMilliseconds`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configParamNADNamespace", JSONPath: `.data.spec\.param\.networkAttachmentDefinitionNamespace`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configParamNADName", JSONPath: `.data.spec\.param\.networkAttachmentDefinitionName`, matchLabel: "kiagnose/checkup-type"},
+			{
+				Name: "configParamMaxDesiredLatency",
+				JSONPath:   `.data.spec\.param\.maxDesiredLatencyMilliseconds`,
+				matchLabel: "kiagnose/checkup-type",
+			},
+			{
+				Name: "configParamNADNamespace",
+				JSONPath:   `.data.spec\.param\.networkAttachmentDefinitionNamespace`,
+				matchLabel: "kiagnose/checkup-type",
+			},
+			{
+				Name:       "configParamNADName",
+				JSONPath:   `.data.spec\.param\.networkAttachmentDefinitionName`,
+				matchLabel: "kiagnose/checkup-type",
+			},
 			{Name: "configParamTargetNode", JSONPath: `.data.spec\.param\.targetNode`, matchLabel: "kiagnose/checkup-type"},
 			{Name: "configParamSourceNode", JSONPath: `.data.spec\.param\.sourceNode`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configParamSampleDuration", JSONPath: `.data.spec\.param\.sampleDurationSeconds`, matchLabel: "kiagnose/checkup-type"},
+			{
+				Name:       "configParamSampleDuration",
+				JSONPath:   `.data.spec\.param\.sampleDurationSeconds`,
+				matchLabel: "kiagnose/checkup-type",
+			},
 			{Name: "configTimeout", JSONPath: `.data.spec\.timeout`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configCompletionTimestamp", JSONPath: `.data.status\.completionTimestamp`, matchLabel: "kiagnose/checkup-type"},
+			{
+				Name:       "configCompletionTimestamp",
+				JSONPath:   `.data.status\.completionTimestamp`,
+				matchLabel: "kiagnose/checkup-type",
+			},
 			{Name: "configFailureReason", JSONPath: `.data.status\.failureReason`, matchLabel: "kiagnose/checkup-type"},
 			{Name: "configStartTimestamp", JSONPath: `.data.status\.startTimestamp`, matchLabel: "kiagnose/checkup-type"},
 			{Name: "configSucceeded", JSONPath: `.data.status\.succeeded`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configStatusAVGLatencyNano", JSONPath: `.data.status\.result\.avgLatencyNanoSec`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configStatusMaxLatencyNano", JSONPath: `.data.status\.result\.maxLatencyNanoSec`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configStatusMinLatencyNano", JSONPath: `.data.status\.result\.minLatencyNanoSec`, matchLabel: "kiagnose/checkup-type"},
-			{Name: "configStatusMeasurementDuration", JSONPath: `.data.status\.result\.measurementDurationSec`, matchLabel: "kiagnose/checkup-type"},
+			{
+				Name:       "configStatusAVGLatencyNano",
+				JSONPath:   `.data.status\.result\.avgLatencyNanoSec`,
+				matchLabel: "kiagnose/checkup-type",
+			},
+			{
+				Name:       "configStatusMaxLatencyNano",
+				JSONPath:   `.data.status\.result\.maxLatencyNanoSec`,
+				matchLabel: "kiagnose/checkup-type",
+			},
+			{
+				Name:       "configStatusMinLatencyNano",
+				JSONPath:   `.data.status\.result\.minLatencyNanoSec`,
+				matchLabel: "kiagnose/checkup-type",
+			},
+			{
+				Name:       "configStatusMeasurementDuration",
+				JSONPath:   `.data.status\.result\.measurementDurationSec`,
+				matchLabel: "kiagnose/checkup-type",
+			},
 			{Name: "configStatusTargetNode", JSONPath: `.data.status\.result\.targetNode`, matchLabel: "kiagnose/checkup-type"},
 			{Name: "configStatusSourceNode", JSONPath: `.data.status\.result\.sourceNode`, matchLabel: "kiagnose/checkup-type"},
 		},
@@ -147,7 +187,11 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "bandwidthPerMigration", JSONPath: `.spec.bandwidthPerMigration`, DataType: DataTypeBytes},
 			{Name: "completionTimeoutPerGiB", JSONPath: `.spec.completionTimeoutPerGiB`},
 			{Name: "_namespaceSelector", JSONPath: `.spec.selectors.namespaceSelector`, DataType: DataTypeMapString},
-			{Name: "_virtualMachineInstanceSelector", JSONPath: `.spec.selectors.virtualMachineInstanceSelector`, DataType: DataTypeMapString},
+			{
+				Name:     "_virtualMachineInstanceSelector",
+				JSONPath: `.spec.selectors.virtualMachineInstanceSelector`,
+				DataType: DataTypeMapString,
+			},
 		},
 		extractAnnotations: true,
 	},
@@ -205,7 +249,11 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	"Template.template.openshift.io": {
 		properties: []ExtractProperty{
 			{Name: "objectVMName", JSONPath: `.objects[0].metadata.name`, matchLabel: "template.kubevirt.io/type"},
-			{Name: "objectVMArchitecture", JSONPath: `.objects[0].spec.template.spec.architecture`, matchLabel: "template.kubevirt.io/type"},
+			{
+				Name:       "objectVMArchitecture",
+				JSONPath:   `.objects[0].spec.template.spec.architecture`,
+				matchLabel: "template.kubevirt.io/type",
+			},
 		},
 	},
 	"ValidatingAdmissionPolicy.admissionregistration.k8s.io": {
@@ -223,12 +271,20 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "_description", JSONPath: `.metadata.annotations.description`},
 			{Name: "flavor", JSONPath: `.spec.template.metadata.annotations.\vm\.kubevirt\.io/flavor`},
 			{Name: "gpuName", JSONPath: `.spec.template.spec.domain.devices.gpus[*].name`, DataType: DataTypeSlice},
-			{Name: "hostDeviceName", JSONPath: `.spec.template.spec.domain.devices.hostDevices[*].name`, DataType: DataTypeSlice},
+			{
+				Name:     "hostDeviceName",
+				JSONPath: `.spec.template.spec.domain.devices.hostDevices[*].name`,
+				DataType: DataTypeSlice,
+			},
 			{Name: "instancetype", JSONPath: `.spec.instancetype.name`},
 			{Name: "memory", JSONPath: `.spec.template.spec.domain.memory.guest`, DataType: DataTypeBytes},
 			{Name: "osName", JSONPath: `.spec.template.metadata.annotations.\vm\.kubevirt\.io/os`},
 			{Name: "preference", JSONPath: `.spec.preference.name`},
-			{Name: "pvcClaimNames", JSONPath: `.spec.template.spec.volumes[*].persistentVolumeClaim.claimName`, DataType: DataTypeSlice},
+			{
+				Name:     "pvcClaimNames",
+				JSONPath: `.spec.template.spec.volumes[*].persistentVolumeClaim.claimName`,
+				DataType: DataTypeSlice,
+			},
 			{Name: "ready", JSONPath: `.status.conditions[?(@.type=='Ready')].status`},
 			{Name: "runStrategy", JSONPath: `.spec.runStrategy`},
 			{Name: "status", JSONPath: `.status.printableStatus`},
@@ -305,7 +361,8 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "ready", JSONPath: `.status.conditions[?(@.type=='Ready')].status`},
 			{Name: "_conditionReadyReason", JSONPath: `.status.conditions[?(@.type=='Ready')].reason`},
 			{Name: "phase", JSONPath: `.status.phase`},
-			{Name: "indications", JSONPath: `.status.indications`}, // this is an array of strings - will collect array items separated by ;
+			// indications is an array of strings; items are collected separated by semicolons.
+			{Name: "indications", JSONPath: `.status.indications`},
 			{Name: "sourceKind", JSONPath: `.spec.source.kind`},
 			{Name: "sourceName", JSONPath: `.spec.source.name`},
 			{Name: "readyToUse", JSONPath: `.status.readyToUse`},
