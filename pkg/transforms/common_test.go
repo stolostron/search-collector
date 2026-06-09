@@ -295,6 +295,165 @@ func Test_genericResourceFromConfigMapNoLabelsToMatchMatchLabel(t *testing.T) {
 	assert.Equal(t, 5, len(node.Properties))
 }
 
+func intPtr(i int) *int { return &i }
+
+func TestAdditionalPrinterColumnsPriority_NotConfigured_Skipped(t *testing.T) {
+	// When ResourceConfig.additionalPrinterColumnsPriority is nil, printer columns should be skipped.
+	zeroPrio := 0
+	origConfig := mergedTransformConfig
+	mergedTransformConfig = map[string]ResourceConfig{
+		"Fake.test.io": {
+			properties: []ExtractProperty{
+				{Name: "status", JSONPath: "{.status.phase}", Priority: &zeroPrio},
+			},
+		},
+	}
+	defer func() { mergedTransformConfig = origConfig }()
+
+	r := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "test.io/v1",
+			"kind":       "Fake",
+			"metadata":   map[string]interface{}{"name": "test", "uid": "uid-1", "creationTimestamp": "2024-01-01T00:00:00Z"},
+			"status":     map[string]interface{}{"phase": "Running"},
+		},
+	}
+
+	node := GenericResourceBuilder(&r).BuildNode()
+	assert.Nil(t, node.Properties["status"], "Printer column should be skipped when priority threshold is not configured")
+}
+
+func TestAdditionalPrinterColumnsPriority_ThresholdZero_Collected(t *testing.T) {
+	// When ResourceConfig.additionalPrinterColumnsPriority is 0, priority-0 columns should be collected.
+	zeroPrio := 0
+	origConfig := mergedTransformConfig
+	mergedTransformConfig = map[string]ResourceConfig{
+		"Fake.test.io": {
+			properties: []ExtractProperty{
+				{Name: "status", JSONPath: "{.status.phase}", Priority: &zeroPrio},
+			},
+			additionalPrinterColumnsPriority: intPtr(0),
+		},
+	}
+	defer func() { mergedTransformConfig = origConfig }()
+
+	r := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "test.io/v1",
+			"kind":       "Fake",
+			"metadata":   map[string]interface{}{"name": "test", "uid": "uid-1", "creationTimestamp": "2024-01-01T00:00:00Z"},
+			"status":     map[string]interface{}{"phase": "Running"},
+		},
+	}
+
+	node := GenericResourceBuilder(&r).BuildNode()
+	assert.Equal(t, "Running", node.Properties["status"], "Priority-0 column should be collected when threshold is 0")
+}
+
+func TestAdditionalPrinterColumnsPriority_ThresholdOne_FiltersByPriority(t *testing.T) {
+	// When ResourceConfig.additionalPrinterColumnsPriority is 1, priority-0 columns should be skipped and priority-1 columns should be collected.
+	zeroPrio := 0
+	onePrio := 1
+	origConfig := mergedTransformConfig
+	mergedTransformConfig = map[string]ResourceConfig{
+		"Fake.test.io": {
+			properties: []ExtractProperty{
+				{Name: "lowPriority", JSONPath: "{.status.phase}", Priority: &zeroPrio},
+				{Name: "highPriority", JSONPath: "{.status.ready}", Priority: &onePrio},
+			},
+			additionalPrinterColumnsPriority: intPtr(1),
+		},
+	}
+	defer func() { mergedTransformConfig = origConfig }()
+
+	r := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "test.io/v1",
+			"kind":       "Fake",
+			"metadata":   map[string]interface{}{"name": "test", "uid": "uid-1", "creationTimestamp": "2024-01-01T00:00:00Z"},
+			"status":     map[string]interface{}{"phase": "Running", "ready": "True"},
+		},
+	}
+
+	node := GenericResourceBuilder(&r).BuildNode()
+	assert.Nil(t, node.Properties["lowPriority"], "Priority-0 column should be skipped when threshold is 1")
+	assert.Equal(t, "True", node.Properties["highPriority"], "Priority-1 column should be collected when threshold is 1")
+}
+
+func TestAdditionalPrinterColumns_WildcardOnly_CollectedViaAdditionalColumns(t *testing.T) {
+	// When there's no specific ResourceConfig for the resource but a wildcard config
+	// has additionalPrinterColumnsPriority set, printer columns passed as additionalColumns
+	// should be collected.
+	zeroPrio := 0
+	origConfig := mergedTransformConfig
+	mergedTransformConfig = map[string]ResourceConfig{
+		"*.test.io": {
+			additionalPrinterColumnsPriority: intPtr(0),
+		},
+	}
+	defer func() { mergedTransformConfig = origConfig }()
+
+	r := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "test.io/v1",
+			"kind":       "Fake",
+			"metadata":   map[string]interface{}{"name": "test", "uid": "uid-1", "creationTimestamp": "2024-01-01T00:00:00Z"},
+			"status":     map[string]interface{}{"phase": "Running"},
+		},
+	}
+
+	additionalColumns := []ExtractProperty{
+		{Name: "status", JSONPath: "{.status.phase}", Priority: &zeroPrio},
+	}
+
+	node := GenericResourceBuilder(&r, additionalColumns...).BuildNode()
+	// printer column field collected
+	assert.Equal(t, "Running", node.Properties["status"], "Printer column should be collected via wildcard config")
+	// default fields still collected
+	assert.Equal(t, "Fake", node.Properties["kind"], "Default property 'kind' should be collected")
+	assert.Equal(t, "test", node.Properties["name"], "Default property 'name' should be collected")
+	assert.Equal(t, "test.io", node.Properties["apigroup"], "Default property 'apigroup' should be collected")
+	assert.Equal(t, "v1", node.Properties["apiversion"], "Default property 'apiversion' should be collected")
+}
+
+func TestAdditionalPrinterColumns_SpecificConfig_BothPropertiesAndPrinterColumns(t *testing.T) {
+	// When a specific ResourceConfig exists with both regular properties and printer column
+	// properties, both should be collected.
+	zeroPrio := 0
+	origConfig := mergedTransformConfig
+	mergedTransformConfig = map[string]ResourceConfig{
+		"Fake.test.io": {
+			properties: []ExtractProperty{
+				{Name: "version", JSONPath: "{.spec.version}"},
+				{Name: "status", JSONPath: "{.status.phase}", Priority: &zeroPrio},
+			},
+			additionalPrinterColumnsPriority: intPtr(0),
+		},
+	}
+	defer func() { mergedTransformConfig = origConfig }()
+
+	r := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "test.io/v1",
+			"kind":       "Fake",
+			"metadata":   map[string]interface{}{"name": "test", "uid": "uid-1", "creationTimestamp": "2024-01-01T00:00:00Z"},
+			"spec":       map[string]interface{}{"version": "1.2.3"},
+			"status":     map[string]interface{}{"phase": "Running"},
+		},
+	}
+
+	node := GenericResourceBuilder(&r).BuildNode()
+	// configured field collected
+	assert.Equal(t, "1.2.3", node.Properties["version"], "Regular property should be collected")
+	// printer column field also collected
+	assert.Equal(t, "Running", node.Properties["status"], "Printer column property should also be collected")
+	// default fields still collected
+	assert.Equal(t, "Fake", node.Properties["kind"], "Default property 'kind' should be collected")
+	assert.Equal(t, "test", node.Properties["name"], "Default property 'name' should be collected")
+	assert.Equal(t, "test.io", node.Properties["apigroup"], "Default property 'apigroup' should be collected")
+	assert.Equal(t, "v1", node.Properties["apiversion"], "Default property 'apiversion' should be collected")
+}
+
 func TestConvertToString(t *testing.T) {
 	tests := []struct {
 		name     string

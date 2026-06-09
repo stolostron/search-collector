@@ -253,6 +253,11 @@ func (g *gvrToPrinterColumns) set(crd *unstructured.Unstructured) error {
 				continue
 			}
 
+			var priority int
+			if p, ok := columnTyped["priority"].(int64); ok {
+				priority = int(p)
+			}
+
 			// The additionalPrinterColumns always have a JSON path without curly braces enclosing it, but the
 			// ExtractProperty.JSONPath field expects them.
 			jsonPath = fmt.Sprintf("{%s}", jsonPath)
@@ -263,7 +268,7 @@ func (g *gvrToPrinterColumns) set(crd *unstructured.Unstructured) error {
 				continue
 			}
 
-			printerColumns = append(printerColumns, tr.ExtractProperty{Name: camelCaseName, JSONPath: jsonPath})
+			printerColumns = append(printerColumns, tr.ExtractProperty{Name: camelCaseName, JSONPath: jsonPath, Priority: &priority})
 		}
 
 		break

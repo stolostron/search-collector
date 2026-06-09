@@ -278,7 +278,53 @@ func Test_gvrToPrinterColumns(t *testing.T) {
 	// At first, the mapping should be empty.
 	assert.Nil(t, gvrToColumns.get(gvr))
 
-	crd := unstructured.Unstructured{
+	crd := newSimpleCRDWithAdditionalPrinterColumns()
+
+	// Cache the mapping for the CRD
+	assert.Nil(t, gvrToColumns.set(&crd))
+
+	zerVal := 0
+	expected := []tr.ExtractProperty{
+		{Name: "complianceState", JSONPath: "{.status.compliant}", Priority: &zerVal},
+	}
+
+	// Verify the correct GVR was parsed and the mapping was stored
+	assert.Equal(t, expected, gvrToColumns.get(gvr))
+
+	// Verify the mapping can be unset
+	assert.Nil(t, gvrToColumns.unset(&crd))
+	assert.Nil(t, gvrToColumns.get(gvr))
+}
+
+func Test_gvrToPrinterColumnsWithPriority(t *testing.T) {
+	gvrToColumns := gvrToPrinterColumns{mapping: map[schema.GroupVersionResource][]tr.ExtractProperty{}}
+
+	gvr := schema.GroupVersionResource{
+		Group:    "policy.open-cluster-management.io",
+		Version:  "v1",
+		Resource: "fakes",
+	}
+
+	crd := newSimpleCRDWithAdditionalPrinterColumns()
+
+	// Set a non-zero priority on the printer column.
+	versions := crd.Object["spec"].(map[string]interface{})["versions"].([]interface{})
+	storageVersion := versions[1].(map[string]interface{})
+	columns := storageVersion["additionalPrinterColumns"].([]interface{})
+	columns[0].(map[string]interface{})["priority"] = int64(1)
+
+	assert.Nil(t, gvrToColumns.set(&crd))
+
+	priority := 1
+	expected := []tr.ExtractProperty{
+		{Name: "complianceState", JSONPath: "{.status.compliant}", Priority: &priority},
+	}
+
+	assert.Equal(t, expected, gvrToColumns.get(gvr))
+}
+
+func newSimpleCRDWithAdditionalPrinterColumns() unstructured.Unstructured {
+	return unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "apiextensions.k8s.io/v1",
 			"kind":       "CustomResourceDefinition",
@@ -314,18 +360,4 @@ func Test_gvrToPrinterColumns(t *testing.T) {
 			},
 		},
 	}
-
-	// Cache the mapping for the CRD
-	assert.Nil(t, gvrToColumns.set(&crd))
-
-	expected := []tr.ExtractProperty{
-		{Name: "complianceState", JSONPath: "{.status.compliant}"},
-	}
-
-	// Verify the correct GVR was parsed and the mapping was stored
-	assert.Equal(t, expected, gvrToColumns.get(gvr))
-
-	// Verify the mapping can be unset
-	assert.Nil(t, gvrToColumns.unset(&crd))
-	assert.Nil(t, gvrToColumns.get(gvr))
 }
