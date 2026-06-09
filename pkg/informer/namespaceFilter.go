@@ -176,7 +176,7 @@ func resolveCollectNamespaces(dynamicClient dynamic.Interface, kubeClient kubern
 		Group:    "search.open-cluster-management.io",
 		Version:  "v1alpha1",
 		Resource: "collectorconfigs",
-	}).Namespace(config.Cfg.PodNamespace).Get(context.Background(), "collector-config", metav1.GetOptions{})
+	}).Namespace(config.Cfg.PodNamespace).Get(context.Background(), "merged-collector-config", metav1.GetOptions{})
 	if err != nil {
 		klog.Infof("Could not load CollectorConfig resource. Will collect data from all namespaces. Error: %v", err)
 		return nil
@@ -198,7 +198,7 @@ func resolveCollectNamespaces(dynamicClient dynamic.Interface, kubeClient kubern
 	// Nothing specified — collect everywhere
 	if len(nsSelector.Include) == 0 && len(nsSelector.Exclude) == 0 &&
 		len(nsSelector.MatchLabels) == 0 && len(nsSelector.MatchExpressions) == 0 {
-		klog.V(2).Info("No include, exclude, matchLabel, or matchExpression on collector-config. Will collect data from all namespaces.")
+		klog.V(2).Info("No include, exclude, matchLabel, or matchExpression on merged-collector-config. Will collect data from all namespaces.")
 		return nil
 	}
 

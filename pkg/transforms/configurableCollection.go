@@ -62,29 +62,29 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 	// FUTURE: ACM-20047 watch this for changes and update config dynamically
 	configObj, err := dynamicClient.Resource(collectorConfigGVR).
 		Namespace(namespace).
-		Get(context.Background(), "collector-config", metav1.GetOptions{})
+		Get(context.Background(), "merged-collector-config", metav1.GetOptions{})
 
 	if err != nil {
 		// CR not found or not accessible — no status to update, just log and return.
-		klog.Infof("Could not load collector-config resource: %v. Using default config only", err)
+		klog.Infof("Could not load merged-collector-config resource: %v. Using default config only", err)
 		return
 	}
 
 	// Convert unstructured to typed CollectorConfig
 	var collectorConfig v1alpha1.CollectorConfig
 	if convErr := runtime.DefaultUnstructuredConverter.FromUnstructured(configObj.Object, &collectorConfig); convErr != nil {
-		msg := fmt.Sprintf("Could not convert collector-config to typed object: %v. Using default config only", convErr)
+		msg := fmt.Sprintf("Could not convert merged-collector-config to typed object: %v. Using default config only", convErr)
 		klog.Warning(msg)
 		updateCollectorConfigStatus(dynamicClient, namespace, configObj, []string{msg}, collectorConfigReasonLoadError)
 		return
 	}
 
-	klog.V(1).Info("Found collector-config resource, merging with default config")
+	klog.V(1).Info("Found merged-collector-config resource, merging with default config")
 
 	// Get collection rules from spec
 	collectionRules := collectorConfig.Spec.CollectionRules
 	if len(collectionRules) == 0 {
-		klog.Warning("No collectionRules found in collector-config resource")
+		klog.Warning("No collectionRules found in merged-collector-config resource")
 		// Empty rules is a valid (though unusual) configuration — mark as Applied.
 		updateCollectorConfigStatus(dynamicClient, namespace, configObj, nil, collectorConfigReasonApplied)
 		return
