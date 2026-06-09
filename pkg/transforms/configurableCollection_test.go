@@ -2257,8 +2257,8 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 func TestNormalizeJSONPath(t *testing.T) {
 	tests := []struct {
 		name             string
-		jsonPath         string   // as the user writes it in the CollectorConfig
-		expectedJSONPath string   // what should actually be stored and used
+		jsonPath         string // as the user writes it in the CollectorConfig
+		expectedJSONPath string // what should actually be stored and used
 	}{
 		// Users who know the convention — unchanged
 		{"already has braces", "{.spec.dnsPolicy}", "{.spec.dnsPolicy}"},
@@ -2295,7 +2295,7 @@ func TestNormalizeJSONPath(t *testing.T) {
 				Object: map[string]interface{}{
 					"apiVersion": "search.open-cluster-management.io/v1alpha1",
 					"kind":       "CollectorConfig",
-					"metadata":   map[string]interface{}{"name": "collector-config", "namespace": "test-namespace"},
+					"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 					"spec": map[string]interface{}{
 						"collectionRules": []interface{}{
 							map[string]interface{}{
