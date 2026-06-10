@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-make run        # go run -tags development main.go --v=2
+make run        # GOGC=25 go run -tags development main.go --v=2
 make test       # go test ./... -failfast  (sets DEPLOYED_IN_HUB=true)
 make coverage   # test + open HTML coverage report
 make lint       # golangci-lint + gosec
