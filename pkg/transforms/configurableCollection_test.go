@@ -2250,6 +2250,161 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 	}
 }
 
+func TestLoadAndMergeConfigurableCollection_CollectPrinterColumnsSpecificKind(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"monitoring.coreos.com"},
+							"kinds":     []interface{}{"Alertmanager"},
+						},
+						"collectAdditionalPrinterColumnsPriority": int64(5),
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	rc, exists := mergedTransformConfig["Alertmanager.monitoring.coreos.com"]
+	assert.True(t, exists, "Alertmanager.monitoring.coreos.com config should exist")
+	assert.NotNil(t, rc.additionalPrinterColumnsPriority, "additionalPrinterColumnsPriority should be set")
+	assert.Equal(t, 5, *rc.additionalPrinterColumnsPriority, "priority threshold should be 5")
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectPrinterColumnsWildcardKind(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"monitoring.coreos.com"},
+							"kinds":     []interface{}{"*"},
+						},
+						"collectAdditionalPrinterColumnsPriority": int64(0),
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	rc, exists := mergedTransformConfig["*.monitoring.coreos.com"]
+	assert.True(t, exists, "*.monitoring.coreos.com wildcard config should exist")
+	assert.NotNil(t, rc.additionalPrinterColumnsPriority, "additionalPrinterColumnsPriority should be set")
+	assert.Equal(t, 0, *rc.additionalPrinterColumnsPriority, "priority threshold should be 0")
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectPrinterColumnsWithFieldsAndConditions(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action":            "include",
+						"collectConditions": true,
+						"collectAdditionalPrinterColumnsPriority": int64(1),
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"kubevirt.io"},
+							"kinds":     []interface{}{"VirtualMachine"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "running",
+								"jsonPath": "{.spec.running}",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	rc, exists := mergedTransformConfig["VirtualMachine.kubevirt.io"]
+	assert.True(t, exists, "VirtualMachine.kubevirt.io config should exist")
+	assert.True(t, rc.extractConditions, "extractConditions should be true")
+	assert.NotNil(t, rc.additionalPrinterColumnsPriority, "additionalPrinterColumnsPriority should be set")
+	assert.Equal(t, 1, *rc.additionalPrinterColumnsPriority, "priority threshold should be 1")
+	// The custom field should be merged into the config (may also contain default properties).
+	foundRunning := false
+	for _, p := range rc.properties {
+		if p.Name == "running" {
+			foundRunning = true
+			break
+		}
+	}
+	assert.True(t, foundRunning, "custom field 'running' should be present in properties")
+}
+
 // TestNormalizeJSONPath verifies that the collector accepts jsonPath values both
 // with and without curly-brace wrapping, normalizing them automatically so users
 // don't need to know the k8s jsonpath library convention.

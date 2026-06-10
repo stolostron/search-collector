@@ -351,15 +351,17 @@ func TestAdditionalPrinterColumnsPriority_ThresholdZero_Collected(t *testing.T) 
 }
 
 func TestAdditionalPrinterColumnsPriority_ThresholdOne_FiltersByPriority(t *testing.T) {
-	// When ResourceConfig.additionalPrinterColumnsPriority is 1, priority-0 columns should be skipped and priority-1 columns should be collected.
+	// When ResourceConfig.additionalPrinterColumnsPriority is 1, priority 0 and 1 should be collected, priority 2 should be skipped.
 	zeroPrio := 0
 	onePrio := 1
+	twoPrio := 2
 	origConfig := mergedTransformConfig
 	mergedTransformConfig = map[string]ResourceConfig{
 		"Fake.test.io": {
 			properties: []ExtractProperty{
-				{Name: "lowPriority", JSONPath: "{.status.phase}", Priority: &zeroPrio},
-				{Name: "highPriority", JSONPath: "{.status.ready}", Priority: &onePrio},
+				{Name: "important", JSONPath: "{.status.phase}", Priority: &zeroPrio},
+				{Name: "medium", JSONPath: "{.status.ready}", Priority: &onePrio},
+				{Name: "extra", JSONPath: "{.status.message}", Priority: &twoPrio},
 			},
 			additionalPrinterColumnsPriority: intPtr(1),
 		},
@@ -371,13 +373,14 @@ func TestAdditionalPrinterColumnsPriority_ThresholdOne_FiltersByPriority(t *test
 			"apiVersion": "test.io/v1",
 			"kind":       "Fake",
 			"metadata":   map[string]interface{}{"name": "test", "uid": "uid-1", "creationTimestamp": "2024-01-01T00:00:00Z"},
-			"status":     map[string]interface{}{"phase": "Running", "ready": "True"},
+			"status":     map[string]interface{}{"phase": "Running", "ready": "True", "message": "All good"},
 		},
 	}
 
 	node := GenericResourceBuilder(&r).BuildNode()
-	assert.Nil(t, node.Properties["lowPriority"], "Priority-0 column should be skipped when threshold is 1")
-	assert.Equal(t, "True", node.Properties["highPriority"], "Priority-1 column should be collected when threshold is 1")
+	assert.Equal(t, "Running", node.Properties["important"], "Priority-0 column should be collected when threshold is 1")
+	assert.Equal(t, "True", node.Properties["medium"], "Priority-1 column should be collected when threshold is 1")
+	assert.Nil(t, node.Properties["extra"], "Priority-2 column should be skipped when threshold is 1")
 }
 
 func TestAdditionalPrinterColumns_WildcardOnly_CollectedViaAdditionalColumns(t *testing.T) {
