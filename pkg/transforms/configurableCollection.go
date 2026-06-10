@@ -383,9 +383,13 @@ func mergeCollectPrinterColumns(apiGroups, kinds []string, priority int) {
 					properties: []ExtractProperty{},
 				}
 			}
-			resourceConfig.additionalPrinterColumnsPriority = &priority
+			// Take the max priority — higher values are more permissive (collect more columns).
+			// This prevents a later rule from accidentally narrowing an earlier rule's threshold.
+			if resourceConfig.additionalPrinterColumnsPriority == nil || priority > *resourceConfig.additionalPrinterColumnsPriority {
+				resourceConfig.additionalPrinterColumnsPriority = &priority
+			}
 			mergedTransformConfig[resourceKey] = resourceConfig
-			klog.V(2).Infof("Set additionalPrinterColumns priority to %d for resource %s", priority, resourceKey)
+			klog.V(2).Infof("Set additionalPrinterColumns priority to %d for resource %s", *resourceConfig.additionalPrinterColumnsPriority, resourceKey)
 		}
 	}
 }

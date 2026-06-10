@@ -2405,6 +2405,65 @@ func TestLoadAndMergeConfigurableCollection_CollectPrinterColumnsWithFieldsAndCo
 	assert.True(t, foundRunning, "custom field 'running' should be present in properties")
 }
 
+func TestLoadAndMergeConfigurableCollection_CollectPrinterColumnsPriorityMaxWins(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Two rules target the same resource with different priorities.
+	// The higher value (more permissive) should win regardless of order.
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					// Integration team rule: priority 10
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"monitoring.coreos.com"},
+							"kinds":     []interface{}{"Alertmanager"},
+						},
+						"collectAdditionalPrinterColumnsPriority": int64(10),
+					},
+					// User rule: priority 0 (should not narrow the team's threshold)
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"monitoring.coreos.com"},
+							"kinds":     []interface{}{"Alertmanager"},
+						},
+						"collectAdditionalPrinterColumnsPriority": int64(0),
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	rc, exists := mergedTransformConfig["Alertmanager.monitoring.coreos.com"]
+	assert.True(t, exists, "Alertmanager.monitoring.coreos.com config should exist")
+	assert.NotNil(t, rc.additionalPrinterColumnsPriority, "additionalPrinterColumnsPriority should be set")
+	assert.Equal(t, 10, *rc.additionalPrinterColumnsPriority,
+		"Max priority should win — user's priority 0 should not narrow team's priority 10")
+}
+
 // TestNormalizeJSONPath verifies that the collector accepts jsonPath values both
 // with and without curly-brace wrapping, normalizing them automatically so users
 // don't need to know the k8s jsonpath library convention.
