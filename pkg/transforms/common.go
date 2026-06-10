@@ -706,10 +706,11 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			continue
 		}
 
-		// Skip additionalPrinterColumns when not configured or below threshold
+		// Skip additionalPrinterColumns when not configured or above threshold.
+		// A threshold of N means collect columns with priority 0 through N.
 		if prop.Priority != nil {
 			if transformConfig.additionalPrinterColumnsPriority == nil ||
-				*prop.Priority < *transformConfig.additionalPrinterColumnsPriority {
+				*prop.Priority > *transformConfig.additionalPrinterColumnsPriority {
 				continue
 			}
 		}
