@@ -8,7 +8,6 @@ type ExtractProperty struct {
 	// Denotes the priority if property is an additionalPrinterColumn
 	Priority *int // `json:"priority,omitempty"`
 	// matchLabel limits extraction to resources with this label.
-	// FUTURE: generalize with matchExpression
 	// A property to denote that we should only extract this property if this label matches the resource FUTURE: generalize with matchExpression
 	matchLabel string // `json:"matchLabel,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
