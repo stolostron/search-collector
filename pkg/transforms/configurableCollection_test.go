@@ -2329,3 +2329,394 @@ func TestNormalizeJSONPath(t *testing.T) {
 		})
 	}
 }
+
+// ============================================================================
+// CollectAnnotations tests — mirrors the CollectConditions test suite
+// ============================================================================
+
+func TestLoadAndMergeConfigurableCollection_CollectAnnotationsWithSpecificKind(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectAnnotations := true
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action":             "include",
+						"collectAnnotations": collectAnnotations,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps"},
+							"kinds":     []interface{}{"Deployment"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	deployConfig, exists := mergedTransformConfig["Deployment.apps"]
+	assert.True(t, exists, "Deployment.apps config should exist")
+	assert.True(t, deployConfig.extractAnnotations, "extractAnnotations should be true")
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectAnnotationsWithMultipleKinds(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectAnnotations := true
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action":             "include",
+						"collectAnnotations": collectAnnotations,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps"},
+							"kinds":     []interface{}{"Deployment", "StatefulSet"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	deployConfig, exists := mergedTransformConfig["Deployment.apps"]
+	assert.True(t, exists, "Deployment.apps config should exist")
+	assert.True(t, deployConfig.extractAnnotations, "Deployment extractAnnotations should be true")
+
+	ssConfig, exists := mergedTransformConfig["StatefulSet.apps"]
+	assert.True(t, exists, "StatefulSet.apps config should exist")
+	assert.True(t, ssConfig.extractAnnotations, "StatefulSet extractAnnotations should be true")
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectAnnotationsWildcardKind(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectAnnotations := true
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action":             "include",
+						"collectAnnotations": collectAnnotations,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps"},
+							"kinds":     []interface{}{"*"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	wildcardConfig, exists := mergedTransformConfig["*.apps"]
+	assert.True(t, exists, "*.apps wildcard config should exist in mergedTransformConfig")
+	assert.True(t, wildcardConfig.extractAnnotations, "*.apps extractAnnotations should be true")
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectAnnotationsMultipleApiGroups(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectAnnotations := true
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action":             "include",
+						"collectAnnotations": collectAnnotations,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps", "batch"},
+							"kinds":     []interface{}{"*"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	appsConfig, exists := mergedTransformConfig["*.apps"]
+	assert.True(t, exists, "*.apps wildcard config should exist")
+	assert.True(t, appsConfig.extractAnnotations, "*.apps extractAnnotations should be true")
+
+	batchConfig, exists := mergedTransformConfig["*.batch"]
+	assert.True(t, exists, "*.batch wildcard config should exist")
+	assert.True(t, batchConfig.extractAnnotations, "*.batch extractAnnotations should be true")
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectAnnotationsWithFieldsAndKind(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectAnnotations := true
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action":             "include",
+						"collectAnnotations": collectAnnotations,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps"},
+							"kinds":     []interface{}{"Deployment"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{
+								"name":     "replicas",
+								"jsonPath": "{.spec.replicas}",
+								"type":     "number",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	deployConfig, exists := mergedTransformConfig["Deployment.apps"]
+	assert.True(t, exists, "Deployment.apps config should exist")
+	assert.True(t, deployConfig.extractAnnotations, "extractAnnotations should be true")
+	assert.Equal(t, 1, len(deployConfig.properties), "Should have 1 custom field")
+	assert.Equal(t, "replicas", deployConfig.properties[0].Name)
+	assert.Equal(t, DataTypeNumber, deployConfig.properties[0].DataType)
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectAnnotationsPreservesDefaults(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Empty rules - verify defaults are preserved
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Verify defaults with extractAnnotations are preserved
+	dvConfig, exists := mergedTransformConfig["DataVolume.cdi.kubevirt.io"]
+	assert.True(t, exists, "DataVolume.cdi.kubevirt.io config should exist from defaults")
+	assert.True(t, dvConfig.extractAnnotations, "DataVolume should retain default extractAnnotations=true")
+
+	nadConfig, exists := mergedTransformConfig["NetworkAttachmentDefinition.k8s.cni.cncf.io"]
+	assert.True(t, exists, "NetworkAttachmentDefinition.k8s.cni.cncf.io config should exist from defaults")
+	assert.True(t, nadConfig.extractAnnotations, "NetworkAttachmentDefinition should retain default extractAnnotations=true")
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectAnnotationsCoreApiGroup(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectAnnotations := true
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action":             "include",
+						"collectAnnotations": collectAnnotations,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{""},
+							"kinds":     []interface{}{"*"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Core API group is empty string - wildcard key is just "*" (no dot prefix)
+	coreConfig, exists := mergedTransformConfig["*"]
+	assert.True(t, exists, "* wildcard config should exist for core API group")
+	assert.True(t, coreConfig.extractAnnotations, "* extractAnnotations should be true")
+}
+
+func TestLoadAndMergeConfigurableCollection_CollectAnnotationsOnly(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Rule with only collectAnnotations — no fields, no collectConditions.
+	// This should NOT be skipped by the guard clause.
+	collectAnnotations := true
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action":             "include",
+						"collectAnnotations": collectAnnotations,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps"},
+							"kinds":     []interface{}{"Deployment"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	deployConfig, exists := mergedTransformConfig["Deployment.apps"]
+	assert.True(t, exists, "Deployment.apps config should exist — collectAnnotations-only rule must not be skipped")
+	assert.True(t, deployConfig.extractAnnotations, "extractAnnotations should be true")
+	assert.Empty(t, deployConfig.properties, "Should have no custom fields")
+	assert.False(t, deployConfig.extractConditions, "extractConditions should be false")
+}

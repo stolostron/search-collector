@@ -109,11 +109,12 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 
 		hasFields := len(rule.Fields) > 0
 		hasCollectConditions := rule.CollectConditions != nil && *rule.CollectConditions
+		hasCollectAnnotations := rule.CollectAnnotations != nil && *rule.CollectAnnotations
 
-		// Only process rules that have fields specified
-		if !hasFields && !hasCollectConditions {
-			msg := "Rule skipped: include action requires at least one field or collectConditions"
-			klog.Warning("Skipping collection rule. Include action without fields or collectConditions specified.")
+		// Only process rules that have actionable configuration
+		if !hasFields && !hasCollectConditions && !hasCollectAnnotations {
+			msg := "Rule skipped: include action requires at least one field, collectConditions, or collectAnnotations"
+			klog.Warning("Skipping collection rule. Include action without fields, collectConditions, or collectAnnotations specified.")
 			warnings = append(warnings, msg)
 			continue
 		}
@@ -124,6 +125,14 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		// Process collectConditions
 		if hasCollectConditions {
 			mergeCollectConditions(apiGroups, kinds)
+			if !hasFields && !hasCollectAnnotations {
+				continue
+			}
+		}
+
+		// Process collectAnnotations
+		if hasCollectAnnotations {
+			mergeCollectAnnotations(apiGroups, kinds)
 			if !hasFields {
 				continue
 			}
@@ -352,6 +361,33 @@ func mergeCollectConditions(apiGroups, kinds []string) {
 			resourceConfig.extractConditions = true
 			mergedTransformConfig[resourceKey] = resourceConfig
 			klog.V(2).Infof("Enabled condition collection for resource %s", resourceKey)
+		}
+	}
+}
+
+// mergeCollectAnnotations enables annotation extraction for the given apiGroups and kinds.
+// When kind is "*", a wildcard entry (e.g., "*" or "*.apps") is stored in mergedTransformConfig,
+// enabling annotation extraction for all resources in that apiGroup at runtime.
+// For specific kinds, extractAnnotations is set for each kind+apiGroup combination.
+func mergeCollectAnnotations(apiGroups, kinds []string) {
+	for _, apiGroup := range apiGroups {
+		for _, kind := range kinds {
+			if kind == "" {
+				continue
+			}
+			resourceKey := kind
+			if apiGroup != "" {
+				resourceKey = kind + "." + apiGroup
+			}
+			resourceConfig, exists := mergedTransformConfig[resourceKey]
+			if !exists {
+				resourceConfig = ResourceConfig{
+					properties: []ExtractProperty{},
+				}
+			}
+			resourceConfig.extractAnnotations = true
+			mergedTransformConfig[resourceKey] = resourceConfig
+			klog.V(2).Infof("Enabled annotation collection for resource %s", resourceKey)
 		}
 	}
 }
