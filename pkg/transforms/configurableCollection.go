@@ -112,7 +112,7 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		hasCollectAnnotations := rule.CollectAnnotations != nil && *rule.CollectAnnotations
 		hasCollectPrinterColumns := rule.CollectAdditionalPrinterColumnsPriority != nil
 
-		// Only process rules that have fields specified
+		// Only process rules that have actionable configuration
 		if !hasFields && !hasCollectConditions && !hasCollectPrinterColumns && !hasCollectAnnotations {
 			msg := "Rule skipped: include action requires at least one field, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority"
 			klog.Warning("Skipping collection rule. Include action without fields, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority specified.")
