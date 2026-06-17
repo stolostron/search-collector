@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stolostron/search-collector/pkg/config"
+	"github.com/stolostron/search-collector/pkg/transforms"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -105,9 +106,14 @@ func (inform *GenericInformer) listAndResync() error {
 			return listError
 		}
 
-		// Add all resources filtered by namespace
+		// Add all resources filtered by namespace and exclude rules.
 		for i := range resources.Items {
 			if !nsFilterCache.isNamespaceAllowed(resources.Items[i].GetNamespace()) {
+				continue
+			}
+			if transforms.IsResourceExcluded(inform.gvr.Group, resources.Items[i].GetKind()) {
+				klog.V(4).Infof("Skipping excluded resource. Kind: %s Group: %s",
+					resources.Items[i].GetKind(), inform.gvr.Group)
 				continue
 			}
 
@@ -182,6 +188,11 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
 					continue
 				}
+				if transforms.IsResourceExcluded(inform.gvr.Group, obj.GetKind()) {
+					klog.V(4).Infof("Skipping excluded resource. Kind: %s Group: %s",
+						obj.GetKind(), inform.gvr.Group)
+					continue
+				}
 				// Namespace additions affect which resources pass the namespace filter.
 				if inform.gvr.Resource == "namespaces" && inform.gvr.Group == "" {
 					nsFilterCache.regenerate()
@@ -203,6 +214,11 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 				//   for example invalidate the namespace filter cache on CollectorConfig changes
 				//   https://github.com/stolostron/search-collector/pull/866#discussion_r3196850432
 				if !nsFilterCache.isNamespaceAllowed(obj.GetNamespace()) {
+					continue
+				}
+				if transforms.IsResourceExcluded(inform.gvr.Group, obj.GetKind()) {
+					klog.V(4).Infof("Skipping excluded resource. Kind: %s Group: %s",
+						obj.GetKind(), inform.gvr.Group)
 					continue
 				}
 				// Namespace changes affect which resources pass the namespace filter.
