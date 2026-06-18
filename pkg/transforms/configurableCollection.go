@@ -111,24 +111,25 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 			continue
 		}
 
-		// "Last entry wins": an include rule cancels any prior exclude for the same resource.
-		// Uses the same key scheme as mergeExcludeRules so exact keys are matched and removed.
-		// Note: wildcard-vs-specific mismatches (e.g. exclude "*.*" followed by include
-		// "Deployment.apps") are not resolved — those are documented as a known limitation.
-		unmergeExcludeRules(rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds)
-
 		hasFields := len(rule.Fields) > 0
 		hasCollectConditions := rule.CollectConditions != nil && *rule.CollectConditions
 		hasCollectAnnotations := rule.CollectAnnotations != nil && *rule.CollectAnnotations
 		hasCollectPrinterColumns := rule.CollectAdditionalPrinterColumnsPriority != nil
 
-		// Only process rules that have actionable configuration
+		// Only process rules that have actionable configuration — check BEFORE unmerging
+		// any prior exclude, so a malformed include rule does not silently cancel an exclude.
 		if !hasFields && !hasCollectConditions && !hasCollectPrinterColumns && !hasCollectAnnotations {
 			msg := "Rule skipped: include action requires at least one field, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority"
 			klog.Warning("Skipping collection rule. Include action without fields, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority specified.")
 			warnings = append(warnings, msg)
 			continue
 		}
+
+		// "Last entry wins": a valid include rule cancels any prior exclude for the same resource.
+		// Uses the same key scheme as mergeExcludeRules so exact keys are matched and removed.
+		// Note: wildcard-vs-specific mismatches (e.g. exclude "*.*" followed by include
+		// "Deployment.apps") are not resolved — those are documented as a known limitation.
+		unmergeExcludeRules(rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds)
 
 		apiGroups := rule.ResourceSelector.APIGroups
 		kinds := rule.ResourceSelector.Kinds
@@ -418,11 +419,9 @@ func IsResourceExcluded(group, kind string) bool {
 	if _, ok := excludedResources[kindWildcard]; ok {
 		return true
 	}
-	// 3. This kind in any group: "Kind.*"
-	if group != "" {
-		if _, ok := excludedResources[kind+".*"]; ok {
-			return true
-		}
+	// 3. This kind in any group: "Kind.*" (matches even core-group resources when apiGroups: ["*"])
+	if _, ok := excludedResources[kind+".*"]; ok {
+		return true
 	}
 	// 4. Global wildcard: "*.*" (all kinds across all apiGroups)
 	_, ok := excludedResources["*.*"]

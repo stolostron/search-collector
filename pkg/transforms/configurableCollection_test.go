@@ -103,7 +103,7 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 }
 
 // FUTURE: this should eventually appropriately include when search-collector-config merged
-// Exclude rules do not add entries to mergedTransformConfig — they populate excludedResources instead.
+// Exclude rules populate excludedResources (not mergedTransformConfig).
 func TestLoadAndMergeConfigurableCollection_ExcludePopulatesExcludedResources(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
@@ -3385,6 +3385,75 @@ func TestExclude_LastEntryWins_ExcludeAfterInclude(t *testing.T) {
 
 	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
 		"Last exclude should win — Lease should be excluded")
+}
+
+// Group wildcard: exclude "Lease.*" matches Lease in any apiGroup.
+func TestExclude_GroupWildcard(t *testing.T) {
+	teardown, _ := setupExcludeTest(t)
+	defer teardown()
+
+	cfg := makeExcludeConfig("test-namespace", "*", "Lease")
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Lease in any group should be excluded via group wildcard")
+	assert.True(t, IsResourceExcluded("", "Lease"),
+		"Core-group Lease should also be excluded via group wildcard")
+	assert.False(t, IsResourceExcluded("coordination.k8s.io", "LeaderElection"),
+		"Other kinds should not be affected")
+}
+
+// A skipped include rule (no fields/conditions) must NOT cancel a prior exclude.
+func TestExclude_InvalidIncludeDoesNotCancelExclude(t *testing.T) {
+	teardown, _ := setupExcludeTest(t)
+	defer teardown()
+
+	collectConditions := true
+	cfg := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					// Valid include first
+					map[string]interface{}{
+						"action":            "include",
+						"collectConditions": collectConditions,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+					// Exclude
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+					// Invalid include (no fields/conditions) — must NOT cancel the exclude
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Invalid include (no fields/conditions) must NOT cancel the prior exclude")
 }
 
 // IsResourceExcluded returns false when no exclude rules loaded (nil map).
