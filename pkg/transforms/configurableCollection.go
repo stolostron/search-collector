@@ -24,6 +24,11 @@ var mergedTransformConfig map[string]ResourceConfig
 // Keys follow the same scheme as mergedTransformConfig: "Kind.apiGroup" for specific kinds,
 // "*" for all core-group resources, "*.apps" for all resources in the apps apiGroup.
 // Populated by mergeExcludeRules during config load; checked at the informer layer.
+//
+// Thread safety: currently written once at startup (before informers start) and read
+// concurrently by informer goroutines. Safe for now because reads begin only after
+// LoadAndMergeConfigurableCollection returns. When ACM-20047 adds dynamic reload,
+// this will need a sync.RWMutex — see nsFilterCache for the expected pattern.
 var excludedResources map[string]struct{}
 
 // LoadAndMergeConfigurableCollection loads the CollectorConfig resource from the cluster and merges it with defaultTransformConfig.

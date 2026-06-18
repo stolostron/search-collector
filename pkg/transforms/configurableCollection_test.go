@@ -102,7 +102,6 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 	assert.Equal(t, DataTypeBytes, searchConfig.properties[0].DataType)
 }
 
-// FUTURE: this should eventually appropriately include when search-collector-config merged
 // Exclude rules populate excludedResources (not mergedTransformConfig).
 func TestLoadAndMergeConfigurableCollection_ExcludePopulatesExcludedResources(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
