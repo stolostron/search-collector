@@ -17,6 +17,9 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// msgSkippingExcluded is the log format for resources skipped by an exclude rule.
+const msgSkippingExcluded = "Skipping excluded resource. Kind: %s Group: %s"
+
 // GenericInformer ...
 type GenericInformer struct {
 	client        dynamic.Interface
@@ -112,7 +115,7 @@ func (inform *GenericInformer) listAndResync() error {
 				continue
 			}
 			if transforms.IsResourceExcluded(inform.gvr.Group, resources.Items[i].GetKind()) {
-				klog.V(4).Infof("Skipping excluded resource. Kind: %s Group: %s",
+				klog.V(4).Infof(msgSkippingExcluded,
 					resources.Items[i].GetKind(), inform.gvr.Group)
 				continue
 			}
@@ -189,7 +192,7 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 				if transforms.IsResourceExcluded(inform.gvr.Group, obj.GetKind()) {
-					klog.V(4).Infof("Skipping excluded resource. Kind: %s Group: %s",
+					klog.V(4).Infof(msgSkippingExcluded,
 						obj.GetKind(), inform.gvr.Group)
 					continue
 				}
@@ -217,7 +220,7 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 					continue
 				}
 				if transforms.IsResourceExcluded(inform.gvr.Group, obj.GetKind()) {
-					klog.V(4).Infof("Skipping excluded resource. Kind: %s Group: %s",
+					klog.V(4).Infof(msgSkippingExcluded,
 						obj.GetKind(), inform.gvr.Group)
 					continue
 				}

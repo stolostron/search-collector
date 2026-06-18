@@ -2212,7 +2212,8 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 					map[string]interface{}{"name": "y", "jsonPath": "{.y}"},
 				},
 			},
-			uniqueSubstring: "apiGroup, found 2", // "exactly 1 apiGroup, found 2" — "found 2" alone also appears in rule 3 ("kind, found 2")
+			// "exactly 1 apiGroup, found 2" — "found 2" alone also appears in rule 3 ("kind, found 2")
+			uniqueSubstring: "apiGroup, found 2",
 		},
 		{
 			rule: map[string]interface{}{
@@ -3189,24 +3190,23 @@ func makeExcludeConfig(namespace, apiGroup, kind string) *unstructured.Unstructu
 	}
 }
 
-func setupExcludeTest(t *testing.T) (func(), *fake.FakeDynamicClient) {
+func setupExcludeTest(t *testing.T) func() {
 	t.Helper()
 	orig := config.Cfg.FeatureConfigurableCollection
 	origNS := config.Cfg.PodNamespace
 	config.Cfg.FeatureConfigurableCollection = true
 	config.Cfg.PodNamespace = "test-namespace"
-	scheme := runtime.NewScheme()
 	return func() {
 		config.Cfg.FeatureConfigurableCollection = orig
 		config.Cfg.PodNamespace = origNS
 		mergedTransformConfig = nil
 		excludedResources = nil
-	}, fake.NewSimpleDynamicClient(scheme)
+	}
 }
 
 // Specific kind+group is excluded.
 func TestExclude_SpecificKind(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	cfg := makeExcludeConfig("test-namespace", "coordination.k8s.io", "Lease")
@@ -3223,7 +3223,7 @@ func TestExclude_SpecificKind(t *testing.T) {
 
 // Wildcard kind excludes all kinds in a group.
 func TestExclude_WildcardKind(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	cfg := makeExcludeConfig("test-namespace", "coordination.k8s.io", "*")
@@ -3240,7 +3240,7 @@ func TestExclude_WildcardKind(t *testing.T) {
 
 // Wildcard group and kind excludes everything.
 func TestExclude_WildcardAll(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	cfg := makeExcludeConfig("test-namespace", "*", "*")
@@ -3255,7 +3255,7 @@ func TestExclude_WildcardAll(t *testing.T) {
 
 // Core-group (empty apiGroup) specific kind is excluded.
 func TestExclude_CoreGroup(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	cfg := makeExcludeConfig("test-namespace", "", "Event")
@@ -3272,7 +3272,7 @@ func TestExclude_CoreGroup(t *testing.T) {
 
 // Exclude does not affect mergedTransformConfig — default properties still extracted.
 func TestExclude_DoesNotAffectTransformConfig(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	cfg := makeExcludeConfig("test-namespace", "coordination.k8s.io", "Lease")
@@ -3291,7 +3291,7 @@ func TestExclude_DoesNotAffectTransformConfig(t *testing.T) {
 
 // Last entry wins: include after exclude for same resource cancels the exclusion.
 func TestExclude_LastEntryWins_IncludeAfterExclude(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	collectConditions := true
@@ -3344,7 +3344,7 @@ func TestExclude_LastEntryWins_IncludeAfterExclude(t *testing.T) {
 
 // Last entry wins: exclude after include for same resource keeps the exclusion.
 func TestExclude_LastEntryWins_ExcludeAfterInclude(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	collectConditions := true
@@ -3388,7 +3388,7 @@ func TestExclude_LastEntryWins_ExcludeAfterInclude(t *testing.T) {
 
 // Group wildcard: exclude "Lease.*" matches Lease in any apiGroup.
 func TestExclude_GroupWildcard(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	cfg := makeExcludeConfig("test-namespace", "*", "Lease")
@@ -3405,7 +3405,7 @@ func TestExclude_GroupWildcard(t *testing.T) {
 
 // A skipped include rule (no fields/conditions) must NOT cancel a prior exclude.
 func TestExclude_InvalidIncludeDoesNotCancelExclude(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	collectConditions := true
@@ -3464,7 +3464,7 @@ func TestExclude_NilMap(t *testing.T) {
 
 // Config reload resets excludedResources — old excludes do not persist.
 func TestExclude_ResetOnReload(t *testing.T) {
-	teardown, _ := setupExcludeTest(t)
+	teardown := setupExcludeTest(t)
 	defer teardown()
 
 	// First load: exclude Lease
