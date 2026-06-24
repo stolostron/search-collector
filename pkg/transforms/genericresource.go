@@ -84,7 +84,7 @@ func GenericResourceBuilder(r *unstructured.Unstructured, additionalColumns ...E
 
 				if !ok {
 					klog.V(1).Infof(
-						"Unable to extract metadata prop [%s] from [%s.%s] Name: [%s] since it's not a string: %v",
+						"Unable to extract metadata prop [%s] from [%s.%s] Name: [%s] since it's not a string",
 						prop.Name, kind, group, r.GetName(),
 					)
 					continue
