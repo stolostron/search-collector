@@ -457,6 +457,40 @@ func TestAdditionalPrinterColumns_SpecificConfig_BothPropertiesAndPrinterColumns
 	assert.Equal(t, "v1", node.Properties["apiversion"], "Default property 'apiversion' should be collected")
 }
 
+func TestAdditionalPrinterColumns_SpecificConfigPriorityOnly_CollectedViaAdditionalColumns(t *testing.T) {
+	// When a specific ResourceConfig has only additionalPrinterColumnsPriority set (no custom
+	// fields), CRD printer columns passed via additionalColumns at runtime should still be
+	// collected. This matches the real flow where mergeCollectPrinterColumns creates a config
+	// with priority set but empty properties.
+	zeroPrio := 0
+	origConfig := mergedTransformConfig
+	mergedTransformConfig = map[string]ResourceConfig{
+		"Fake.test.io": {
+			properties:                       []ExtractProperty{},
+			additionalPrinterColumnsPriority: intPtr(0),
+		},
+	}
+	defer func() { mergedTransformConfig = origConfig }()
+
+	r := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "test.io/v1",
+			"kind":       "Fake",
+			"metadata":   map[string]interface{}{"name": "test", "uid": "uid-1", "creationTimestamp": "2024-01-01T00:00:00Z"},
+			"status":     map[string]interface{}{"phase": "Running"},
+		},
+	}
+
+	// Simulate CRD printer columns passed at runtime by the informer.
+	additionalColumns := []ExtractProperty{
+		{Name: "status", JSONPath: "{.status.phase}", Priority: &zeroPrio},
+	}
+
+	node := GenericResourceBuilder(&r, additionalColumns...).BuildNode()
+	assert.Equal(t, "Running", node.Properties["status"],
+		"Printer column should be collected when specific config has priority set and columns are passed at runtime")
+}
+
 func TestConvertToString(t *testing.T) {
 	tests := []struct {
 		name     string
