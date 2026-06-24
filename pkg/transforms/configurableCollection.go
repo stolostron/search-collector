@@ -110,11 +110,12 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		hasFields := len(rule.Fields) > 0
 		hasCollectConditions := rule.CollectConditions != nil && *rule.CollectConditions
 		hasCollectAnnotations := rule.CollectAnnotations != nil && *rule.CollectAnnotations
+		hasCollectPrinterColumns := rule.CollectAdditionalPrinterColumnsPriority != nil
 
 		// Only process rules that have actionable configuration
-		if !hasFields && !hasCollectConditions && !hasCollectAnnotations {
-			msg := "Rule skipped: include action requires at least one field, collectConditions, or collectAnnotations"
-			klog.Warning("Skipping collection rule. Include action without fields, collectConditions, or collectAnnotations specified.")
+		if !hasFields && !hasCollectConditions && !hasCollectPrinterColumns && !hasCollectAnnotations {
+			msg := "Rule skipped: include action requires at least one field, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority"
+			klog.Warning("Skipping collection rule. Include action without fields, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority specified.")
 			warnings = append(warnings, msg)
 			continue
 		}
@@ -125,17 +126,20 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		// Process collectConditions
 		if hasCollectConditions {
 			mergeCollectConditions(apiGroups, kinds)
-			if !hasFields && !hasCollectAnnotations {
-				continue
-			}
 		}
 
 		// Process collectAnnotations
 		if hasCollectAnnotations {
 			mergeCollectAnnotations(apiGroups, kinds)
-			if !hasFields {
-				continue
-			}
+		}
+
+		// Process collectAdditionalPrinterColumnsPriority
+		if hasCollectPrinterColumns {
+			mergeCollectPrinterColumns(apiGroups, kinds, *rule.CollectAdditionalPrinterColumnsPriority)
+		}
+
+		if !hasFields {
+			continue
 		}
 
 		// Filter out wildcard kinds before fields processing — fields require a specific kind.
@@ -392,6 +396,37 @@ func mergeCollectAnnotations(apiGroups, kinds []string) {
 	}
 }
 
+// mergeCollectPrinterColumns sets the additionalPrinterColumns priority threshold for the given apiGroups and kinds.
+// When kind is "*", a wildcard entry (e.g., "*" or "*.apps") is stored in mergedTransformConfig,
+// enabling printer column collection for all resources in that apiGroup at runtime.
+// For specific kinds, the priority is set for each kind+apiGroup combination.
+func mergeCollectPrinterColumns(apiGroups, kinds []string, priority int) {
+	for _, apiGroup := range apiGroups {
+		for _, kind := range kinds {
+			if kind == "" {
+				continue
+			}
+			resourceKey := kind
+			if apiGroup != "" {
+				resourceKey = kind + "." + apiGroup
+			}
+			resourceConfig, exists := mergedTransformConfig[resourceKey]
+			if !exists {
+				resourceConfig = ResourceConfig{
+					properties: []ExtractProperty{},
+				}
+			}
+			// Take the max priority — higher values are more permissive (collect more columns).
+			// This prevents a later rule from accidentally narrowing an earlier rule's threshold.
+			if resourceConfig.additionalPrinterColumnsPriority == nil || priority > *resourceConfig.additionalPrinterColumnsPriority {
+				resourceConfig.additionalPrinterColumnsPriority = &priority
+			}
+			mergedTransformConfig[resourceKey] = resourceConfig
+			klog.V(2).Infof("Set additionalPrinterColumns priority to %d for resource %s", *resourceConfig.additionalPrinterColumnsPriority, resourceKey)
+		}
+	}
+}
+
 // dataTypeFromCRD converts v1alpha1.DataType to internal DataType
 func dataTypeFromCRD(crdType v1alpha1.DataType) DataType {
 	switch crdType {
@@ -422,11 +457,18 @@ func deepCopyTransformConfig(src map[string]ResourceConfig) map[string]ResourceC
 		copiedEdges := make([]ExtractEdge, len(config.edges))
 		copy(copiedEdges, config.edges)
 
+		var copiedPriority *int
+		if config.additionalPrinterColumnsPriority != nil {
+			p := *config.additionalPrinterColumnsPriority
+			copiedPriority = &p
+		}
+
 		dst[key] = ResourceConfig{
-			properties:         copiedProperties,
-			edges:              copiedEdges,
-			extractAnnotations: config.extractAnnotations,
-			extractConditions:  config.extractConditions,
+			properties:                       copiedProperties,
+			edges:                            copiedEdges,
+			extractAnnotations:               config.extractAnnotations,
+			extractConditions:                config.extractConditions,
+			additionalPrinterColumnsPriority: copiedPriority,
 		}
 	}
 	return dst

@@ -666,12 +666,20 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 		}
 	}
 
-	// Currently, only pull in the additionalPrinterColumns listed in the CRD if it's a Gatekeeper
-	// constraint or globally enabled.
-	if !found && (config.Cfg.CollectCRDPrinterColumns || group == "constraints.gatekeeper.sh") {
-		transformConfig = ResourceConfig{properties: additionalColumns}
-	} else if !found {
-		return node
+	// Pull in additionalPrinterColumns when globally enabled, gatekeeper constraint,
+	// or when a wildcard config has only additionalPrinterColumnsPriority set.
+	if !found {
+		useColumns := config.Cfg.CollectCRDPrinterColumns || group == "constraints.gatekeeper.sh" ||
+			(wildcardFound && wildcardConfig.additionalPrinterColumnsPriority != nil)
+		if useColumns {
+			transformConfig = ResourceConfig{properties: additionalColumns}
+			// Inherit the priority threshold from the wildcard config.
+			if wildcardFound && wildcardConfig.additionalPrinterColumnsPriority != nil {
+				transformConfig.additionalPrinterColumnsPriority = wildcardConfig.additionalPrinterColumnsPriority
+			}
+		} else {
+			return node
+		}
 	}
 
 	for _, prop := range transformConfig.properties {
@@ -696,6 +704,15 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 		// Skip additionalPrinterColumns that should be ignored.
 		if !found && defaultTransformIgnoredFields[prop.Name] {
 			continue
+		}
+
+		// Skip additionalPrinterColumns when not configured or above threshold.
+		// A threshold of N means collect columns with priority 0 through N.
+		if prop.Priority != nil {
+			if transformConfig.additionalPrinterColumnsPriority == nil ||
+				*prop.Priority > *transformConfig.additionalPrinterColumnsPriority {
+				continue
+			}
 		}
 
 		// Normalize the jsonPath before parsing — accept both "{.spec.field}" and
