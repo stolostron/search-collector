@@ -666,6 +666,12 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 		}
 	}
 
+	// When a specific config has additionalPrinterColumnsPriority set, append the CRD's
+	// printer columns so they are available for priority filtering below.
+	if found && transformConfig.additionalPrinterColumnsPriority != nil {
+		transformConfig.properties = append(transformConfig.properties, additionalColumns...)
+	}
+
 	// Pull in additionalPrinterColumns when globally enabled, gatekeeper constraint,
 	// or when a wildcard config has only additionalPrinterColumnsPriority set.
 	if !found {
