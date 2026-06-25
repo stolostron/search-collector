@@ -1,0 +1,46 @@
+{
+    "apiVersion": "v1",
+    "kind": "PersistentVolume",
+    "metadata": {
+        "annotations": {
+            "pv.beta.kubernetes.io/gid": "1000",
+            "pv.kubernetes.io/bound-by-controller": "yes"
+        },
+        "creationTimestamp": "2019-02-21T21:46:14Z",
+        "finalizers": [
+            "kubernetes.io/pv-protection"
+        ],
+        "labels": {
+            "type": "test"
+        },
+        "name": "test-pv",
+        "resourceVersion": "3737",
+        "selfLink": "/api/v1/persistentvolumes/test-pv",
+        "uid": "1c7ff66a-3622-11e9-85ca-00163e019656"
+    },
+    "spec": {
+        "accessModes": [
+            "ReadWriteOnce"
+        ],
+        "capacity": {
+            "storage": "5Gi"
+        },
+        "claimRef": {
+            "apiVersion": "v1",
+            "kind": "PersistentVolumeClaim",
+            "name": "test-pvc",
+            "namespace": "kube-system",
+            "resourceVersion": "3663",
+            "uid": "1c807efa-3622-11e9-85ca-00163e019656"
+        },
+        "hostPath": {
+            "path": "/var/lib/icp/helmrepo",
+            "type": ""
+        },
+        "persistentVolumeReclaimPolicy": "Delete",
+        "storageClassName": "test-storage"
+    },
+    "status": {
+        "phase": "Bound"
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "AggregatorURL": "https://localhost:3010",
+    "ClusterName": "local-cluster",
+    "ClusterNamespace": "local-cluster-ns",
+    "ReportRateMS": 5000,
+    "RuntimeMode": "development",
+    "DeployedInHub": true
+}

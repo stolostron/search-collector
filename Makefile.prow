@@ -1,0 +1,22 @@
+# Copyright Contributors to the Open Cluster Management project
+
+-include /opt/build-harness/Makefile.prow
+
+.PHONY: build
+build:
+	CGO_ENABLED=1 GOGC=25 go build -o $(BINDIR)/search-collector ./
+
+.PHONY: lint
+lint:
+	GOPATH=$(go env GOPATH)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "${GOPATH}/bin" v2.4.0
+	CGO_ENABLED=1 GOGC=25 golangci-lint run --timeout=3m
+	gosec ./...
+	
+.PHONY: unit-test
+unit-test:
+	DEPLOYED_IN_HUB=true go test ./... -v -coverprofile cover.out
+
+.PHONY: test-e2e
+test-e2e:
+	sh tests/e2e/runTests.sh $1

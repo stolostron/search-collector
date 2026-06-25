@@ -1,0 +1,44 @@
+{
+    "apiVersion": "v1",
+    "kind": "PersistentVolumeClaim",
+    "metadata": {
+        "annotations": {
+            "pv.kubernetes.io/bind-completed": "yes",
+            "pv.kubernetes.io/bound-by-controller": "yes"
+        },
+        "creationTimestamp": "2019-06-10T19:14:54Z",
+        "finalizers": [
+            "kubernetes.io/pvc-protection"
+        ],
+        "labels": {
+            "app": "test-app"
+        },
+        "name": "test-pvc",
+        "namespace": "default",
+        "resourceVersion": "326",
+        "selfLink": "/api/v1/namespaces/default/persistentvolumeclaims/test-pvc",
+        "uid": "18217c5e-9aa3-22f8-a13b-00163e01ab93"
+    },
+    "spec": {
+        "accessModes": [
+            "ReadWriteOnce"
+        ],
+        "dataSource": null,
+        "resources": {
+            "requests": {
+                "storage": "5Gi"
+            }
+        },
+        "storageClassName": "test-storage",
+        "volumeName": "test-pv"
+    },
+    "status": {
+        "accessModes": [
+            "ReadWriteOnce"
+        ],
+        "capacity": {
+            "storage": "5Gi"
+        },
+        "phase": "Bound"
+    }
+}

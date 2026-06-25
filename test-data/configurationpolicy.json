@@ -1,0 +1,83 @@
+{
+  "apiVersion": "policy.open-cluster-management.io/v1",
+  "kind": "ConfigurationPolicy",
+  "metadata": {
+    "uid": "config-uid-1",
+    "creationTimestamp": "2024-07-19T14:47:58Z",
+    "finalizers": ["policy.open-cluster-management.io/delete-related-objects"],
+    "generation": 1,
+    "annotations": {
+      "apps.open-cluster-management.io/hosting-subscription": "policies/demo-sub",
+      "kubectl.kubernetes.io/last-applied-configuration": "tiger"
+    },
+    "labels": {
+      "cluster-name": "local-cluster",
+      "cluster-namespace": "local-cluster",
+      "policy.open-cluster-management.io/cluster-name": "local-cluster",
+      "policy.open-cluster-management.io/cluster-namespace": "local-cluster",
+      "policy.open-cluster-management.io/policy": "default.dd"
+    },
+    "name": "policy-namespace",
+    "namespace": "local-cluster",
+    "managedFields": [
+      {
+        "apiVersion": "policy.open-cluster-management.io/v1beta1",
+        "fieldsType": "FieldsV1",
+        "manager": "argocd"
+      }
+    ]
+  },
+  "spec": {
+    "disabled": false,
+    "object-templates": [
+      {
+        "complianceType": "musthave",
+        "objectDefinition": {
+          "apiVersion": "v1",
+          "kind": "Namespace",
+          "metadata": {
+            "name": "hi"
+          }
+        },
+        "recreateOption": "None"
+      }
+    ],
+    "pruneObjectBehavior": "DeleteAll",
+    "remediationAction": "inform",
+    "severity": "low"
+  },
+  "status": {
+    "compliancyDetails": [
+      {
+        "Compliant": "NonCompliant",
+        "Validity": {},
+        "conditions": [
+          {
+            "lastTransitionTime": "2024-07-19T14:47:59Z",
+            "message": "namespaces [hi] not found",
+            "reason": "K8s does not have a `must have` object",
+            "status": "True",
+            "type": "violation"
+          }
+        ]
+      }
+    ],
+    "compliant": "NonCompliant",
+    "lastEvaluated": "2024-07-19T16:55:31Z",
+    "lastEvaluatedGeneration": 1,
+    "relatedObjects": [
+      {
+        "compliant": "NonCompliant",
+        "object": {
+          "apiVersion": "v1",
+          "kind": "Namespace",
+          "metadata": {
+            "name": "hi"
+          }
+        },
+        "reason": "Resource not found but should exist",
+        "cluster": "local-cluster"
+      }
+    ]
+  }
+}

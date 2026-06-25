@@ -1,0 +1,40 @@
+{
+    "apiVersion": "apps.open-cluster-management.io/v1alpha1",
+    "kind": "PlacementRule",
+    "metadata": {
+        "annotations": {
+            "mcm.ibm.com/user-group": "d4kxsFCr1n2gd4TmdmO=",
+            "mcm.ibm.com/user-identity": "TQScwO5="
+        },
+        "creationTimestamp": "2019-09-13T03:45:19Z",
+        "generation": 2,
+        "labels": {
+            "app": "test",
+            "chart": "test-0.1.0",
+            "heritage": "Tiller",
+            "release": "test"
+        },
+        "name": "test-placementrule-2",
+        "namespace": "default",
+        "resourceVersion": "68820",
+        "selfLink": "/apis/apps.open-cluster-management.io/v1/namespaces/default/placementrules/test-placementrule-2",
+        "uid": "a9170gd1-f8e9-22f1-ced6-9164314111f0"
+    },
+    "spec": {
+        "clusterLabels": {
+            "matchLabels": {
+                "environment": "Dev",
+                "name": "test-1"
+            }
+        },
+        "clusterReplicas": 5
+    },
+    "status": {
+        "decisions": [
+            {
+                "clusterName": "test-1",
+                "clusterNamespace": "test-1"
+            }
+        ]
+    }
+}

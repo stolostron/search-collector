@@ -1,0 +1,102 @@
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+      "annotations": {
+        "apps.open-cluster-management.io/hosting-applicationset": "openshift-gitops/bgdk-app-set"
+      },
+      "creationTimestamp": "2021-02-10T02:15:57Z",
+      "name": "helloworld",
+      "namespace": "argocd",
+      "ownerReferences": [{
+        "apiVersion": "other.io/v2",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "name": "wrong-helloworld-set",
+        "kind": "ApplicationSet",
+        "uid": "8144b62e-aada-4d85-bb6b-c8077c007929"
+      },
+      {
+        "apiVersion": "argoproj.io/v1alpha1",
+        "blockOwnerDeletion": true,
+        "controller": true,
+        "name": "helloworld-set",
+        "kind": "ApplicationSet",
+        "uid": "8144b62e-aada-4d85-bb6b-c8077c007930"
+      }]
+  },
+  "spec": {
+      "destination": {
+          "name": "local-cluster",
+          "namespace": "argo-helloworld",
+          "server": "https://kubernetes.default.svc"
+      },
+      "project": "default",
+      "source": {
+          "path": "helloworld",
+          "chart": "hello-chart",
+          "repoURL": "https://github.com/fxiang1/app-samples",
+          "targetRevision": "HEAD"
+      },
+      "syncPolicy": {
+          "automated": {
+              "selfHeal": true
+          }
+      }
+  },
+  "status": {
+      "health": {
+          "status": "Missing"
+      },
+      "sync": {
+        "status": "OutOfSync"
+    },
+    "resources": [
+        {
+            "kind": "Namespace",
+            "name": "bgd",
+            "version": "v1"
+        },
+        {
+            "kind": "Service",
+            "name": "bgd",
+            "namespace": "bgd",
+            "version": "v1"
+        },
+        {
+            "kind": "Deployment",
+            "name": "bgd",
+            "namespace": "bgd",
+            "version": "v1",
+            "group": "apps"
+        },
+        {
+            "kind": "Route",
+            "name": "bgd",
+            "namespace": "bgd",
+            "version": "v1",
+            "group": "route.openshift.io"
+        },
+        {
+            "kind": "Configmap",
+            "name": "missingConfigmap",
+            "namespace": "bgd",
+            "version": "v1"            
+        }
+    ],
+    "conditions": [
+        {
+            "type": "SyncError",
+            "message": "Failed sync attempt to 53e28ff20cc530b9ada2173fbbd64d48338583ba: oneor more objects failed to apply, reason: services is forbidden: User \"system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller\" cannot create resource \"services\" in API group \"\" in the namespace \"guestbook\",deployments.apps is forbidden: User \"system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller\" cannot create resource \"deployments\" in API group \"apps\" in the namespace \"guestbook\" (retried 5 times)."
+        },
+        {
+            "type": "InvalidSpecError",
+            "message": "invalid spec in the argocd application"
+        }
+    ],
+    "operationState": {
+        "phase": "Failed",
+        "message": "one or more objects failed to apply, reason: deployments.apps is forbidden: User 'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller' cannot create resource 'deployments' in API group 'apps' in the namespace 'helm-nginx',serviceaccounts is forbidden: User 'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller' cannot create resource 'serviceaccounts' in API group '' in the namespace 'helm-nginx',services is forbidden: User 'system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller' cannot create resource 'services' in API group '' in the namespace 'helm-nginx'. Retrying attempt #2 at 2:35AM."
+    }
+  }
+}

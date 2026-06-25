@@ -1,0 +1,84 @@
+{
+    "apiVersion": "policy.open-cluster-management.io/v1",
+    "kind": "Policy",
+    "metadata": {
+        "annotations": {
+            "policy.open-cluster-management.io/categories": "PR.PT Protective Technology",
+            "policy.open-cluster-management.io/controls": "PR.PT-3 Least Functionality",
+            "policy.open-cluster-management.io/standards": "NIST-CSF"
+        },
+        "creationTimestamp": "2020-06-11T02:23:55Z",
+        "generation": 1,
+        "name": "policy-01",
+        "namespace": "default",
+        "resourceVersion": "169635",
+        "selfLink": "/apis/policy.open-cluster-management.io/v1/namespaces/default/policies/policy-01",
+        "uid": "82825211-afff-48d8-8522-ba1bf1cd1d04"
+    },
+    "spec": {
+        "disabled": false,
+        "policy-templates": [
+            {
+                "objectDefinition": {
+                    "apiVersion": "policy.open-cluster-management.io/v1",
+                    "kind": "ConfigurationPolicy",
+                    "metadata": {
+                        "name": "policy-01-example"
+                    },
+                    "spec": {
+                        "namespaceSelector": {
+                            "exclude": [
+                                "kube-*"
+                            ],
+                            "include": [
+                                "default"
+                            ]
+                        },
+                        "object-templates": [
+                            {
+                                "complianceType": "mustnothave",
+                                "objectDefinition": {
+                                    "apiVersion": "v1",
+                                    "kind": "Pod",
+                                    "metadata": {
+                                        "name": "sample-nginx-pod"
+                                    },
+                                    "spec": {
+                                        "containers": [
+                                            {
+                                                "image": "nginx:1.7.9",
+                                                "name": "nginx",
+                                                "ports": [
+                                                    {
+                                                        "containerPort": 80
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ],
+                        "remediationAction": "inform",
+                        "severity": "low"
+                    }
+                }
+            }
+        ],
+        "remediationAction": "enforce"
+    },
+    "status": {
+        "placement": [
+            {
+                "placementBinding": "binding-policy-01",
+                "placementRule": "placement-policy-01"
+            }
+        ],
+        "status": [
+            {
+                "clustername": "dev1-managed1",
+                "clusternamespace": "dev1-managed1-ns"
+            }
+        ]
+    }
+}

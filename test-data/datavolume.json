@@ -1,0 +1,71 @@
+{
+    "apiVersion": "cdi.kubevirt.io/v1beta1",
+    "kind": "DataVolume",
+    "metadata": {
+        "annotations": {
+            "cdi.kubevirt.io/storage.usePopulator": "false"
+        },
+        "creationTimestamp": "2024-09-09T20:00:42Z",
+        "generation": 1,
+        "labels": {
+            "kubevirt.io/created-by": "42634581-0cc1-4aa9-bec6-69f59049e2d3"
+        },
+        "name": "centos7-gray-owl-35",
+        "namespace": "openshift-cnv",
+        "ownerReferences": [
+            {
+                "apiVersion": "kubevirt.io/v1",
+                "blockOwnerDeletion": true,
+                "controller": true,
+                "kind": "VirtualMachine",
+                "name": "centos7-gray-owl-35",
+                "uid": "42634581-0cc1-4aa9-bec6-69f59049e2d3"
+            }
+        ],
+        "resourceVersion": "1483926",
+        "uid": "341376a4-58da-4e5e-bb0d-7ff6a5eb3ef1"
+    },
+    "spec": {
+        "source": {
+            "registry": {
+                "url": "docker://quay.io/containerdisks/centos:7-2009"
+            }
+        },
+        "storage": {
+            "resources": {
+                "requests": {
+                    "storage": "20Gi"
+                }
+            }
+        }
+    },
+    "status": {
+        "claimName": "centos7-gray-owl-35",
+        "conditions": [
+            {
+                "lastHeartbeatTime": "2024-09-09T20:00:44Z",
+                "lastTransitionTime": "2024-09-09T20:00:44Z",
+                "message": "PVC centos7-gray-owl-35 Bound",
+                "reason": "Bound",
+                "status": "True",
+                "type": "Bound"
+            },
+            {
+                "lastHeartbeatTime": "2024-09-09T20:01:07Z",
+                "lastTransitionTime": "2024-09-09T20:01:07Z",
+                "status": "True",
+                "type": "Ready"
+            },
+            {
+                "lastHeartbeatTime": "2024-09-09T20:01:05Z",
+                "lastTransitionTime": "2024-09-09T20:01:05Z",
+                "message": "Import Complete",
+                "reason": "Completed",
+                "status": "False",
+                "type": "Running"
+            }
+        ],
+        "phase": "Succeeded",
+        "progress": "100.0%"
+    }
+}

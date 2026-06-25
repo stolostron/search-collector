@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: search-collector-config
+  namespace: open-cluster-management
+data: 
+  AllowedResources: |-
+    - apiGroups: 
+        - "*"
+      resources: 
+        - services
+        - pods
+    - apiGroups:
+        - admission.k8s.io
+        - authentication.k8s.io
+      resources:
+        - "*"
+  DeniedResources: |-
+    - apiGroups:
+        - "*"
+      resources:
+        - secrets
+    - apiGroups:
+        - admission.k8s.io
+      resources:
+        - policies
+        - iampolicies
+        - certificatepolicies
