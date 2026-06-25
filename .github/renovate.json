@@ -1,23 +1,23 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "gomod": {
-        "enabled": false
+    "dockerfile": {
+      "enabled": false
     },
-    "packageRules": [
+    "gomod": {
+      "packageRules": [
         {
-            "matchManagers": [
-                "gomod"
-            ],
-            "enabled": true,
-            "groupName": "go.mod packages",
-            "matchBaseBranches": ["main", "release-2.15"],
-            "matchPackageNames": ["*", "*/**"]
+            "matchDepTypes": ["indirect"],
+            "enabled": false
+        },
+        {
+            "matchBaseBranches": ["release-*"],
+            "enabled": false
         }
-    ],
-    "vulnerabilityAlerts": {
-        "enabled": true
+      ]
     },
     "osvVulnerabilityAlerts": true,
-    "schedule": "before 8am on Tuesday",
-    "timezone": "America/New_York"
+    "timezone": "America/New_York",
+    "vulnerabilityAlerts": {
+        "enabled": true
+    }
 }
