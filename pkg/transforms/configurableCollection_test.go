@@ -102,13 +102,15 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 	assert.Equal(t, DataTypeBytes, searchConfig.properties[0].DataType)
 }
 
-// FUTURE: this should eventually appropriately include when search-collector-config merged
-func TestLoadAndMergeConfigurableCollection_SkipExcludeActions(t *testing.T) {
+// Exclude rules populate excludeRules (not mergedTransformConfig).
+func TestLoadAndMergeConfigurableCollection_ExcludePopulatesExcludedResources(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
 	defer func() {
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+		excludeRules = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -128,7 +130,7 @@ func TestLoadAndMergeConfigurableCollection_SkipExcludeActions(t *testing.T) {
 						"action": "exclude",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"coordination.k8s.io"},
-							"kinds":     []interface{}{"leases"},
+							"kinds":     []interface{}{"Lease"},
 						},
 					},
 				},
@@ -141,8 +143,12 @@ func TestLoadAndMergeConfigurableCollection_SkipExcludeActions(t *testing.T) {
 
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	// Verify no custom entries were added - should equal defaultTransformConfig
-	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig), "Exclude actions should not add custom config")
+	// mergedTransformConfig must not grow — exclude does not add custom properties
+	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig),
+		"Exclude actions should not add entries to mergedTransformConfig")
+	// excludeRules must cause Lease to be excluded
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Lease.coordination.k8s.io must be excluded after exclude rule")
 }
 
 // FUTURE: this should eventually appropriately include when search-collector-config merged
@@ -182,12 +188,11 @@ func TestLoadAndMergeConfigurableCollection_SkipIncludeWithoutFields(t *testing.
 	scheme := runtime.NewScheme()
 	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
 
-	originalLen := len(mergedTransformConfig)
-
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	// Verify no new entries were added
-	assert.Equal(t, originalLen, len(mergedTransformConfig), "Include actions without fields should not modify config")
+	// Verify no new entries were added beyond the defaults
+	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig),
+		"Include actions without fields should not add new entries to mergedTransformConfig")
 }
 
 func TestLoadAndMergeConfigurableCollection_InvalidMultipleKinds(t *testing.T) {
@@ -1511,8 +1516,9 @@ func TestStatusCondition_Applied_ValidConfig(t *testing.T) {
 	assert.Equal(t, "Configuration applied successfully.", cond["message"])
 }
 
-// TestStatusCondition_Applied_SkippedRule verifies that a rule with an
-// unsupported action results in Applied=False with a descriptive warning message.
+// TestStatusCondition_Applied_SkippedRule verifies that an include rule with no
+// actionable configuration (no fields, no collectConditions, no collectAnnotations)
+// results in Applied=False with a descriptive warning message.
 func TestStatusCondition_Applied_SkippedRule(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
@@ -1536,8 +1542,8 @@ func TestStatusCondition_Applied_SkippedRule(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						// "exclude" is not yet supported — rule should be skipped
-						"action": "exclude",
+						// include with no fields/collectConditions/collectAnnotations — should be skipped
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"coordination.k8s.io"},
 							"kinds":     []interface{}{"Lease"},
@@ -1559,9 +1565,61 @@ func TestStatusCondition_Applied_SkippedRule(t *testing.T) {
 	assert.Equal(t, "Applied", cond["type"])
 	assert.Equal(t, "False", cond["status"], "Condition status should be False when a rule is skipped")
 	assert.Equal(t, "RulesSkipped", cond["reason"])
-	// Message should mention the skipped action
 	msg, _ := cond["message"].(string)
-	assert.True(t, strings.Contains(msg, "exclude"), "Message should mention the unsupported 'exclude' action, got: %s", msg)
+	assert.True(t, strings.Contains(msg, "requires at least one field"),
+		"Message should describe why the rule was skipped, got: %s", msg)
+}
+
+// TestStatusCondition_Applied_ExcludeRule verifies that a valid exclude rule results
+// in Applied=True — exclude rules are now fully supported and should not produce warnings.
+func TestStatusCondition_Applied_ExcludeRule(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+	defer func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfig = nil
+		excludeRules = nil
+	}()
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme, collectionConfig)
+
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	cond := getStatusConditionFromFakeClient(fakeClient)
+	require.NotNil(t, cond, "Expected a status condition to be written to the CollectorConfig CR")
+
+	assert.Equal(t, "Applied", cond["type"])
+	assert.Equal(t, "True", cond["status"], "Exclude rule is valid — Applied should be True")
+	assert.Equal(t, "Applied", cond["reason"])
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Lease should be excluded after loading")
 }
 
 // TestStatusCondition_Applied_FieldCollision verifies that when two rules both
@@ -1782,14 +1840,14 @@ func TestStatusCondition_MultipleWarnings(t *testing.T) {
 			"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
-					// Rule 1: unsupported action
-					map[string]interface{}{
-						"action": "exclude",
-						"resourceSelector": map[string]interface{}{
-							"apiGroups": []interface{}{""},
-							"kinds":     []interface{}{"Pod"},
-						},
+				// Rule 1: include with no fields/collectConditions — triggers "requires at least one field"
+				map[string]interface{}{
+					"action": "include",
+					"resourceSelector": map[string]interface{}{
+						"apiGroups": []interface{}{""},
+						"kinds":     []interface{}{"Pod"},
 					},
+				},
 					// Rule 2: include without fields
 					map[string]interface{}{
 						"action": "include",
@@ -1827,7 +1885,7 @@ func TestStatusCondition_MultipleWarnings(t *testing.T) {
 	msg, _ := cond["message"].(string)
 	// All 3 warnings should be in the single message separated by "; "
 	assert.True(t, strings.Contains(msg, "; "), "Multiple warnings should be separated by '; ', got: %s", msg)
-	assert.True(t, strings.Contains(msg, "only \"include\" action is supported, found \"exclude\""), "Rule 1: got: %s", msg)
+	assert.True(t, strings.Contains(msg, "include action requires at least one field"), "Rule 1: got: %s", msg)
 	assert.True(t, strings.Contains(msg, "include action requires at least one field"), "Rule 2: got: %s", msg)
 	assert.True(t, strings.Contains(msg, "include action with fields must specify exactly 1 kind, found 2"), "Rule 3: got: %s", msg)
 }
@@ -2041,7 +2099,8 @@ func TestStatusCondition_LastTransitionTime_UpdatedWhenStatusChanges(t *testing.
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						"action": "exclude", // broken rule — triggers False
+						// include with no fields — triggers Applied=False (RulesSkipped)
+						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
 							"kinds":     []interface{}{"Pod"},
@@ -2105,14 +2164,18 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 	}
 	distinctWarningRules := []warningRule{
 		{
+			// include + fields + zero apiGroups → "exactly 1 apiGroup, found 0"
 			rule: map[string]interface{}{
-				"action": "exclude",
+				"action": "include",
 				"resourceSelector": map[string]interface{}{
-					"apiGroups": []interface{}{"coordination.k8s.io"},
-					"kinds":     []interface{}{"Lease"},
+					"apiGroups": []interface{}{}, // zero apiGroups
+					"kinds":     []interface{}{"Pod"},
+				},
+				"fields": []interface{}{
+					map[string]interface{}{"name": "v", "jsonPath": "{.v}"},
 				},
 			},
-			uniqueSubstring: `found "exclude"`,
+			uniqueSubstring: "found 0",
 		},
 		{
 			rule: map[string]interface{}{
@@ -2149,7 +2212,8 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 					map[string]interface{}{"name": "y", "jsonPath": "{.y}"},
 				},
 			},
-			uniqueSubstring: "exactly 1 apiGroup",
+			// "exactly 1 apiGroup, found 2" — "found 2" alone also appears in rule 3 ("kind, found 2")
+			uniqueSubstring: "apiGroup, found 2",
 		},
 		{
 			rule: map[string]interface{}{
@@ -3098,4 +3162,386 @@ func TestLoadAndMergeConfigurableCollection_CollectAnnotationsOnly(t *testing.T)
 	assert.True(t, deployConfig.extractAnnotations, "extractAnnotations should be true")
 	assert.Empty(t, deployConfig.properties, "Should have no custom fields")
 	assert.False(t, deployConfig.extractConditions, "extractConditions should be false")
+}
+
+// --- Exclude action tests ---
+
+func makeExcludeConfig(namespace, apiGroup, kind string) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": namespace,
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{apiGroup},
+							"kinds":     []interface{}{kind},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func setupExcludeTest(t *testing.T) func() {
+	t.Helper()
+	orig := config.Cfg.FeatureConfigurableCollection
+	origNS := config.Cfg.PodNamespace
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+	return func() {
+		config.Cfg.FeatureConfigurableCollection = orig
+		config.Cfg.PodNamespace = origNS
+		mergedTransformConfig = nil
+		excludeRules = nil
+	}
+}
+
+// Specific kind+group is excluded.
+func TestExclude_SpecificKind(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	cfg := makeExcludeConfig("test-namespace", "coordination.k8s.io", "Lease")
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Lease.coordination.k8s.io should be excluded")
+	assert.False(t, IsResourceExcluded("coordination.k8s.io", "LeaderElection"),
+		"Other kinds in group should not be excluded")
+	assert.False(t, IsResourceExcluded("", "Lease"),
+		"Core-group Lease should not be excluded")
+}
+
+// Wildcard kind excludes all kinds in a group.
+func TestExclude_WildcardKind(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	cfg := makeExcludeConfig("test-namespace", "coordination.k8s.io", "*")
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Lease should be excluded via wildcard")
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "LeaderElection"),
+		"Any kind in coordination.k8s.io should be excluded via wildcard")
+	assert.False(t, IsResourceExcluded("apps", "Deployment"),
+		"Other groups should not be affected")
+}
+
+// Wildcard group and kind excludes everything.
+func TestExclude_WildcardAll(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	cfg := makeExcludeConfig("test-namespace", "*", "*")
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("apps", "Deployment"),
+		"Deployment should be excluded via global wildcard")
+	assert.True(t, IsResourceExcluded("", "Pod"),
+		"Core-group Pod should be excluded via global wildcard")
+}
+
+// Core-group (empty apiGroup) specific kind is excluded.
+func TestExclude_CoreGroup(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	cfg := makeExcludeConfig("test-namespace", "", "Event")
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("", "Event"),
+		"Core-group Event should be excluded")
+	assert.False(t, IsResourceExcluded("", "Pod"),
+		"Core-group Pod should not be excluded")
+	assert.False(t, IsResourceExcluded("events.k8s.io", "Event"),
+		"Event in different apiGroup should not be excluded")
+}
+
+// Exclude does not affect mergedTransformConfig — default properties still extracted.
+func TestExclude_DoesNotAffectTransformConfig(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	cfg := makeExcludeConfig("test-namespace", "coordination.k8s.io", "Lease")
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// The exclude rule should not remove the Lease entry from mergedTransformConfig;
+	// exclusion is enforced at the informer layer, not in the transform config.
+	_, found := mergedTransformConfig["Lease.coordination.k8s.io"]
+	assert.False(t, found,
+		"Lease.coordination.k8s.io was not in defaultTransformConfig so should not appear in mergedTransformConfig")
+	// The Pod default config should still be intact.
+	_, podFound := mergedTransformConfig["Pod"]
+	assert.True(t, podFound, "Default Pod config should still be present in mergedTransformConfig")
+}
+
+// Last entry wins: include after exclude for same resource cancels the exclusion.
+func TestExclude_LastEntryWins_IncludeAfterExclude(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	collectConditions := true
+	cfg := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					// Rule 1: include Lease (sets collectConditions)
+					map[string]interface{}{
+						"action":             "include",
+						"collectConditions":  collectConditions,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+					// Rule 2: exclude Lease
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+					// Rule 3: include Lease again — last entry wins, should cancel exclude
+					map[string]interface{}{
+						"action":             "include",
+						"collectConditions":  collectConditions,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.False(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Last include should cancel the prior exclude — Lease should NOT be excluded")
+}
+
+// Last entry wins: exclude after include for same resource keeps the exclusion.
+func TestExclude_LastEntryWins_ExcludeAfterInclude(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	collectConditions := true
+	cfg := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					// Rule 1: include Lease
+					map[string]interface{}{
+						"action":             "include",
+						"collectConditions":  collectConditions,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+					// Rule 2: exclude Lease — last entry, should win
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Last exclude should win — Lease should be excluded")
+}
+
+// Group wildcard: exclude "Lease.*" matches Lease in any apiGroup.
+func TestExclude_GroupWildcard(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	cfg := makeExcludeConfig("test-namespace", "*", "Lease")
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Lease in any group should be excluded via group wildcard")
+	assert.True(t, IsResourceExcluded("", "Lease"),
+		"Core-group Lease should also be excluded via group wildcard")
+	assert.False(t, IsResourceExcluded("coordination.k8s.io", "LeaderElection"),
+		"Other kinds should not be affected")
+}
+
+// A skipped include rule (no fields/conditions) must NOT cancel a prior exclude.
+func TestExclude_InvalidIncludeDoesNotCancelExclude(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	collectConditions := true
+	cfg := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					// Valid include first
+					map[string]interface{}{
+						"action":            "include",
+						"collectConditions": collectConditions,
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+					// Exclude
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+					// Invalid include (no fields/conditions) — must NOT cancel the exclude
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"coordination.k8s.io"},
+							"kinds":     []interface{}{"Lease"},
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Invalid include (no fields/conditions) must NOT cancel the prior exclude")
+}
+
+// Wildcard exclude followed by specific include: the include overrides the wildcard.
+// This is the primary use-case that was previously a documented limitation.
+// A user who wants "collect only Deployments" can now write:
+//   exclude "*.*" (deny all) + include "Deployment.apps" (allow specific)
+func TestExclude_WildcardOverriddenBySpecificInclude(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"*"},
+							"kinds":     []interface{}{"*"},
+						},
+					},
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps"},
+							"kinds":     []interface{}{"Deployment"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{"name": "replicas", "jsonPath": ".spec.replicas"},
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), collectionConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Deployment should NOT be excluded — the specific include overrides the global exclude.
+	assert.False(t, IsResourceExcluded("apps", "Deployment"),
+		"Specific include 'Deployment.apps' must override prior global exclude '*.*'")
+
+	// Other resources ARE excluded by the wildcard.
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Lease must still be excluded by global exclude '*.*'")
+	assert.True(t, IsResourceExcluded("", "ConfigMap"),
+		"ConfigMap (core group) must still be excluded by global exclude '*.*'")
+}
+
+// IsResourceExcluded returns false when excludeRules is nil (no rules loaded).
+func TestExclude_NilRules(t *testing.T) {
+	excludeRules = nil
+	assert.False(t, IsResourceExcluded("apps", "Deployment"),
+		"Should return false when excludeRules is nil")
+}
+
+// Config reload resets excludeRules — old excludes do not persist.
+func TestExclude_ResetOnReload(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	// First load: exclude Lease
+	cfg1 := makeExcludeConfig("test-namespace", "coordination.k8s.io", "Lease")
+	fakeClient1 := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg1)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient1)
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"))
+
+	// Second load: no exclude rules
+	cfg2 := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{},
+			},
+		},
+	}
+	fakeClient2 := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg2)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient2)
+	assert.False(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Previous exclude should be cleared after reload with no exclude rules")
 }

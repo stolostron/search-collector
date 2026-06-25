@@ -20,13 +20,39 @@ import (
 // Wildcard entries like "*" (core group) or "*.apps" are used for apigroup-wide collectConditions.
 var mergedTransformConfig map[string]ResourceConfig
 
+// excludeRule is a single entry in the ordered exclude/include evaluation list.
+// Each rule is a cartesian product of apiGroups × kinds. Action determines whether
+// matching resources are excluded (ActionExclude) or whether a prior exclude is
+// cancelled (ActionInclude). Rules are evaluated in the order they appear in
+// merged-collector-config; the last matching rule determines the final outcome
+// ("last entry wins").
+//
+// This mirrors the matching logic of isResourceMatchingList in pkg/informer/supportedResources.go
+// so that CollectorConfig exclude behaviour is consistent with the legacy ConfigMap Allow/Deny
+// feature it is intended to replace (ACM-21892).
+type excludeRule struct {
+	apiGroups []string
+	kinds     []string
+	action    v1alpha1.ActionType
+}
+
+// excludeRules is the ordered list of exclude / include-override rules built during
+// config load. IsResourceExcluded walks the list and returns the action of the last
+// matching rule (false = include, true = exclude). An empty list means no resources
+// are excluded.
+//
+// Thread safety: written once at startup, then read concurrently by informer goroutines.
+// Safe for now because reads only begin after LoadAndMergeConfigurableCollection returns.
+// When ACM-20047 adds dynamic reload, this will need a sync.RWMutex.
+var excludeRules []excludeRule
+
 // LoadAndMergeConfigurableCollection loads the CollectorConfig resource from the cluster and merges it with defaultTransformConfig.
 // The merged result is stored in mergedTransformConfig.
 func LoadAndMergeConfigurableCollection() {
 	if !config.Cfg.FeatureConfigurableCollection {
 		klog.Info("Configurable collection feature is disabled, skipping custom config load")
-		// Initialize mergedTransformConfig to a copy of defaultTransformConfig
 		mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
+		excludeRules = nil
 		return
 	}
 
@@ -54,8 +80,9 @@ var collectorConfigGVR = schema.GroupVersionResource{
 
 // loadAndMergeConfigurableCollectionWithClient is a helper function that accepts a dynamic client for testability.
 func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interface) {
-	// Start with a deep copy of defaultTransformConfig
+	// Start with a deep copy of defaultTransformConfig and a fresh exclude rule list.
 	mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
+	excludeRules = nil
 
 	namespace := config.Cfg.PodNamespace
 
@@ -99,11 +126,8 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		// Get field suffix for this rule (defaults to empty string)
 		fieldSuffix := rule.FieldSuffix
 
-		// FUTURE: Only Include actions are currently supported
-		if rule.Action != v1alpha1.ActionInclude {
-			msg := fmt.Sprintf("Rule skipped: only \"include\" action is supported, found %q", rule.Action)
-			klog.Warningf("Skipping collection rule. Only \"include\" action supported at this time: %s", rule.Action)
-			warnings = append(warnings, msg)
+		if rule.Action == v1alpha1.ActionExclude {
+			appendExcludeRule(rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds, v1alpha1.ActionExclude)
 			continue
 		}
 
@@ -112,13 +136,20 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		hasCollectAnnotations := rule.CollectAnnotations != nil && *rule.CollectAnnotations
 		hasCollectPrinterColumns := rule.CollectAdditionalPrinterColumnsPriority != nil
 
-		// Only process rules that have actionable configuration
+		// Only process rules that have actionable configuration — check BEFORE unmerging
+		// any prior exclude, so a malformed include rule does not silently cancel an exclude.
 		if !hasFields && !hasCollectConditions && !hasCollectPrinterColumns && !hasCollectAnnotations {
 			msg := "Rule skipped: include action requires at least one field, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority"
 			klog.Warning("Skipping collection rule. Include action without fields, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority specified.")
 			warnings = append(warnings, msg)
 			continue
 		}
+
+		// "Last entry wins": a valid include rule appends an ActionInclude entry to excludeRules,
+		// which cancels any prior exclude for the same resource during IsResourceExcluded evaluation.
+		// This correctly handles wildcard-vs-specific (e.g. exclude "*.*" followed by
+		// include "Deployment.apps" → Deployments are NOT excluded).
+		appendExcludeRule(rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds, v1alpha1.ActionInclude)
 
 		apiGroups := rule.ResourceSelector.APIGroups
 		kinds := rule.ResourceSelector.Kinds
@@ -340,6 +371,54 @@ func updateCollectorConfigStatus(dynamicClient dynamic.Interface, namespace stri
 		return
 	}
 	klog.V(2).Infof("Updated CollectorConfig status: Applied=%s reason=%s", conditionStatus, reason)
+}
+
+// appendExcludeRule appends an exclude or include-override rule to the ordered rule list.
+// The rule matches any combination of (apiGroup, kind) from the cartesian product of
+// apiGroups × kinds, using "*" as a wildcard for either dimension. This is consistent
+// with the matching logic in pkg/informer/supportedResources.go (isResourceMatchingList).
+func appendExcludeRule(apiGroups, kinds []string, action v1alpha1.ActionType) {
+	if len(apiGroups) == 0 || len(kinds) == 0 {
+		return
+	}
+	excludeRules = append(excludeRules, excludeRule{
+		apiGroups: apiGroups,
+		kinds:     kinds,
+		action:    action,
+	})
+	klog.V(2).Infof("Appended %s rule: apiGroups=%v kinds=%v", action, apiGroups, kinds)
+}
+
+// matchesExcludeRule reports whether (group, kind) is matched by a rule's apiGroups × kinds.
+// Uses the same cartesian wildcard logic as pkg/informer/supportedResources.go:
+//   - "*" in apiGroups matches any group (including core group "")
+//   - "*" in kinds matches any kind
+func matchesExcludeRule(group, kind string, apiGroups, kinds []string) bool {
+	for _, g := range apiGroups {
+		for _, k := range kinds {
+			if (g == "*" || g == group) && (k == "*" || k == kind) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// IsResourceExcluded reports whether a resource should be excluded from collection.
+// Evaluates the ordered excludeRules list with "last matching rule wins" semantics:
+//   - An ActionExclude rule that matches marks the resource as excluded.
+//   - An ActionInclude rule that matches cancels any prior exclude.
+//
+// This resolves wildcard-vs-specific correctly: exclude "*.*" followed by
+// include "Deployment.apps" results in Deployments being collected (not excluded).
+func IsResourceExcluded(group, kind string) bool {
+	excluded := false
+	for _, rule := range excludeRules {
+		if matchesExcludeRule(group, kind, rule.apiGroups, rule.kinds) {
+			excluded = rule.action == v1alpha1.ActionExclude
+		}
+	}
+	return excluded
 }
 
 // mergeCollectConditions enables condition extraction for the given apiGroups and kinds.
