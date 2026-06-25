@@ -20,16 +20,31 @@ import (
 // Wildcard entries like "*" (core group) or "*.apps" are used for apigroup-wide collectConditions.
 var mergedTransformConfig map[string]ResourceConfig
 
-// excludedResources holds the set of resource keys that should not be collected.
-// Keys follow the same scheme as mergedTransformConfig: "Kind.apiGroup" for specific kinds,
-// "*" for all core-group resources, "*.apps" for all resources in the apps apiGroup.
-// Populated by mergeExcludeRules during config load; checked at the informer layer.
+// excludeRule is a single entry in the ordered exclude/include evaluation list.
+// Each rule is a cartesian product of apiGroups × kinds. Action determines whether
+// matching resources are excluded (ActionExclude) or whether a prior exclude is
+// cancelled (ActionInclude). Rules are evaluated in the order they appear in
+// merged-collector-config; the last matching rule determines the final outcome
+// ("last entry wins").
 //
-// Thread safety: currently written once at startup (before informers start) and read
-// concurrently by informer goroutines. Safe for now because reads begin only after
-// LoadAndMergeConfigurableCollection returns. When ACM-20047 adds dynamic reload,
-// this will need a sync.RWMutex — see nsFilterCache for the expected pattern.
-var excludedResources map[string]struct{}
+// This mirrors the matching logic of isResourceMatchingList in pkg/informer/supportedResources.go
+// so that CollectorConfig exclude behaviour is consistent with the legacy ConfigMap Allow/Deny
+// feature it is intended to replace (ACM-21892).
+type excludeRule struct {
+	apiGroups []string
+	kinds     []string
+	action    v1alpha1.ActionType
+}
+
+// excludeRules is the ordered list of exclude / include-override rules built during
+// config load. IsResourceExcluded walks the list and returns the action of the last
+// matching rule (false = include, true = exclude). An empty list means no resources
+// are excluded.
+//
+// Thread safety: written once at startup, then read concurrently by informer goroutines.
+// Safe for now because reads only begin after LoadAndMergeConfigurableCollection returns.
+// When ACM-20047 adds dynamic reload, this will need a sync.RWMutex.
+var excludeRules []excludeRule
 
 // LoadAndMergeConfigurableCollection loads the CollectorConfig resource from the cluster and merges it with defaultTransformConfig.
 // The merged result is stored in mergedTransformConfig.
@@ -37,7 +52,7 @@ func LoadAndMergeConfigurableCollection() {
 	if !config.Cfg.FeatureConfigurableCollection {
 		klog.Info("Configurable collection feature is disabled, skipping custom config load")
 		mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
-		excludedResources = map[string]struct{}{}
+		excludeRules = nil
 		return
 	}
 
@@ -65,9 +80,9 @@ var collectorConfigGVR = schema.GroupVersionResource{
 
 // loadAndMergeConfigurableCollectionWithClient is a helper function that accepts a dynamic client for testability.
 func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interface) {
-	// Start with a deep copy of defaultTransformConfig and a fresh exclude set.
+	// Start with a deep copy of defaultTransformConfig and a fresh exclude rule list.
 	mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
-	excludedResources = map[string]struct{}{}
+	excludeRules = nil
 
 	namespace := config.Cfg.PodNamespace
 
@@ -112,7 +127,7 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		fieldSuffix := rule.FieldSuffix
 
 		if rule.Action == v1alpha1.ActionExclude {
-			mergeExcludeRules(rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds)
+			appendExcludeRule(rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds, v1alpha1.ActionExclude)
 			continue
 		}
 
@@ -130,11 +145,11 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 			continue
 		}
 
-		// "Last entry wins": a valid include rule cancels any prior exclude for the same resource.
-		// Uses the same key scheme as mergeExcludeRules so exact keys are matched and removed.
-		// Note: wildcard-vs-specific mismatches (e.g. exclude "*.*" followed by include
-		// "Deployment.apps") are not resolved — those are documented as a known limitation.
-		unmergeExcludeRules(rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds)
+		// "Last entry wins": a valid include rule appends an ActionInclude entry to excludeRules,
+		// which cancels any prior exclude for the same resource during IsResourceExcluded evaluation.
+		// This correctly handles wildcard-vs-specific (e.g. exclude "*.*" followed by
+		// include "Deployment.apps" → Deployments are NOT excluded).
+		appendExcludeRule(rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds, v1alpha1.ActionInclude)
 
 		apiGroups := rule.ResourceSelector.APIGroups
 		kinds := rule.ResourceSelector.Kinds
@@ -358,79 +373,52 @@ func updateCollectorConfigStatus(dynamicClient dynamic.Interface, namespace stri
 	klog.V(2).Infof("Updated CollectorConfig status: Applied=%s reason=%s", conditionStatus, reason)
 }
 
-// mergeExcludeRules records the given apiGroups+kinds in excludedResources so they are
-// skipped at the informer layer. Follows the same key scheme as mergedTransformConfig:
-// - specific kind:  "Lease.coordination.k8s.io"
-// - all kinds in group:  "*.coordination.k8s.io"
-// - all core-group kinds: "*"
-func mergeExcludeRules(apiGroups, kinds []string) {
-	for _, apiGroup := range apiGroups {
-		for _, kind := range kinds {
-			if kind == "" {
-				continue
-			}
-			resourceKey := kind
-			if apiGroup != "" {
-				resourceKey = kind + "." + apiGroup
-			}
-			excludedResources[resourceKey] = struct{}{}
-			klog.V(2).Infof("Excluding resource from collection: %s", resourceKey)
-		}
+// appendExcludeRule appends an exclude or include-override rule to the ordered rule list.
+// The rule matches any combination of (apiGroup, kind) from the cartesian product of
+// apiGroups × kinds, using "*" as a wildcard for either dimension. This is consistent
+// with the matching logic in pkg/informer/supportedResources.go (isResourceMatchingList).
+func appendExcludeRule(apiGroups, kinds []string, action v1alpha1.ActionType) {
+	if len(apiGroups) == 0 || len(kinds) == 0 {
+		return
 	}
+	excludeRules = append(excludeRules, excludeRule{
+		apiGroups: apiGroups,
+		kinds:     kinds,
+		action:    action,
+	})
+	klog.V(2).Infof("Appended %s rule: apiGroups=%v kinds=%v", action, apiGroups, kinds)
 }
 
-// unmergeExcludeRules removes the given apiGroups+kinds from excludedResources.
-// Called when an include rule follows an exclude for the same resource so that the
-// include wins ("last entry wins" semantics within a single CollectorConfig).
-func unmergeExcludeRules(apiGroups, kinds []string) {
-	for _, apiGroup := range apiGroups {
-		for _, kind := range kinds {
-			if kind == "" {
-				continue
+// matchesExcludeRule reports whether (group, kind) is matched by a rule's apiGroups × kinds.
+// Uses the same cartesian wildcard logic as pkg/informer/supportedResources.go:
+//   - "*" in apiGroups matches any group (including core group "")
+//   - "*" in kinds matches any kind
+func matchesExcludeRule(group, kind string, apiGroups, kinds []string) bool {
+	for _, g := range apiGroups {
+		for _, k := range kinds {
+			if (g == "*" || g == group) && (k == "*" || k == kind) {
+				return true
 			}
-			resourceKey := kind
-			if apiGroup != "" {
-				resourceKey = kind + "." + apiGroup
-			}
-			delete(excludedResources, resourceKey)
-			klog.V(2).Infof("Include rule cancels prior exclude for resource %s", resourceKey)
 		}
 	}
+	return false
 }
 
 // IsResourceExcluded reports whether a resource should be excluded from collection.
-// Checks in order:
-//  1. Exact match:          "Lease.coordination.k8s.io" / "Event" (core group)
-//  2. Kind wildcard:        "*.coordination.k8s.io"     / "*" (core group)
-//  3. Group wildcard:       "Lease.*"  (any apiGroup for this kind) — not common, but consistent
-//  4. Global wildcard:      "*.*"      (all kinds in all groups)
+// Evaluates the ordered excludeRules list with "last matching rule wins" semantics:
+//   - An ActionExclude rule that matches marks the resource as excluded.
+//   - An ActionInclude rule that matches cancels any prior exclude.
+//
+// This resolves wildcard-vs-specific correctly: exclude "*.*" followed by
+// include "Deployment.apps" results in Deployments being collected (not excluded).
 func IsResourceExcluded(group, kind string) bool {
-	if excludedResources == nil {
-		return false
+	excluded := false
+	for _, rule := range excludeRules {
+		if matchesExcludeRule(group, kind, rule.apiGroups, rule.kinds) {
+			excluded = rule.action == v1alpha1.ActionExclude
+		}
 	}
-	// 1. Exact match
-	exactKey := kind
-	if group != "" {
-		exactKey = kind + "." + group
-	}
-	if _, ok := excludedResources[exactKey]; ok {
-		return true
-	}
-	// 2. Wildcard kind for this group: "*.group" or "*" (core)
-	kindWildcard := "*"
-	if group != "" {
-		kindWildcard = "*." + group
-	}
-	if _, ok := excludedResources[kindWildcard]; ok {
-		return true
-	}
-	// 3. This kind in any group: "Kind.*" (matches even core-group resources when apiGroups: ["*"])
-	if _, ok := excludedResources[kind+".*"]; ok {
-		return true
-	}
-	// 4. Global wildcard: "*.*" (all kinds across all apiGroups)
-	_, ok := excludedResources["*.*"]
-	return ok
+	return excluded
 }
 
 // mergeCollectConditions enables condition extraction for the given apiGroups and kinds.

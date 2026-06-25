@@ -102,7 +102,7 @@ func TestLoadAndMergeConfigurableCollection_ValidConfig(t *testing.T) {
 	assert.Equal(t, DataTypeBytes, searchConfig.properties[0].DataType)
 }
 
-// Exclude rules populate excludedResources (not mergedTransformConfig).
+// Exclude rules populate excludeRules (not mergedTransformConfig).
 func TestLoadAndMergeConfigurableCollection_ExcludePopulatesExcludedResources(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
@@ -110,7 +110,7 @@ func TestLoadAndMergeConfigurableCollection_ExcludePopulatesExcludedResources(t 
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		excludedResources = nil
+		excludeRules = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -146,9 +146,9 @@ func TestLoadAndMergeConfigurableCollection_ExcludePopulatesExcludedResources(t 
 	// mergedTransformConfig must not grow — exclude does not add custom properties
 	assert.Equal(t, len(defaultTransformConfig), len(mergedTransformConfig),
 		"Exclude actions should not add entries to mergedTransformConfig")
-	// excludedResources must contain the excluded key
+	// excludeRules must cause Lease to be excluded
 	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
-		"Lease.coordination.k8s.io must be in excludedResources after exclude rule")
+		"Lease.coordination.k8s.io must be excluded after exclude rule")
 }
 
 // FUTURE: this should eventually appropriately include when search-collector-config merged
@@ -1579,7 +1579,7 @@ func TestStatusCondition_Applied_ExcludeRule(t *testing.T) {
 		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
 		config.Cfg.PodNamespace = originalNamespace
 		mergedTransformConfig = nil
-		excludedResources = nil
+		excludeRules = nil
 	}()
 
 	config.Cfg.FeatureConfigurableCollection = true
@@ -1619,7 +1619,7 @@ func TestStatusCondition_Applied_ExcludeRule(t *testing.T) {
 	assert.Equal(t, "True", cond["status"], "Exclude rule is valid — Applied should be True")
 	assert.Equal(t, "Applied", cond["reason"])
 	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
-		"Lease should be in excludedResources after loading")
+		"Lease should be excluded after loading")
 }
 
 // TestStatusCondition_Applied_FieldCollision verifies that when two rules both
@@ -3200,7 +3200,7 @@ func setupExcludeTest(t *testing.T) func() {
 		config.Cfg.FeatureConfigurableCollection = orig
 		config.Cfg.PodNamespace = origNS
 		mergedTransformConfig = nil
-		excludedResources = nil
+		excludeRules = nil
 	}
 }
 
@@ -3455,14 +3455,67 @@ func TestExclude_InvalidIncludeDoesNotCancelExclude(t *testing.T) {
 		"Invalid include (no fields/conditions) must NOT cancel the prior exclude")
 }
 
-// IsResourceExcluded returns false when no exclude rules loaded (nil map).
-func TestExclude_NilMap(t *testing.T) {
-	excludedResources = nil
+// Wildcard exclude followed by specific include: the include overrides the wildcard.
+// This is the primary use-case that was previously a documented limitation.
+// A user who wants "collect only Deployments" can now write:
+//   exclude "*.*" (deny all) + include "Deployment.apps" (allow specific)
+func TestExclude_WildcardOverriddenBySpecificInclude(t *testing.T) {
+	teardown := setupExcludeTest(t)
+	defer teardown()
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					map[string]interface{}{
+						"action": "exclude",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"*"},
+							"kinds":     []interface{}{"*"},
+						},
+					},
+					map[string]interface{}{
+						"action": "include",
+						"resourceSelector": map[string]interface{}{
+							"apiGroups": []interface{}{"apps"},
+							"kinds":     []interface{}{"Deployment"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{"name": "replicas", "jsonPath": ".spec.replicas"},
+						},
+					},
+				},
+			},
+		},
+	}
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), collectionConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	// Deployment should NOT be excluded — the specific include overrides the global exclude.
 	assert.False(t, IsResourceExcluded("apps", "Deployment"),
-		"Should return false when excludedResources is nil")
+		"Specific include 'Deployment.apps' must override prior global exclude '*.*'")
+
+	// Other resources ARE excluded by the wildcard.
+	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"Lease must still be excluded by global exclude '*.*'")
+	assert.True(t, IsResourceExcluded("", "ConfigMap"),
+		"ConfigMap (core group) must still be excluded by global exclude '*.*'")
 }
 
-// Config reload resets excludedResources — old excludes do not persist.
+// IsResourceExcluded returns false when excludeRules is nil (no rules loaded).
+func TestExclude_NilRules(t *testing.T) {
+	excludeRules = nil
+	assert.False(t, IsResourceExcluded("apps", "Deployment"),
+		"Should return false when excludeRules is nil")
+}
+
+// Config reload resets excludeRules — old excludes do not persist.
 func TestExclude_ResetOnReload(t *testing.T) {
 	teardown := setupExcludeTest(t)
 	defer teardown()
