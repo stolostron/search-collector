@@ -6,8 +6,12 @@
     "gomod": {
       "packageRules": [
         {
-          "matchDepTypes": ["indirect"],
-          "enabled": false
+            "matchDepTypes": ["indirect"],
+            "enabled": false
+        },
+        {
+            "matchBaseBranches": ["release-*"],
+            "enabled": false
         }
       ]
     },
