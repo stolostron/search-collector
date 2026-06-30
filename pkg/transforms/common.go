@@ -657,7 +657,9 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	if group != "" {
 		wildcardKey = "*." + group
 	}
+	configMu.RLock()
 	wildcardConfig, wildcardFound := mergedTransformConfig[wildcardKey]
+	configMu.RUnlock()
 
 	if config.Cfg.CollectStatusConditions || (found && transformConfig.extractConditions) || (wildcardFound && wildcardConfig.extractConditions) {
 		conditionsMap := commonStatusConditions(kind, group, r)

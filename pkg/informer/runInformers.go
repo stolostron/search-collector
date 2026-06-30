@@ -24,6 +24,35 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// resyncQueue receives config keys that need informer re-listing after a CollectorConfig change.
+// Buffered (cap 1) with non-blocking send — if two rapid changes overlap, the second is coalesced.
+// This is acceptable because missed GVRs self-heal on the next natural watch event.
+var resyncQueue = make(chan []string, 1)
+
+// TriggerResyncForConfigKeys queues a set of config keys (e.g. "Deployment.apps", "Pod", "*.apps")
+// for informer re-listing. Called by the config watcher after detecting a config change.
+func TriggerResyncForConfigKeys(keys []string) {
+	select {
+	case resyncQueue <- keys:
+	default: // already queued
+	}
+}
+
+// groupFromConfigKey extracts the API group from a config key.
+// "Pod" → "" (core), "Deployment.apps" → "apps", "*.apps" → "apps"
+func groupFromConfigKey(key string) string {
+	if idx := strings.Index(key, "."); idx >= 0 {
+		return key[idx+1:]
+	}
+	return "" // core API
+}
+
+// informerEntry tracks a running informer and its cancel function.
+type informerEntry struct {
+	cancel   context.CancelFunc
+	informer *GenericInformer
+}
+
 var crdGVR = schema.GroupVersionResource{
 	Group:    "apiextensions.k8s.io",
 	Version:  "v1",
@@ -469,8 +498,8 @@ func RunInformers(
 	// Get kubernetes client for discovering resource types
 	discoveryClient := config.GetDiscoveryClient()
 
-	// We keep each of the informer's stopper channel in a map, so we can stop them if the resource is no longer valid.
-	stoppers := make(map[schema.GroupVersionResource]context.CancelFunc)
+	// We keep each informer entry in a map, so we can stop or resync them as needed.
+	informers := make(map[schema.GroupVersionResource]informerEntry)
 
 	// These functions return handler functions, which are then used in creation of the informers.
 	createInformAddHandler := func(gvr schema.GroupVersionResource) func(interface{}) {
@@ -515,7 +544,7 @@ func RunInformers(
 	}
 
 	// Initialize the informers
-	syncInformers(ctx, *discoveryClient, stoppers, createInformAddHandler, createInformUpdateHandler, informDeleteHandler)
+	syncInformers(ctx, *discoveryClient, informers, createInformAddHandler, createInformUpdateHandler, informDeleteHandler)
 
 	// Close the initialized channel so that we can start the sender.
 	wasInitialized = true
@@ -538,6 +567,20 @@ func RunInformers(
 			dynSharedInformer.Shutdown()
 
 			return
+
+		case configKeys := <-resyncQueue:
+			// Dispatch resync to informers whose API group matches the changed config keys.
+			for _, key := range configKeys {
+				group := groupFromConfigKey(key)
+				for gvr, entry := range informers {
+					if gvr.Group == group {
+						klog.V(2).Infof("Config change for %q — triggering resync of %s", key, gvr.String())
+						entry.informer.TriggerResync()
+					}
+				}
+			}
+			continue
+
 		default:
 
 		}
@@ -556,7 +599,7 @@ func RunInformers(
 		}
 
 		syncInformers(
-			ctx, *discoveryClient, stoppers, createInformAddHandler, createInformUpdateHandler, informDeleteHandler,
+			ctx, *discoveryClient, informers, createInformAddHandler, createInformUpdateHandler, informDeleteHandler,
 		)
 
 		lastSynced = time.Now()
@@ -569,12 +612,12 @@ func RunInformers(
 func syncInformers(
 	ctx context.Context,
 	client discovery.DiscoveryClient,
-	stoppers map[schema.GroupVersionResource]context.CancelFunc,
+	registry map[schema.GroupVersionResource]informerEntry,
 	createInformerAddHandler func(schema.GroupVersionResource) func(interface{}),
 	createInformerUpdateHandler func(schema.GroupVersionResource) func(interface{}, interface{}),
 	informerDeleteHandler func(obj interface{}),
 ) {
-	klog.V(2).Infof("Synchronizing informers. Informers running: %d", len(stoppers))
+	klog.V(2).Infof("Synchronizing informers. Informers running: %d", len(registry))
 
 	gvrList, err := SupportedResources(client)
 	if err != nil {
@@ -587,15 +630,15 @@ func syncInformers(
 		// Loop through the previous list of resources. If we find the entry in the new list we delete it so
 		// that we don't end up with 2 informers. If we don't find it, we stop the informer that's currently
 		// running because the resource no longer exists (or no longer supports watch).
-		for gvr, stopper := range stoppers {
+		for gvr, entry := range registry {
 			// If this still exists in the new list, delete it from there as we don't want to recreate an informer
 			if _, ok := gvrList[gvr]; ok {
 				delete(gvrList, gvr)
 				continue
 			} else { // if it's in the old and NOT in the new, stop the informer
 				klog.V(2).Infof("Stopping informer: %s", gvr.String())
-				stopper()
-				delete(stoppers, gvr)
+				entry.cancel()
+				delete(registry, gvr)
 			}
 		}
 		// Now, loop through the new list, which after the above deletions, contains only stuff that needs to
@@ -603,20 +646,20 @@ func syncInformers(
 		for gvr := range gvrList {
 			klog.V(2).Infof("Starting informer: %s", gvr.String())
 			// Using our custom informer.
-			informer, _ := InformerForResource(gvr)
+			inform, _ := InformerForResource(gvr)
 
 			// Set up handler to pass this informer's resources into transformer
-			informer.AddFunc = createInformerAddHandler(gvr)
-			informer.UpdateFunc = createInformerUpdateHandler(gvr)
-			informer.DeleteFunc = informerDeleteHandler
+			inform.AddFunc = createInformerAddHandler(gvr)
+			inform.UpdateFunc = createInformerUpdateHandler(gvr)
+			inform.DeleteFunc = informerDeleteHandler
 
 			informerCtx, informerCancel := context.WithCancel(ctx) // #nosec G118
-			stoppers[gvr] = informerCancel
-			go informer.Run(informerCtx)
+			registry[gvr] = informerEntry{cancel: informerCancel, informer: inform}
+			go inform.Run(informerCtx)
 			// This wait serializes the informer initialization. It is needed to avoid a
 			// spike in memory when the collector starts.
-			informer.WaitUntilInitialized(time.Duration(10) * time.Second) // Times out after 10 seconds.
+			inform.WaitUntilInitialized(time.Duration(10) * time.Second) // Times out after 10 seconds.
 		}
-		klog.V(2).Info("Done synchronizing informers. Informers running: ", len(stoppers))
+		klog.V(2).Info("Done synchronizing informers. Informers running: ", len(registry))
 	}
 }

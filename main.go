@@ -102,6 +102,11 @@ func main() {
 
 	mainCtx := getMainContext()
 
+	// Start config watcher to hot-reload CollectorConfig changes at runtime (ACM-20047).
+	// The watcher does an initial Get() to catch any change between LoadAndMerge and now.
+	configWatcher := tr.NewConfigWatcher(config.GetDynamicClient(), config.Cfg.PodNamespace, informer.TriggerResyncForConfigKeys)
+	go configWatcher.Start(mainCtx)
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 

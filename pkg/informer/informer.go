@@ -26,6 +26,16 @@ type GenericInformer struct {
 	initialized   atomic.Bool
 	resourceIndex map[string]string // Index of curr resources [key=UUID value=resourceVersion]
 	retries       int64             // Counts times we have tried without establishing a watch.
+	resyncCh      chan struct{}     // Buffered (cap 1). Signal to interrupt watch and re-list.
+}
+
+// TriggerResync signals the informer to interrupt its current watch and re-list all resources.
+// Non-blocking: if a resync is already queued, the signal is coalesced.
+func (inform *GenericInformer) TriggerResync() {
+	select {
+	case inform.resyncCh <- struct{}{}:
+	default: // already queued
+	}
 }
 
 // InformerForResource initialize a Generic Informer for a resource (GVR).
@@ -37,6 +47,7 @@ func InformerForResource(res schema.GroupVersionResource) (*GenericInformer, err
 		UpdateFunc:    (func(interface{}, interface{}) { klog.Warning("UpdateFunc not init for ", res.String()) }),
 		retries:       0,
 		resourceIndex: make(map[string]string),
+		resyncCh:      make(chan struct{}, 1),
 	}
 	return i, nil
 }
@@ -160,6 +171,10 @@ func (inform *GenericInformer) watch(stopper <-chan struct{}) {
 		select {
 		case <-stopper:
 			klog.V(2).Info("Informer watch() was stopped. ", inform.gvr.String())
+			return
+
+		case <-inform.resyncCh:
+			klog.V(2).Infof("Resync requested for %s. Interrupting watch to re-list.", inform.gvr.String())
 			return
 
 		case event := <-watchEvents: // Read events from the watch channel.

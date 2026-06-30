@@ -72,7 +72,7 @@ func Test_syncInformers(t *testing.T) {
 	// Establish the config
 	config.InitConfig()
 
-	mockStoppers := make(map[schema.GroupVersionResource]context.CancelFunc)
+	registry := make(map[schema.GroupVersionResource]informerEntry)
 
 	fakeServer, fakeClient := fakeDiscoveryClient()
 	defer fakeServer.Close()
@@ -80,32 +80,31 @@ func Test_syncInformers(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	syncInformers(ctx, fakeClient, mockStoppers, mockAddFn, mockUpdateFn, mockDeleteHandler)
+	syncInformers(ctx, fakeClient, registry, mockAddFn, mockUpdateFn, mockDeleteHandler)
 
-	assert.Equal(t, 3, len(mockStoppers))
+	assert.Equal(t, 3, len(registry))
 
-	podInformStopper, exists := mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}]
+	podEntry, exists := registry[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}]
 	assert.True(t, exists)
-	assert.NotNil(t, podInformStopper)
+	assert.NotNil(t, podEntry.cancel)
 }
 
 // Validate that informer is stopped when resource no longer exists.
 func Test_syncInformers_removeInformers(t *testing.T) {
-	mockStoppers := make(map[schema.GroupVersionResource]context.CancelFunc)
+	registry := make(map[schema.GroupVersionResource]informerEntry)
 	ctx, cancel := context.WithCancel(context.Background())
-	mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}] = cancel
+	registry[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}] = informerEntry{cancel: cancel}
 
 	fakeServer, fakeClient := fakeDiscoveryClient()
 	defer fakeServer.Close()
 
-	syncInformers(ctx, fakeClient, mockStoppers, mockAddFn, mockUpdateFn, mockDeleteHandler)
+	syncInformers(ctx, fakeClient, registry, mockAddFn, mockUpdateFn, mockDeleteHandler)
 
-	assert.Equal(t, 3, len(mockStoppers))
+	assert.Equal(t, 3, len(registry))
 
 	// Validate that informer is stopped when resource no longer exists.
-	informStopper, exists := mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}]
+	_, exists := registry[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}]
 	assert.False(t, exists)
-	assert.Nil(t, informStopper)
 }
 
 func getSimpleTransformedCRD() unstructured.Unstructured {
@@ -359,5 +358,64 @@ func newSimpleCRDWithAdditionalPrinterColumns() unstructured.Unstructured {
 				},
 			},
 		},
+	}
+}
+
+func TestGroupFromConfigKey(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Pod", ""},
+		{"Deployment.apps", "apps"},
+		{"*.apps", "apps"},
+		{"*", ""},
+		{"Policy.policy.open-cluster-management.io", "policy.open-cluster-management.io"},
+		{"*.monitoring.coreos.com", "monitoring.coreos.com"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			assert.Equal(t, tc.expected, groupFromConfigKey(tc.input))
+		})
+	}
+}
+
+func TestTriggerResyncForConfigKeys(t *testing.T) {
+	// Drain any existing items from the channel.
+	select {
+	case <-resyncQueue:
+	default:
+	}
+
+	keys := []string{"Pod", "Deployment.apps"}
+	TriggerResyncForConfigKeys(keys)
+
+	received := <-resyncQueue
+	assert.Equal(t, keys, received)
+}
+
+func TestTriggerResyncForConfigKeys_Coalesce(t *testing.T) {
+	// Drain any existing items from the channel.
+	select {
+	case <-resyncQueue:
+	default:
+	}
+
+	first := []string{"Pod"}
+	second := []string{"Secret", "Node"}
+
+	TriggerResyncForConfigKeys(first)
+	TriggerResyncForConfigKeys(second) // should be dropped (non-blocking, cap 1)
+
+	received := <-resyncQueue
+	assert.Equal(t, first, received, "only the first batch should be in the queue")
+
+	// Channel should be empty now.
+	select {
+	case extra := <-resyncQueue:
+		t.Errorf("expected empty queue, got %v", extra)
+	default:
+		// expected
 	}
 }
