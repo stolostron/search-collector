@@ -670,8 +670,11 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 
 	// When a specific config has additionalPrinterColumnsPriority set, append the CRD's
 	// printer columns so they are available for priority filtering below.
+	// Copy the slice first to avoid mutating the shared backing array from mergedTransformConfig.
 	if found && transformConfig.additionalPrinterColumnsPriority != nil {
-		transformConfig.properties = append(transformConfig.properties, additionalColumns...)
+		props := make([]ExtractProperty, len(transformConfig.properties), len(transformConfig.properties)+len(additionalColumns))
+		copy(props, transformConfig.properties)
+		transformConfig.properties = append(props, additionalColumns...)
 	}
 
 	// Pull in additionalPrinterColumns when globally enabled, gatekeeper constraint,

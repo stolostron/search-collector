@@ -7,6 +7,7 @@ import (
 
 	"github.com/stolostron/search-collector/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
@@ -16,9 +17,10 @@ import (
 // the mergedTransformConfig when it changes. After reloading, it triggers targeted
 // informer resyncs for resource types whose config actually changed.
 type ConfigWatcher struct {
-	dynamicClient  dynamic.Interface
-	namespace      string
-	resyncCallback func(keys []string) // called with affected config keys after a reload
+	dynamicClient      dynamic.Interface
+	namespace          string
+	resyncCallback     func(keys []string) // called with affected config keys after a reload
+	lastSeenGeneration int64               // tracks metadata.generation to skip status-only updates
 }
 
 // NewConfigWatcher creates a new ConfigWatcher. The resyncCallback is invoked with the
@@ -118,15 +120,29 @@ func (cw *ConfigWatcher) processEvents(ctx context.Context, watcher watch.Interf
 
 			switch event.Type {
 			case watch.Modified:
+				obj, ok := event.Object.(*unstructured.Unstructured)
+				if ok {
+					gen := obj.GetGeneration()
+					if gen == cw.lastSeenGeneration {
+						klog.V(3).Info("Config watcher: status-only update (generation unchanged), skipping reload")
+						continue
+					}
+					cw.lastSeenGeneration = gen
+				}
 				klog.Info("Config watcher: merged-collector-config modified, reloading")
 				cw.reloadAndResync()
 
 			case watch.Deleted:
 				klog.Warning("Config watcher: merged-collector-config deleted — reverting to defaults. " +
 					"This is unexpected; the operator should recreate it.")
+				cw.lastSeenGeneration = 0
 				cw.reloadAndResync()
 
 			case watch.Added:
+				obj, ok := event.Object.(*unstructured.Unstructured)
+				if ok {
+					cw.lastSeenGeneration = obj.GetGeneration()
+				}
 				klog.Info("Config watcher: merged-collector-config created, loading config")
 				cw.reloadAndResync()
 

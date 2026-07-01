@@ -1,14 +1,17 @@
 package transforms
 
 import (
+	"context"
 	"sort"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic/fake"
 )
 
@@ -383,4 +386,265 @@ func TestReloadAndResync_MultipleResourcesChanged(t *testing.T) {
 	sort.Strings(callbackKeys)
 	assert.Contains(t, callbackKeys, "Pod")
 	assert.Contains(t, callbackKeys, "Deployment.apps")
+}
+
+// newFakeConfigObj creates an unstructured CollectorConfig with the given generation.
+func newFakeConfigObj(generation int64) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":       "merged-collector-config",
+				"namespace":  "test-ns",
+				"generation": generation,
+			},
+			"spec": map[string]interface{}{},
+		},
+	}
+}
+
+func TestProcessEvents_Modified(t *testing.T) {
+	saveAndRestoreConfigState(t)
+	// Start with a config that differs from defaults so the reload produces a diff.
+	modifiedConfig := deepCopyTransformConfig(defaultTransformConfig)
+	podCfg := modifiedConfig["Pod"]
+	podCfg.properties = append(podCfg.properties, ExtractProperty{Name: "extra", JSONPath: "{.spec.extra}"})
+	modifiedConfig["Pod"] = podCfg
+	configMu.Lock()
+	mergedTransformConfig = modifiedConfig
+	configMu.Unlock()
+
+	// Fake client with no CR — reload reverts to defaults, producing a diff on "Pod".
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+
+	var callbackCount int
+	cw := NewConfigWatcher(fakeClient, "test-ns", func(keys []string) {
+		callbackCount++
+	})
+
+	fakeWatcher := watch.NewFake()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan bool)
+	go func() {
+		done <- cw.processEvents(ctx, fakeWatcher)
+	}()
+
+	// Send a Modified event with generation 1.
+	fakeWatcher.Modify(newFakeConfigObj(1))
+
+	// Close watcher to end processEvents.
+	fakeWatcher.Stop()
+	result := <-done
+
+	assert.True(t, result, "processEvents should return true when watch ends")
+	assert.Equal(t, int64(1), cw.lastSeenGeneration)
+	assert.Equal(t, 1, callbackCount, "callback should be called once for Modified")
+}
+
+func TestProcessEvents_ModifiedSkipsStatusOnly(t *testing.T) {
+	saveAndRestoreConfigState(t)
+	// Start with config that differs from defaults so gen-2 reload produces a diff.
+	modifiedConfig := deepCopyTransformConfig(defaultTransformConfig)
+	podCfg := modifiedConfig["Pod"]
+	podCfg.properties = append(podCfg.properties, ExtractProperty{Name: "extra", JSONPath: "{.spec.extra}"})
+	modifiedConfig["Pod"] = podCfg
+	configMu.Lock()
+	mergedTransformConfig = modifiedConfig
+	configMu.Unlock()
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+
+	var callbackCount int
+	cw := NewConfigWatcher(fakeClient, "test-ns", func(keys []string) {
+		callbackCount++
+	})
+	// Pre-set generation to simulate having already seen gen 1.
+	cw.lastSeenGeneration = 1
+
+	fakeWatcher := watch.NewFake()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan bool)
+	go func() {
+		done <- cw.processEvents(ctx, fakeWatcher)
+	}()
+
+	// Send Modified with same generation (status-only update).
+	fakeWatcher.Modify(newFakeConfigObj(1))
+
+	// Send Modified with bumped generation (spec change).
+	fakeWatcher.Modify(newFakeConfigObj(2))
+
+	fakeWatcher.Stop()
+	<-done
+
+	assert.Equal(t, int64(2), cw.lastSeenGeneration)
+	assert.Equal(t, 1, callbackCount, "callback should only be called for the spec change, not the status-only update")
+}
+
+func TestProcessEvents_Added(t *testing.T) {
+	saveAndRestoreConfigState(t)
+	modifiedConfig := deepCopyTransformConfig(defaultTransformConfig)
+	podCfg := modifiedConfig["Pod"]
+	podCfg.properties = append(podCfg.properties, ExtractProperty{Name: "extra", JSONPath: "{.spec.extra}"})
+	modifiedConfig["Pod"] = podCfg
+	configMu.Lock()
+	mergedTransformConfig = modifiedConfig
+	configMu.Unlock()
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+
+	var callbackCount int
+	cw := NewConfigWatcher(fakeClient, "test-ns", func(keys []string) {
+		callbackCount++
+	})
+
+	fakeWatcher := watch.NewFake()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan bool)
+	go func() {
+		done <- cw.processEvents(ctx, fakeWatcher)
+	}()
+
+	fakeWatcher.Add(newFakeConfigObj(1))
+	fakeWatcher.Stop()
+	<-done
+
+	assert.Equal(t, int64(1), cw.lastSeenGeneration)
+	assert.Equal(t, 1, callbackCount)
+}
+
+func TestProcessEvents_Deleted(t *testing.T) {
+	saveAndRestoreConfigState(t)
+	modifiedConfig := deepCopyTransformConfig(defaultTransformConfig)
+	podCfg := modifiedConfig["Pod"]
+	podCfg.properties = append(podCfg.properties, ExtractProperty{Name: "extra", JSONPath: "{.spec.extra}"})
+	modifiedConfig["Pod"] = podCfg
+	configMu.Lock()
+	mergedTransformConfig = modifiedConfig
+	configMu.Unlock()
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+
+	var callbackCount int
+	cw := NewConfigWatcher(fakeClient, "test-ns", func(keys []string) {
+		callbackCount++
+	})
+	cw.lastSeenGeneration = 5
+
+	fakeWatcher := watch.NewFake()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan bool)
+	go func() {
+		done <- cw.processEvents(ctx, fakeWatcher)
+	}()
+
+	fakeWatcher.Delete(newFakeConfigObj(5))
+	fakeWatcher.Stop()
+	<-done
+
+	assert.Equal(t, int64(0), cw.lastSeenGeneration, "generation should reset on delete")
+	assert.Equal(t, 1, callbackCount)
+}
+
+func TestProcessEvents_Error(t *testing.T) {
+	saveAndRestoreConfigState(t)
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+
+	cw := NewConfigWatcher(fakeClient, "test-ns", func(keys []string) {})
+
+	fakeWatcher := watch.NewFake()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan bool)
+	go func() {
+		done <- cw.processEvents(ctx, fakeWatcher)
+	}()
+
+	fakeWatcher.Error(newFakeConfigObj(1))
+	result := <-done
+
+	assert.True(t, result, "processEvents should return true on Error event to trigger reconnect")
+}
+
+func TestProcessEvents_ContextCanceled(t *testing.T) {
+	saveAndRestoreConfigState(t)
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+
+	cw := NewConfigWatcher(fakeClient, "test-ns", func(keys []string) {})
+
+	fakeWatcher := watch.NewFake()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan bool)
+	go func() {
+		done <- cw.processEvents(ctx, fakeWatcher)
+	}()
+
+	cancel()
+	result := <-done
+
+	assert.False(t, result, "processEvents should return false when context is canceled")
+}
+
+func TestStart_FeatureDisabled(t *testing.T) {
+	origFeature := config.Cfg.FeatureConfigurableCollection
+	defer func() { config.Cfg.FeatureConfigurableCollection = origFeature }()
+
+	config.Cfg.FeatureConfigurableCollection = false
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+
+	cw := NewConfigWatcher(fakeClient, "test-ns", func(keys []string) {})
+
+	// Start should return immediately when feature is disabled.
+	cw.Start(context.Background())
+	// If it blocks, the test will time out and fail.
+}
+
+func TestStart_ContextCanceled(t *testing.T) {
+	saveAndRestoreConfigState(t)
+	configMu.Lock()
+	mergedTransformConfig = deepCopyTransformConfig(defaultTransformConfig)
+	configMu.Unlock()
+
+	scheme := runtime.NewScheme()
+	fakeClient := fake.NewSimpleDynamicClient(scheme)
+
+	cw := NewConfigWatcher(fakeClient, "test-ns", func(keys []string) {})
+
+	// Cancel the context before Start — it should do the initial reload then exit.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	done := make(chan struct{})
+	go func() {
+		cw.Start(ctx)
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// Start exited as expected.
+	case <-time.After(2 * time.Second):
+		t.Fatal("Start did not exit after context was canceled")
+	}
 }

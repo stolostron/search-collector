@@ -24,18 +24,43 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// resyncQueue receives config keys that need informer re-listing after a CollectorConfig change.
-// Buffered (cap 1) with non-blocking send — if two rapid changes overlap, the second is coalesced.
-// This is acceptable because missed GVRs self-heal on the next natural watch event.
-var resyncQueue = make(chan []string, 1)
+// resyncSignal wakes the main loop when config keys need informer re-listing.
+// Buffered (cap 1) — the signal is coalesced, but all keys are preserved in pendingResync.
+var resyncSignal = make(chan struct{}, 1)
+
+// resyncMu guards pendingResync for concurrent access.
+var resyncMu sync.Mutex
+
+// pendingResync accumulates config keys from one or more TriggerResyncForConfigKeys calls.
+// Drained by the main loop when resyncSignal fires.
+var pendingResync = make(map[string]struct{})
 
 // TriggerResyncForConfigKeys queues a set of config keys (e.g. "Deployment.apps", "Pod", "*.apps")
 // for informer re-listing. Called by the config watcher after detecting a config change.
+// Keys are union-accumulated so rapid calls never lose distinct keys.
 func TriggerResyncForConfigKeys(keys []string) {
-	select {
-	case resyncQueue <- keys:
-	default: // already queued
+	resyncMu.Lock()
+	for _, key := range keys {
+		pendingResync[key] = struct{}{}
 	}
+	resyncMu.Unlock()
+
+	select {
+	case resyncSignal <- struct{}{}:
+	default: // already signaled
+	}
+}
+
+// drainPendingResync returns all accumulated config keys and clears the set.
+func drainPendingResync() []string {
+	resyncMu.Lock()
+	keys := make([]string, 0, len(pendingResync))
+	for k := range pendingResync {
+		keys = append(keys, k)
+		delete(pendingResync, k)
+	}
+	resyncMu.Unlock()
+	return keys
 }
 
 // kindAndGroupFromConfigKey splits a config key into its kind and group parts.
@@ -558,6 +583,24 @@ func RunInformers(
 	lastSynced := time.Now()
 	minBetweenSyncs := time.Duration(config.Cfg.RediscoverRateMS) * time.Millisecond
 
+	// Bridge syncInformersQueue (workqueue) into a channel so the main select can
+	// listen for both CRD sync events and config resync signals simultaneously.
+	syncCh := make(chan struct{})
+	go func() {
+		for {
+			item, shutdown := syncInformersQueue.Get()
+			if shutdown {
+				close(syncCh)
+				return
+			}
+			syncInformersQueue.Done(item)
+			select {
+			case syncCh <- struct{}{}:
+			default: // coalesce rapid CRD events
+			}
+		}
+	}()
+
 	// Keep the informers synchronized when CRDs are added or deleted in the cluster.
 	for {
 		select {
@@ -573,8 +616,9 @@ func RunInformers(
 
 			return
 
-		case configKeys := <-resyncQueue:
-			// Dispatch resync to affected informers.
+		case <-resyncSignal:
+			// Drain all accumulated config keys and dispatch resync to affected informers.
+			configKeys := drainPendingResync()
 			for _, key := range configKeys {
 				kind, group := kindAndGroupFromConfigKey(key)
 
@@ -598,32 +642,26 @@ func RunInformers(
 					}
 				}
 			}
-			continue
 
-		default:
+		case _, ok := <-syncCh:
+			if !ok {
+				return // queue was shut down
+			}
 
+			// Enforce a minimum delay between syncs (configurable via REDISCOVER_RATE_MS, default 60s)
+			// to avoid excessive API server calls when multiple CRDs are added or deleted in quick succession.
+			sinceLastSync := time.Since(lastSynced)
+
+			if sinceLastSync < minBetweenSyncs {
+				time.Sleep(minBetweenSyncs - sinceLastSync)
+			}
+
+			syncInformers(
+				ctx, *discoveryClient, informers, configKeyToGVR, createInformAddHandler, createInformUpdateHandler, informDeleteHandler,
+			)
+
+			lastSynced = time.Now()
 		}
-
-		syncRequest, shutdown := syncInformersQueue.Get()
-		if shutdown {
-			return
-		}
-
-		// Enforce a minimum delay between syncs (configurable via REDISCOVER_RATE_MS, default 60s)
-		// to avoid excessive API server calls when multiple CRDs are added or deleted in quick succession.
-		sinceLastSync := time.Since(lastSynced)
-
-		if sinceLastSync < minBetweenSyncs {
-			time.Sleep(minBetweenSyncs - sinceLastSync)
-		}
-
-		syncInformers(
-			ctx, *discoveryClient, informers, configKeyToGVR, createInformAddHandler, createInformUpdateHandler, informDeleteHandler,
-		)
-
-		lastSynced = time.Now()
-
-		syncInformersQueue.Done(syncRequest)
 	}
 }
 

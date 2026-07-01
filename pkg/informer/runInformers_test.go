@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"testing"
 
 	"github.com/stolostron/search-collector/pkg/config"
@@ -385,39 +386,69 @@ func TestKindAndGroupFromConfigKey(t *testing.T) {
 }
 
 func TestTriggerResyncForConfigKeys(t *testing.T) {
-	// Drain any existing items from the channel.
+	// Drain any existing signal and keys.
 	select {
-	case <-resyncQueue:
+	case <-resyncSignal:
 	default:
 	}
+	resyncMu.Lock()
+	for k := range pendingResync {
+		delete(pendingResync, k)
+	}
+	resyncMu.Unlock()
 
 	keys := []string{"Pod", "Deployment.apps"}
 	TriggerResyncForConfigKeys(keys)
 
-	received := <-resyncQueue
+	// Signal should be present.
+	select {
+	case <-resyncSignal:
+	default:
+		t.Fatal("expected resyncSignal to have a signal")
+	}
+
+	// Drain and verify keys.
+	received := drainPendingResync()
+	sort.Strings(received)
+	sort.Strings(keys)
 	assert.Equal(t, keys, received)
 }
 
 func TestTriggerResyncForConfigKeys_Coalesce(t *testing.T) {
-	// Drain any existing items from the channel.
+	// Drain any existing signal and keys.
 	select {
-	case <-resyncQueue:
+	case <-resyncSignal:
 	default:
 	}
+	resyncMu.Lock()
+	for k := range pendingResync {
+		delete(pendingResync, k)
+	}
+	resyncMu.Unlock()
 
 	first := []string{"Pod"}
 	second := []string{"Secret", "Node"}
 
 	TriggerResyncForConfigKeys(first)
-	TriggerResyncForConfigKeys(second) // should be dropped (non-blocking, cap 1)
+	TriggerResyncForConfigKeys(second) // keys are union-accumulated, not dropped
 
-	received := <-resyncQueue
-	assert.Equal(t, first, received, "only the first batch should be in the queue")
-
-	// Channel should be empty now.
+	// Drain signal.
 	select {
-	case extra := <-resyncQueue:
-		t.Errorf("expected empty queue, got %v", extra)
+	case <-resyncSignal:
+	default:
+		t.Fatal("expected resyncSignal to have a signal")
+	}
+
+	// All keys from both calls should be present.
+	received := drainPendingResync()
+	sort.Strings(received)
+	expected := []string{"Node", "Pod", "Secret"}
+	assert.Equal(t, expected, received, "all keys from both calls should be accumulated")
+
+	// Signal should be empty now.
+	select {
+	case <-resyncSignal:
+		t.Error("expected resyncSignal to be empty after draining")
 	default:
 		// expected
 	}
