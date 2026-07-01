@@ -80,7 +80,7 @@ func Test_syncInformers(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	syncInformers(ctx, fakeClient, registry, mockAddFn, mockUpdateFn, mockDeleteHandler)
+	syncInformers(ctx, fakeClient, registry, make(map[string]schema.GroupVersionResource), mockAddFn, mockUpdateFn, mockDeleteHandler)
 
 	assert.Equal(t, 3, len(registry))
 
@@ -98,7 +98,7 @@ func Test_syncInformers_removeInformers(t *testing.T) {
 	fakeServer, fakeClient := fakeDiscoveryClient()
 	defer fakeServer.Close()
 
-	syncInformers(ctx, fakeClient, registry, mockAddFn, mockUpdateFn, mockDeleteHandler)
+	syncInformers(ctx, fakeClient, registry, make(map[string]schema.GroupVersionResource), mockAddFn, mockUpdateFn, mockDeleteHandler)
 
 	assert.Equal(t, 3, len(registry))
 
@@ -361,22 +361,25 @@ func newSimpleCRDWithAdditionalPrinterColumns() unstructured.Unstructured {
 	}
 }
 
-func TestGroupFromConfigKey(t *testing.T) {
+func TestKindAndGroupFromConfigKey(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		input         string
+		expectedKind  string
+		expectedGroup string
 	}{
-		{"Pod", ""},
-		{"Deployment.apps", "apps"},
-		{"*.apps", "apps"},
-		{"*", ""},
-		{"Policy.policy.open-cluster-management.io", "policy.open-cluster-management.io"},
-		{"*.monitoring.coreos.com", "monitoring.coreos.com"},
+		{"Pod", "Pod", ""},
+		{"Deployment.apps", "Deployment", "apps"},
+		{"*.apps", "*", "apps"},
+		{"*", "*", ""},
+		{"Policy.policy.open-cluster-management.io", "Policy", "policy.open-cluster-management.io"},
+		{"*.monitoring.coreos.com", "*", "monitoring.coreos.com"},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
-			assert.Equal(t, tc.expected, groupFromConfigKey(tc.input))
+			kind, group := kindAndGroupFromConfigKey(tc.input)
+			assert.Equal(t, tc.expectedKind, kind)
+			assert.Equal(t, tc.expectedGroup, group)
 		})
 	}
 }

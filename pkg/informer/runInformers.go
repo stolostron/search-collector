@@ -38,13 +38,14 @@ func TriggerResyncForConfigKeys(keys []string) {
 	}
 }
 
-// groupFromConfigKey extracts the API group from a config key.
-// "Pod" → "" (core), "Deployment.apps" → "apps", "*.apps" → "apps"
-func groupFromConfigKey(key string) string {
+// kindAndGroupFromConfigKey splits a config key into its kind and group parts.
+// "Pod" → ("Pod", ""), "Deployment.apps" → ("Deployment", "apps"),
+// "*.apps" → ("*", "apps"), "*" → ("*", "")
+func kindAndGroupFromConfigKey(key string) (kind, group string) {
 	if idx := strings.Index(key, "."); idx >= 0 {
-		return key[idx+1:]
+		return key[:idx], key[idx+1:]
 	}
-	return "" // core API
+	return key, "" // core API
 }
 
 // informerEntry tracks a running informer and its cancel function.
@@ -543,8 +544,12 @@ func RunInformers(
 		reconciler.Input <- ne
 	}
 
+	// configKeyToGVR maps config keys ("Kind" or "Kind.group") to their GVR.
+	// Populated by syncInformers from the discovery API, used for exact-match resync dispatch.
+	configKeyToGVR := make(map[string]schema.GroupVersionResource)
+
 	// Initialize the informers
-	syncInformers(ctx, *discoveryClient, informers, createInformAddHandler, createInformUpdateHandler, informDeleteHandler)
+	syncInformers(ctx, *discoveryClient, informers, configKeyToGVR, createInformAddHandler, createInformUpdateHandler, informDeleteHandler)
 
 	// Close the initialized channel so that we can start the sender.
 	wasInitialized = true
@@ -569,13 +574,27 @@ func RunInformers(
 			return
 
 		case configKeys := <-resyncQueue:
-			// Dispatch resync to informers whose API group matches the changed config keys.
+			// Dispatch resync to affected informers.
 			for _, key := range configKeys {
-				group := groupFromConfigKey(key)
-				for gvr, entry := range informers {
-					if gvr.Group == group {
-						klog.V(2).Infof("Config change for %q — triggering resync of %s", key, gvr.String())
-						entry.informer.TriggerResync()
+				kind, group := kindAndGroupFromConfigKey(key)
+
+				if kind != "*" {
+					// Exact match: look up the specific GVR for this Kind.group.
+					if gvr, ok := configKeyToGVR[key]; ok {
+						if entry, ok := informers[gvr]; ok {
+							klog.V(2).Infof("Config change for %q — triggering resync of %s", key, gvr.String())
+							entry.informer.TriggerResync()
+						}
+					} else {
+						klog.V(3).Infof("Config change for %q — no matching informer found", key)
+					}
+				} else {
+					// Wildcard: resync all informers in the matching API group.
+					for gvr, entry := range informers {
+						if gvr.Group == group {
+							klog.V(2).Infof("Config wildcard %q — triggering resync of %s", key, gvr.String())
+							entry.informer.TriggerResync()
+						}
 					}
 				}
 			}
@@ -599,7 +618,7 @@ func RunInformers(
 		}
 
 		syncInformers(
-			ctx, *discoveryClient, informers, createInformAddHandler, createInformUpdateHandler, informDeleteHandler,
+			ctx, *discoveryClient, informers, configKeyToGVR, createInformAddHandler, createInformUpdateHandler, informDeleteHandler,
 		)
 
 		lastSynced = time.Now()
@@ -613,15 +632,27 @@ func syncInformers(
 	ctx context.Context,
 	client discovery.DiscoveryClient,
 	registry map[schema.GroupVersionResource]informerEntry,
+	configKeyToGVR map[string]schema.GroupVersionResource,
 	createInformerAddHandler func(schema.GroupVersionResource) func(interface{}),
 	createInformerUpdateHandler func(schema.GroupVersionResource) func(interface{}, interface{}),
 	informerDeleteHandler func(obj interface{}),
 ) {
 	klog.V(2).Infof("Synchronizing informers. Informers running: %d", len(registry))
 
-	gvrList, err := SupportedResources(client)
+	gvrList, keyMap, err := SupportedResources(client)
 	if err != nil {
 		klog.Error("Failed to get complete list of supported resources: ", err)
+	}
+
+	// Update the config key → GVR reverse map used for targeted resync dispatch.
+	if keyMap != nil {
+		// Clear and repopulate — discovery may have added or removed resources.
+		for k := range configKeyToGVR {
+			delete(configKeyToGVR, k)
+		}
+		for k, v := range keyMap {
+			configKeyToGVR[k] = v
+		}
 	}
 
 	// Sometimes a partial list will be returned even if there is an error.
