@@ -2,6 +2,7 @@ package informer
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/stolostron/search-collector/pkg/config"
@@ -167,26 +168,26 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 				version = groupVersion[1]
 			}
 
-			for _, verb := range apiResource.Verbs {
-				if verb == "watch" {
-					watchResources = append(watchResources, apiResource)
+			if !slices.Contains(apiResource.Verbs, "watch") {
+				continue
+			}
 
-					// Build config key → GVR mapping for top-level resources only.
-					// Skip subresources (e.g. "pods/status") — they share the same Kind
-					// as their parent and would overwrite the parent's mapping.
-					if !strings.Contains(apiResource.Name, "/") {
-						thisGVR := schema.GroupVersionResource{
-							Group:    apiGroup,
-							Version:  version,
-							Resource: apiResource.Name,
-						}
-						configKey := apiResource.Kind
-						if apiGroup != "" {
-							configKey = apiResource.Kind + "." + apiGroup
-						}
-						configKeyMap[configKey] = thisGVR
-					}
+			watchResources = append(watchResources, apiResource)
+
+			// Build config key → GVR mapping for top-level resources only.
+			// Skip subresources (e.g. "pods/status") — they share the same Kind
+			// as their parent and would overwrite the parent's mapping.
+			if !strings.Contains(apiResource.Name, "/") {
+				thisGVR := schema.GroupVersionResource{
+					Group:    apiGroup,
+					Version:  version,
+					Resource: apiResource.Name,
 				}
+				configKey := apiResource.Kind
+				if apiGroup != "" {
+					configKey = apiResource.Kind + "." + apiGroup
+				}
+				configKeyMap[configKey] = thisGVR
 			}
 		}
 

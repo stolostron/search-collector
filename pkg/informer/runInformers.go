@@ -63,6 +63,34 @@ func drainPendingResync() []string {
 	return keys
 }
 
+// dispatchResyncForKey triggers informer re-listing for a single config key.
+// For specific kinds (e.g. "Pod", "Deployment.apps") it does an exact GVR lookup.
+// For wildcards (e.g. "*", "*.apps") it resyncs all informers in the matching API group.
+func dispatchResyncForKey(key string, configKeyToGVR map[string]schema.GroupVersionResource, informers map[schema.GroupVersionResource]informerEntry) {
+	kind, group := kindAndGroupFromConfigKey(key)
+
+	if kind != "*" {
+		gvr, ok := configKeyToGVR[key]
+		if !ok {
+			klog.V(3).Infof("Config change for %q — no matching informer found", key)
+			return
+		}
+		if entry, ok := informers[gvr]; ok {
+			klog.V(2).Infof("Config change for %q — triggering resync of %s", key, gvr.String())
+			entry.informer.TriggerResync()
+		}
+		return
+	}
+
+	// Wildcard: resync all informers in the matching API group.
+	for gvr, entry := range informers {
+		if gvr.Group == group {
+			klog.V(2).Infof("Config wildcard %q — triggering resync of %s", key, gvr.String())
+			entry.informer.TriggerResync()
+		}
+	}
+}
+
 // kindAndGroupFromConfigKey splits a config key into its kind and group parts.
 // "Pod" → ("Pod", ""), "Deployment.apps" → ("Deployment", "apps"),
 // "*.apps" → ("*", "apps"), "*" → ("*", "")
@@ -620,27 +648,7 @@ func RunInformers(
 			// Drain all accumulated config keys and dispatch resync to affected informers.
 			configKeys := drainPendingResync()
 			for _, key := range configKeys {
-				kind, group := kindAndGroupFromConfigKey(key)
-
-				if kind != "*" {
-					// Exact match: look up the specific GVR for this Kind.group.
-					if gvr, ok := configKeyToGVR[key]; ok {
-						if entry, ok := informers[gvr]; ok {
-							klog.V(2).Infof("Config change for %q — triggering resync of %s", key, gvr.String())
-							entry.informer.TriggerResync()
-						}
-					} else {
-						klog.V(3).Infof("Config change for %q — no matching informer found", key)
-					}
-				} else {
-					// Wildcard: resync all informers in the matching API group.
-					for gvr, entry := range informers {
-						if gvr.Group == group {
-							klog.V(2).Infof("Config wildcard %q — triggering resync of %s", key, gvr.String())
-							entry.informer.TriggerResync()
-						}
-					}
-				}
+				dispatchResyncForKey(key, configKeyToGVR, informers)
 			}
 
 		case _, ok := <-syncCh:
