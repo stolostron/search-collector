@@ -362,6 +362,88 @@ func newSimpleCRDWithAdditionalPrinterColumns() unstructured.Unstructured {
 	}
 }
 
+// mockInformerEntry creates an informerEntry with a real resyncCh for testing dispatch.
+func mockInformerEntry() informerEntry {
+	inform := &GenericInformer{resyncCh: make(chan struct{}, 1)}
+	return informerEntry{cancel: func() {}, informer: inform}
+}
+
+func TestDispatchResyncForKey(t *testing.T) {
+	podsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	deploymentsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+	policiesGVR := schema.GroupVersionResource{Group: "policy.open-cluster-management.io", Version: "v1", Resource: "policies"}
+
+	configKeyToGVR := map[string]schema.GroupVersionResource{
+		"Pod":                                          podsGVR,
+		"Deployment.apps":                              deploymentsGVR,
+		"Policy.policy.open-cluster-management.io":     policiesGVR,
+	}
+
+	tests := []struct {
+		name            string
+		key             string
+		expectedResyncs []schema.GroupVersionResource // GVRs that should have a signal queued
+	}{
+		{
+			name:            "exact match - core resource",
+			key:             "Pod",
+			expectedResyncs: []schema.GroupVersionResource{podsGVR},
+		},
+		{
+			name:            "exact match - non-core resource",
+			key:             "Deployment.apps",
+			expectedResyncs: []schema.GroupVersionResource{deploymentsGVR},
+		},
+		{
+			name:            "exact match - no matching informer",
+			key:             "Secret",
+			expectedResyncs: []schema.GroupVersionResource{},
+		},
+		{
+			name:            "wildcard - specific group",
+			key:             "*.apps",
+			expectedResyncs: []schema.GroupVersionResource{deploymentsGVR},
+		},
+		{
+			name:            "wildcard - core group",
+			key:             "*",
+			expectedResyncs: []schema.GroupVersionResource{podsGVR},
+		},
+		{
+			name:            "wildcard - all groups (*.*)",
+			key:             "*.*",
+			expectedResyncs: []schema.GroupVersionResource{podsGVR, deploymentsGVR, policiesGVR},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Build a fresh informers map for each test case.
+			informers := map[schema.GroupVersionResource]informerEntry{
+				podsGVR:        mockInformerEntry(),
+				deploymentsGVR: mockInformerEntry(),
+				policiesGVR:    mockInformerEntry(),
+			}
+
+			dispatchResyncForKey(tc.key, configKeyToGVR, informers)
+
+			expectedSet := map[schema.GroupVersionResource]bool{}
+			for _, gvr := range tc.expectedResyncs {
+				expectedSet[gvr] = true
+			}
+
+			for gvr, entry := range informers {
+				select {
+				case <-entry.informer.resyncCh:
+					assert.True(t, expectedSet[gvr], "unexpected resync for %s", gvr.String())
+				default:
+					assert.False(t, expectedSet[gvr], "expected resync for %s but none queued", gvr.String())
+				}
+			}
+		})
+	}
+}
+
 func TestKindAndGroupFromConfigKey(t *testing.T) {
 	tests := []struct {
 		input         string

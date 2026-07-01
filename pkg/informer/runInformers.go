@@ -83,8 +83,9 @@ func dispatchResyncForKey(key string, configKeyToGVR map[string]schema.GroupVers
 	}
 
 	// Wildcard: resync all informers in the matching API group.
+	// If group is also "*", resync everything.
 	for gvr, entry := range informers {
-		if gvr.Group == group {
+		if group == "*" || gvr.Group == group {
 			klog.V(2).Infof("Config wildcard %q — triggering resync of %s", key, gvr.String())
 			entry.informer.TriggerResync()
 		}
