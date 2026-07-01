@@ -2,6 +2,7 @@ package informer
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/stolostron/search-collector/pkg/config"
@@ -99,7 +100,8 @@ func isResourceMatchingList(resourceList []Resource, group, kind string) (string
 }
 
 // Returns a map containing all the GVRs on the cluster of resources that support WATCH (ignoring clusters and events).
-func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, error) {
+// Also returns a configKeyToGVR map that maps config keys ("Kind" for core, "Kind.group" for non-core) to their GVR.
+func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.GroupVersionResource]struct{}, map[string]schema.GroupVersionResource, error) {
 	ctx := context.TODO()
 	// Next step is to discover all the gettable resource types that the kuberenetes api server knows about.
 	supportedResources := []*machineryV1.APIResourceList{}
@@ -107,7 +109,7 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 	// List out all the preferred api-resources of this server.
 	apiResources, err := discoveryClient.ServerPreferredResources() // here we get preferred api versions
 	if err != nil && apiResources == nil {                          // only return if the list is empty
-		return nil, err
+		return nil, nil, err
 	} else if err != nil {
 		klog.Warning("ServerPreferredResources could not list all available resources: ", err)
 	}
@@ -126,6 +128,10 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 	allowedList, deniedList, _, _ := GetAllowDenyData(cm)
 
 	tr.NonNSResourceMap = make(map[string]struct{}) //map to store non-namespaced resources
+
+	// configKeyMap maps config keys ("Kind" for core, "Kind.group" for non-core) to GVR.
+	// Built alongside the watch-resource filter so it reflects the same set of resources.
+	configKeyMap := make(map[string]schema.GroupVersionResource)
 
 	// Filter down to only resources which support WATCH operations
 	for _, apiList := range apiResources { // This comes out in a nested list, so loop through a couple things
@@ -151,10 +157,37 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 				tr.NonNSResMapMutex.Unlock()
 
 			}
-			for _, verb := range apiResource.Verbs {
-				if verb == "watch" {
-					watchResources = append(watchResources, apiResource)
+
+			// Derive the actual API group and version.
+			// strings.Split on "apps/v1" gives ["apps","v1"]; on "v1" gives ["v1"].
+			// Core resources (no slash) have group="" and version=groupVersion[0].
+			apiGroup := ""
+			version := groupVersion[0]
+			if len(groupVersion) > 1 {
+				apiGroup = groupVersion[0]
+				version = groupVersion[1]
+			}
+
+			if !slices.Contains(apiResource.Verbs, "watch") {
+				continue
+			}
+
+			watchResources = append(watchResources, apiResource)
+
+			// Build config key → GVR mapping for top-level resources only.
+			// Skip subresources (e.g. "pods/status") — they share the same Kind
+			// as their parent and would overwrite the parent's mapping.
+			if !strings.Contains(apiResource.Name, "/") {
+				thisGVR := schema.GroupVersionResource{
+					Group:    apiGroup,
+					Version:  version,
+					Resource: apiResource.Name,
 				}
+				configKey := apiResource.Kind
+				if apiGroup != "" {
+					configKey = apiResource.Kind + "." + apiGroup
+				}
+				configKeyMap[configKey] = thisGVR
 			}
 		}
 
@@ -165,5 +198,5 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 	// Use handy converter function to convert into GroupVersionResource objects, which we need in order to make informers
 	gvrList, err := discovery.GroupVersionResources(supportedResources)
 
-	return gvrList, err
+	return gvrList, configKeyMap, err
 }

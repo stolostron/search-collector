@@ -400,8 +400,12 @@ var defaultTransformConfig = map[string]ResourceConfig{
 // Uses mergedTransformConfig which contains default config merged with CollectorConfig CR customizations.
 func getTransformConfig(group, kind string) (ResourceConfig, bool) {
 	// Use mergedTransformConfig which is populated by LoadAndMergeConfigurableCollection
-	// Falls back to defaultTransformConfig if configurable collection is disabled
+	// Falls back to defaultTransformConfig if configurable collection is disabled.
+	// RLock scope is narrow: only the pointer copy needs protection. After this,
+	// the local transformConfig points to an immutable map (never mutated after swap).
+	configMu.RLock()
 	transformConfig := mergedTransformConfig
+	configMu.RUnlock()
 	if transformConfig == nil {
 		// Safety fallback if LoadAndMergeConfigurableCollection hasn't been called yet
 		transformConfig = defaultTransformConfig

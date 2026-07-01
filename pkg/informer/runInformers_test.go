@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"testing"
 
 	"github.com/stolostron/search-collector/pkg/config"
@@ -72,7 +73,7 @@ func Test_syncInformers(t *testing.T) {
 	// Establish the config
 	config.InitConfig()
 
-	mockStoppers := make(map[schema.GroupVersionResource]context.CancelFunc)
+	registry := make(map[schema.GroupVersionResource]informerEntry)
 
 	fakeServer, fakeClient := fakeDiscoveryClient()
 	defer fakeServer.Close()
@@ -80,32 +81,31 @@ func Test_syncInformers(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	syncInformers(ctx, fakeClient, mockStoppers, mockAddFn, mockUpdateFn, mockDeleteHandler)
+	syncInformers(ctx, fakeClient, registry, make(map[string]schema.GroupVersionResource), mockAddFn, mockUpdateFn, mockDeleteHandler)
 
-	assert.Equal(t, 3, len(mockStoppers))
+	assert.Equal(t, 3, len(registry))
 
-	podInformStopper, exists := mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}]
+	podEntry, exists := registry[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}]
 	assert.True(t, exists)
-	assert.NotNil(t, podInformStopper)
+	assert.NotNil(t, podEntry.cancel)
 }
 
 // Validate that informer is stopped when resource no longer exists.
 func Test_syncInformers_removeInformers(t *testing.T) {
-	mockStoppers := make(map[schema.GroupVersionResource]context.CancelFunc)
+	registry := make(map[schema.GroupVersionResource]informerEntry)
 	ctx, cancel := context.WithCancel(context.Background())
-	mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}] = cancel
+	registry[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}] = informerEntry{cancel: cancel}
 
 	fakeServer, fakeClient := fakeDiscoveryClient()
 	defer fakeServer.Close()
 
-	syncInformers(ctx, fakeClient, mockStoppers, mockAddFn, mockUpdateFn, mockDeleteHandler)
+	syncInformers(ctx, fakeClient, registry, make(map[string]schema.GroupVersionResource), mockAddFn, mockUpdateFn, mockDeleteHandler)
 
-	assert.Equal(t, 3, len(mockStoppers))
+	assert.Equal(t, 3, len(registry))
 
 	// Validate that informer is stopped when resource no longer exists.
-	informStopper, exists := mockStoppers[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}]
+	_, exists := registry[schema.GroupVersionResource{Group: "", Version: "v1", Resource: "notExist"}]
 	assert.False(t, exists)
-	assert.Nil(t, informStopper)
 }
 
 func getSimpleTransformedCRD() unstructured.Unstructured {
@@ -359,5 +359,179 @@ func newSimpleCRDWithAdditionalPrinterColumns() unstructured.Unstructured {
 				},
 			},
 		},
+	}
+}
+
+// mockInformerEntry creates an informerEntry with a real resyncCh for testing dispatch.
+func mockInformerEntry() informerEntry {
+	inform := &GenericInformer{resyncCh: make(chan struct{}, 1)}
+	return informerEntry{cancel: func() {}, informer: inform}
+}
+
+func TestDispatchResyncForKey(t *testing.T) {
+	podsGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	deploymentsGVR := schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+	policiesGVR := schema.GroupVersionResource{Group: "policy.open-cluster-management.io", Version: "v1", Resource: "policies"}
+
+	configKeyToGVR := map[string]schema.GroupVersionResource{
+		"Pod":                                          podsGVR,
+		"Deployment.apps":                              deploymentsGVR,
+		"Policy.policy.open-cluster-management.io":     policiesGVR,
+	}
+
+	tests := []struct {
+		name            string
+		key             string
+		expectedResyncs []schema.GroupVersionResource // GVRs that should have a signal queued
+	}{
+		{
+			name:            "exact match - core resource",
+			key:             "Pod",
+			expectedResyncs: []schema.GroupVersionResource{podsGVR},
+		},
+		{
+			name:            "exact match - non-core resource",
+			key:             "Deployment.apps",
+			expectedResyncs: []schema.GroupVersionResource{deploymentsGVR},
+		},
+		{
+			name:            "exact match - no matching informer",
+			key:             "Secret",
+			expectedResyncs: []schema.GroupVersionResource{},
+		},
+		{
+			name:            "wildcard - specific group",
+			key:             "*.apps",
+			expectedResyncs: []schema.GroupVersionResource{deploymentsGVR},
+		},
+		{
+			name:            "wildcard - core group",
+			key:             "*",
+			expectedResyncs: []schema.GroupVersionResource{podsGVR},
+		},
+		{
+			name:            "wildcard - all groups (*.*)",
+			key:             "*.*",
+			expectedResyncs: []schema.GroupVersionResource{podsGVR, deploymentsGVR, policiesGVR},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Build a fresh informers map for each test case.
+			informers := map[schema.GroupVersionResource]informerEntry{
+				podsGVR:        mockInformerEntry(),
+				deploymentsGVR: mockInformerEntry(),
+				policiesGVR:    mockInformerEntry(),
+			}
+
+			dispatchResyncForKey(tc.key, configKeyToGVR, informers)
+
+			expectedSet := map[schema.GroupVersionResource]bool{}
+			for _, gvr := range tc.expectedResyncs {
+				expectedSet[gvr] = true
+			}
+
+			for gvr, entry := range informers {
+				select {
+				case <-entry.informer.resyncCh:
+					assert.True(t, expectedSet[gvr], "unexpected resync for %s", gvr.String())
+				default:
+					assert.False(t, expectedSet[gvr], "expected resync for %s but none queued", gvr.String())
+				}
+			}
+		})
+	}
+}
+
+func TestKindAndGroupFromConfigKey(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedKind  string
+		expectedGroup string
+	}{
+		{"Pod", "Pod", ""},
+		{"Deployment.apps", "Deployment", "apps"},
+		{"*.apps", "*", "apps"},
+		{"*", "*", ""},
+		{"Policy.policy.open-cluster-management.io", "Policy", "policy.open-cluster-management.io"},
+		{"*.monitoring.coreos.com", "*", "monitoring.coreos.com"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			kind, group := kindAndGroupFromConfigKey(tc.input)
+			assert.Equal(t, tc.expectedKind, kind)
+			assert.Equal(t, tc.expectedGroup, group)
+		})
+	}
+}
+
+func TestTriggerResyncForConfigKeys(t *testing.T) {
+	// Drain any existing signal and keys.
+	select {
+	case <-resyncSignal:
+	default:
+	}
+	resyncMu.Lock()
+	for k := range pendingResync {
+		delete(pendingResync, k)
+	}
+	resyncMu.Unlock()
+
+	keys := []string{"Pod", "Deployment.apps"}
+	TriggerResyncForConfigKeys(keys)
+
+	// Signal should be present.
+	select {
+	case <-resyncSignal:
+	default:
+		t.Fatal("expected resyncSignal to have a signal")
+	}
+
+	// Drain and verify keys.
+	received := drainPendingResync()
+	sort.Strings(received)
+	sort.Strings(keys)
+	assert.Equal(t, keys, received)
+}
+
+func TestTriggerResyncForConfigKeys_Coalesce(t *testing.T) {
+	// Drain any existing signal and keys.
+	select {
+	case <-resyncSignal:
+	default:
+	}
+	resyncMu.Lock()
+	for k := range pendingResync {
+		delete(pendingResync, k)
+	}
+	resyncMu.Unlock()
+
+	first := []string{"Pod"}
+	second := []string{"Secret", "Node"}
+
+	TriggerResyncForConfigKeys(first)
+	TriggerResyncForConfigKeys(second) // keys are union-accumulated, not dropped
+
+	// Drain signal.
+	select {
+	case <-resyncSignal:
+	default:
+		t.Fatal("expected resyncSignal to have a signal")
+	}
+
+	// All keys from both calls should be present.
+	received := drainPendingResync()
+	sort.Strings(received)
+	expected := []string{"Node", "Pod", "Secret"}
+	assert.Equal(t, expected, received, "all keys from both calls should be accumulated")
+
+	// Signal should be empty now.
+	select {
+	case <-resyncSignal:
+		t.Error("expected resyncSignal to be empty after draining")
+	default:
+		// expected
 	}
 }
