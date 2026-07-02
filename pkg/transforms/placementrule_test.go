@@ -11,6 +11,7 @@ irrespective of what has been deposited with the U.S. Copyright Office.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	app "github.com/stolostron/multicloud-operators-placementrule/pkg/apis/apps/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformPlacementRule(t *testing.T) {
 	var p app.PlacementRule
 	UnmarshalFile("placementrule.json", &p, t)
-	node := PlacementRuleResourceBuilder(&p).BuildNode()
+	node := PlacementRuleResourceBuilder(&p, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in placementrule - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "PlacementRule", t)
@@ -29,7 +30,7 @@ func TestTransformPlacementRule(t *testing.T) {
 func TestTransformPlacementRuleWithClusterReplicas(t *testing.T) {
 	var p app.PlacementRule
 	UnmarshalFile("placementrule2.json", &p, t)
-	node := PlacementRuleResourceBuilder(&p).BuildNode()
+	node := PlacementRuleResourceBuilder(&p, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in placementrule - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "PlacementRule", t)

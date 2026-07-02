@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	v1 "k8s.io/api/apps/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformDeployment(t *testing.T) {
 	var d v1.Deployment
 	UnmarshalFile("deployment.json", &d, t)
-	node := DeploymentResourceBuilder(&d).BuildNode()
+	node := DeploymentResourceBuilder(&d, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in deployment - the common test will test the other bits
 	AssertEqual("available", node.Properties["available"], int64(1), t)
@@ -36,7 +37,7 @@ func TestDeploymentBuildEdges(t *testing.T) {
 	// Build edges from mock resource deployment.json
 	var d v1.Deployment
 	UnmarshalFile("deployment.json", &d, t)
-	edges := DeploymentResourceBuilder(&d).BuildEdges(nodeStore)
+	edges := DeploymentResourceBuilder(&d, &unstructured.Unstructured{}).BuildEdges(nodeStore)
 
 	// Validate results
 	AssertEqual("Deployment has no edges:", len(edges), 0, t)

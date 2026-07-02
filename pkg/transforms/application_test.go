@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	app "sigs.k8s.io/application/api/v1beta1"
@@ -19,7 +20,7 @@ import (
 func TestTransformApplication(t *testing.T) {
 	var a app.Application
 	UnmarshalFile("application.json", &a, t)
-	node := ApplicationResourceBuilder(&a).BuildNode()
+	node := ApplicationResourceBuilder(&a, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in application - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Application", t)

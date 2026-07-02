@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	app "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/helmrelease/v1"
@@ -22,7 +23,7 @@ func TestTransformAppHelmCR(t *testing.T) {
 
 	UnmarshalFile("apphelmcr.json", &a, t)
 
-	node := AppHelmCRResourceBuilder(&a).BuildNode()
+	node := AppHelmCRResourceBuilder(&a, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in HelmRelease - the common test will test the other bits
 	AssertEqual("name", node.Properties["name"], "testAppHelmCR", t)

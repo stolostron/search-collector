@@ -12,6 +12,7 @@ package transforms
 
 import (
 	appDeployable "github.com/stolostron/multicloud-operators-deployable/pkg/apis/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // AppDeployableResource ...
@@ -21,7 +22,8 @@ type AppDeployableResource struct {
 }
 
 // AppDeployableResourceBuilder ...
-func AppDeployableResourceBuilder(d *appDeployable.Deployable) *AppDeployableResource {
+func AppDeployableResourceBuilder(d *appDeployable.Deployable, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *AppDeployableResource {
 	node := transformCommon(d)         // Start off with the common properties
 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -29,6 +31,7 @@ func AppDeployableResourceBuilder(d *appDeployable.Deployable) *AppDeployableRes
 	if d.Status.Phase != "" {
 		node.Properties["status"] = d.Status.Phase
 	}
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	return &AppDeployableResource{node: node, Spec: d.Spec}
 }
 

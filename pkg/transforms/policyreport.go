@@ -10,6 +10,7 @@ import (
 	"github.com/stolostron/search-collector/pkg/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -49,7 +50,8 @@ type PolicyReportResource struct {
 }
 
 // PolicyReportResourceBuilder ...
-func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
+func PolicyReportResourceBuilder(pr *PolicyReport, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *PolicyReportResource {
 	node := transformCommon(pr) // Start off with the common properties
 
 	gvk := pr.GroupVersionKind()
@@ -150,6 +152,7 @@ func PolicyReportResourceBuilder(pr *PolicyReport) *PolicyReportResource {
 	// extract the cluster scope from the PolicyReport resource
 	node.Properties["scope"] = string(pr.Scope.Name)
 	node.Properties["_policyViolationCounts"] = policyViolationCounts
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	return &PolicyReportResource{node: node}
 }
 

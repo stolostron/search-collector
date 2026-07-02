@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	v1 "k8s.io/api/apps/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformDaemonSet(t *testing.T) {
 	var d v1.DaemonSet
 	UnmarshalFile("daemonset.json", &d, t)
-	node := DaemonSetResourceBuilder(&d).BuildNode()
+	node := DaemonSetResourceBuilder(&d, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in daemonset - the common test will test the other bits
 	AssertEqual("available", node.Properties["available"], int64(1), t)
@@ -37,7 +38,7 @@ func TestDaemonSetBuildEdges(t *testing.T) {
 	// Build edges from mock resource daemonset.json
 	var ds v1.DaemonSet
 	UnmarshalFile("daemonset.json", &ds, t)
-	edges := DaemonSetResourceBuilder(&ds).BuildEdges(nodeStore)
+	edges := DaemonSetResourceBuilder(&ds, &unstructured.Unstructured{}).BuildEdges(nodeStore)
 
 	// Validate results
 	AssertEqual("DaemonSet has no edges:", len(edges), 0, t)

@@ -12,6 +12,7 @@ package transforms
 
 import (
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // StatefulSetResource ...
@@ -20,7 +21,7 @@ type StatefulSetResource struct {
 }
 
 // StatefulSetResourceBuilder ...
-func StatefulSetResourceBuilder(s *v1.StatefulSet) *StatefulSetResource {
+func StatefulSetResourceBuilder(s *v1.StatefulSet, r *unstructured.Unstructured) *StatefulSetResource {
 	node := transformCommon(s)         // Start off with the common properties
 	apiGroupVersion(s.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -30,6 +31,7 @@ func StatefulSetResourceBuilder(s *v1.StatefulSet) *StatefulSetResource {
 		node.Properties["desired"] = int64(*s.Spec.Replicas)
 	}
 
+	node = applyDefaultTransformConfig(node, r)
 	return &StatefulSetResource{node: node}
 }
 

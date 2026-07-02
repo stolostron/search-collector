@@ -3,6 +3,7 @@
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
@@ -11,7 +12,7 @@ import (
 func TestTransformKlusterletAddonConfig(t *testing.T) {
 	var p agentv1.KlusterletAddonConfig
 	UnmarshalFile("klusterletaddonconfig.json", &p, t)
-	node := KlusterletAddonConfigResourceBuilder(&p).BuildNode()
+	node := KlusterletAddonConfigResourceBuilder(&p, &unstructured.Unstructured{}).BuildNode()
 
 	enabledAddons := map[string]interface{}{
 		"search-collector":       true,

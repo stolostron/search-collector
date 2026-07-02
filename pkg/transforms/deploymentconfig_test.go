@@ -6,6 +6,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	v1 "github.com/openshift/api/apps/v1"
@@ -14,7 +15,7 @@ import (
 func TestTransformDeploymentConfig(t *testing.T) {
 	var d v1.DeploymentConfig
 	UnmarshalFile("deploymentconfig.json", &d, t)
-	node := DeploymentConfigResourceBuilder(&d).BuildNode()
+	node := DeploymentConfigResourceBuilder(&d, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in deployment
 	AssertEqual("available", node.Properties["available"], int64(1), t)

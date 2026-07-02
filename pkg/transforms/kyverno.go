@@ -57,6 +57,7 @@ func KyvernoPolicyResourceBuilder(p *unstructured.Unstructured) *KyvernoPolicyRe
 	node.Properties["admission"] = strconv.FormatBool(admission)
 	node.Properties["severity"] = p.GetAnnotations()["policies.kyverno.io/severity"]
 
+	node = applyDefaultTransformConfig(node, p)
 	return &KyvernoPolicyResource{node: node}
 }
 

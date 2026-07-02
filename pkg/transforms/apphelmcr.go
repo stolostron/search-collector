@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	app "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/helmrelease/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // AppHelmCRResource ...
@@ -23,7 +24,8 @@ type AppHelmCRResource struct {
 }
 
 // AppHelmCRResourceBuilder ...
-func AppHelmCRResourceBuilder(a *app.HelmRelease) *AppHelmCRResource {
+func AppHelmCRResourceBuilder(a *app.HelmRelease, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *AppHelmCRResource {
 	node := transformCommon(a)         // Start off with the common properties
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 
@@ -44,6 +46,7 @@ func AppHelmCRResourceBuilder(a *app.HelmRelease) *AppHelmCRResource {
 		}
 	}
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	// Need to pass repo so we can access it when building the edges.
 	return &AppHelmCRResource{node: node, Repo: a.Repo}
 }

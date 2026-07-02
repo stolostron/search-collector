@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	app "open-cluster-management.io/multicloud-operators-channel/pkg/apis/apps/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformChannel(t *testing.T) {
 	var c app.Channel
 	UnmarshalFile("channel.json", &c, t)
-	node := ChannelResourceBuilder(&c).BuildNode()
+	node := ChannelResourceBuilder(&c, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in channel - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Channel", t)

@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	app "github.com/stolostron/multicloud-operators-deployable/pkg/apis/apps/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformAppDeployable(t *testing.T) {
 	var d app.Deployable
 	UnmarshalFile("appdeployable.json", &d, t)
-	node := AppDeployableResourceBuilder(&d).BuildNode()
+	node := AppDeployableResourceBuilder(&d, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in deployable - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Deployable", t)

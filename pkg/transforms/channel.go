@@ -12,6 +12,7 @@ package transforms
 
 import (
 	app "open-cluster-management.io/multicloud-operators-channel/pkg/apis/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // ChannelResource ...
@@ -21,13 +22,15 @@ type ChannelResource struct {
 }
 
 // ChannelResourceBuilder ...
-func ChannelResourceBuilder(c *app.Channel) *ChannelResource {
+func ChannelResourceBuilder(c *app.Channel, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *ChannelResource {
 	node := transformCommon(c)
 	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 	node.Properties["type"] = string(c.Spec.Type)
 	node.Properties["pathname"] = c.Spec.Pathname
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	// Need to pass spec so we can access it when building the edges.
 	return &ChannelResource{node: node, Spec: c.Spec}
 }

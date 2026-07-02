@@ -12,6 +12,7 @@ package transforms
 
 import (
 	app "github.com/stolostron/multicloud-operators-placementrule/pkg/apis/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // PlacementRuleResource ...
@@ -20,7 +21,8 @@ type PlacementRuleResource struct {
 }
 
 // PlacementRuleResourceBuilder ...
-func PlacementRuleResourceBuilder(p *app.PlacementRule) *PlacementRuleResource {
+func PlacementRuleResourceBuilder(p *app.PlacementRule, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *PlacementRuleResource {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Add replicas property
@@ -28,6 +30,7 @@ func PlacementRuleResourceBuilder(p *app.PlacementRule) *PlacementRuleResource {
 		node.Properties["replicas"] = int32(*p.Spec.ClusterReplicas)
 	}
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	return &PlacementRuleResource{node: node}
 }
 

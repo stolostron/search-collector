@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	app "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // SubscriptionResource ...
@@ -25,7 +26,8 @@ type SubscriptionResource struct {
 }
 
 // SubscriptionResourceBuilder ...
-func SubscriptionResourceBuilder(s *app.Subscription) *SubscriptionResource {
+func SubscriptionResourceBuilder(s *app.Subscription, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *SubscriptionResource {
 	node := transformCommon(s)
 	apiGroupVersion(s.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -73,6 +75,7 @@ func SubscriptionResourceBuilder(s *app.Subscription) *SubscriptionResource {
 		node.Metadata["_channels"] = s.Spec.Channel
 	}
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	// Need to pass annotations & spec so we can access them when building the edges.
 	return &SubscriptionResource{node: node, annotations: s.GetAnnotations(), Spec: s.Spec}
 }

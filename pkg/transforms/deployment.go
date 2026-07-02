@@ -12,6 +12,7 @@ package transforms
 
 import (
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // DeploymentResource ...
@@ -20,7 +21,7 @@ type DeploymentResource struct {
 }
 
 // DeploymentResourceBuilder ...
-func DeploymentResourceBuilder(d *v1.Deployment) *DeploymentResource {
+func DeploymentResourceBuilder(d *v1.Deployment, r *unstructured.Unstructured) *DeploymentResource {
 	node := transformCommon(d)         // Start off with the common properties
 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -32,6 +33,7 @@ func DeploymentResourceBuilder(d *v1.Deployment) *DeploymentResource {
 		node.Properties["desired"] = int64(*d.Spec.Replicas)
 	}
 
+	node = applyDefaultTransformConfig(node, r)
 	return &DeploymentResource{node: node}
 }
 

@@ -50,6 +50,7 @@ func VapBindingResourceBuilder(v *unstructured.Unstructured) *VapBindingResource
 		}
 	}
 
+	node = applyDefaultTransformConfig(node, v)
 	binding := &VapBindingResource{node: node}
 
 	paramRefMap, ok, err := unstructured.NestedMap(v.Object, "spec", "paramRef")

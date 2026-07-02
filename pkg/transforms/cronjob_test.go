@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 	"time"
 
@@ -20,7 +21,7 @@ import (
 func TestTransformCronJob(t *testing.T) {
 	var c v1.CronJob
 	UnmarshalFile("cronjob.json", &c, t)
-	node := CronJobResourceBuilder(&c).BuildNode()
+	node := CronJobResourceBuilder(&c, &unstructured.Unstructured{}).BuildNode()
 
 	// Build time struct matching time in test data
 	date := time.Date(2019, 3, 5, 23, 30, 0, 0, time.UTC)
@@ -53,7 +54,7 @@ func TestBooleanFieldsStoredAsStrings_CronJob(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c := v1.CronJob{}
 			c.Spec.Suspend = tc.suspend
-			node := CronJobResourceBuilder(&c).BuildNode()
+			node := CronJobResourceBuilder(&c, &unstructured.Unstructured{}).BuildNode()
 			val, ok := node.Properties["suspend"].(string)
 			if !ok {
 				t.Fatalf("suspend should be a string, got %T: %v", node.Properties["suspend"], node.Properties["suspend"])
@@ -71,7 +72,7 @@ func TestCronJobBuildEdges(t *testing.T) {
 	// Build edges from mock resource cronjob.json
 	var cron v1.CronJob
 	UnmarshalFile("cronjob.json", &cron, t)
-	edges := CronJobResourceBuilder(&cron).BuildEdges(nodeStore)
+	edges := CronJobResourceBuilder(&cron, &unstructured.Unstructured{}).BuildEdges(nodeStore)
 
 	// Validate results
 	AssertEqual("CronJob has no edges:", len(edges), 0, t)

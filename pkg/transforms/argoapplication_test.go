@@ -3,13 +3,14 @@
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 )
 
 func TestTransformArgoApplication(t *testing.T) {
 	var a ArgoApplication
 	UnmarshalFile("argoapplication.json", &a, t)
-	argoApplicationResource := ArgoApplicationResourceBuilder(&a)
+	argoApplicationResource := ArgoApplicationResourceBuilder(&a, &unstructured.Unstructured{})
 
 	node := argoApplicationResource.BuildNode()
 

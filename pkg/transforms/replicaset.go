@@ -12,6 +12,7 @@ package transforms
 
 import (
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // ReplicaSetResource ...
@@ -20,16 +21,17 @@ type ReplicaSetResource struct {
 }
 
 // ReplicaSetResourceBuilder ...
-func ReplicaSetResourceBuilder(r *v1.ReplicaSet) *ReplicaSetResource {
-	node := transformCommon(r)         // Start off with the common properties
-	apiGroupVersion(r.TypeMeta, &node) // add kind, apigroup and version
+func ReplicaSetResourceBuilder(rs *v1.ReplicaSet, r *unstructured.Unstructured) *ReplicaSetResource {
+	node := transformCommon(rs)         // Start off with the common properties
+	apiGroupVersion(rs.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
-	node.Properties["current"] = int64(r.Status.Replicas)
+	node.Properties["current"] = int64(rs.Status.Replicas)
 	node.Properties["desired"] = int64(0)
-	if r.Spec.Replicas != nil {
-		node.Properties["desired"] = int64(*r.Spec.Replicas)
+	if rs.Spec.Replicas != nil {
+		node.Properties["desired"] = int64(*rs.Spec.Replicas)
 	}
 
+	node = applyDefaultTransformConfig(node, r)
 	return &ReplicaSetResource{node: node}
 }
 

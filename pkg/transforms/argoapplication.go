@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog/v2"
 )
 
@@ -80,7 +81,8 @@ type SyncStatus struct {
 }
 
 // ArgoApplicationResourceBuilder ...
-func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource {
+func ArgoApplicationResourceBuilder(a *ArgoApplication, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *ArgoApplicationResource {
 	node := transformCommon(a)
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 
@@ -143,6 +145,7 @@ func ArgoApplicationResourceBuilder(a *ArgoApplication) *ArgoApplicationResource
 		}
 	}
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	// get resource list and it will be passed to edge
 	return &ArgoApplicationResource{node: node, resources: a.Status.Resources}
 }

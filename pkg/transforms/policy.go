@@ -33,7 +33,8 @@ const (
 )
 
 // PolicyResourceBuilder ...
-func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
+func PolicyResourceBuilder(p *policy.Policy, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *PolicyResource {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -51,6 +52,7 @@ func PolicyResourceBuilder(p *policy.Policy) *PolicyResource {
 		node.Properties["_parentPolicy"] = pnamespace + "/" + ppolicy
 	}
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	return &PolicyResource{node: node}
 }
 
@@ -134,6 +136,7 @@ func OperatorPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource
 	node.Properties["deploymentAvailable"] = strconv.FormatBool(deploymentAvailable)
 	node.Properties["upgradeAvailable"] = strconv.FormatBool(upgradeAvailable)
 
+	node = applyDefaultTransformConfig(node, c)
 	return &PolicyResource{
 		node: node,
 	}
@@ -144,6 +147,7 @@ func ConfigPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
 	node = getPolicyCommonProperties(c, node)
 	node = recordRelatedObjects(c, node)
 
+	node = applyDefaultTransformConfig(node, c)
 	return &PolicyResource{
 		node: node,
 	}
@@ -234,9 +238,9 @@ func CertPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
 
 	detailMap, found, err := unstructured.NestedMap(c.Object, "status", "compliancyDetails")
 	if len(detailMap) == 0 || !found || err != nil {
-		return &PolicyResource{
-			node: getPolicyCommonProperties(c, node),
-		}
+		node = getPolicyCommonProperties(c, node)
+		node = applyDefaultTransformConfig(node, c)
+		return &PolicyResource{node: node}
 	}
 
 	certList := []relatedObject{}
@@ -281,8 +285,10 @@ func CertPolicyResourceBuilder(c *unstructured.Unstructured) *PolicyResource {
 
 	node.Metadata["relObjs"] = certList
 
+	node = getPolicyCommonProperties(c, node)
+	node = applyDefaultTransformConfig(node, c)
 	return &PolicyResource{
-		node: getPolicyCommonProperties(c, node),
+		node: node,
 	}
 }
 

@@ -7,6 +7,7 @@ package transforms
 
 import (
 	v1 "github.com/openshift/api/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // DeploymentConfigResource ...
@@ -15,7 +16,7 @@ type DeploymentConfigResource struct {
 }
 
 // DeploymentConfigResourceBuilder ...
-func DeploymentConfigResourceBuilder(d *v1.DeploymentConfig) *DeploymentConfigResource {
+func DeploymentConfigResourceBuilder(d *v1.DeploymentConfig, r *unstructured.Unstructured) *DeploymentConfigResource {
 	node := transformCommon(d)         // Start off with the common properties
 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -24,6 +25,7 @@ func DeploymentConfigResourceBuilder(d *v1.DeploymentConfig) *DeploymentConfigRe
 	node.Properties["ready"] = int64(d.Status.ReadyReplicas)
 	node.Properties["desired"] = int64(d.Spec.Replicas)
 
+	node = applyDefaultTransformConfig(node, r)
 	return &DeploymentConfigResource{node: node}
 }
 

@@ -14,6 +14,7 @@ import (
 	"fmt"
 
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // PlacementBindingResource ...
@@ -22,7 +23,8 @@ type PlacementBindingResource struct {
 }
 
 // PlacementBindingResourceBuilder ...
-func PlacementBindingResourceBuilder(p *policy.PlacementBinding) *PlacementBindingResource {
+func PlacementBindingResourceBuilder(p *policy.PlacementBinding, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *PlacementBindingResource {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -39,6 +41,7 @@ func PlacementBindingResourceBuilder(p *policy.PlacementBinding) *PlacementBindi
 	}
 	node.Properties["subject"] = subjects
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	return &PlacementBindingResource{node: node}
 }
 

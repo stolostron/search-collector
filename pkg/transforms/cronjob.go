@@ -15,6 +15,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/batch/v1beta1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // CronJobResource ...
@@ -23,7 +24,7 @@ type CronJobResource struct {
 }
 
 // CronJobResourceBuilder ...
-func CronJobResourceBuilder(c *v1.CronJob) *CronJobResource {
+func CronJobResourceBuilder(c *v1.CronJob, r *unstructured.Unstructured) *CronJobResource {
 	node := transformCommon(c) // Start off with the common properties
 
 	apiGroupVersion(c.TypeMeta, &node) // add kind, apigroup and version
@@ -40,6 +41,7 @@ func CronJobResourceBuilder(c *v1.CronJob) *CronJobResource {
 	}
 	node.Properties["suspend"] = strconv.FormatBool(suspend)
 
+	node = applyDefaultTransformConfig(node, r)
 	return &CronJobResource{node: node}
 }
 

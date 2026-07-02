@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // KlusterletAddonConfigResource ...
@@ -14,7 +15,8 @@ type KlusterletAddonConfigResource struct {
 }
 
 // KlusterletAddonConfigResourceBuilder ...
-func KlusterletAddonConfigResourceBuilder(p *agentv1.KlusterletAddonConfig) *KlusterletAddonConfigResource {
+func KlusterletAddonConfigResourceBuilder(p *agentv1.KlusterletAddonConfig, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *KlusterletAddonConfigResource {
 	node := transformCommon(p)         // Start off with the common properties
 	apiGroupVersion(p.TypeMeta, &node) // add kind, apigroup and version
 
@@ -27,6 +29,7 @@ func KlusterletAddonConfigResourceBuilder(p *agentv1.KlusterletAddonConfig) *Klu
 	enabledAddons["iam-policy-controller"] = strconv.FormatBool(p.Spec.IAMPolicyControllerConfig.Enabled)
 	node.Properties["addon"] = enabledAddons // maps to the enabled addons on the cluster
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	return &KlusterletAddonConfigResource{node: node}
 }
 

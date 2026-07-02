@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformPersistentVolume(t *testing.T) {
 	var p v1.PersistentVolume
 	UnmarshalFile("persistentvolume.json", &p, t)
-	node := PersistentVolumeResourceBuilder(&p).BuildNode()
+	node := PersistentVolumeResourceBuilder(&p, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in node - the common test will test the other bits
 	AssertEqual("reclaimPolicy", node.Properties["reclaimPolicy"], "Delete", t)

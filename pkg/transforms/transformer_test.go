@@ -29,7 +29,7 @@ func TestTransformRoutine(t *testing.T) {
 	var appInput unstructured.Unstructured
 	UnmarshalFile("application.json", &appTyped, t)
 	UnmarshalFile("application.json", &appInput, t)
-	appNode := ApplicationResourceBuilder(&appTyped).BuildNode()
+	appNode := ApplicationResourceBuilder(&appTyped, &unstructured.Unstructured{}).BuildNode()
 	appNode.ResourceString = "applications"
 	unstructuredInput := unstructured.Unstructured{
 		Object: map[string]interface{}{
@@ -47,7 +47,7 @@ func TestTransformRoutine(t *testing.T) {
 	UnmarshalFile("klusterletaddonconfig.json", &addonInput, t)
 	UnmarshalFile("klusterletaddonconfig.json", &addonTyped, t)
 
-	addonNode := KlusterletAddonConfigResourceBuilder(&addonTyped).BuildNode()
+	addonNode := KlusterletAddonConfigResourceBuilder(&addonTyped, &unstructured.Unstructured{}).BuildNode()
 	addonNode.ResourceString = "klusterletaddonconfigs"
 
 	unstructGatekeeperConstraint := unstructured.Unstructured{

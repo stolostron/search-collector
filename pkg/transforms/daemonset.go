@@ -12,6 +12,7 @@ package transforms
 
 import (
 	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // DaemonSetResource ...
@@ -20,7 +21,7 @@ type DaemonSetResource struct {
 }
 
 // DaemonSetResourceBuilder ...
-func DaemonSetResourceBuilder(d *v1.DaemonSet) *DaemonSetResource {
+func DaemonSetResourceBuilder(d *v1.DaemonSet, r *unstructured.Unstructured) *DaemonSetResource {
 	node := transformCommon(d)         // Start off with the common properties
 	apiGroupVersion(d.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
@@ -30,6 +31,7 @@ func DaemonSetResourceBuilder(d *v1.DaemonSet) *DaemonSetResource {
 	node.Properties["ready"] = int64(d.Status.NumberReady)
 	node.Properties["updated"] = int64(d.Status.UpdatedNumberScheduled)
 
+	node = applyDefaultTransformConfig(node, r)
 	return &DaemonSetResource{node: node}
 }
 

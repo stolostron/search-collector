@@ -22,7 +22,7 @@ import (
 func TestTransformPolicy(t *testing.T) {
 	var p policy.Policy
 	UnmarshalFile("policy.json", &p, t)
-	node := PolicyResourceBuilder(&p).BuildNode()
+	node := PolicyResourceBuilder(&p, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in policy - the common test will test the other bits
 	AssertEqual("remediationAction", node.Properties["remediationAction"], "enforce", t)
@@ -127,7 +127,7 @@ func TestBooleanFieldsStoredAsStrings_Policy(t *testing.T) {
 	t.Run("disabled=false (default)", func(t *testing.T) {
 		p := policy.Policy{}
 		p.Spec.Disabled = false
-		node := PolicyResourceBuilder(&p).BuildNode()
+		node := PolicyResourceBuilder(&p, &unstructured.Unstructured{}).BuildNode()
 		val, ok := node.Properties["disabled"].(string)
 		if !ok {
 			t.Fatalf("disabled should be a string, got %T: %v", node.Properties["disabled"], node.Properties["disabled"])
@@ -138,7 +138,7 @@ func TestBooleanFieldsStoredAsStrings_Policy(t *testing.T) {
 	t.Run("disabled=true", func(t *testing.T) {
 		p := policy.Policy{}
 		p.Spec.Disabled = true
-		node := PolicyResourceBuilder(&p).BuildNode()
+		node := PolicyResourceBuilder(&p, &unstructured.Unstructured{}).BuildNode()
 		val, ok := node.Properties["disabled"].(string)
 		if !ok {
 			t.Fatalf("disabled should be a string, got %T: %v", node.Properties["disabled"], node.Properties["disabled"])

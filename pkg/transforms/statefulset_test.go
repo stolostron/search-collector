@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	v1 "k8s.io/api/apps/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformStatefulSet(t *testing.T) {
 	var s v1.StatefulSet
 	UnmarshalFile("statefulset.json", &s, t)
-	node := StatefulSetResourceBuilder(&s).BuildNode()
+	node := StatefulSetResourceBuilder(&s, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in stateful set - the common test will test the other bits
 	AssertEqual("current", node.Properties["current"], int64(1), t)
@@ -34,7 +35,7 @@ func TestStatefulSetBuildEdges(t *testing.T) {
 	// Build edges from mock resource statefulset.json
 	var ss v1.StatefulSet
 	UnmarshalFile("statefulset.json", &ss, t)
-	edges := StatefulSetResourceBuilder(&ss).BuildEdges(nodeStore)
+	edges := StatefulSetResourceBuilder(&ss, &unstructured.Unstructured{}).BuildEdges(nodeStore)
 
 	// Validate results
 	AssertEqual("StatefulSet has no edges:", len(edges), 0, t)

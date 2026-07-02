@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	app "sigs.k8s.io/application/api/v1beta1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // ApplicationResource ...
@@ -23,12 +24,14 @@ type ApplicationResource struct {
 }
 
 // ApplicationResourceBuilder ...
-func ApplicationResourceBuilder(a *app.Application) *ApplicationResource {
+func ApplicationResourceBuilder(a *app.Application, r *unstructured.Unstructured,
+	additionalColumns ...ExtractProperty) *ApplicationResource {
 	node := transformCommon(a)
 	apiGroupVersion(a.TypeMeta, &node) // add kind, apigroup and version
 	// Extract the properties specific to this type
 	node.Properties["dashboard"] = a.GetAnnotations()["apps.open-cluster-management.io/dashboard"]
 
+	node = applyDefaultTransformConfig(node, r, additionalColumns...)
 	return &ApplicationResource{node: node, annotations: a.GetAnnotations()}
 }
 

@@ -11,6 +11,7 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	v1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformSubscription(t *testing.T) {
 	var s v1.Subscription
 	UnmarshalFile("subscription.json", &s, t)
-	node := SubscriptionResourceBuilder(&s).BuildNode()
+	node := SubscriptionResourceBuilder(&s, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in subscription - the common test will test the other bits
 	AssertEqual("kind", node.Properties["kind"], "Subscription", t)
@@ -31,7 +32,7 @@ func TestTransformSubscription(t *testing.T) {
 func TestTransformSubscriptionWithTimeWindow(t *testing.T) {
 	var s v1.Subscription
 	UnmarshalFile("subscription2.json", &s, t)
-	node := SubscriptionResourceBuilder(&s).BuildNode()
+	node := SubscriptionResourceBuilder(&s, &unstructured.Unstructured{}).BuildNode()
 
 	// Test optional fields that exist in subscription - the common test will test the other bits
 	AssertEqual("timeWindow", node.Properties["timeWindow"], "active", t)
@@ -43,7 +44,7 @@ func TestTransformSubscriptionWithTimeWindow(t *testing.T) {
 func TestTransformSubscriptionWithLocalPlacement(t *testing.T) {
 	var s v1.Subscription
 	UnmarshalFile("subscription3.json", &s, t)
-	node := SubscriptionResourceBuilder(&s).BuildNode()
+	node := SubscriptionResourceBuilder(&s, &unstructured.Unstructured{}).BuildNode()
 
 	// Test optional fields that exist in subscription - the common test will test the other bits
 	AssertEqual("localPlacement", node.Properties["localPlacement"], "true", t)

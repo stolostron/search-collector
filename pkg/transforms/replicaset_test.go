@@ -11,6 +11,7 @@ irrespective of what has been deposited with the U.S. Copyright Office.
 package transforms
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"testing"
 
 	v1 "k8s.io/api/apps/v1"
@@ -19,7 +20,7 @@ import (
 func TestTransformReplicaSet(t *testing.T) {
 	var r v1.ReplicaSet
 	UnmarshalFile("replicaset.json", &r, t)
-	node := ReplicaSetResourceBuilder(&r).BuildNode()
+	node := ReplicaSetResourceBuilder(&r, &unstructured.Unstructured{}).BuildNode()
 
 	// Test only the fields that exist in replica set - the common test will test the other bits
 	AssertEqual("current", node.Properties["current"], int64(1), t)
@@ -34,7 +35,7 @@ func TestReplicaSetBuildEdges(t *testing.T) {
 	// Build edges from mock resource replicaset.json
 	var rs v1.ReplicaSet
 	UnmarshalFile("replicaset.json", &rs, t)
-	edges := ReplicaSetResourceBuilder(&rs).BuildEdges(nodeStore)
+	edges := ReplicaSetResourceBuilder(&rs, &unstructured.Unstructured{}).BuildEdges(nodeStore)
 
 	// Validate results
 	AssertEqual("ReplicaSet has no edges:", len(edges), 0, t)
