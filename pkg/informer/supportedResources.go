@@ -142,6 +142,18 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 				continue // Skip the resource before starting the informer
 			}
 
+			// Skip resources excluded via CollectorConfig exclude rules.
+			// Normalize the group to empty string for core-group resources ("v1" → "")
+			// to match the CollectorConfig apiGroups convention.
+			apiGroup := group
+			if len(groupVersion) == 1 {
+				apiGroup = ""
+			}
+			if tr.IsResourceExcluded(apiGroup, apiResource.Kind) {
+				klog.V(3).Infof("Skipping excluded resource [group: '%s' kind: %s]. Matched CollectorConfig exclude rule.", apiGroup, apiResource.Kind)
+				continue
+			}
+
 			// add non-namespaced resource to NonNSResourceMap
 			if !apiResource.Namespaced {
 				tr.NonNSResMapMutex.Lock()
