@@ -150,7 +150,8 @@ func SupportedResources(discoveryClient discovery.DiscoveryClient) (map[schema.G
 				apiGroup = ""
 			}
 			if tr.IsResourceExcluded(apiGroup, apiResource.Kind) {
-				klog.V(3).Infof("Skipping excluded resource [group: '%s' kind: %s]. Matched CollectorConfig exclude rule.", apiGroup, apiResource.Kind)
+				klog.V(3).Infof("Skipping excluded resource [group: '%s' kind: %s]."+
+					" Matched CollectorConfig exclude rule.", apiGroup, apiResource.Kind)
 				continue
 			}
 
