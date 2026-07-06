@@ -237,59 +237,53 @@ func CertPolicyResourceBuilder(c *unstructured.Unstructured, additionalColumns .
 	node := transformCommon(c) // Start off with the common properties
 
 	detailMap, found, err := unstructured.NestedMap(c.Object, "status", "compliancyDetails")
-	if len(detailMap) == 0 || !found || err != nil {
-		node = getPolicyCommonProperties(c, node)
-		node = applyDefaultTransformConfig(node, c, additionalColumns...)
-		return &PolicyResource{node: node}
-	}
-
-	certList := []relatedObject{}
-	for namespace, item := range detailMap {
-		details, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		// this "list" is actually a map
-		nonCompCerts, found, err := unstructured.NestedMap(details, "nonCompliantCertificatesList")
-		if len(nonCompCerts) == 0 || !found || err != nil {
-			continue
-		}
-
-		for _, item := range nonCompCerts {
-			cert, ok := item.(map[string]any)
+	if len(detailMap) > 0 && found && err == nil {
+		certList := []relatedObject{}
+		for namespace, item := range detailMap {
+			details, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
 
-			name, ok := cert["secretName"].(string)
-			if !ok {
+			// this "list" is actually a map
+			nonCompCerts, found, err := unstructured.NestedMap(details, "nonCompliantCertificatesList")
+			if len(nonCompCerts) == 0 || !found || err != nil {
 				continue
 			}
 
-			certList = append(certList, relatedObject{
-				Group:     "",
-				Version:   "v1",
-				Kind:      "Secret",
-				Namespace: namespace,
-				Name:      name,
-				EdgeType:  noncompliantEdge,
-			})
+			for _, item := range nonCompCerts {
+				cert, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+
+				name, ok := cert["secretName"].(string)
+				if !ok {
+					continue
+				}
+
+				certList = append(certList, relatedObject{
+					Group:     "",
+					Version:   "v1",
+					Kind:      "Secret",
+					Namespace: namespace,
+					Name:      name,
+					EdgeType:  noncompliantEdge,
+				})
+			}
 		}
+
+		// sorting is required to keep the list stable, because it is populated from a map
+		slices.SortFunc(certList, func(a, b relatedObject) int {
+			return strings.Compare(a.String(), b.String())
+		})
+
+		node.Metadata["relObjs"] = certList
 	}
-
-	// sorting is required to keep the list stable, because it is populated from a map
-	slices.SortFunc(certList, func(a, b relatedObject) int {
-		return strings.Compare(a.String(), b.String())
-	})
-
-	node.Metadata["relObjs"] = certList
 
 	node = getPolicyCommonProperties(c, node)
 	node = applyDefaultTransformConfig(node, c, additionalColumns...)
-	return &PolicyResource{
-		node: node,
-	}
+	return &PolicyResource{node: node}
 }
 
 // BuildNode construct the node for Policy Resources
