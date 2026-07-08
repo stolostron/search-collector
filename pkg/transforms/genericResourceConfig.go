@@ -12,6 +12,9 @@ type ExtractProperty struct {
 	matchLabel string // `json:"matchLabel,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
+	// DefaultValue is set on the node when the JSONPath returns no results (field absent or nil).
+	// Used to preserve backward-compatible defaults for optional pointer fields (e.g. spec.replicas).
+	DefaultValue interface{}
 }
 
 // ExtractEdge declares an edge relationship to extract from a resource.
@@ -181,16 +184,13 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		extractAnnotations: true,
 	},
 	// Deployment and its extensions alias — replicas fields.
-	// NOTE: spec.replicas is a *int32 pointer; when nil (scale-to-zero or unset), the field is
-	// absent in the unstructured object and the property will not appear in search results.
-	// Previously the builder defaulted desired=0 when nil. Reviewers: is omitting preferred,
-	// or should we add a DefaultValue capability to ExtractProperty in a follow-up?
+	// spec.replicas is *int32; defaults to 0 when nil to preserve backward-compatible behavior.
 	"Deployment.apps": {
 		properties: []ExtractProperty{
 			{Name: "available", JSONPath: `.status.availableReplicas`, DataType: DataTypeNumber},
 			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
 			{Name: "ready", JSONPath: `.status.readyReplicas`, DataType: DataTypeNumber},
-			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber, DefaultValue: int64(0)},
 		},
 	},
 	"Deployment.extensions": {
@@ -198,7 +198,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "available", JSONPath: `.status.availableReplicas`, DataType: DataTypeNumber},
 			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
 			{Name: "ready", JSONPath: `.status.readyReplicas`, DataType: DataTypeNumber},
-			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber, DefaultValue: int64(0)},
 		},
 	},
 	"DaemonSet.apps": {
@@ -228,42 +228,43 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
 		},
 	},
-	"Job": {
+	"Job.batch": {
 		// active + failed were already here; adding successful, completions, parallelism.
-		// NOTE: spec.completions and spec.parallelism are *int32 pointers; absent when nil.
+		// spec.completions and spec.parallelism are *int32; default to 0 for backward compatibility.
 		// Also fixes a pre-existing bug where parallelism was checked against Completions.
+		// Note: key is "Job.batch" (not "Job") because batch is not the core group.
 		properties: []ExtractProperty{
-			{Name: "active", JSONPath: `.status.active`, DataType: DataTypeNumber},
-			{Name: "failed", JSONPath: `.status.failed`, DataType: DataTypeNumber},
-			{Name: "successful", JSONPath: `.status.succeeded`, DataType: DataTypeNumber},
-			{Name: "completions", JSONPath: `.spec.completions`, DataType: DataTypeNumber},
-			{Name: "parallelism", JSONPath: `.spec.parallelism`, DataType: DataTypeNumber},
+			{Name: "active", JSONPath: `.status.active`, DataType: DataTypeNumber, DefaultValue: int64(0)},
+			{Name: "failed", JSONPath: `.status.failed`, DataType: DataTypeNumber, DefaultValue: int64(0)},
+			{Name: "successful", JSONPath: `.status.succeeded`, DataType: DataTypeNumber, DefaultValue: int64(0)},
+			{Name: "completions", JSONPath: `.spec.completions`, DataType: DataTypeNumber, DefaultValue: int64(0)},
+			{Name: "parallelism", JSONPath: `.spec.parallelism`, DataType: DataTypeNumber, DefaultValue: int64(0)},
 		},
 	},
-	// PlacementRule — spec.clusterReplicas is *int32; absent when nil (same note as Deployment).
+	// PlacementRule — spec.clusterReplicas is *int32; omitted when nil (old builder also omitted it).
 	"PlacementRule.apps.open-cluster-management.io": {
 		properties: []ExtractProperty{
 			{Name: "replicas", JSONPath: `.spec.clusterReplicas`, DataType: DataTypeNumber},
 		},
 	},
-	// ReplicaSet — spec.replicas is *int32; absent when nil (same note as Deployment).
+	// ReplicaSet — spec.replicas is *int32; defaults to 0 for backward compatibility.
 	"ReplicaSet.apps": {
 		properties: []ExtractProperty{
 			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
-			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber, DefaultValue: int64(0)},
 		},
 	},
 	"ReplicaSet.extensions": {
 		properties: []ExtractProperty{
 			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
-			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber, DefaultValue: int64(0)},
 		},
 	},
-	// StatefulSet — spec.replicas is *int32; absent when nil (same note as Deployment).
+	// StatefulSet — spec.replicas is *int32; defaults to 0 for backward compatibility.
 	"StatefulSet.apps": {
 		properties: []ExtractProperty{
 			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
-			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber, DefaultValue: int64(0)},
 		},
 	},
 	"MigrationPolicy.migrations.kubevirt.io": {

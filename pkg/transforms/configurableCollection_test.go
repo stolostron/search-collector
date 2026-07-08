@@ -1261,9 +1261,18 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithFieldsAndKind(t
 	assert.True(t, deployConfig.extractConditions, "extractConditions should be true")
 	// defaultTransformConfig now includes 4 base properties for Deployment.apps;
 	// the CollectorConfig adds 1 custom field for a total of 5.
-	assert.Equal(t, 5, len(deployConfig.properties), "Should have 4 default + 1 custom field")
-	assert.Equal(t, "replicas", deployConfig.properties[4].Name)
-	assert.Equal(t, DataTypeNumber, deployConfig.properties[4].DataType)
+	// Check the custom field is present (position-independent: defaultTransformConfig may grow)
+	var replicasProp *ExtractProperty
+	for i := range deployConfig.properties {
+		if deployConfig.properties[i].Name == "replicas" {
+			replicasProp = &deployConfig.properties[i]
+			break
+		}
+	}
+	assert.NotNil(t, replicasProp, "custom replicas field must be present")
+	if replicasProp != nil {
+		assert.Equal(t, DataTypeNumber, replicasProp.DataType)
+	}
 }
 
 func TestLoadAndMergeConfigurableCollection_CollectConditionsPreservesDefaults(t *testing.T) {
@@ -3024,9 +3033,18 @@ func TestLoadAndMergeConfigurableCollection_CollectAnnotationsWithFieldsAndKind(
 	assert.True(t, deployConfig.extractAnnotations, "extractAnnotations should be true")
 	// defaultTransformConfig now includes 4 base properties for Deployment.apps;
 	// the CollectorConfig adds 1 custom field for a total of 5.
-	assert.Equal(t, 5, len(deployConfig.properties), "Should have 4 default + 1 custom field")
-	assert.Equal(t, "replicas", deployConfig.properties[4].Name)
-	assert.Equal(t, DataTypeNumber, deployConfig.properties[4].DataType)
+	// Check the custom field is present (position-independent: defaultTransformConfig may grow)
+	var replicasProp *ExtractProperty
+	for i := range deployConfig.properties {
+		if deployConfig.properties[i].Name == "replicas" {
+			replicasProp = &deployConfig.properties[i]
+			break
+		}
+	}
+	assert.NotNil(t, replicasProp, "custom replicas field must be present")
+	if replicasProp != nil {
+		assert.Equal(t, DataTypeNumber, replicasProp.DataType)
+	}
 }
 
 func TestLoadAndMergeConfigurableCollection_CollectAnnotationsPreservesDefaults(t *testing.T) {
@@ -3165,7 +3183,16 @@ func TestLoadAndMergeConfigurableCollection_CollectAnnotationsOnly(t *testing.T)
 	assert.True(t, exists, "Deployment.apps config should exist — collectAnnotations-only rule must not be skipped")
 	assert.True(t, deployConfig.extractAnnotations, "extractAnnotations should be true")
 	// defaultTransformConfig includes 4 base properties for Deployment.apps; no additional custom fields here.
-	assert.Equal(t, 4, len(deployConfig.properties), "Should have 4 default fields, no custom fields")
+	// No custom fields added; only the base properties from defaultTransformConfig are present.
+	// We check by name rather than exact count so this test doesn't break if defaultTransformConfig grows.
+	customFields := 0
+	for _, p := range deployConfig.properties {
+		if p.Name == "available" || p.Name == "current" || p.Name == "ready" || p.Name == "desired" {
+			continue
+		}
+		customFields++
+	}
+	assert.Equal(t, 0, customFields, "Should have no custom fields beyond the base defaults")
 	assert.False(t, deployConfig.extractConditions, "extractConditions should be false")
 }
 

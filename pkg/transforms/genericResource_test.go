@@ -1069,6 +1069,42 @@ func TestDeployment_PropertiesFromConfig(t *testing.T) {
 	assert.Equal(t, int64(3), node.Properties["desired"])
 }
 
+func TestDeployment_DesiredDefaultsToZeroWhenReplicasAbsent(t *testing.T) {
+	// spec.replicas is *int32; when absent (e.g. managed by HPA), DefaultValue=0 preserves
+	// backward-compatible behavior so downstream consumers always receive a numeric value.
+	r := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"status": map[string]interface{}{
+			"availableReplicas": int64(1),
+			"replicas":          int64(1),
+			"readyReplicas":     int64(1),
+		},
+		// spec.replicas intentionally absent (nil pointer in Go API)
+	}}
+	node := GenericResourceBuilder(r).BuildNode()
+	assert.Equal(t, int64(0), node.Properties["desired"],
+		"desired must default to 0 when spec.replicas is absent")
+	assert.Equal(t, int64(1), node.Properties["available"],
+		"non-pointer status fields must still be extracted normally")
+}
+
+func TestJob_NumericFieldsDefaultToZeroWhenAbsent(t *testing.T) {
+	// spec.completions and spec.parallelism are *int32; status counts may be absent
+	// before any pods run. All five fields must default to 0.
+	r := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "batch/v1",
+		"kind":       "Job",
+		// status and spec intentionally empty — all pointer/absent fields
+	}}
+	node := GenericResourceBuilder(r).BuildNode()
+	assert.Equal(t, int64(0), node.Properties["active"], "active must default to 0")
+	assert.Equal(t, int64(0), node.Properties["failed"], "failed must default to 0")
+	assert.Equal(t, int64(0), node.Properties["successful"], "successful must default to 0")
+	assert.Equal(t, int64(0), node.Properties["completions"], "completions must default to 0")
+	assert.Equal(t, int64(0), node.Properties["parallelism"], "parallelism must default to 0")
+}
+
 // ---- DeploymentConfig (OpenShift) -------------------------------------
 
 func TestDeploymentConfig_CustomFieldFromCollectorConfig(t *testing.T) {

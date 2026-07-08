@@ -9,7 +9,7 @@ Here we document the properties collected for the kubernetes resources and the r
     - `kind (string), name (string), namespace (string), created (string), apigroup (string), apiversion (string), label ([]string)`
     - **Deprecated:** `selfLink`. It can be built from the properties above. We don't expect users to search for this.
 - Properties are defined in one of two ways:
-  1. **`genericResourceConfig.go`** — for kinds whose properties are simple JSONPath extractions with no custom logic. Add a `"Kind.apiGroup"` entry to `defaultTransformConfig`. The `GenericResourceBuilder` and `applyDefaultTransformConfig` handle the rest. No per-kind file is needed.
+  1. **`genericResourceConfig.go`** *(preferred)* — for kinds whose properties are simple JSONPath extractions with no custom logic. Add a `"Kind.apiGroup"` entry to `defaultTransformConfig`. The `GenericResourceBuilder` and `applyDefaultTransformConfig` handle the rest, including optional `DefaultValue` fallbacks for pointer fields. No per-kind file is needed.
   2. **Per-kind file** (e.g. `pod.go`, `argoapplication.go`) — required when a kind needs `BuildEdges()` logic, computed properties (formatted strings, array lengths, conditional paths), or other handling that cannot be expressed as a JSONPath rule. The file implements `BuildNode()` and `BuildEdges()`.
 - Our goal is to match the properties displayed from `oc get <resource> -o wide`.
 
