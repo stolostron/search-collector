@@ -5,16 +5,11 @@ package transforms
 import (
 	"testing"
 
-	ocpapp "github.com/openshift/api/apps/v1"
 	gvrpolicy "github.com/stolostron/governance-policy-propagator/api/v1"
 	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	appDeployable "github.com/stolostron/multicloud-operators-deployable/pkg/apis/apps/v1"
-	acmrule "github.com/stolostron/multicloud-operators-placementrule/pkg/apis/apps/v1"
 	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stretchr/testify/assert"
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -823,14 +818,13 @@ func TestDeployment_CustomFieldFromCollectorConfig(t *testing.T) {
 		Name: "strategy", JSONPath: `{.spec.strategy.type}`,
 	})()
 
-	d := appsv1.Deployment{TypeMeta: metav1.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"}}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "Deployment",
 		"spec":       map[string]interface{}{"strategy": map[string]interface{}{"type": "RollingUpdate"}},
 	}}
 
-	node := DeploymentResourceBuilder(&d, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, "RollingUpdate", node.Properties["strategy"],
 		"custom field from CollectorConfig must be extracted by DeploymentResourceBuilder")
 }
@@ -838,7 +832,6 @@ func TestDeployment_CustomFieldFromCollectorConfig(t *testing.T) {
 func TestDeployment_CollectConditions(t *testing.T) {
 	defer setupConditionsConfig(t, "Deployment.apps")()
 
-	d := appsv1.Deployment{TypeMeta: metav1.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"}}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "Deployment",
@@ -849,7 +842,7 @@ func TestDeployment_CollectConditions(t *testing.T) {
 		},
 	}}
 
-	node := DeploymentResourceBuilder(&d, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.NotNil(t, node.Properties["condition"],
 		"collectConditions must produce a condition property in DeploymentResourceBuilder")
 }
@@ -861,7 +854,6 @@ func TestDaemonSet_CustomFieldFromCollectorConfig(t *testing.T) {
 		Name: "updateStrategy", JSONPath: `{.spec.updateStrategy.type}`,
 	})()
 
-	d := appsv1.DaemonSet{TypeMeta: metav1.TypeMeta{Kind: "DaemonSet", APIVersion: "apps/v1"}}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "DaemonSet",
@@ -870,7 +862,7 @@ func TestDaemonSet_CustomFieldFromCollectorConfig(t *testing.T) {
 		},
 	}}
 
-	node := DaemonSetResourceBuilder(&d, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, "OnDelete", node.Properties["updateStrategy"],
 		"custom field from CollectorConfig must be extracted by DaemonSetResourceBuilder")
 }
@@ -882,14 +874,13 @@ func TestStatefulSet_CustomFieldFromCollectorConfig(t *testing.T) {
 		Name: "serviceName", JSONPath: `{.spec.serviceName}`,
 	})()
 
-	s := appsv1.StatefulSet{TypeMeta: metav1.TypeMeta{Kind: "StatefulSet", APIVersion: "apps/v1"}}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "StatefulSet",
 		"spec":       map[string]interface{}{"serviceName": "my-service"},
 	}}
 
-	node := StatefulSetResourceBuilder(&s, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, "my-service", node.Properties["serviceName"],
 		"custom field from CollectorConfig must be extracted by StatefulSetResourceBuilder")
 }
@@ -901,14 +892,13 @@ func TestReplicaSet_CustomFieldFromCollectorConfig(t *testing.T) {
 		Name: "minReadySeconds", JSONPath: `{.spec.minReadySeconds}`,
 	})()
 
-	rs := appsv1.ReplicaSet{TypeMeta: metav1.TypeMeta{Kind: "ReplicaSet", APIVersion: "apps/v1"}}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "ReplicaSet",
 		"spec":       map[string]interface{}{"minReadySeconds": int64(10)},
 	}}
 
-	node := ReplicaSetResourceBuilder(&rs, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, int64(10), node.Properties["minReadySeconds"],
 		"custom field from CollectorConfig must be extracted by ReplicaSetResourceBuilder")
 }
@@ -920,14 +910,13 @@ func TestCronJob_CustomFieldFromCollectorConfig(t *testing.T) {
 		Name: "successfulJobsHistoryLimit", JSONPath: `{.spec.successfulJobsHistoryLimit}`,
 	})()
 
-	c := batchv1beta1.CronJob{TypeMeta: metav1.TypeMeta{Kind: "CronJob", APIVersion: "batch/v1beta1"}}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "batch/v1beta1",
 		"kind":       "CronJob",
 		"spec":       map[string]interface{}{"successfulJobsHistoryLimit": int64(5)},
 	}}
 
-	node := CronJobResourceBuilder(&c, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, int64(5), node.Properties["successfulJobsHistoryLimit"],
 		"custom field from CollectorConfig must be extracted by CronJobResourceBuilder")
 }
@@ -939,14 +928,13 @@ func TestPersistentVolume_CustomFieldFromCollectorConfig(t *testing.T) {
 		Name: "storageClassName", JSONPath: `{.spec.storageClassName}`,
 	})()
 
-	p := corev1.PersistentVolume{TypeMeta: metav1.TypeMeta{Kind: "PersistentVolume", APIVersion: "v1"}}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "v1",
 		"kind":       "PersistentVolume",
 		"spec":       map[string]interface{}{"storageClassName": "fast"},
 	}}
 
-	node := PersistentVolumeResourceBuilder(&p, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, "fast", node.Properties["storageClassName"],
 		"custom field from CollectorConfig must be extracted by PersistentVolumeResourceBuilder")
 }
@@ -988,7 +976,6 @@ func TestDeployment_WildcardGroupConditions(t *testing.T) {
 	}
 	defer func() { mergedTransformConfig = orig }()
 
-	d := appsv1.Deployment{TypeMeta: metav1.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"}}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "apps/v1",
 		"kind":       "Deployment",
@@ -999,7 +986,7 @@ func TestDeployment_WildcardGroupConditions(t *testing.T) {
 		},
 	}}
 
-	node := DeploymentResourceBuilder(&d, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.NotNil(t, node.Properties["condition"],
 		"wildcard *.apps collectConditions must produce condition property in Deployment")
 }
@@ -1063,19 +1050,19 @@ func TestKyvernoPolicy_CustomFieldFromCollectorConfig(t *testing.T) {
 
 // ---- Verify specific-kind properties still set correctly (regression) --
 
-func TestDeployment_SpecificPropertiesUnaffected(t *testing.T) {
-	var desired int32 = 3
-	d := appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{Kind: "Deployment", APIVersion: "apps/v1"},
-		Status: appsv1.DeploymentStatus{
-			AvailableReplicas: 2,
-			Replicas:          3,
-			ReadyReplicas:     2,
+func TestDeployment_PropertiesFromConfig(t *testing.T) {
+	// Verifies that Deployment properties are now extracted via genericResourceConfig.go
+	r := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"status": map[string]interface{}{
+			"availableReplicas": int64(2),
+			"replicas":          int64(3),
+			"readyReplicas":     int64(2),
 		},
-		Spec: appsv1.DeploymentSpec{Replicas: &desired},
-	}
-
-	node := DeploymentResourceBuilder(&d, &unstructured.Unstructured{}).BuildNode()
+		"spec": map[string]interface{}{"replicas": int64(3)},
+	}}
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, int64(2), node.Properties["available"])
 	assert.Equal(t, int64(3), node.Properties["current"])
 	assert.Equal(t, int64(2), node.Properties["ready"])
@@ -1089,16 +1076,13 @@ func TestDeploymentConfig_CustomFieldFromCollectorConfig(t *testing.T) {
 		Name: "strategy", JSONPath: `{.spec.strategy.type}`,
 	})()
 
-	d := ocpapp.DeploymentConfig{
-		TypeMeta: metav1.TypeMeta{Kind: "DeploymentConfig", APIVersion: "apps.openshift.io/v1"},
-	}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "apps.openshift.io/v1",
 		"kind":       "DeploymentConfig",
 		"spec":       map[string]interface{}{"strategy": map[string]interface{}{"type": "Recreate"}},
 	}}
 
-	node := DeploymentConfigResourceBuilder(&d, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, "Recreate", node.Properties["strategy"],
 		"custom field must be extracted by DeploymentConfigResourceBuilder")
 }
@@ -1247,11 +1231,6 @@ func TestPlacementRule_CustomFieldFromCollectorConfig(t *testing.T) {
 		"PlacementRule.apps.open-cluster-management.io",
 		ExtractProperty{Name: "clusterConditions", JSONPath: `{.spec.clusterConditions[0].type}`})()
 
-	p := acmrule.PlacementRule{
-		TypeMeta: metav1.TypeMeta{
-			Kind: "PlacementRule", APIVersion: "apps.open-cluster-management.io/v1",
-		},
-	}
 	r := &unstructured.Unstructured{Object: map[string]interface{}{
 		"apiVersion": "apps.open-cluster-management.io/v1",
 		"kind":       "PlacementRule",
@@ -1262,7 +1241,7 @@ func TestPlacementRule_CustomFieldFromCollectorConfig(t *testing.T) {
 		},
 	}}
 
-	node := PlacementRuleResourceBuilder(&p, r).BuildNode()
+	node := GenericResourceBuilder(r).BuildNode()
 	assert.Equal(t, "ManagedClusterConditionAvailable", node.Properties["clusterConditions"],
 		"custom field must be extracted by PlacementRuleResourceBuilder")
 }

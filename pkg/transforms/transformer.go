@@ -16,13 +16,9 @@ import (
 	"strings"
 	"sync"
 
-	ocpapp "github.com/openshift/api/apps/v1"
 	policy "github.com/stolostron/governance-policy-propagator/api/v1"
 	klusterletaddon "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	appDeployable "github.com/stolostron/multicloud-operators-deployable/pkg/apis/apps/v1"
-	rule "github.com/stolostron/multicloud-operators-placementrule/pkg/apis/apps/v1"
-	apps "k8s.io/api/apps/v1"
-	batch "k8s.io/api/batch/v1"
 	batchBeta "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -236,15 +232,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = CronJobResourceBuilder(&typedResource, event.Resource)
 
-		case [2]string{"DaemonSet", "extensions"},
-			[2]string{"DaemonSet", "apps"}:
-			typedResource := apps.DaemonSet{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = DaemonSetResourceBuilder(&typedResource, event.Resource)
+		// DaemonSet: all properties moved to genericResourceConfig.go; falls through to GenericResourceBuilder.
 
 		case [2]string{"Deployable", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := appDeployable.Deployable{}
@@ -255,25 +243,8 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = AppDeployableResourceBuilder(&typedResource, event.Resource, event.AdditionalPrinterColumns...)
 
-		case [2]string{"Deployment", "apps"},
-			[2]string{"Deployment", "extensions"}:
-			typedResource := apps.Deployment{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = DeploymentResourceBuilder(&typedResource, event.Resource)
-
-			// This is an ocp specific resource
-		case [2]string{"DeploymentConfig", "apps.openshift.io"}:
-			typedResource := ocpapp.DeploymentConfig{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = DeploymentConfigResourceBuilder(&typedResource, event.Resource)
+		// Deployment: all properties moved to genericResourceConfig.go; falls through to GenericResourceBuilder.
+		// DeploymentConfig: same.
 
 			// This is the application's HelmCR of kind HelmRelease.
 		case [2]string{"HelmRelease", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
@@ -294,14 +265,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = KlusterletAddonConfigResourceBuilder(&typedResource, event.Resource, event.AdditionalPrinterColumns...)
 
-		case [2]string{"Job", "batch"}:
-			typedResource := batch.Job{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = JobResourceBuilder(&typedResource, event.Resource)
+		// Job: all properties moved to genericResourceConfig.go; falls through to GenericResourceBuilder.
 
 		case [2]string{"Node", ""}:
 			typedResource := core.Node{}
@@ -339,14 +303,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = PlacementBindingResourceBuilder(&typedResource, event.Resource, event.AdditionalPrinterColumns...)
 
-		case [2]string{"PlacementRule", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
-			typedResource := rule.PlacementRule{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = PlacementRuleResourceBuilder(&typedResource, event.Resource, event.AdditionalPrinterColumns...)
+		// PlacementRule: all properties moved to genericResourceConfig.go; falls through to GenericResourceBuilder.
 
 		case [2]string{"Pod", ""}:
 			typedResource := core.Pod{}
@@ -376,15 +333,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 		case [2]string{"OperatorPolicy", POLICY_OPEN_CLUSTER_MANAGEMENT_IO}:
 			trans = OperatorPolicyResourceBuilder(event.Resource, event.AdditionalPrinterColumns...)
 
-		case [2]string{"ReplicaSet", "apps"},
-			[2]string{"ReplicaSet", "extensions"}:
-			typedResource := apps.ReplicaSet{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = ReplicaSetResourceBuilder(&typedResource, event.Resource)
+		// ReplicaSet: all properties moved to genericResourceConfig.go; falls through to GenericResourceBuilder.
 
 		case [2]string{"Service", ""}:
 			typedResource := core.Service{}
@@ -395,14 +344,7 @@ func TransformRoutine(input chan *Event, output chan NodeEvent) {
 			}
 			trans = ServiceResourceBuilder(&typedResource, event.Resource)
 
-		case [2]string{"StatefulSet", "apps"}:
-			typedResource := apps.StatefulSet{}
-			err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(event.Resource.UnstructuredContent(), &typedResource)
-			if err != nil {
-				panic(err) // Will be caught by handleRoutineExit
-			}
-			trans = StatefulSetResourceBuilder(&typedResource, event.Resource)
+		// StatefulSet: all properties moved to genericResourceConfig.go; falls through to GenericResourceBuilder.
 
 		case [2]string{"Subscription", APPS_OPEN_CLUSTER_MANAGEMENT_IO}:
 			typedResource := subscription.Subscription{}

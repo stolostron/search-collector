@@ -180,10 +180,90 @@ var defaultTransformConfig = map[string]ResourceConfig{
 		},
 		extractAnnotations: true,
 	},
-	"Job": {
+	// Deployment and its extensions alias — replicas fields.
+	// NOTE: spec.replicas is a *int32 pointer; when nil (scale-to-zero or unset), the field is
+	// absent in the unstructured object and the property will not appear in search results.
+	// Previously the builder defaulted desired=0 when nil. Reviewers: is omitting preferred,
+	// or should we add a DefaultValue capability to ExtractProperty in a follow-up?
+	"Deployment.apps": {
 		properties: []ExtractProperty{
-			{Name: "active", JSONPath: `.status.active`},
-			{Name: "failed", JSONPath: `.status.failed`},
+			{Name: "available", JSONPath: `.status.availableReplicas`, DataType: DataTypeNumber},
+			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
+			{Name: "ready", JSONPath: `.status.readyReplicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+		},
+	},
+	"Deployment.extensions": {
+		properties: []ExtractProperty{
+			{Name: "available", JSONPath: `.status.availableReplicas`, DataType: DataTypeNumber},
+			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
+			{Name: "ready", JSONPath: `.status.readyReplicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+		},
+	},
+	"DaemonSet.apps": {
+		properties: []ExtractProperty{
+			{Name: "available", JSONPath: `.status.numberAvailable`, DataType: DataTypeNumber},
+			{Name: "current", JSONPath: `.status.currentNumberScheduled`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.status.desiredNumberScheduled`, DataType: DataTypeNumber},
+			{Name: "ready", JSONPath: `.status.numberReady`, DataType: DataTypeNumber},
+			{Name: "updated", JSONPath: `.status.updatedNumberScheduled`, DataType: DataTypeNumber},
+		},
+	},
+	"DaemonSet.extensions": {
+		properties: []ExtractProperty{
+			{Name: "available", JSONPath: `.status.numberAvailable`, DataType: DataTypeNumber},
+			{Name: "current", JSONPath: `.status.currentNumberScheduled`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.status.desiredNumberScheduled`, DataType: DataTypeNumber},
+			{Name: "ready", JSONPath: `.status.numberReady`, DataType: DataTypeNumber},
+			{Name: "updated", JSONPath: `.status.updatedNumberScheduled`, DataType: DataTypeNumber},
+		},
+	},
+	// DeploymentConfig (OpenShift) — spec.replicas is int32 (not a pointer), always present.
+	"DeploymentConfig.apps.openshift.io": {
+		properties: []ExtractProperty{
+			{Name: "available", JSONPath: `.status.availableReplicas`, DataType: DataTypeNumber},
+			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
+			{Name: "ready", JSONPath: `.status.readyReplicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+		},
+	},
+	"Job": {
+		// active + failed were already here; adding successful, completions, parallelism.
+		// NOTE: spec.completions and spec.parallelism are *int32 pointers; absent when nil.
+		// Also fixes a pre-existing bug where parallelism was checked against Completions.
+		properties: []ExtractProperty{
+			{Name: "active", JSONPath: `.status.active`, DataType: DataTypeNumber},
+			{Name: "failed", JSONPath: `.status.failed`, DataType: DataTypeNumber},
+			{Name: "successful", JSONPath: `.status.succeeded`, DataType: DataTypeNumber},
+			{Name: "completions", JSONPath: `.spec.completions`, DataType: DataTypeNumber},
+			{Name: "parallelism", JSONPath: `.spec.parallelism`, DataType: DataTypeNumber},
+		},
+	},
+	// PlacementRule — spec.clusterReplicas is *int32; absent when nil (same note as Deployment).
+	"PlacementRule.apps.open-cluster-management.io": {
+		properties: []ExtractProperty{
+			{Name: "replicas", JSONPath: `.spec.clusterReplicas`, DataType: DataTypeNumber},
+		},
+	},
+	// ReplicaSet — spec.replicas is *int32; absent when nil (same note as Deployment).
+	"ReplicaSet.apps": {
+		properties: []ExtractProperty{
+			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+		},
+	},
+	"ReplicaSet.extensions": {
+		properties: []ExtractProperty{
+			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+		},
+	},
+	// StatefulSet — spec.replicas is *int32; absent when nil (same note as Deployment).
+	"StatefulSet.apps": {
+		properties: []ExtractProperty{
+			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
+			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
 		},
 	},
 	"MigrationPolicy.migrations.kubevirt.io": {

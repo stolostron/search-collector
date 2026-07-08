@@ -1259,9 +1259,11 @@ func TestLoadAndMergeConfigurableCollection_CollectConditionsWithFieldsAndKind(t
 	deployConfig, exists := mergedTransformConfig["Deployment.apps"]
 	assert.True(t, exists, "Deployment.apps config should exist")
 	assert.True(t, deployConfig.extractConditions, "extractConditions should be true")
-	assert.Equal(t, 1, len(deployConfig.properties), "Should have 1 custom field")
-	assert.Equal(t, "replicas", deployConfig.properties[0].Name)
-	assert.Equal(t, DataTypeNumber, deployConfig.properties[0].DataType)
+	// defaultTransformConfig now includes 4 base properties for Deployment.apps;
+	// the CollectorConfig adds 1 custom field for a total of 5.
+	assert.Equal(t, 5, len(deployConfig.properties), "Should have 4 default + 1 custom field")
+	assert.Equal(t, "replicas", deployConfig.properties[4].Name)
+	assert.Equal(t, DataTypeNumber, deployConfig.properties[4].DataType)
 }
 
 func TestLoadAndMergeConfigurableCollection_CollectConditionsPreservesDefaults(t *testing.T) {
@@ -3020,9 +3022,11 @@ func TestLoadAndMergeConfigurableCollection_CollectAnnotationsWithFieldsAndKind(
 	deployConfig, exists := mergedTransformConfig["Deployment.apps"]
 	assert.True(t, exists, "Deployment.apps config should exist")
 	assert.True(t, deployConfig.extractAnnotations, "extractAnnotations should be true")
-	assert.Equal(t, 1, len(deployConfig.properties), "Should have 1 custom field")
-	assert.Equal(t, "replicas", deployConfig.properties[0].Name)
-	assert.Equal(t, DataTypeNumber, deployConfig.properties[0].DataType)
+	// defaultTransformConfig now includes 4 base properties for Deployment.apps;
+	// the CollectorConfig adds 1 custom field for a total of 5.
+	assert.Equal(t, 5, len(deployConfig.properties), "Should have 4 default + 1 custom field")
+	assert.Equal(t, "replicas", deployConfig.properties[4].Name)
+	assert.Equal(t, DataTypeNumber, deployConfig.properties[4].DataType)
 }
 
 func TestLoadAndMergeConfigurableCollection_CollectAnnotationsPreservesDefaults(t *testing.T) {
@@ -3160,7 +3164,8 @@ func TestLoadAndMergeConfigurableCollection_CollectAnnotationsOnly(t *testing.T)
 	deployConfig, exists := mergedTransformConfig["Deployment.apps"]
 	assert.True(t, exists, "Deployment.apps config should exist — collectAnnotations-only rule must not be skipped")
 	assert.True(t, deployConfig.extractAnnotations, "extractAnnotations should be true")
-	assert.Empty(t, deployConfig.properties, "Should have no custom fields")
+	// defaultTransformConfig includes 4 base properties for Deployment.apps; no additional custom fields here.
+	assert.Equal(t, 4, len(deployConfig.properties), "Should have 4 default fields, no custom fields")
 	assert.False(t, deployConfig.extractConditions, "extractConditions should be false")
 }
 
