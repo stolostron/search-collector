@@ -1105,110 +1105,83 @@ func TestJob_NumericFieldsDefaultToZeroWhenAbsent(t *testing.T) {
 	assert.Equal(t, int64(0), node.Properties["parallelism"], "parallelism must default to 0")
 }
 
-// ---- Fixture-backed tests for genericResourceConfig.go property extraction ----
-//
-// These load real resource fixtures from test-data/ and verify that every property
-// declared for the kind in genericResourceConfig.go is correctly populated on the
-// resulting node.
+// Test_genericResourceFromConfigWorkloadKinds loads real resource fixtures from
+// test-data/ and verifies that every property declared for the kind in
+// genericResourceConfig.go is correctly populated on the resulting node.
+func Test_genericResourceFromConfigWorkloadKinds(t *testing.T) {
+	cases := []struct {
+		fixture string
+		kind    string
+		name    string
+		props   map[string]interface{}
+	}{
+		{
+			fixture: "deployment.json",
+			kind:    "Deployment",
+			name:    "fake-deployment",
+			props: map[string]interface{}{
+				"available": int64(1), "current": int64(1), "ready": int64(1), "desired": int64(1),
+			},
+		},
+		{
+			fixture: "daemonset.json",
+			kind:    "DaemonSet",
+			name:    "fake",
+			props: map[string]interface{}{
+				"available": int64(1), "current": int64(1), "desired": int64(1),
+				"ready": int64(1), "updated": int64(1),
+			},
+		},
+		{
+			fixture: "statefulset.json",
+			kind:    "StatefulSet",
+			name:    "release-fake-set-foo",
+			props:   map[string]interface{}{"current": int64(1), "desired": int64(1)},
+		},
+		{
+			fixture: "replicaset.json",
+			kind:    "ReplicaSet",
+			name:    "fake-replicaset",
+			props:   map[string]interface{}{"current": int64(1), "desired": int64(1)},
+		},
+		{
+			fixture: "job.json",
+			kind:    "Job",
+			name:    "fake-job",
+			props: map[string]interface{}{
+				"active": int64(1), "failed": int64(1), "successful": int64(1),
+				"completions": int64(1), "parallelism": int64(1),
+			},
+		},
+		{
+			fixture: "placementrule2.json",
+			kind:    "PlacementRule",
+			name:    "test-placementrule-2",
+			props:   map[string]interface{}{"replicas": int64(5)},
+		},
+		{
+			fixture: "deploymentconfig.json",
+			kind:    "DeploymentConfig",
+			name:    "mortgagedc-deploy",
+			props: map[string]interface{}{
+				"available": int64(1), "current": int64(1), "ready": int64(1), "desired": int64(1),
+			},
+		},
+	}
 
-func Test_genericResourceFromConfigDeployment(t *testing.T) {
-	var r unstructured.Unstructured
-	UnmarshalFile("deployment.json", &r, t)
-	node := GenericResourceBuilder(&r).BuildNode()
+	for _, c := range cases {
+		t.Run(c.kind, func(t *testing.T) {
+			var r unstructured.Unstructured
+			UnmarshalFile(c.fixture, &r, t)
+			node := GenericResourceBuilder(&r).BuildNode()
 
-	AssertEqual("name", node.Properties["name"], "fake-deployment", t)
-	AssertEqual("kind", node.Properties["kind"], "Deployment", t)
-
-	// Verify properties defined in "Deployment.apps" in genericResourceConfig.go
-	AssertEqual("available", node.Properties["available"], int64(1), t)
-	AssertEqual("current", node.Properties["current"], int64(1), t)
-	AssertEqual("ready", node.Properties["ready"], int64(1), t)
-	AssertEqual("desired", node.Properties["desired"], int64(1), t)
-}
-
-func Test_genericResourceFromConfigDaemonSet(t *testing.T) {
-	var r unstructured.Unstructured
-	UnmarshalFile("daemonset.json", &r, t)
-	node := GenericResourceBuilder(&r).BuildNode()
-
-	AssertEqual("name", node.Properties["name"], "fake", t)
-	AssertEqual("kind", node.Properties["kind"], "DaemonSet", t)
-
-	// Verify properties defined in "DaemonSet.apps" in genericResourceConfig.go
-	AssertEqual("available", node.Properties["available"], int64(1), t)
-	AssertEqual("current", node.Properties["current"], int64(1), t)
-	AssertEqual("desired", node.Properties["desired"], int64(1), t)
-	AssertEqual("ready", node.Properties["ready"], int64(1), t)
-	AssertEqual("updated", node.Properties["updated"], int64(1), t)
-}
-
-func Test_genericResourceFromConfigStatefulSet(t *testing.T) {
-	var r unstructured.Unstructured
-	UnmarshalFile("statefulset.json", &r, t)
-	node := GenericResourceBuilder(&r).BuildNode()
-
-	AssertEqual("name", node.Properties["name"], "release-fake-set-foo", t)
-	AssertEqual("kind", node.Properties["kind"], "StatefulSet", t)
-
-	// Verify properties defined in "StatefulSet.apps" in genericResourceConfig.go
-	AssertEqual("current", node.Properties["current"], int64(1), t)
-	AssertEqual("desired", node.Properties["desired"], int64(1), t)
-}
-
-func Test_genericResourceFromConfigReplicaSet(t *testing.T) {
-	var r unstructured.Unstructured
-	UnmarshalFile("replicaset.json", &r, t)
-	node := GenericResourceBuilder(&r).BuildNode()
-
-	AssertEqual("name", node.Properties["name"], "fake-replicaset", t)
-	AssertEqual("kind", node.Properties["kind"], "ReplicaSet", t)
-
-	// Verify properties defined in "ReplicaSet.apps" in genericResourceConfig.go
-	AssertEqual("current", node.Properties["current"], int64(1), t)
-	AssertEqual("desired", node.Properties["desired"], int64(1), t)
-}
-
-func Test_genericResourceFromConfigJob(t *testing.T) {
-	var r unstructured.Unstructured
-	UnmarshalFile("job.json", &r, t)
-	node := GenericResourceBuilder(&r).BuildNode()
-
-	AssertEqual("name", node.Properties["name"], "fake-job", t)
-	AssertEqual("kind", node.Properties["kind"], "Job", t)
-
-	// Verify properties defined in "Job.batch" in genericResourceConfig.go
-	AssertEqual("active", node.Properties["active"], int64(1), t)
-	AssertEqual("failed", node.Properties["failed"], int64(1), t)
-	AssertEqual("successful", node.Properties["successful"], int64(1), t)
-	AssertEqual("completions", node.Properties["completions"], int64(1), t)
-	AssertEqual("parallelism", node.Properties["parallelism"], int64(1), t)
-}
-
-func Test_genericResourceFromConfigPlacementRule(t *testing.T) {
-	var r unstructured.Unstructured
-	UnmarshalFile("placementrule2.json", &r, t)
-	node := GenericResourceBuilder(&r).BuildNode()
-
-	AssertEqual("name", node.Properties["name"], "test-placementrule-2", t)
-	AssertEqual("kind", node.Properties["kind"], "PlacementRule", t)
-
-	// Verify property defined in "PlacementRule.apps.open-cluster-management.io" in genericResourceConfig.go
-	AssertEqual("replicas", node.Properties["replicas"], int64(5), t)
-}
-
-func Test_genericResourceFromConfigDeploymentConfig(t *testing.T) {
-	var r unstructured.Unstructured
-	UnmarshalFile("deploymentconfig.json", &r, t)
-	node := GenericResourceBuilder(&r).BuildNode()
-
-	AssertEqual("name", node.Properties["name"], "mortgagedc-deploy", t)
-	AssertEqual("kind", node.Properties["kind"], "DeploymentConfig", t)
-
-	// Verify properties defined in "DeploymentConfig.apps.openshift.io" in genericResourceConfig.go
-	AssertEqual("available", node.Properties["available"], int64(1), t)
-	AssertEqual("current", node.Properties["current"], int64(1), t)
-	AssertEqual("ready", node.Properties["ready"], int64(1), t)
-	AssertEqual("desired", node.Properties["desired"], int64(1), t)
+			AssertEqual("name", node.Properties["name"], c.name, t)
+			AssertEqual("kind", node.Properties["kind"], c.kind, t)
+			for propName, expected := range c.props {
+				AssertEqual(propName, node.Properties[propName], expected, t)
+			}
+		})
+	}
 }
 
 // ---- DeploymentConfig (OpenShift) -------------------------------------
