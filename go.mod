@@ -3,7 +3,7 @@
 
 module github.com/stolostron/search-collector
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/golang/glog v1.2.5
