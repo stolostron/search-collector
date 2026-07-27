@@ -158,21 +158,19 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 		hasCollectAnnotations := rule.CollectAnnotations != nil && *rule.CollectAnnotations
 		hasCollectPrinterColumns := rule.CollectAdditionalPrinterColumnsPriority != nil
 
-		// Only process rules that have actionable configuration — check BEFORE unmerging
-		// any prior exclude, so a malformed include rule does not silently cancel an exclude.
-		if !hasFields && !hasCollectConditions && !hasCollectPrinterColumns && !hasCollectAnnotations {
-			msg := "Rule skipped: include action requires at least one field, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority"
-			klog.Warning("Skipping collection rule. Include action without fields, collectConditions, collectAnnotations, or collectAdditionalPrinterColumnsPriority specified.")
-			warnings = append(warnings, msg)
-			continue
-		}
-
-		// "Last entry wins": a valid include rule appends an ActionInclude entry to newExcludeRules,
+		// "Last entry wins": an include rule appends an ActionInclude entry to newExcludeRules,
 		// which cancels any prior exclude for the same resource during IsResourceExcluded evaluation.
 		// This correctly handles wildcard-vs-specific (e.g. exclude "*.*" followed by
 		// include "Deployment.apps" → Deployments are NOT excluded).
+		// Note: an include rule without fields/conditions/annotations is valid — it can re-include
+		// a resource that was previously excluded by a broader wildcard rule.
 		appendExcludeRule(&newExcludeRules,
 			rule.ResourceSelector.APIGroups, rule.ResourceSelector.Kinds, v1alpha1.ActionInclude)
+
+		if !hasFields && !hasCollectConditions && !hasCollectPrinterColumns && !hasCollectAnnotations {
+			// No enrichment to apply, but the include action was already registered above.
+			continue
+		}
 
 		apiGroups := rule.ResourceSelector.APIGroups
 		kinds := rule.ResourceSelector.Kinds
