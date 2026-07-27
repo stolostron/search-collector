@@ -1539,7 +1539,9 @@ func TestStatusCondition_Applied_ValidConfig(t *testing.T) {
 // TestStatusCondition_Applied_SkippedRule verifies that an include rule with no
 // actionable configuration (no fields, no collectConditions, no collectAnnotations)
 // results in Applied=False with a descriptive warning message.
-func TestStatusCondition_Applied_SkippedRule(t *testing.T) {
+// A bare include (without fields/conditions/annotations) is valid — it registers an include
+// action to cancel prior excludes. No warning is produced.
+func TestStatusCondition_Applied_BareIncludeIsValid(t *testing.T) {
 	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
 	originalNamespace := config.Cfg.PodNamespace
 	defer func() {
@@ -1562,7 +1564,6 @@ func TestStatusCondition_Applied_SkippedRule(t *testing.T) {
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						// include with no fields/collectConditions/collectAnnotations — should be skipped
 						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"coordination.k8s.io"},
@@ -1583,11 +1584,8 @@ func TestStatusCondition_Applied_SkippedRule(t *testing.T) {
 	require.NotNil(t, cond, "Expected a status condition to be written to the CollectorConfig CR")
 
 	assert.Equal(t, "Applied", cond["type"])
-	assert.Equal(t, "False", cond["status"], "Condition status should be False when a rule is skipped")
-	assert.Equal(t, "RulesSkipped", cond["reason"])
-	msg, _ := cond["message"].(string)
-	assert.True(t, strings.Contains(msg, "requires at least one field"),
-		"Message should describe why the rule was skipped, got: %s", msg)
+	assert.Equal(t, "True", cond["status"], "A bare include is valid — no warnings")
+	assert.Equal(t, "Applied", cond["reason"])
 }
 
 // TestStatusCondition_Applied_ExcludeRule verifies that a valid exclude rule results
@@ -1731,18 +1729,6 @@ func TestStatusCondition_AllWarningPaths(t *testing.T) {
 		wantSubstring string // expected in condition message
 	}{
 		{
-			name: "include without fields",
-			rule: map[string]interface{}{
-				"action": "include",
-				"resourceSelector": map[string]interface{}{
-					"apiGroups": []interface{}{""},
-					"kinds":     []interface{}{"Pod"},
-				},
-				// no fields key
-			},
-			wantSubstring: "requires at least one field",
-		},
-		{
 			name: "missing kinds",
 			rule: map[string]interface{}{
 				"action": "include",
@@ -1860,31 +1846,37 @@ func TestStatusCondition_MultipleWarnings(t *testing.T) {
 			"metadata":   map[string]interface{}{"name": "merged-collector-config", "namespace": "test-namespace"},
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
-					// Rule 1: include with no fields/collectConditions — triggers "requires at least one field"
+					// Rule 1: multiple kinds with fields — triggers "exactly 1 kind"
 					map[string]interface{}{
 						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
-							"kinds":     []interface{}{"Pod"},
+							"kinds":     []interface{}{"Pod", "Service"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
 						},
 					},
-					// Rule 2: include without fields
+					// Rule 2: multiple apiGroups with fields — triggers "exactly 1 apiGroup"
 					map[string]interface{}{
 						"action": "include",
 						"resourceSelector": map[string]interface{}{
-							"apiGroups": []interface{}{""},
+							"apiGroups": []interface{}{"apps", "batch"},
 							"kinds":     []interface{}{"Deployment"},
 						},
+						"fields": []interface{}{
+							map[string]interface{}{"name": "y", "jsonPath": "{.y}"},
+						},
 					},
-					// Rule 3: multiple kinds
+					// Rule 3: field with empty jsonPath — triggers "name or jsonPath is empty"
 					map[string]interface{}{
 						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{"apps"},
-							"kinds":     []interface{}{"DaemonSet", "StatefulSet"},
+							"kinds":     []interface{}{"DaemonSet"},
 						},
 						"fields": []interface{}{
-							map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
+							map[string]interface{}{"name": "z", "jsonPath": ""},
 						},
 					},
 				},
@@ -1905,9 +1897,9 @@ func TestStatusCondition_MultipleWarnings(t *testing.T) {
 	msg, _ := cond["message"].(string)
 	// All 3 warnings should be in the single message separated by "; "
 	assert.True(t, strings.Contains(msg, "; "), "Multiple warnings should be separated by '; ', got: %s", msg)
-	assert.True(t, strings.Contains(msg, "include action requires at least one field"), "Rule 1: got: %s", msg)
-	assert.True(t, strings.Contains(msg, "include action requires at least one field"), "Rule 2: got: %s", msg)
-	assert.True(t, strings.Contains(msg, "include action with fields must specify exactly 1 kind, found 2"), "Rule 3: got: %s", msg)
+	assert.True(t, strings.Contains(msg, "exactly 1 kind"), "Rule 1: got: %s", msg)
+	assert.True(t, strings.Contains(msg, "exactly 1 apiGroup"), "Rule 2: got: %s", msg)
+	assert.True(t, strings.Contains(msg, "name or jsonPath is empty"), "Rule 3: got: %s", msg)
 }
 
 // TestStatusCondition_FeatureDisabled verifies that when the feature flag is off,
@@ -2119,11 +2111,14 @@ func TestStatusCondition_LastTransitionTime_UpdatedWhenStatusChanges(t *testing.
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
 					map[string]interface{}{
-						// include with no fields — triggers Applied=False (RulesSkipped)
+						// multiple kinds with fields — triggers "exactly 1 kind" warning
 						"action": "include",
 						"resourceSelector": map[string]interface{}{
 							"apiGroups": []interface{}{""},
-							"kinds":     []interface{}{"Pod"},
+							"kinds":     []interface{}{"Pod", "Service"},
+						},
+						"fields": []interface{}{
+							map[string]interface{}{"name": "x", "jsonPath": "{.x}"},
 						},
 					},
 				},
@@ -2198,15 +2193,18 @@ func TestStatusCondition_WarningTruncation(t *testing.T) {
 			uniqueSubstring: "found 0",
 		},
 		{
+			// field with empty name — triggers "name or jsonPath is empty"
 			rule: map[string]interface{}{
 				"action": "include",
 				"resourceSelector": map[string]interface{}{
 					"apiGroups": []interface{}{""},
 					"kinds":     []interface{}{"Pod"},
 				},
-				// no fields — triggers "requires at least one field"
+				"fields": []interface{}{
+					map[string]interface{}{"name": "", "jsonPath": "{.spec.nodeName}"},
+				},
 			},
-			uniqueSubstring: "requires at least one field",
+			uniqueSubstring: "name or jsonPath is empty",
 		},
 		{
 			rule: map[string]interface{}{
@@ -3445,11 +3443,14 @@ func TestExclude_GroupWildcard(t *testing.T) {
 }
 
 // A skipped include rule (no fields/conditions) must NOT cancel a prior exclude.
-func TestExclude_InvalidIncludeDoesNotCancelExclude(t *testing.T) {
+// A bare include (without fields/conditions/annotations) cancels a prior exclude for the same
+// resource. This is necessary for the "exclude */* then re-include specific kinds" pattern that
+// integration teams and users rely on — an include rule is meaningful even without enrichment
+// properties because it overrides a prior exclusion.
+func TestExclude_BareIncludeCancelsExclude(t *testing.T) {
 	teardown := setupExcludeTest(t)
 	defer teardown()
 
-	collectConditions := true
 	cfg := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "search.open-cluster-management.io/v1alpha1",
@@ -3460,16 +3461,7 @@ func TestExclude_InvalidIncludeDoesNotCancelExclude(t *testing.T) {
 			},
 			"spec": map[string]interface{}{
 				"collectionRules": []interface{}{
-					// Valid include first
-					map[string]interface{}{
-						"action":            "include",
-						"collectConditions": collectConditions,
-						"resourceSelector": map[string]interface{}{
-							"apiGroups": []interface{}{"coordination.k8s.io"},
-							"kinds":     []interface{}{"Lease"},
-						},
-					},
-					// Exclude
+					// Exclude first
 					map[string]interface{}{
 						"action": "exclude",
 						"resourceSelector": map[string]interface{}{
@@ -3477,7 +3469,7 @@ func TestExclude_InvalidIncludeDoesNotCancelExclude(t *testing.T) {
 							"kinds":     []interface{}{"Lease"},
 						},
 					},
-					// Invalid include (no fields/conditions) — must NOT cancel the exclude
+					// Bare include (no fields/conditions) — re-includes the excluded resource
 					map[string]interface{}{
 						"action": "include",
 						"resourceSelector": map[string]interface{}{
@@ -3492,8 +3484,8 @@ func TestExclude_InvalidIncludeDoesNotCancelExclude(t *testing.T) {
 	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), cfg)
 	loadAndMergeConfigurableCollectionWithClient(fakeClient)
 
-	assert.True(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
-		"Invalid include (no fields/conditions) must NOT cancel the prior exclude")
+	assert.False(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
+		"A bare include (without fields) must cancel the prior exclude — this is the re-include use case")
 }
 
 // Wildcard exclude followed by specific include: the include overrides the wildcard.
