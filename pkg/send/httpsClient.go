@@ -25,48 +25,53 @@ import (
 )
 
 func getHTTPSClient() (client http.Client) {
+	// Read TLS config: env vars on hub (set by operator), ConfigMap on managed cluster.
+	tlsCfg := config.GetTLSConfig()
 
 	// Klusterlet deployment: Get httpClient using the mounted kubeconfig.
 	if !config.Cfg.DeployedInHub {
-		config.Cfg.AggregatorConfig.NegotiatedSerializer = unstructuredscheme.NewUnstructuredNegotiatedSerializer()
-		aggregatorRESTClient, err := rest.UnversionedRESTClientFor(config.Cfg.AggregatorConfig)
+		// Copy the rest.Config to avoid stacking Wrap calls on the shared global config.
+		restCfg := rest.CopyConfig(config.Cfg.AggregatorConfig)
+		restCfg.NegotiatedSerializer = unstructuredscheme.NewUnstructuredNegotiatedSerializer()
+
+		// Inject TLS profile settings into the rest.Config transport.
+		restCfg.Wrap(func(rt http.RoundTripper) http.RoundTripper {
+			if t, ok := rt.(*http.Transport); ok {
+				if t.TLSClientConfig == nil {
+					t.TLSClientConfig = &tls.Config{} // #nosec G402
+				}
+				t.TLSClientConfig.MinVersion = tlsCfg.MinVersion
+				t.TLSClientConfig.CipherSuites = tlsCfg.CipherSuites
+			}
+			return rt
+		})
+
+		aggregatorRESTClient, err := rest.UnversionedRESTClientFor(restCfg)
 		if err != nil {
 			// Exit because this is an unrecoverable configuration problem.
 			klog.Fatal("Error getting httpClient from kubeconfig. Original error: ", err)
 		}
 		client = *(aggregatorRESTClient.Client)
 		return client
-	} else {
-		// Hub deployment:
-		// Generate TLS config using the mounted certificates. If certificates aren't found wee use
-		// insecure TLS connection (InsecureSkipVerify). This should only happen during development.
-		tlsCfg := &tls.Config{
-			MinVersion:               tls.VersionTLS12,
-			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			},
-			// RootCAs:      caCertPool,
-			// Certificates: []tls.Certificate{cert},
-		}
-		caCert, err := os.ReadFile("./sslcert/tls.crt")
-		cert, err2 := tls.LoadX509KeyPair("./sslcert/tls.crt", "./sslcert/tls.key")
-		if err != nil || err2 != nil {
-			klog.Error("WARNING: Using insecure TLS connection. Couldn't load certs ", err, err2)
-			tlsCfg.InsecureSkipVerify = true
-		} else {
-			caCertPool := x509.NewCertPool()
-			caCertPool.AppendCertsFromPEM(caCert)
-			tlsCfg.RootCAs = caCertPool
-
-			tlsCfg.Certificates = []tls.Certificate{cert}
-		}
-
-		tr := &http.Transport{
-			TLSClientConfig: tlsCfg,
-		}
-
-		return http.Client{Transport: tr}
 	}
+
+	// Hub deployment:
+	// Load mounted certificates. If not found, use insecure TLS (development only).
+	caCert, err := os.ReadFile("./sslcert/tls.crt")
+	cert, err2 := tls.LoadX509KeyPair("./sslcert/tls.crt", "./sslcert/tls.key")
+	if err != nil || err2 != nil {
+		klog.Error("WARNING: Using insecure TLS connection. Couldn't load certs ", err, err2)
+		tlsCfg.InsecureSkipVerify = true
+	} else {
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		tlsCfg.RootCAs = caCertPool
+		tlsCfg.Certificates = []tls.Certificate{cert}
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: tlsCfg,
+	}
+
+	return http.Client{Transport: tr}
 }

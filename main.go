@@ -95,12 +95,20 @@ func main() {
 	reconciler := rec.NewReconciler()
 	reconciler.Input = upsertTransformer.Output
 
-	// Create Sender, attached to transformer
-	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName)
-
 	informersInitialized := make(chan interface{})
 
 	mainCtx := getMainContext()
+
+	// On managed clusters, poll the ocm-tls-profile ConfigMap for changes and hot-reload TLS.
+	// On hub, the operator sets TLS env vars and restarts the deployment on changes.
+	var tlsReload <-chan struct{}
+	if !config.Cfg.DeployedInHub {
+		ch := make(chan struct{}, 1)
+		tlsReload = ch
+		go config.PollTLSProfileConfigMap(mainCtx, ch)
+	}
+
+	sender := send.NewSender(reconciler, config.Cfg.AggregatorURL, config.Cfg.ClusterName, tlsReload)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)

@@ -86,6 +86,7 @@ type Sender struct {
 	httpClient         http.Client
 	lastSentTime       int64 // Time we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
 	rec                *reconciler.Reconciler
+	tlsReload          <-chan struct{} // Signals that the TLS profile ConfigMap has changed.
 }
 
 func (s *Sender) reloadSender() {
@@ -99,7 +100,10 @@ func (s *Sender) reloadSender() {
 
 // Constructs a new Sender using the provided channels.
 // Sends to the URL provided by aggregatorURL, listing itself as clusterName.
-func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *Sender {
+// tlsReload is an optional channel that signals the TLS profile has changed and the HTTP client
+// should be recreated. Pass nil to disable TLS hot-reload.
+func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string,
+	tlsReload <-chan struct{}) *Sender {
 
 	// Construct senders
 	s := &Sender{
@@ -108,6 +112,7 @@ func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string) *S
 		httpClient:         getHTTPSClient(),
 		lastSentTime:       -1,
 		rec:                rec,
+		tlsReload:          tlsReload,
 	}
 
 	if !config.Cfg.DeployedInHub {
@@ -316,6 +321,9 @@ func (s *Sender) StartSendLoop(ctx context.Context) {
 		default:
 		}
 
+		// Check for TLS profile changes before each send cycle.
+		s.checkTLSReload()
+
 		klog.V(3).Info("Beginning Send Cycle")
 		err := s.Sync()
 		if err != nil {
@@ -339,12 +347,17 @@ func (s *Sender) StartSendLoop(ctx context.Context) {
 	}
 }
 
-// Returns the smaller of two ints
-func min(a, b int) int {
-	if a > b {
-		return b
+// checkTLSReload drains the TLS reload channel and rebuilds the HTTP client if signaled.
+func (s *Sender) checkTLSReload() {
+	if s.tlsReload == nil {
+		return
 	}
-	return a
+	select {
+	case <-s.tlsReload:
+		klog.Info("TLS profile changed, reloading HTTP client")
+		s.httpClient = getHTTPSClient()
+	default:
+	}
 }
 
 // Compute the time interval to wait before next send or retry (backoff).
