@@ -120,10 +120,21 @@ func SupportedResources(
 	kubeClient := config.GetKubeClient(config.GetKubeConfig())
 
 	// locate the search-collector-config ConfigMap
+	cmName := "search-collector-config"
 	cm, cmErr := kubeClient.CoreV1().ConfigMaps(config.Cfg.PodNamespace).
-		Get(ctx, "search-collector-config", machineryV1.GetOptions{})
+		Get(ctx, cmName, machineryV1.GetOptions{})
 	if cmErr != nil {
 		klog.Info("Collecting all resources. ConfigMap search-collector-config is not present.", cmErr)
+	} else {
+		if config.Cfg.FeatureConfigurableCollection {
+			klog.Warningf("ConfigMap %s found and feature Configurable Collection is enabled. "+
+				"%s and CollectorConfig may conflict with one another. The ConfigMap will be"+
+				"deprecated in a future release by collectorconfigs.search.open-cluster-management.io. "+
+				"You should migrate this configuration.", cmName, cmName)
+		} else {
+			klog.Warningf("ConfigMap %s found. It will be deprecated in the future by "+
+				"collectorconfigs.search.open-cluster-management.io. Consider migrating.", cmName)
+		}
 	}
 
 	// parse alloy/deny from config
