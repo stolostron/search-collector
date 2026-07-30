@@ -1,2 +1,2 @@
-[checks]
-enable_auto_checks_feedback = false 
+[config]
+disable_auto_feedback = true
