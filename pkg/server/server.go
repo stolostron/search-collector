@@ -22,10 +22,13 @@ func StartAndListen() {
 	router.HandleFunc("/readiness", ReadinessProbe).Methods("GET")
 	router.Handle("/metrics", promhttp.HandlerFor(metrics.PromRegistry, promhttp.HandlerOpts{})).Methods("GET")
 
+	cfg := config.GetTLSConfig()
+
 	srv := &http.Server{
 		Addr:              config.Cfg.ServerAddress,
 		Handler:           router,
 		ReadHeaderTimeout: time.Duration(config.Cfg.HTTPTimeout) * time.Millisecond,
+		TLSConfig:         cfg,
 	}
 
 	go func() {
