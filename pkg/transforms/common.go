@@ -861,7 +861,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				if arr, ok := val.([]interface{}); ok {
 					node.Properties[prop.Name] = int64(len(arr))
 				} else if val == nil {
-					node.Properties[prop.Name] = int64(0)
+					node.Properties[prop.Name] = prop.DefaultValue
 				} else {
 					klog.V(1).Infof(
 						"Unable to count prop [%s] from [%s.%s] Name: [%s], not an array: %T",
