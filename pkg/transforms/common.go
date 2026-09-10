@@ -857,6 +857,17 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 						prop.Name, kind, group, r.GetName(), val,
 					)
 				}
+			} else if prop.DataType == DataTypeCount {
+				if arr, ok := val.([]interface{}); ok {
+					node.Properties[prop.Name] = int64(len(arr))
+				} else if val == nil {
+					node.Properties[prop.Name] = int64(0)
+				} else {
+					klog.V(1).Infof(
+						"Unable to count prop [%s] from [%s.%s] Name: [%s], not an array: %T",
+						prop.Name, kind, group, r.GetName(), val,
+					)
+				}
 			} else if prop.DataType == DataTypeBoolean {
 				// DataTypeBoolean: convert to string representation
 				if b, ok := val.(bool); ok {
