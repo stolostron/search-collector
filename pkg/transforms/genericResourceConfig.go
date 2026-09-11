@@ -34,6 +34,7 @@ const (
 	DataTypeNumber    DataType = "number"
 	DataTypeMapString DataType = "mapString"
 	DataTypeBoolean   DataType = "boolean"
+	DataTypeSliceLen  DataType = "sliceLen"
 )
 
 // matchLabelKiagnose is the label used to identify kiagnose network-latency checkup ConfigMaps.
@@ -53,6 +54,8 @@ func stringToDataType(s string) DataType {
 		return DataTypeMapString
 	case "boolean":
 		return DataTypeBoolean
+	case "sliceLen":
+		return DataTypeSliceLen
 	default:
 		return DataTypeString
 	}
@@ -229,6 +232,11 @@ var defaultTransformConfig = map[string]ResourceConfig{
 			{Name: "current", JSONPath: `.status.replicas`, DataType: DataTypeNumber},
 			{Name: "ready", JSONPath: `.status.readyReplicas`, DataType: DataTypeNumber},
 			{Name: "desired", JSONPath: `.spec.replicas`, DataType: DataTypeNumber},
+		},
+	},
+	"Group.user.openshift.io": {
+		properties: []ExtractProperty{
+			{Name: "userCount", JSONPath: `.users`, DataType: DataTypeSliceLen, DefaultValue: int64(0)},
 		},
 	},
 	"Job.batch": {
