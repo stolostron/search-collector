@@ -1463,3 +1463,69 @@ func TestSubscription_AdditionalColumnsPassThrough(t *testing.T) {
 	assert.Equal(t, "Subscribed", node.Properties["phase"],
 		"additionalColumns must flow through SubscriptionResourceBuilder variadic param")
 }
+
+// ---- Group ------------------------------------------------------------
+
+func newTestGroup(fields map[string]interface{}) *unstructured.Unstructured {
+	obj := map[string]interface{}{
+		"apiVersion": "user.openshift.io/v1",
+		"kind":       "Group",
+		"metadata":   map[string]interface{}{"name": "test-group"},
+	}
+	for k, v := range fields {
+		obj[k] = v
+	}
+
+	return &unstructured.Unstructured{Object: obj}
+}
+
+func TestGroup_UserCount(t *testing.T) {
+	tests := []struct {
+		name     string
+		resource *unstructured.Unstructured
+		expected int64
+	}{
+		{
+			// Guard against changing the configured JSONPath from `.users` to `.users[*]`.
+			name:     "multiple members",
+			expected: int64(3),
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{"alice", "bob", "carol"},
+			}),
+		},
+		{
+			name:     "single member",
+			expected: int64(1),
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{"alice"},
+			}),
+		},
+		{
+			name:     "empty users array",
+			expected: int64(0),
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{},
+			}),
+		},
+		{
+			name:     "users field absent",
+			expected: int64(0),
+			resource: newTestGroup(map[string]interface{}{}),
+		},
+		{
+			name:     "users is null",
+			expected: int64(0),
+			resource: newTestGroup(map[string]interface{}{
+				"users": nil,
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := GenericResourceBuilder(tt.resource).BuildNode()
+			assert.Equal(t, tt.expected, node.Properties["userCount"],
+				"userCount must equal len(Group.users)")
+		})
+	}
+}
