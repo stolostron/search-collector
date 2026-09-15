@@ -787,6 +787,7 @@ func TestBooleanFieldsStoredAsStrings_GenericConfig(t *testing.T) {
 	}
 }
 
+
 // ---- ACM-21895: Tests verifying applyDefaultTransformConfig is wired into specific-kind builders ----
 
 // setupTransformConfig sets mergedTransformConfig with a single custom field
@@ -1544,7 +1545,7 @@ func TestGroup_Users(t *testing.T) {
 			}),
 		},
 		{
-			name:     "indexes a lone member",
+			name:     "indexes a single member",
 			expected: []interface{}{"alice"},
 			resource: newTestGroup(map[string]interface{}{
 				"users": []interface{}{"alice"},
