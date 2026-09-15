@@ -236,6 +236,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"Group.user.openshift.io": {
 		properties: []ExtractProperty{
+			{Name: "users", JSONPath: `.users[*]`, DataType: DataTypeSlice},
 			{Name: "userCount", JSONPath: `.users`, DataType: DataTypeSliceLen, DefaultValue: int64(0)},
 		},
 	},
