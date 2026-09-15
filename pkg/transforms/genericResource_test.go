@@ -787,7 +787,6 @@ func TestBooleanFieldsStoredAsStrings_GenericConfig(t *testing.T) {
 	}
 }
 
-
 // ---- ACM-21895: Tests verifying applyDefaultTransformConfig is wired into specific-kind builders ----
 
 // setupTransformConfig sets mergedTransformConfig with a single custom field
@@ -1526,6 +1525,64 @@ func TestGroup_UserCount(t *testing.T) {
 			node := GenericResourceBuilder(tt.resource).BuildNode()
 			assert.Equal(t, tt.expected, node.Properties["userCount"],
 				"userCount must equal len(Group.users)")
+		})
+	}
+}
+
+func TestGroup_Users(t *testing.T) {
+	tests := []struct {
+		name     string
+		resource *unstructured.Unstructured
+		// expected is nil when the property must be omitted from the node.
+		expected []interface{}
+	}{
+		{
+			name:     "indexes every member name",
+			expected: []interface{}{"alice", "bob", "carol"},
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{"alice", "bob", "carol"},
+			}),
+		},
+		{
+			name:     "indexes a lone member",
+			expected: []interface{}{"alice"},
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{"alice"},
+			}),
+		},
+		{
+			name:     "omits the property when users is empty",
+			expected: nil,
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{},
+			}),
+		},
+		{
+			name:     "omits the property when users is absent",
+			expected: nil,
+			resource: newTestGroup(map[string]interface{}{}),
+		},
+		{
+			// Guard against changing the configured JSONPath from `.users[*]` to `.users`,
+			// which would index the property as [nil] instead of omitting it.
+			name:     "omits the property when users is null",
+			expected: nil,
+			resource: newTestGroup(map[string]interface{}{
+				"users": nil,
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := GenericResourceBuilder(tt.resource).BuildNode()
+			if tt.expected == nil {
+				assert.NotContains(t, node.Properties, "users",
+					"users must be omitted when the Group has no members")
+				return
+			}
+			assert.Equal(t, tt.expected, node.Properties["users"],
+				"users must contain every member name from Group.users")
 		})
 	}
 }
