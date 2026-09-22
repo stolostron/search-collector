@@ -1574,6 +1574,12 @@ func TestGroup_Users(t *testing.T) {
 		},
 	}
 
+	originalDeployedInHub := config.Cfg.DeployedInHub
+	config.Cfg.DeployedInHub = true
+	defer func() {
+		config.Cfg.DeployedInHub = originalDeployedInHub
+	}()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			node := GenericResourceBuilder(tt.resource).BuildNode()
@@ -1586,4 +1592,20 @@ func TestGroup_Users(t *testing.T) {
 				"users must contain every member name from Group.users")
 		})
 	}
+}
+
+func TestGroup_UsersHubOnly(t *testing.T) {
+	originalDeployedInHub := config.Cfg.DeployedInHub
+	config.Cfg.DeployedInHub = false
+	defer func() {
+		config.Cfg.DeployedInHub = originalDeployedInHub
+	}()
+
+	resource := newTestGroup(map[string]interface{}{"users": []interface{}{"alice", "bob"}})
+	node := GenericResourceBuilder(resource).BuildNode()
+
+	assert.NotContains(t, node.Properties, "users",
+		"users must not be collected outside the hub")
+	assert.Equal(t, int64(2), node.Properties["userCount"],
+		"userCount must be collected on every cluster")
 }
