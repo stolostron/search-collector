@@ -695,6 +695,10 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 	}
 
 	for _, prop := range transformConfig.properties {
+		// Skip hub-only properties when this collector runs on a managed cluster.
+		if prop.hubOnly && !config.Cfg.DeployedInHub {
+			continue
+		}
 		// Skip if property has matchLabel condition and node doesn't contain matching label
 		if prop.matchLabel != "" {
 			// Skip if resource doesn't have labels, it won't match the matchLabel.
