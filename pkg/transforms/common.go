@@ -689,6 +689,11 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 			if wildcardFound && wildcardConfig.additionalPrinterColumnsPriority != nil {
 				transformConfig.additionalPrinterColumnsPriority = wildcardConfig.additionalPrinterColumnsPriority
 			}
+			// Pull in default priority gatekeeper columns
+			if group == "constraints.gatekeeper.sh" && transformConfig.additionalPrinterColumnsPriority == nil {
+				priority := 0
+				transformConfig.additionalPrinterColumnsPriority = &priority
+			}
 		} else {
 			return node
 		}

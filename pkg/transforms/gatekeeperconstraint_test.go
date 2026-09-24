@@ -17,13 +17,19 @@ func TestTransformGKConstraintNonCompliant(t *testing.T) {
 		Object: object,
 	}
 
-	constraintResource := GkConstraintResourceBuilder(unstructured)
+	priority := 0
+	constraintResource := GkConstraintResourceBuilder(unstructured,
+		ExtractProperty{Name: "enforcementAction", JSONPath: "{.spec.enforcementAction}", Priority: &priority},
+		ExtractProperty{Name: "totalViolations", JSONPath: "{.status.totalViolations}", Priority: &priority},
+	)
 
 	node := constraintResource.BuildNode()
 
 	// Only test the fields specific to Gatekeeper Constraints
 	AssertEqual("compliant", node.Properties["compliant"], "NonCompliant", t)
 	AssertEqual("_isExternal", node.Properties["_isExternal"], false, t)
+	AssertEqual("enforcementAction", node.Properties["enforcementAction"], "dryrun", t)
+	AssertEqual("totalViolations", node.Properties["totalViolations"], float64(3), t)
 	obj1 := relatedObject{
 		Group:     "apps",
 		Version:   "v1",
