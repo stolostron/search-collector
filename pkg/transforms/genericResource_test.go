@@ -1529,3 +1529,83 @@ func TestGroup_UserCount(t *testing.T) {
 		})
 	}
 }
+
+func TestGroup_Users(t *testing.T) {
+	tests := []struct {
+		name     string
+		resource *unstructured.Unstructured
+		// expected is nil when the property must be omitted from the node.
+		expected []interface{}
+	}{
+		{
+			name:     "indexes every member name",
+			expected: []interface{}{"alice", "bob", "carol"},
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{"alice", "bob", "carol"},
+			}),
+		},
+		{
+			name:     "indexes a single member",
+			expected: []interface{}{"alice"},
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{"alice"},
+			}),
+		},
+		{
+			name:     "omits the property when users is empty",
+			expected: nil,
+			resource: newTestGroup(map[string]interface{}{
+				"users": []interface{}{},
+			}),
+		},
+		{
+			name:     "omits the property when users is absent",
+			expected: nil,
+			resource: newTestGroup(map[string]interface{}{}),
+		},
+		{
+			// Guard against changing the configured JSONPath from `.users[*]` to `.users`,
+			// which would index the property as [nil] instead of omitting it.
+			name:     "omits the property when users is null",
+			expected: nil,
+			resource: newTestGroup(map[string]interface{}{
+				"users": nil,
+			}),
+		},
+	}
+
+	originalDeployedInHub := config.Cfg.DeployedInHub
+	config.Cfg.DeployedInHub = true
+	defer func() {
+		config.Cfg.DeployedInHub = originalDeployedInHub
+	}()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node := GenericResourceBuilder(tt.resource).BuildNode()
+			if tt.expected == nil {
+				assert.NotContains(t, node.Properties, "users",
+					"users must be omitted when the Group has no members")
+				return
+			}
+			assert.Equal(t, tt.expected, node.Properties["users"],
+				"users must contain every member name from Group.users")
+		})
+	}
+}
+
+func TestGroup_UsersHubOnly(t *testing.T) {
+	originalDeployedInHub := config.Cfg.DeployedInHub
+	config.Cfg.DeployedInHub = false
+	defer func() {
+		config.Cfg.DeployedInHub = originalDeployedInHub
+	}()
+
+	resource := newTestGroup(map[string]interface{}{"users": []interface{}{"alice", "bob"}})
+	node := GenericResourceBuilder(resource).BuildNode()
+
+	assert.NotContains(t, node.Properties, "users",
+		"users must not be collected outside the hub")
+	assert.Equal(t, int64(2), node.Properties["userCount"],
+		"userCount must be collected on every cluster")
+}
