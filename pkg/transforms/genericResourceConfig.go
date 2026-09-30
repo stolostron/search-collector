@@ -238,8 +238,6 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"Group.user.openshift.io": {
 		properties: []ExtractProperty{
-			// Group membership is only collected from the hub.
-			{Name: "users", JSONPath: `.users[*]`, DataType: DataTypeSlice, hubOnly: true},
 			{Name: "userCount", JSONPath: `.users`, DataType: DataTypeSliceLen, DefaultValue: int64(0)},
 		},
 	},

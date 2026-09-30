@@ -574,3 +574,71 @@ func TestConvertToString(t *testing.T) {
 		})
 	}
 }
+
+// TestHubOnlyProperty verifies that hubOnly properties are collected on the hub
+// and skipped on managed clusters, while regular properties are collected everywhere.
+func TestHubOnlyProperty(t *testing.T) {
+	const kind = "HubOnlyTestResource"
+	const group = "test.open-cluster-management.io"
+	configKey := kind + "." + group
+
+	testConfig := ResourceConfig{
+		properties: []ExtractProperty{
+			{Name: "hubProp", JSONPath: `.spec.hubValue`, DataType: DataTypeString, hubOnly: true},
+			{Name: "everyClusterProp", JSONPath: `.spec.sharedValue`, DataType: DataTypeString},
+		},
+	}
+
+	// Seed both configs because getTransformConfig prefers mergedTransformConfig when initialized.
+	defaultTransformConfig[configKey] = testConfig
+	mergedTransformConfigMu.Lock()
+	if mergedTransformConfig != nil {
+		mergedTransformConfig[configKey] = testConfig
+	}
+	mergedTransformConfigMu.Unlock()
+
+	originalDeployedInHub := config.Cfg.DeployedInHub
+	t.Cleanup(func() {
+		config.Cfg.DeployedInHub = originalDeployedInHub
+		delete(defaultTransformConfig, configKey)
+		mergedTransformConfigMu.Lock()
+		delete(mergedTransformConfig, configKey)
+		mergedTransformConfigMu.Unlock()
+	})
+
+	resource := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": group + "/v1",
+		"kind":       kind,
+		"metadata":   map[string]interface{}{"name": "test-resource"},
+		"spec": map[string]interface{}{
+			"hubValue":    "hub-only",
+			"sharedValue": "everywhere",
+		},
+	}}
+
+	tests := []struct {
+		name          string
+		deployedInHub bool
+		expectHubProp bool
+	}{
+		{name: "hub collects the hubOnly property", deployedInHub: true, expectHubProp: true},
+		{name: "managed cluster skips the hubOnly property", deployedInHub: false, expectHubProp: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config.Cfg.DeployedInHub = tt.deployedInHub
+			node := GenericResourceBuilder(resource).BuildNode()
+
+			if tt.expectHubProp {
+				assert.Equal(t, "hub-only", node.Properties["hubProp"],
+					"hubOnly property must be collected on the hub")
+			} else {
+				assert.NotContains(t, node.Properties, "hubProp",
+					"hubOnly property must not be collected outside the hub")
+			}
+			assert.Equal(t, "everywhere", node.Properties["everyClusterProp"],
+				"properties without hubOnly must be collected on every cluster")
+		})
+	}
+}
