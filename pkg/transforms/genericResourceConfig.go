@@ -12,6 +12,8 @@ type ExtractProperty struct {
 	matchLabel string // `json:"matchLabel,omitempty"`
 	// An internal property to denote this property should be set on the node's metadata instead.
 	metadataOnly bool
+	// hubOnly limits extraction to collectors running on the hub.
+	hubOnly bool
 	// DefaultValue is set on the node when the JSONPath returns no results (field absent or nil).
 	// Used to preserve backward-compatible defaults for optional pointer fields (e.g. spec.replicas).
 	DefaultValue interface{}
