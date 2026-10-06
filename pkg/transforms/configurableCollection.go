@@ -549,6 +549,8 @@ func dataTypeFromCRD(crdType v1alpha1.DataType) DataType {
 		return DataTypeNumber
 	case v1alpha1.DataTypeBoolean:
 		return DataTypeBoolean
+	case v1alpha1.DataTypeArray:
+		return DataTypeSlice
 	default:
 		return DataTypeString
 	}
