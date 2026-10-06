@@ -37,6 +37,7 @@ const (
 	DataTypeMapString DataType = "mapString"
 	DataTypeBoolean   DataType = "boolean"
 	DataTypeSliceLen  DataType = "sliceLen"
+	DataTypeArray     DataType = "array"
 )
 
 // matchLabelKiagnose is the label used to identify kiagnose network-latency checkup ConfigMaps.
@@ -58,6 +59,8 @@ func stringToDataType(s string) DataType {
 		return DataTypeBoolean
 	case "sliceLen":
 		return DataTypeSliceLen
+	case "array":
+		return DataTypeArray
 	default:
 		return DataTypeString
 	}

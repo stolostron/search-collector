@@ -491,9 +491,9 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 	assert.Equal(t, "boolField", testResourceConfig.properties[2].Name)
 	assert.Equal(t, DataTypeBoolean, testResourceConfig.properties[2].DataType)
 
-	// Verify array maps to internal DataTypeSlice
+	// Verify DataTypeArray
 	assert.Equal(t, "arrayField", testResourceConfig.properties[3].Name)
-	assert.Equal(t, DataTypeSlice, testResourceConfig.properties[3].DataType)
+	assert.Equal(t, DataTypeArray, testResourceConfig.properties[3].DataType)
 }
 
 func TestLoadAndMergeConfigurableCollection_MissingSpec(t *testing.T) {
