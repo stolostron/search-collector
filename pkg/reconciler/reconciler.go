@@ -70,6 +70,45 @@ func nodeTripleMap(allNodes map[string]tr.Node) map[string]map[string]map[string
 	return nodeMap
 }
 
+// Create mapping with apigroup, kind, namespace, and name as keys, and the Node itself as the value.
+func nodesIndexMap(allNodes map[string]tr.Node) map[string]map[string]map[string]map[string]tr.Node {
+	nodeMap := map[string]map[string]map[string]map[string]tr.Node{}
+	for _, n := range allNodes {
+		kind, ok := n.Properties["kind"].(string)
+		if !ok || kind == "" {
+			continue
+		}
+
+		namespace := "_NONE"
+		if ns, ok := n.Properties["namespace"].(string); ok && ns != "" {
+			namespace = ns
+		}
+
+		name, ok := n.Properties["name"].(string)
+		if !ok || name == "" {
+			continue
+		}
+
+		group := ""
+		if g, ok := n.Properties["apigroup"].(string); ok {
+			group = g
+		}
+
+		if _, ok := nodeMap[group]; !ok {
+			nodeMap[group] = map[string]map[string]map[string]tr.Node{}
+		}
+		if _, ok := nodeMap[group][kind]; !ok {
+			nodeMap[group][kind] = map[string]map[string]tr.Node{}
+		}
+		if _, ok := nodeMap[group][kind][namespace]; !ok {
+			nodeMap[group][kind][namespace] = map[string]tr.Node{}
+		}
+		nodeMap[group][kind][namespace][name] = n
+	}
+
+	return nodeMap
+}
+
 // This object tracks and stores resources, and can regurgitate diffs based on the last time it was asked.
 type Reconciler struct {
 	currentNodes       map[string]tr.Node                         // Keyed by UID
@@ -239,8 +278,9 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 	ret := make(map[string]map[string]tr.Edge)
 
 	ns := tr.NodeStore{
-		ByUID:               r.currentNodes,
-		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
+		ByUID:                    r.currentNodes,
+		ByKindNamespaceName:      nodeTripleMap(r.currentNodes),
+		ByGroupKindNamespaceName: nodesIndexMap(r.currentNodes),
 	}
 
 	// After building the nodestore, get all the application UIDs in appUIDs and others in otherUIDs.

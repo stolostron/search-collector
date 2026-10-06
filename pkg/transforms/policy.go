@@ -309,12 +309,7 @@ func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
 	nonCompliantResources := []relatedObject{}
 
 	for _, obj := range relObjs {
-		namespace := obj.Namespace
-		if namespace == "" {
-			namespace = "_NONE"
-		}
-
-		if res, ok := ns.ByKindNamespaceName[obj.Kind][namespace][obj.Name]; ok {
+		if res, ok := lookupRelatedObject(ns, obj); ok {
 			edges = append(edges, Edge{
 				EdgeType:   obj.EdgeType,
 				SourceKind: policyKind,
@@ -354,4 +349,26 @@ func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
 	}
 
 	return edges
+}
+
+func lookupRelatedObject(ns NodeStore, obj relatedObject) (Node, bool) {
+	namespace := obj.Namespace
+	if namespace == "" {
+		namespace = "_NONE"
+	}
+
+	if obj.Group != "" && ns.ByGroupKindNamespaceName != nil {
+		if byKind, ok := ns.ByGroupKindNamespaceName[obj.Group]; ok {
+			if byNamespace, ok := byKind[obj.Kind]; ok {
+				if byName, ok := byNamespace[namespace]; ok {
+					if res, ok := byName[obj.Name]; ok {
+						return res, true
+					}
+				}
+			}
+		}
+	}
+
+	res, ok := ns.ByKindNamespaceName[obj.Kind][namespace][obj.Name]
+	return res, ok
 }

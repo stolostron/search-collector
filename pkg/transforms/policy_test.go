@@ -19,6 +19,99 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+func TestPolicyBuildEdges_PrefersGroupAwareLookup(t *testing.T) {
+	policyNode := Node{
+		UID: "cluster/policy-uid",
+		Properties: map[string]interface{}{
+			"kind": "ConfigurationPolicy",
+		},
+		Metadata: map[string]any{
+			"relObjs": []relatedObject{{
+				Group:    "config.openshift.io",
+				Version:  "v1",
+				Kind:     "Network",
+				Name:     "cluster",
+				EdgeType: compliantEdge,
+			}},
+		},
+	}
+
+	configNetwork := Node{UID: "cluster/config-network-uid", Properties: map[string]interface{}{"kind": "Network", "name": "cluster", "apigroup": "config.openshift.io"}}
+	operatorNetwork := Node{UID: "cluster/operator-network-uid", Properties: map[string]interface{}{"kind": "Network", "name": "cluster", "apigroup": "operator.openshift.io"}}
+
+	ns := NodeStore{
+		ByUID: map[string]Node{
+			policyNode.UID:      policyNode,
+			configNetwork.UID:   configNetwork,
+			operatorNetwork.UID: operatorNetwork,
+		},
+		// Kind-only map can hold only one item here; set it to the "wrong" one to prove group-aware lookup is used.
+		ByKindNamespaceName: map[string]map[string]map[string]Node{
+			"Network": {
+				"_NONE": {
+					"cluster": operatorNetwork,
+				},
+			},
+		},
+		ByGroupKindNamespaceName: map[string]map[string]map[string]map[string]Node{
+			"config.openshift.io": {
+				"Network": {
+					"_NONE": {
+						"cluster": configNetwork,
+					},
+				},
+			},
+			"operator.openshift.io": {
+				"Network": {
+					"_NONE": {
+						"cluster": operatorNetwork,
+					},
+				},
+			},
+		},
+	}
+
+	edges := PolicyResource{node: policyNode}.BuildEdges(ns)
+	assert.Len(t, edges, 1)
+	AssertEqual("destUID", edges[0].DestUID, configNetwork.UID, t)
+}
+
+func TestPolicyBuildEdges_FallbackWithoutGroup(t *testing.T) {
+	policyNode := Node{
+		UID: "cluster/policy-uid",
+		Properties: map[string]interface{}{
+			"kind": "ConfigurationPolicy",
+		},
+		Metadata: map[string]any{
+			"relObjs": []relatedObject{{
+				Kind:     "Network",
+				Name:     "cluster",
+				EdgeType: compliantEdge,
+			}},
+		},
+	}
+
+	operatorNetwork := Node{UID: "cluster/operator-network-uid", Properties: map[string]interface{}{"kind": "Network", "name": "cluster", "apigroup": "operator.openshift.io"}}
+
+	ns := NodeStore{
+		ByUID: map[string]Node{
+			policyNode.UID:      policyNode,
+			operatorNetwork.UID: operatorNetwork,
+		},
+		ByKindNamespaceName: map[string]map[string]map[string]Node{
+			"Network": {
+				"_NONE": {
+					"cluster": operatorNetwork,
+				},
+			},
+		},
+	}
+
+	edges := PolicyResource{node: policyNode}.BuildEdges(ns)
+	assert.Len(t, edges, 1)
+	AssertEqual("destUID", edges[0].DestUID, operatorNetwork.UID, t)
+}
+
 func TestTransformPolicy(t *testing.T) {
 	var p policy.Policy
 	UnmarshalFile("policy.json", &p, t)

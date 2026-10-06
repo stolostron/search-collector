@@ -33,6 +33,9 @@ import (
 type NodeStore struct {
 	ByUID               map[string]Node
 	ByKindNamespaceName map[string]map[string]map[string]Node
+	// ByGroupKindNamespaceName adds API-group-aware lookup for resources that can share
+	// kind/namespace/name across different groups (for example Network/cluster).
+	ByGroupKindNamespaceName map[string]map[string]map[string]map[string]Node
 }
 
 // commonAnnotations returns the annotations with values <= 64 characters. It also removes the
