@@ -187,7 +187,7 @@ func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
 		policyKind = "ClusterPolicy"
 	}
 
-	policyNode, ok := ns.ByKindNamespaceName[policyKind][policyNamespace][policyName]
+	policyNode, ok := ns.LookupByKindNamespaceName(policyKind, policyNamespace, policyName)
 	if !ok {
 		return ret
 	}

@@ -43,29 +43,40 @@ type Diff struct {
 	TotalNodes, TotalEdges int
 }
 
-// Create mapping with kind, namespace, and name as keys, and the Node itself as the value.
-func nodeTripleMap(allNodes map[string]tr.Node) map[string]map[string]map[string]tr.Node {
-
-	nodeMap := map[string]map[string]map[string]tr.Node{}
+// Create mapping with apigroup, kind, namespace, and name as keys, and the Node itself as the value.
+func nodesIndexMap(allNodes map[string]tr.Node) map[string]map[string]map[string]map[string]tr.Node {
+	nodeMap := map[string]map[string]map[string]map[string]tr.Node{}
 	for _, n := range allNodes {
-		kind := n.Properties["kind"].(string) // blindly assert to string - it's always string
-		namespace := ""
-		if _, ok := n.Properties["namespace"]; !ok {
-			namespace = "_NONE"
-		} else {
-			namespace = n.Properties["namespace"].(string)
+		kind, ok := n.Properties["kind"].(string)
+		if !ok || kind == "" {
+			continue
 		}
-		// Initialize nodeMap for 'kind' if it doesn't exist already for that kind
-		if _, ok := nodeMap[kind]; !ok {
-			nodeMap[kind] = map[string]map[string]tr.Node{}
+
+		namespace := "_NONE"
+		if ns, ok := n.Properties["namespace"].(string); ok && ns != "" {
+			namespace = ns
 		}
-		if _, ok := nodeMap[kind][namespace]; !ok {
-			nodeMap[kind][namespace] = map[string]tr.Node{}
+
+		name, ok := n.Properties["name"].(string)
+		if !ok || name == "" {
+			continue
 		}
-		// Insert the name and uid mapping into nodeMap
-		if name, ok := n.Properties["name"].(string); ok {
-			nodeMap[kind][namespace][name] = n
+
+		group := ""
+		if g, ok := n.Properties["apigroup"].(string); ok {
+			group = g
 		}
+
+		if _, ok := nodeMap[group]; !ok {
+			nodeMap[group] = map[string]map[string]map[string]tr.Node{}
+		}
+		if _, ok := nodeMap[group][kind]; !ok {
+			nodeMap[group][kind] = map[string]map[string]tr.Node{}
+		}
+		if _, ok := nodeMap[group][kind][namespace]; !ok {
+			nodeMap[group][kind][namespace] = map[string]tr.Node{}
+		}
+		nodeMap[group][kind][namespace][name] = n
 	}
 	return nodeMap
 }
@@ -239,8 +250,8 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 	ret := make(map[string]map[string]tr.Edge)
 
 	ns := tr.NodeStore{
-		ByUID:               r.currentNodes,
-		ByKindNamespaceName: nodeTripleMap(r.currentNodes),
+		ByUID:                    r.currentNodes,
+		ByGroupKindNamespaceName: nodesIndexMap(r.currentNodes),
 	}
 
 	// After building the nodestore, get all the application UIDs in appUIDs and others in otherUIDs.
@@ -255,7 +266,7 @@ func (r *Reconciler) allEdges() map[string]map[string]tr.Edge {
 		i++
 	}
 	// Filter all application nodes, store their UIDs in appUIDs
-	apps := ns.ByKindNamespaceName["Application"]
+	apps := ns.NodesByKind("Application")
 	var appUIDs []string
 	for namespace := range apps {
 		for name := range apps[namespace] {

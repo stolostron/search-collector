@@ -135,7 +135,7 @@ func (h HelmReleaseResource) BuildEdges(ns NodeStore) []Edge {
 		}
 
 		// ownedBy edges
-		if resourceNode, ok := ns.ByKindNamespaceName[kind][namespace][name]; ok {
+		if resourceNode, ok := ns.LookupByKindNamespaceName(kind, namespace, name); ok {
 			if resourceNode.Metadata != nil { // Metadata can be nil if no node found
 				// update node metadata to include release for upstream edge from resource to Release
 				resourceNode.Metadata["ReleaseUID"] = GetHelmReleaseUID(h.GetLabels()["NAME"])

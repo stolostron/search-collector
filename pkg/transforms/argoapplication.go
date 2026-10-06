@@ -190,7 +190,7 @@ func (a ArgoApplicationResource) BuildEdges(ns NodeStore) []Edge {
 				namespace = resource.Namespace
 			}
 
-			if destNode, ok := ns.ByKindNamespaceName[resource.Kind][namespace][resource.Name]; ok {
+			if destNode, ok := ns.LookupByKindNamespaceName(resource.Kind, namespace, resource.Name); ok {
 				if sourceUID != destNode.UID { // avoid connecting node to itself
 					ret = append(ret, Edge{
 						EdgeType:   "subscribesTo",
