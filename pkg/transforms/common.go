@@ -894,14 +894,14 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 						prop.Name, kind, group, r.GetName(), val,
 					)
 				}
-			} else if prop.DataType == DataTypeSliceLen {
-				if slice, ok := val.([]interface{}); ok {
-					node.Properties[prop.Name] = int64(len(slice))
+			} else if prop.DataType == DataTypeArrayLen {
+				if array, ok := val.([]interface{}); ok {
+					node.Properties[prop.Name] = int64(len(array))
 				} else if val == nil {
 					node.Properties[prop.Name] = prop.DefaultValue
 				} else {
 					klog.V(1).Infof(
-						"Unable to get length of prop [%s] from [%s.%s] Name: [%s], not a slice: %T",
+						"Unable to get length of prop [%s] from [%s.%s] Name: [%s], not an array: %T",
 						prop.Name, kind, group, r.GetName(), val,
 					)
 				}

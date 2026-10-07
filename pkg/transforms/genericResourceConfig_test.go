@@ -21,7 +21,7 @@ func TestStringToDataType(t *testing.T) {
 		{"number", "number", DataTypeNumber},
 		{"mapString", "mapString", DataTypeMapString},
 		{"boolean", "boolean", DataTypeBoolean},
-		{"sliceLen", "sliceLen", DataTypeSliceLen},
+		{"arrayLen", "arrayLen", DataTypeArrayLen},
 		{"array", "array", DataTypeArray},
 		{"Empty String", "", DataTypeString},             // Default
 		{"Unknown Value", "UnknownType", DataTypeString}, // Default
