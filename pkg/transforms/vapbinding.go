@@ -108,13 +108,25 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 
 	propSet := map[string]struct{}{policyName: {}}
 
-	edges := edgesByDestinationName(propSet, "ValidatingAdmissionPolicy", nodeInfo, ns, []string{})
+	edges := edgesByDestinationGroupName(
+		propSet,
+		"ValidatingAdmissionPolicy",
+		"admissionregistration.k8s.io",
+		nodeInfo,
+		ns,
+		[]string{},
+	)
 
 	if !v.node.hasMetadata("paramRef") {
 		return edges
 	}
 
-	policy, ok := ns.LookupByKindNamespaceName("ValidatingAdmissionPolicy", "_NONE", policyName)
+	policy, ok := ns.LookupByGroupKindNamespaceName(
+		"admissionregistration.k8s.io",
+		"ValidatingAdmissionPolicy",
+		"_NONE",
+		policyName,
+	)
 	if !ok {
 		return edges
 	}
@@ -134,7 +146,7 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 		return edges
 	}
 
-	namespaceToName := ns.NodesByKind(paramKind)
+	namespaceToName := ns.ByGroupKindNamespaceName[paramGV.Group][paramKind]
 
 	paramRef, ok := v.node.Metadata["paramRef"].(*admissionregistration.ParamRef)
 	if !ok || paramRef == nil {
