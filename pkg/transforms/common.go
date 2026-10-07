@@ -433,6 +433,46 @@ func edgesByDestinationName(
 	ns NodeStore,
 	seenDests []string,
 ) []Edge {
+	return edgesByDestinationNameWithLookup(
+		propSet,
+		destKind,
+		nodeInfo,
+		ns,
+		seenDests,
+		func(nodeStore NodeStore, kind, namespace, name string) (Node, bool) {
+			return nodeStore.LookupByKindNamespaceName(kind, namespace, name)
+		},
+	)
+}
+
+func edgesByDestinationGroupName(
+	propSet map[string]struct{},
+	destKind string,
+	destGroup string,
+	nodeInfo NodeInfo,
+	ns NodeStore,
+	seenDests []string,
+) []Edge {
+	return edgesByDestinationNameWithLookup(
+		propSet,
+		destKind,
+		nodeInfo,
+		ns,
+		seenDests,
+		func(nodeStore NodeStore, kind, namespace, name string) (Node, bool) {
+			return nodeStore.LookupByGroupKindNamespaceName(destGroup, kind, namespace, name)
+		},
+	)
+}
+
+func edgesByDestinationNameWithLookup(
+	propSet map[string]struct{},
+	destKind string,
+	nodeInfo NodeInfo,
+	ns NodeStore,
+	seenDests []string,
+	lookup func(NodeStore, string, string, string) (Node, bool),
+) []Edge {
 	ret := []Edge{}
 	for _, value := range seenDests {
 		// Checking against nodeInfo.UID - it gets updated every time edgesByDestinationName is called
@@ -459,7 +499,7 @@ func edgesByDestinationName(
 					continue
 				}
 			}
-			if destNode, ok := ns.LookupByKindNamespaceName(destKind, nodeInfo.NameSpace, name); ok {
+			if destNode, ok := lookup(ns, destKind, nodeInfo.NameSpace, name); ok {
 				if nodeInfo.UID != destNode.UID { // avoid connecting node to itself
 					ret = append(ret, Edge{
 						SourceUID:  nodeInfo.UID,
@@ -516,7 +556,14 @@ func edgesByDestinationName(
 					nodeInfo.UID = nextSrc.GetMetadata("OwnerUID")
 					nodeInfo.Kind = nextSrcOwner.Properties["kind"].(string)
 					nodeInfo.EdgeType = "uses"
-					ret = append(ret, edgesByDestinationName(propSet, destKind, nodeInfo, ns, seenDests)...)
+					ret = append(ret, edgesByDestinationNameWithLookup(
+						propSet,
+						destKind,
+						nodeInfo,
+						ns,
+						seenDests,
+						lookup,
+					)...)
 				}
 			}
 		}
