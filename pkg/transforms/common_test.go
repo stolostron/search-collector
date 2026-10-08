@@ -12,6 +12,7 @@ package transforms
 
 import (
 	"math"
+	"reflect"
 	"testing"
 	"time"
 
@@ -736,6 +737,47 @@ func TestDataTypeArrayStringsOnly(t *testing.T) {
 			// DataTypeSlice is unchanged: it indexes the elements whatever their type.
 			assert.Equal(t, tt.items, node.Properties["sliceWhole"],
 				"DataTypeSlice behavior must not change")
+		})
+	}
+}
+
+// TestFlattenResultsAndFindNonString verifies one-level flattening and string-only validation.
+func TestFlattenResultsAndFindNonString(t *testing.T) {
+	tests := []struct {
+		name      string
+		matches   []reflect.Value
+		expected  []interface{}
+		nonString interface{}
+	}{
+		{
+			name: "unwraps a list mixed with bare strings",
+			matches: []reflect.Value{
+				reflect.ValueOf("alice"),
+				reflect.ValueOf([]interface{}{"bob", "carol"}),
+			},
+			expected: []interface{}{"alice", "bob", "carol"},
+		},
+		{
+			name: "leaves a doubly nested list for findNonString to reject",
+			matches: []reflect.Value{
+				reflect.ValueOf("alice"),
+				reflect.ValueOf([]interface{}{"bob", "carol"}),
+				reflect.ValueOf([]interface{}{"dave", []interface{}{"eric"}}),
+			},
+			expected:  []interface{}{"alice", "bob", "carol", "dave", []interface{}{"eric"}},
+			nonString: []interface{}{"eric"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flattened := flattenResults(tt.matches)
+			assert.Equal(t, tt.expected, flattened)
+
+			element, found := findNonString(flattened)
+			assert.Equal(t, tt.nonString != nil, found,
+				"findNonString result mismatch")
+			assert.Equal(t, tt.nonString, element)
 		})
 	}
 }
