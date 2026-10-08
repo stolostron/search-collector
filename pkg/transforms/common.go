@@ -12,6 +12,7 @@ package transforms
 
 import (
 	"encoding/json"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -778,6 +779,26 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				}
 				continue
 			}
+			if prop.DataType == DataTypeArrayString {
+				// CollectorConfig `array` is flattened like DataTypeSlice, but only string elements are supported.
+				// Drop the entire property if any non-string element is found.
+				array := flattenResults(result[0])
+
+				if element, found := findNonString(array); found {
+					klog.V(1).Infof(
+						"Ignoring the property [%s] from [%s.%s] Name: [%s]. Reason: array contains a non-string element %T",
+						prop.Name, kind, group, r.GetName(), element,
+					)
+					continue
+				}
+
+				if prop.metadataOnly {
+					node.Metadata[prop.Name] = array
+				} else {
+					node.Properties[prop.Name] = array
+				}
+				continue
+			}
 			val := result[0][0].Interface()
 
 			if knownStringArrays[prop.Name] {
@@ -866,14 +887,14 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 						prop.Name, kind, group, r.GetName(), val,
 					)
 				}
-			} else if prop.DataType == DataTypeSliceLen {
-				if slice, ok := val.([]interface{}); ok {
-					node.Properties[prop.Name] = int64(len(slice))
+			} else if prop.DataType == DataTypeArrayLen {
+				if array, ok := val.([]interface{}); ok {
+					node.Properties[prop.Name] = int64(len(array))
 				} else if val == nil {
 					node.Properties[prop.Name] = prop.DefaultValue
 				} else {
 					klog.V(1).Infof(
-						"Unable to get length of prop [%s] from [%s.%s] Name: [%s], not a slice: %T",
+						"Unable to get length of prop [%s] from [%s.%s] Name: [%s], not an array: %T",
 						prop.Name, kind, group, r.GetName(), val,
 					)
 				}
@@ -956,6 +977,28 @@ func getConditions(r *unstructured.Unstructured) (capiv1beta1.Conditions, error)
 	}
 
 	return capiConditions, nil
+}
+
+func flattenResults(values []reflect.Value) []interface{} {
+	array := []interface{}{}
+	for _, v := range values {
+		val := v.Interface()
+		if nested, ok := val.([]interface{}); ok {
+			array = append(array, nested...)
+			continue
+		}
+		array = append(array, val)
+	}
+	return array
+}
+
+func findNonString(array []interface{}) (interface{}, bool) {
+	for _, v := range array {
+		if _, ok := v.(string); !ok {
+			return v, true
+		}
+	}
+	return nil, false
 }
 
 func memoryToBytes(memory string) (int64, error) {

@@ -4,10 +4,11 @@ package transforms
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
-	k8stesting "k8s.io/client-go/testing"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stretchr/testify/assert"
@@ -456,6 +457,11 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 								"jsonPath": "{.spec.boolField}",
 								"type":     "boolean",
 							},
+							map[string]interface{}{
+								"name":     "arrayField",
+								"jsonPath": "{.spec.arrayField}",
+								"type":     "array",
+							},
 						},
 					},
 				},
@@ -471,7 +477,7 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 	// Verify TestResource config was created with correct DataTypes
 	testResourceConfig, exists := mergedTransformConfig["TestResource.test.io"]
 	assert.True(t, exists, "TestResource config should exist")
-	assert.Equal(t, 3, len(testResourceConfig.properties), "TestResource should have 3 custom properties")
+	assert.Equal(t, 4, len(testResourceConfig.properties), "TestResource should have 4 custom properties")
 
 	// Verify DataTypeString
 	assert.Equal(t, "stringField", testResourceConfig.properties[0].Name)
@@ -484,6 +490,10 @@ func TestLoadAndMergeConfigurableCollection_DataTypeConversions(t *testing.T) {
 	// Verify DataTypeBoolean
 	assert.Equal(t, "boolField", testResourceConfig.properties[2].Name)
 	assert.Equal(t, DataTypeBoolean, testResourceConfig.properties[2].DataType)
+
+	// Verify DataTypeArrayString
+	assert.Equal(t, "arrayField", testResourceConfig.properties[3].Name)
+	assert.Equal(t, DataTypeArrayString, testResourceConfig.properties[3].DataType)
 }
 
 func TestLoadAndMergeConfigurableCollection_MissingSpec(t *testing.T) {
