@@ -11,8 +11,8 @@ Copyright (c) 2020 Red Hat, Inc.
 package transforms
 
 import (
-	app "open-cluster-management.io/multicloud-operators-channel/pkg/apis/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	app "open-cluster-management.io/multicloud-operators-channel/pkg/apis/apps/v1"
 )
 
 // ChannelResource ...
@@ -70,7 +70,7 @@ func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
 	// deploys edges
 	// HelmRepo channel to deployables edges
 	if c.Spec.Type == "HelmRepo" {
-		deployables := ns.ByKindNamespaceName["Deployable"][c.node.Properties["namespace"].(string)]
+		deployables := ns.NodesByKind("Deployable")[c.node.Properties["namespace"].(string)]
 		if len(deployables) > 1 {
 			nodeInfo.EdgeType = "deploys"
 			deployableMap := make(map[string]struct{}, len(deployables))

@@ -12,6 +12,7 @@ package transforms
 
 import (
 	"encoding/json"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -31,8 +32,80 @@ import (
 // An object given to the Edge Building methods in the transforms package.
 // Contains representations of the Node list that are useful for them to efficiently find the nodes that they need.
 type NodeStore struct {
-	ByUID               map[string]Node
-	ByKindNamespaceName map[string]map[string]map[string]Node
+	ByUID map[string]Node
+	// Group-aware index: apigroup -> kind -> namespace -> name -> node.
+	ByGroupKindNamespaceName map[string]map[string]map[string]map[string]Node
+}
+
+func normalizeNamespace(namespace string) string {
+	if namespace == "" {
+		return "_NONE"
+	}
+	return namespace
+}
+
+func (ns NodeStore) LookupByGroupKindNamespaceName(group, kind, namespace, name string) (Node, bool) {
+	namespace = normalizeNamespace(namespace)
+	if byKind, ok := ns.ByGroupKindNamespaceName[group]; ok {
+		if byNamespace, ok := byKind[kind]; ok {
+			if byName, ok := byNamespace[namespace]; ok {
+				node, ok := byName[name]
+				return node, ok
+			}
+		}
+	}
+	return Node{}, false
+}
+
+// LookupByKindNamespaceName resolves a node by kind/namespace/name across groups.
+// If multiple groups contain the same triple, it returns the first group in lexical order
+// to keep behavior deterministic.
+func (ns NodeStore) LookupByKindNamespaceName(kind, namespace, name string) (Node, bool) {
+	namespace = normalizeNamespace(namespace)
+	groups := make([]string, 0, len(ns.ByGroupKindNamespaceName))
+	for group := range ns.ByGroupKindNamespaceName {
+		groups = append(groups, group)
+	}
+	sort.Strings(groups)
+
+	for _, group := range groups {
+		if node, ok := ns.LookupByGroupKindNamespaceName(group, kind, namespace, name); ok {
+			return node, true
+		}
+	}
+
+	return Node{}, false
+}
+
+// NodesByKind returns a namespace/name map for a given kind across groups.
+// In collisions, lexical group order wins for deterministic output.
+func (ns NodeStore) NodesByKind(kind string) map[string]map[string]Node {
+	ret := map[string]map[string]Node{}
+	groups := make([]string, 0, len(ns.ByGroupKindNamespaceName))
+	for group := range ns.ByGroupKindNamespaceName {
+		groups = append(groups, group)
+	}
+	sort.Strings(groups)
+
+	for _, group := range groups {
+		byKind := ns.ByGroupKindNamespaceName[group]
+		byNamespace, ok := byKind[kind]
+		if !ok {
+			continue
+		}
+		for namespace, byName := range byNamespace {
+			if _, ok := ret[namespace]; !ok {
+				ret[namespace] = map[string]Node{}
+			}
+			for name, node := range byName {
+				if _, exists := ret[namespace][name]; !exists {
+					ret[namespace][name] = node
+				}
+			}
+		}
+	}
+
+	return ret
 }
 
 // commonAnnotations returns the annotations with values <= 64 characters. It also removes the
@@ -136,7 +209,7 @@ func addReleaseOwnerUID(node Node, ns NodeStore) {
 	ownerName := node.GetMetadata("OwnerReleaseName")
 
 	// If the HelmRelease node is in the list of current nodes
-	if releaseNode, ok := ns.ByKindNamespaceName["HelmRelease"][ownerNamespace][ownerName]; ok {
+	if releaseNode, ok := ns.LookupByKindNamespaceName("HelmRelease", ownerNamespace, ownerName); ok {
 		node.Metadata["OwnerUID"] = releaseNode.UID
 	} else {
 		klog.V(3).Infof("HelmRelease node not found for namespace: %s name: %s", ownerNamespace, ownerName)
@@ -210,7 +283,7 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 			}
 			switch v := val.(type) {
 			case string:
-				n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][v]
+				n, ok := ns.LookupByKindNamespaceName(e.ToKind, namespace, v)
 				if !ok {
 					continue
 				}
@@ -223,7 +296,7 @@ func edgesByDefaultTransformConfig(ret []Edge, currNode Node, ns NodeStore) []Ed
 				})
 			case []interface{}:
 				for _, item := range v {
-					n, ok := ns.ByKindNamespaceName[e.ToKind][namespace][item.(string)]
+					n, ok := ns.LookupByKindNamespaceName(e.ToKind, namespace, item.(string))
 					if !ok {
 						continue
 					}
@@ -262,7 +335,7 @@ func edgesByGatekeeperMutation(ret []Edge, currNode Node, ns NodeStore) []Edge {
 
 		// Extract the mutation name (ignoring any suffix after ':').
 		mutationName := strings.Split(parts[2], ":")[0]
-		mutationNode, ok := ns.ByKindNamespaceName[parts[0]][mutationNs][mutationName]
+		mutationNode, ok := ns.LookupByKindNamespaceName(parts[0], mutationNs, mutationName)
 		if !ok {
 			continue
 		}
@@ -360,6 +433,46 @@ func edgesByDestinationName(
 	ns NodeStore,
 	seenDests []string,
 ) []Edge {
+	return edgesByDestinationNameWithLookup(
+		propSet,
+		destKind,
+		nodeInfo,
+		ns,
+		seenDests,
+		func(nodeStore NodeStore, kind, namespace, name string) (Node, bool) {
+			return nodeStore.LookupByKindNamespaceName(kind, namespace, name)
+		},
+	)
+}
+
+func edgesByDestinationGroupName(
+	propSet map[string]struct{},
+	destKind string,
+	destGroup string,
+	nodeInfo NodeInfo,
+	ns NodeStore,
+	seenDests []string,
+) []Edge {
+	return edgesByDestinationNameWithLookup(
+		propSet,
+		destKind,
+		nodeInfo,
+		ns,
+		seenDests,
+		func(nodeStore NodeStore, kind, namespace, name string) (Node, bool) {
+			return nodeStore.LookupByGroupKindNamespaceName(destGroup, kind, namespace, name)
+		},
+	)
+}
+
+func edgesByDestinationNameWithLookup(
+	propSet map[string]struct{},
+	destKind string,
+	nodeInfo NodeInfo,
+	ns NodeStore,
+	seenDests []string,
+	lookup func(NodeStore, string, string, string) (Node, bool),
+) []Edge {
 	ret := []Edge{}
 	for _, value := range seenDests {
 		// Checking against nodeInfo.UID - it gets updated every time edgesByDestinationName is called
@@ -386,7 +499,7 @@ func edgesByDestinationName(
 					continue
 				}
 			}
-			if destNode, ok := ns.ByKindNamespaceName[destKind][nodeInfo.NameSpace][name]; ok {
+			if destNode, ok := lookup(ns, destKind, nodeInfo.NameSpace, name); ok {
 				if nodeInfo.UID != destNode.UID { // avoid connecting node to itself
 					ret = append(ret, Edge{
 						SourceUID:  nodeInfo.UID,
@@ -443,7 +556,14 @@ func edgesByDestinationName(
 					nodeInfo.UID = nextSrc.GetMetadata("OwnerUID")
 					nodeInfo.Kind = nextSrcOwner.Properties["kind"].(string)
 					nodeInfo.EdgeType = "uses"
-					ret = append(ret, edgesByDestinationName(propSet, destKind, nodeInfo, ns, seenDests)...)
+					ret = append(ret, edgesByDestinationNameWithLookup(
+						propSet,
+						destKind,
+						nodeInfo,
+						ns,
+						seenDests,
+						lookup,
+					)...)
 				}
 			}
 		}
@@ -462,7 +582,7 @@ func edgesByDeployerSubscriber(nodeInfo NodeInfo, ns NodeStore) []Edge {
 			namespace := strings.Split(destNsName, "/")[0]
 			name := strings.Split(destNsName, "/")[1]
 
-			if dest, ok := ns.ByKindNamespaceName[destKind][namespace][name]; ok {
+			if dest, ok := ns.LookupByKindNamespaceName(destKind, namespace, name); ok {
 				if nodeInfo.UID != dest.UID { // avoid connecting node to itself
 					depSubedges = append(depSubedges, Edge{
 						SourceUID:  nodeInfo.UID,

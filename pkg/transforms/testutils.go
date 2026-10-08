@@ -56,30 +56,39 @@ func AssertDeepEqual(property string, actual, expected interface{}, t *testing.T
 
 func BuildFakeNodeStore(nodes []Node) NodeStore {
 	byUID := make(map[string]Node)
-	byKindNameNamespace := make(map[string]map[string]map[string]Node)
+	byGroupKindNameNamespace := make(map[string]map[string]map[string]map[string]Node)
 
 	for _, n := range nodes {
 		byUID[n.UID] = n
 		kind := n.Properties["kind"].(string)
-		namespace := "_NONE"
-		if n.Properties["namespace"] != nil {
-			namespace = n.Properties["namespace"].(string)
+		namespace := normalizeNamespace("")
+		if ns, ok := n.Properties["namespace"].(string); ok {
+			namespace = normalizeNamespace(ns)
+		}
+		name := n.Properties["name"].(string)
+		group := ""
+		if g, ok := n.Properties["apigroup"].(string); ok {
+			group = g
 		}
 
-		if byKindNameNamespace[kind] == nil {
-			byKindNameNamespace[kind] = map[string]map[string]Node{}
+		if byGroupKindNameNamespace[group] == nil {
+			byGroupKindNameNamespace[group] = map[string]map[string]map[string]Node{}
 		}
 
-		if byKindNameNamespace[kind][namespace] == nil {
-			byKindNameNamespace[kind][namespace] = map[string]Node{}
+		if byGroupKindNameNamespace[group][kind] == nil {
+			byGroupKindNameNamespace[group][kind] = map[string]map[string]Node{}
 		}
 
-		byKindNameNamespace[kind][namespace][n.Properties["name"].(string)] = n
+		if byGroupKindNameNamespace[group][kind][namespace] == nil {
+			byGroupKindNameNamespace[group][kind][namespace] = map[string]Node{}
+		}
+
+		byGroupKindNameNamespace[group][kind][namespace][name] = n
 	}
 
 	store := NodeStore{
-		ByUID:               byUID,
-		ByKindNamespaceName: byKindNameNamespace,
+		ByUID:                    byUID,
+		ByGroupKindNamespaceName: byGroupKindNameNamespace,
 	}
 
 	return store
