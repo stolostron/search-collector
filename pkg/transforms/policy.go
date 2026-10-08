@@ -352,14 +352,9 @@ func (p PolicyResource) BuildEdges(ns NodeStore) []Edge {
 }
 
 func lookupRelatedObject(ns NodeStore, obj relatedObject) (Node, bool) {
-	namespace := obj.Namespace
-	if namespace == "" {
-		namespace = "_NONE"
-	}
-
 	if obj.Group != "" {
-		return ns.LookupByGroupKindNamespaceName(obj.Group, obj.Kind, namespace, obj.Name)
+		return ns.LookupByGroupKindNamespaceName(obj.Group, obj.Kind, obj.Namespace, obj.Name)
 	}
 
-	return ns.LookupByKindNamespaceName(obj.Kind, namespace, obj.Name)
+	return ns.LookupByKindNamespaceName(obj.Kind, obj.Namespace, obj.Name)
 }
