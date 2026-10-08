@@ -30,14 +30,14 @@ type ExtractEdge struct {
 type DataType string
 
 const (
-	DataTypeBytes     DataType = "bytes"
-	DataTypeSlice     DataType = "slice"
-	DataTypeString    DataType = "string"
-	DataTypeNumber    DataType = "number"
-	DataTypeMapString DataType = "mapString"
-	DataTypeBoolean   DataType = "boolean"
-	DataTypeArray     DataType = "array"
-	DataTypeArrayLen  DataType = "arrayLen"
+	DataTypeBytes       DataType = "bytes"
+	DataTypeSlice       DataType = "slice"
+	DataTypeString      DataType = "string"
+	DataTypeNumber      DataType = "number"
+	DataTypeMapString   DataType = "mapString"
+	DataTypeBoolean     DataType = "boolean"
+	DataTypeArrayString DataType = "arrayString"
+	DataTypeArrayLen    DataType = "arrayLen"
 )
 
 // matchLabelKiagnose is the label used to identify kiagnose network-latency checkup ConfigMaps.
@@ -57,8 +57,8 @@ func stringToDataType(s string) DataType {
 		return DataTypeMapString
 	case "boolean":
 		return DataTypeBoolean
-	case "array":
-		return DataTypeArray
+	case "arrayString":
+		return DataTypeArrayString
 	case "arrayLen":
 		return DataTypeArrayLen
 	default:

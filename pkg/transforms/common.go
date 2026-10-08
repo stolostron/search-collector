@@ -779,7 +779,7 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				}
 				continue
 			}
-			if prop.DataType == DataTypeArray {
+			if prop.DataType == DataTypeArrayString {
 				// CollectorConfig `array` is flattened like DataTypeSlice, but only string elements are supported.
 				// Drop the entire property if any non-string element is found.
 				array := flattenResults(result[0])

@@ -22,7 +22,7 @@ func TestStringToDataType(t *testing.T) {
 		{"mapString", "mapString", DataTypeMapString},
 		{"boolean", "boolean", DataTypeBoolean},
 		{"arrayLen", "arrayLen", DataTypeArrayLen},
-		{"array", "array", DataTypeArray},
+		{"arrayString", "arrayString", DataTypeArrayString},
 		{"Empty String", "", DataTypeString},             // Default
 		{"Unknown Value", "UnknownType", DataTypeString}, // Default
 		{"Invalid Case", "Bytes", DataTypeString},        // Case-sensitive, should default

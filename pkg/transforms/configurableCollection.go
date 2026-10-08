@@ -550,7 +550,7 @@ func dataTypeFromCRD(crdType v1alpha1.DataType) DataType {
 	case v1alpha1.DataTypeBoolean:
 		return DataTypeBoolean
 	case v1alpha1.DataTypeArray:
-		return DataTypeArray
+		return DataTypeArrayString
 	default:
 		return DataTypeString
 	}

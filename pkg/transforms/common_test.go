@@ -651,9 +651,9 @@ func TestDataTypeArrayStringsOnly(t *testing.T) {
 	testConfig := ResourceConfig{
 		properties: []ExtractProperty{
 			// `[*]` yields one JSONPath result per element.
-			{Name: "arrayItems", JSONPath: `{.spec.items[*]}`, DataType: DataTypeArray},
+			{Name: "arrayItems", JSONPath: `{.spec.items[*]}`, DataType: DataTypeArrayString},
 			// Without `[*]` the whole array arrives as a single result and is flattened.
-			{Name: "arrayWhole", JSONPath: `{.spec.items}`, DataType: DataTypeArray},
+			{Name: "arrayWhole", JSONPath: `{.spec.items}`, DataType: DataTypeArrayString},
 			// Same data read as the built-in slice type, which accepts any element.
 			{Name: "sliceWhole", JSONPath: `{.spec.items}`, DataType: DataTypeSlice},
 		},
