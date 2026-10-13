@@ -32,7 +32,7 @@ require (
 	github.com/openshift/controller-runtime-common v0.0.0-20260213175913-767fef058eca
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20221125104750-d4b167d5fae6
-	github.com/stolostron/search-v2-operator v0.0.0-20260709195409-11944e2ffed6
+	github.com/stolostron/search-v2-operator v0.0.0-20261013154024-cb88cab6d429
 	sigs.k8s.io/cluster-api v1.10.4
 )
 
