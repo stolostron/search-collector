@@ -642,3 +642,122 @@ func TestHubOnlyProperty(t *testing.T) {
 		})
 	}
 }
+
+func TestDataTypeArrayStringsOnly(t *testing.T) {
+	const kind = "ArrayTestResource"
+	const group = "test.open-cluster-management.io"
+	configKey := kind + "." + group
+
+	testConfig := ResourceConfig{
+		properties: []ExtractProperty{
+			// [*] yields one JSONPath result per element, which is the supported form.
+			{Name: "arrayItems", JSONPath: `{.spec.items[*]}`, DataType: DataTypeArrayString},
+			// Without [*] the whole list arrives as a single result, which is never a string.
+			{Name: "arrayWhole", JSONPath: `{.spec.items}`, DataType: DataTypeArrayString},
+			// Same data read as the built-in slice type, which accepts any element.
+			{Name: "sliceWhole", JSONPath: `{.spec.items}`, DataType: DataTypeSlice},
+		},
+	}
+
+	// Seed both configs because getTransformConfig prefers mergedTransformConfig when initialized.
+	defaultTransformConfig[configKey] = testConfig
+	mergedTransformConfigMu.Lock()
+	if mergedTransformConfig != nil {
+		mergedTransformConfig[configKey] = testConfig
+	}
+	mergedTransformConfigMu.Unlock()
+
+	t.Cleanup(func() {
+		delete(defaultTransformConfig, configKey)
+		mergedTransformConfigMu.Lock()
+		delete(mergedTransformConfig, configKey)
+		mergedTransformConfigMu.Unlock()
+	})
+
+	tests := []struct {
+		name  string
+		items []interface{}
+		// expected is nil when the array property must be dropped from the node.
+		expected []interface{}
+	}{
+		{
+			name:     "indexes an array of strings",
+			items:    []interface{}{"alice", "bob", "carol"},
+			expected: []interface{}{"alice", "bob", "carol"},
+		},
+		{
+			name:     "indexes a single string element",
+			items:    []interface{}{"alice"},
+			expected: []interface{}{"alice"},
+		},
+		{
+			name:     "drops an array of numbers",
+			items:    []interface{}{int64(1), int64(2)},
+			expected: nil,
+		},
+		{
+			name:     "drops an array of booleans",
+			items:    []interface{}{true, false},
+			expected: nil,
+		},
+		{
+			name:     "drops an array of objects",
+			items:    []interface{}{map[string]interface{}{"name": "alice"}},
+			expected: nil,
+		},
+		{
+			name:     "drops a mixed array",
+			items:    []interface{}{"alice", int64(2)},
+			expected: nil,
+		},
+		{
+			name:     "drops an empty array",
+			items:    []interface{}{},
+			expected: nil,
+		},
+		{
+			name:     "drops a nested list",
+			items:    []interface{}{[]interface{}{"bob", "carol"}},
+			expected: nil,
+		},
+		{
+			name:     "drops a string mixed with a nested list",
+			items:    []interface{}{"alice", []interface{}{"bob", "carol"}},
+			expected: nil,
+		},
+		{
+			name:     "drops a doubly nested list",
+			items:    []interface{}{"alice", []interface{}{"dave", []interface{}{"eric"}}},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource := &unstructured.Unstructured{Object: map[string]interface{}{
+				"apiVersion": group + "/v1",
+				"kind":       kind,
+				"metadata":   map[string]interface{}{"name": "test-resource"},
+				"spec":       map[string]interface{}{"items": tt.items},
+			}}
+			node := GenericResourceBuilder(resource).BuildNode()
+
+			if tt.expected == nil {
+				assert.NotContains(t, node.Properties, "arrayItems",
+					"a list with a non-string element must not be indexed")
+			} else {
+				assert.Equal(t, tt.expected, node.Properties["arrayItems"],
+					"a list of strings must be indexed with every element")
+			}
+
+			assert.NotContains(t, node.Properties, "arrayWhole",
+				"DataTypeArrayString requires a jsonPath ending in [*]")
+
+			// DataTypeSlice is unchanged: it indexes the elements whatever their type.
+			if len(tt.items) > 0 {
+				assert.Equal(t, tt.items, node.Properties["sliceWhole"],
+					"DataTypeSlice behavior must not change")
+			}
+		})
+	}
+}

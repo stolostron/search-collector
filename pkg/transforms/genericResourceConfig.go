@@ -30,13 +30,14 @@ type ExtractEdge struct {
 type DataType string
 
 const (
-	DataTypeBytes     DataType = "bytes"
-	DataTypeSlice     DataType = "slice"
-	DataTypeString    DataType = "string"
-	DataTypeNumber    DataType = "number"
-	DataTypeMapString DataType = "mapString"
-	DataTypeBoolean   DataType = "boolean"
-	DataTypeSliceLen  DataType = "sliceLen"
+	DataTypeBytes       DataType = "bytes"
+	DataTypeSlice       DataType = "slice"
+	DataTypeString      DataType = "string"
+	DataTypeNumber      DataType = "number"
+	DataTypeMapString   DataType = "mapString"
+	DataTypeBoolean     DataType = "boolean"
+	DataTypeArrayString DataType = "arrayString"
+	DataTypeArrayLen    DataType = "arrayLen"
 )
 
 // matchLabelKiagnose is the label used to identify kiagnose network-latency checkup ConfigMaps.
@@ -56,8 +57,10 @@ func stringToDataType(s string) DataType {
 		return DataTypeMapString
 	case "boolean":
 		return DataTypeBoolean
-	case "sliceLen":
-		return DataTypeSliceLen
+	case "arrayString":
+		return DataTypeArrayString
+	case "arrayLen":
+		return DataTypeArrayLen
 	default:
 		return DataTypeString
 	}
@@ -238,7 +241,7 @@ var defaultTransformConfig = map[string]ResourceConfig{
 	},
 	"Group.user.openshift.io": {
 		properties: []ExtractProperty{
-			{Name: "userCount", JSONPath: `.users`, DataType: DataTypeSliceLen, DefaultValue: int64(0)},
+			{Name: "userCount", JSONPath: `.users`, DataType: DataTypeArrayLen, DefaultValue: int64(0)},
 		},
 	},
 	"Job.batch": {

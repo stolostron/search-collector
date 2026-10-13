@@ -448,8 +448,8 @@ github.com/stolostron/klusterlet-addon-controller v0.0.0-20221125104750-d4b167d5
 github.com/stolostron/klusterlet-addon-controller v0.0.0-20221125104750-d4b167d5fae6/go.mod h1:I+9sAI7jvIwx8stAy4xn3/xafg6GKWyhYrTaijGT4Rs=
 github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0 h1:Kb0gMg73tZ07T4PsRafg7eL6Z6bo7tH4FoE6buyj4P8=
 github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0/go.mod h1:LpFJFL0NWlVrR7fdjX/ObbXfrjYbcSj/CuMu8lmjD6s=
-github.com/stolostron/search-v2-operator v0.0.0-20260709195409-11944e2ffed6 h1:BFcmoapMBxazixKqoxvOL0S7HYMKFuUCH+eTr5q5P2c=
-github.com/stolostron/search-v2-operator v0.0.0-20260709195409-11944e2ffed6/go.mod h1:K/2RGExwRDMztxYbRoqR8PBP45ZfqUnT8mKdegCQQI8=
+github.com/stolostron/search-v2-operator v0.0.0-20261013154024-cb88cab6d429 h1:wlELR0nGiey5uA5bHXoOq+XkHPKIDnB5FS+YXXvUYY0=
+github.com/stolostron/search-v2-operator v0.0.0-20261013154024-cb88cab6d429/go.mod h1:hpQqN0zrMp07lcE48Jczjg85rSQ0BaOhDlbVpTrLsE8=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=
