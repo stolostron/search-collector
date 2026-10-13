@@ -12,7 +12,6 @@ package transforms
 
 import (
 	"encoding/json"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -780,9 +779,12 @@ func applyDefaultTransformConfig(node Node, r *unstructured.Unstructured, additi
 				continue
 			}
 			if prop.DataType == DataTypeArrayString {
-				// CollectorConfig `array` is flattened like DataTypeSlice, but only string elements are supported.
-				// Drop the entire property if any non-string element is found.
-				array := flattenResults(result[0])
+				// DataTypeArrayString requires explicit element selection [*] with no flattening.
+				// Drop the property if any match is not a string.
+				array := make([]interface{}, 0, len(result[0]))
+				for _, v := range result[0] {
+					array = append(array, v.Interface())
+				}
 
 				if element, found := findNonString(array); found {
 					klog.V(1).Infof(
@@ -977,19 +979,6 @@ func getConditions(r *unstructured.Unstructured) (capiv1beta1.Conditions, error)
 	}
 
 	return capiConditions, nil
-}
-
-func flattenResults(values []reflect.Value) []interface{} {
-	array := []interface{}{}
-	for _, v := range values {
-		val := v.Interface()
-		if nested, ok := val.([]interface{}); ok {
-			array = append(array, nested...)
-			continue
-		}
-		array = append(array, val)
-	}
-	return array
 }
 
 func findNonString(array []interface{}) (interface{}, bool) {

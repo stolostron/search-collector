@@ -12,7 +12,6 @@ package transforms
 
 import (
 	"math"
-	"reflect"
 	"testing"
 	"time"
 
@@ -651,9 +650,9 @@ func TestDataTypeArrayStringsOnly(t *testing.T) {
 
 	testConfig := ResourceConfig{
 		properties: []ExtractProperty{
-			// `[*]` yields one JSONPath result per element.
+			// [*] yields one JSONPath result per element, which is the supported form.
 			{Name: "arrayItems", JSONPath: `{.spec.items[*]}`, DataType: DataTypeArrayString},
-			// Without `[*]` the whole array arrives as a single result and is flattened.
+			// Without [*] the whole list arrives as a single result, which is never a string.
 			{Name: "arrayWhole", JSONPath: `{.spec.items}`, DataType: DataTypeArrayString},
 			// Same data read as the built-in slice type, which accepts any element.
 			{Name: "sliceWhole", JSONPath: `{.spec.items}`, DataType: DataTypeSlice},
@@ -711,6 +710,26 @@ func TestDataTypeArrayStringsOnly(t *testing.T) {
 			items:    []interface{}{"alice", int64(2)},
 			expected: nil,
 		},
+		{
+			name:     "drops an empty array",
+			items:    []interface{}{},
+			expected: nil,
+		},
+		{
+			name:     "drops a nested list",
+			items:    []interface{}{[]interface{}{"bob", "carol"}},
+			expected: nil,
+		},
+		{
+			name:     "drops a string mixed with a nested list",
+			items:    []interface{}{"alice", []interface{}{"bob", "carol"}},
+			expected: nil,
+		},
+		{
+			name:     "drops a doubly nested list",
+			items:    []interface{}{"alice", []interface{}{"dave", []interface{}{"eric"}}},
+			expected: nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -723,61 +742,22 @@ func TestDataTypeArrayStringsOnly(t *testing.T) {
 			}}
 			node := GenericResourceBuilder(resource).BuildNode()
 
-			// Both JSONPath shapes must agree: per-element and whole-array.
-			for _, prop := range []string{"arrayItems", "arrayWhole"} {
-				if tt.expected == nil {
-					assert.NotContains(t, node.Properties, prop,
-						"an array with a non-string element must not be indexed")
-					continue
-				}
-				assert.Equal(t, tt.expected, node.Properties[prop],
-					"an array of strings must be indexed with every element")
+			if tt.expected == nil {
+				assert.NotContains(t, node.Properties, "arrayItems",
+					"a list with a non-string element must not be indexed")
+			} else {
+				assert.Equal(t, tt.expected, node.Properties["arrayItems"],
+					"a list of strings must be indexed with every element")
 			}
 
+			assert.NotContains(t, node.Properties, "arrayWhole",
+				"DataTypeArrayString requires a jsonPath ending in [*]")
+
 			// DataTypeSlice is unchanged: it indexes the elements whatever their type.
-			assert.Equal(t, tt.items, node.Properties["sliceWhole"],
-				"DataTypeSlice behavior must not change")
-		})
-	}
-}
-
-// TestFlattenResultsAndFindNonString verifies one-level flattening and string-only validation.
-func TestFlattenResultsAndFindNonString(t *testing.T) {
-	tests := []struct {
-		name      string
-		matches   []reflect.Value
-		expected  []interface{}
-		nonString interface{}
-	}{
-		{
-			name: "unwraps a list mixed with bare strings",
-			matches: []reflect.Value{
-				reflect.ValueOf("alice"),
-				reflect.ValueOf([]interface{}{"bob", "carol"}),
-			},
-			expected: []interface{}{"alice", "bob", "carol"},
-		},
-		{
-			name: "leaves a doubly nested list for findNonString to reject",
-			matches: []reflect.Value{
-				reflect.ValueOf("alice"),
-				reflect.ValueOf([]interface{}{"bob", "carol"}),
-				reflect.ValueOf([]interface{}{"dave", []interface{}{"eric"}}),
-			},
-			expected:  []interface{}{"alice", "bob", "carol", "dave", []interface{}{"eric"}},
-			nonString: []interface{}{"eric"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			flattened := flattenResults(tt.matches)
-			assert.Equal(t, tt.expected, flattened)
-
-			element, found := findNonString(flattened)
-			assert.Equal(t, tt.nonString != nil, found,
-				"findNonString result mismatch")
-			assert.Equal(t, tt.nonString, element)
+			if len(tt.items) > 0 {
+				assert.Equal(t, tt.items, node.Properties["sliceWhole"],
+					"DataTypeSlice behavior must not change")
+			}
 		})
 	}
 }
