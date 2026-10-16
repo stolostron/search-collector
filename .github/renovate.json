@@ -8,10 +8,6 @@
         {
             "matchDepTypes": ["indirect"],
             "enabled": false
-        },
-        {
-            "matchBaseBranches": ["release-*"],
-            "enabled": false
         }
       ]
     },
