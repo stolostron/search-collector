@@ -3589,3 +3589,151 @@ func TestExclude_ResetOnReload(t *testing.T) {
 	assert.False(t, IsResourceExcluded("coordination.k8s.io", "Lease"),
 		"Previous exclude should be cleared after reload with no exclude rules")
 }
+
+func TestLoadAndMergeConfigurableCollection_HubOnlyFields(t *testing.T) {
+	tests := []struct {
+		name             string
+		apiGroup         string
+		kind             string
+		fieldName        string
+		jsonPath         string
+		fieldSuffix      string
+		expectedPropName string
+		expectedHubOnly  bool
+	}{
+		{
+			name:             "Group users is hub only",
+			apiGroup:         "user.openshift.io",
+			kind:             "Group",
+			fieldName:        "users",
+			jsonPath:         "{.users[*]}",
+			expectedPropName: "users",
+			expectedHubOnly:  true,
+		},
+		{
+			name:             "Group users root is hub only",
+			apiGroup:         "user.openshift.io",
+			kind:             "Group",
+			fieldName:        "allUsers",
+			jsonPath:         "{.users}",
+			expectedPropName: "allUsers",
+			expectedHubOnly:  true,
+		},
+		{
+			name:             "Group users stays hub only with a field suffix",
+			apiGroup:         "user.openshift.io",
+			kind:             "Group",
+			fieldName:        "users",
+			jsonPath:         "{.users[*]}",
+			fieldSuffix:      "grc",
+			expectedPropName: "users.grc",
+			expectedHubOnly:  true,
+		},
+		{
+			name:             "a renamed Group field reading users is still hub only",
+			apiGroup:         "user.openshift.io",
+			kind:             "Group",
+			fieldName:        "members",
+			jsonPath:         "{.users[*]}",
+			expectedPropName: "members",
+			expectedHubOnly:  true,
+		},
+		{
+			name:             "a single indexed Group user is still hub only",
+			apiGroup:         "user.openshift.io",
+			kind:             "Group",
+			fieldName:        "firstUser",
+			jsonPath:         "{.users[0]}",
+			expectedPropName: "firstUser",
+			expectedHubOnly:  true,
+		},
+		{
+			// The root needs a delimiter after it, so a field merely sharing the prefix is not gated.
+			name:             "a Group field sharing the users prefix is collected everywhere",
+			apiGroup:         "user.openshift.io",
+			kind:             "Group",
+			fieldName:        "usersFoo",
+			jsonPath:         "{.usersFoo[*]}",
+			expectedPropName: "usersFoo",
+			expectedHubOnly:  false,
+		},
+		{
+			name:             "another Group field is collected everywhere",
+			apiGroup:         "user.openshift.io",
+			kind:             "Group",
+			fieldName:        "identities",
+			jsonPath:         "{.identities[*]}",
+			expectedPropName: "identities",
+			expectedHubOnly:  false,
+		},
+		{
+			name:             "same jsonPath on another kind is collected everywhere",
+			apiGroup:         "test.io",
+			kind:             "TestResource",
+			fieldName:        "users",
+			jsonPath:         "{.users[*]}",
+			expectedPropName: "users",
+			expectedHubOnly:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			originalNamespace := config.Cfg.PodNamespace
+			t.Cleanup(func() {
+				config.Cfg.PodNamespace = originalNamespace
+			})
+
+			config.Cfg.PodNamespace = "test-namespace"
+
+			collectionConfig := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "search.open-cluster-management.io/v1alpha1",
+					"kind":       "CollectorConfig",
+					"metadata": map[string]interface{}{
+						"name":      "merged-collector-config",
+						"namespace": "test-namespace",
+					},
+					"spec": map[string]interface{}{
+						"collectionRules": []interface{}{
+							map[string]interface{}{
+								"action":      "include",
+								"fieldSuffix": tt.fieldSuffix,
+								"resourceSelector": map[string]interface{}{
+									"apiGroups": []interface{}{tt.apiGroup},
+									"kinds":     []interface{}{tt.kind},
+								},
+								"fields": []interface{}{
+									map[string]interface{}{
+										"name":     tt.fieldName,
+										"jsonPath": tt.jsonPath,
+										"type":     "array",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), collectionConfig)
+			loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+			resourceKey := tt.kind + "." + tt.apiGroup
+			resourceConfig, exists := mergedTransformConfig[resourceKey]
+			require.True(t, exists, "config for %s should exist", resourceKey)
+
+			var prop *ExtractProperty
+			for i := range resourceConfig.properties {
+				if resourceConfig.properties[i].Name == tt.expectedPropName {
+					prop = &resourceConfig.properties[i]
+					break
+				}
+			}
+			require.NotNil(t, prop, "property %s should be merged", tt.expectedPropName)
+
+			assert.Equal(t, tt.expectedHubOnly, prop.hubOnly,
+				"unexpected hubOnly value for %s.%s", resourceKey, tt.fieldName)
+		})
+	}
+}
