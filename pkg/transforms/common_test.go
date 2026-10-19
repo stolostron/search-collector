@@ -761,3 +761,74 @@ func TestDataTypeArrayStringsOnly(t *testing.T) {
 		})
 	}
 }
+
+func TestGroupUsersHubOnly(t *testing.T) {
+	const configKey = "Group.user.openshift.io"
+
+	withUsers := func(base ResourceConfig) ResourceConfig {
+		base.properties = append(append([]ExtractProperty{}, base.properties...),
+			ExtractProperty{Name: "users", JSONPath: `{.users[*]}`, DataType: DataTypeArrayString, hubOnly: true})
+		return base
+	}
+
+	// Seed both configs because getTransformConfig prefers mergedTransformConfig when initialized.
+	originalDefault, hadDefault := defaultTransformConfig[configKey]
+	defaultTransformConfig[configKey] = withUsers(originalDefault)
+
+	mergedTransformConfigMu.Lock()
+	originalMerged, hadMerged := mergedTransformConfig[configKey]
+	if mergedTransformConfig != nil {
+		mergedTransformConfig[configKey] = withUsers(originalMerged)
+	}
+	mergedTransformConfigMu.Unlock()
+
+	originalDeployedInHub := config.Cfg.DeployedInHub
+	t.Cleanup(func() {
+		config.Cfg.DeployedInHub = originalDeployedInHub
+
+		if hadDefault {
+			defaultTransformConfig[configKey] = originalDefault
+		} else {
+			delete(defaultTransformConfig, configKey)
+		}
+
+		mergedTransformConfigMu.Lock()
+		if hadMerged {
+			mergedTransformConfig[configKey] = originalMerged
+		} else {
+			delete(mergedTransformConfig, configKey)
+		}
+		mergedTransformConfigMu.Unlock()
+	})
+
+	group := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "user.openshift.io/v1",
+		"kind":       "Group",
+		"metadata":   map[string]interface{}{"name": "test-group"},
+		"users":      []interface{}{"alice", "bob"},
+	}}
+
+	tests := []struct {
+		name          string
+		deployedInHub bool
+		expectUsers   bool
+	}{
+		{name: "hub indexes the group members", deployedInHub: true, expectUsers: true},
+		{name: "managed cluster skips the group members", deployedInHub: false, expectUsers: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config.Cfg.DeployedInHub = tt.deployedInHub
+			node := GenericResourceBuilder(group).BuildNode()
+
+			if tt.expectUsers {
+				assert.Equal(t, []interface{}{"alice", "bob"}, node.Properties["users"],
+					"group members must be collected on the hub")
+			} else {
+				assert.NotContains(t, node.Properties, "users",
+					"group members must not leave a managed cluster")
+			}
+		})
+	}
+}

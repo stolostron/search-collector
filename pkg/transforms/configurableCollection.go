@@ -80,6 +80,30 @@ const (
 	collectorConfigReasonLoadError    = "LoadError"
 )
 
+// hubOnlyFields lists resource fields that are only collected on the hub,
+// keyed by "<Kind>.<apiGroup>". Matching the source path keeps the policy intact
+// across aliases, suffixes, and partial reads.
+var hubOnlyFields = map[string][]string{
+	"Group.user.openshift.io": {".users"},
+}
+
+// isHubOnlyField reports whether jsonPath reads a hub-only source field.
+// A root matches exactly or when followed by an index/child path, so ".users",
+// ".users[*]", and ".users[0]" match while ".usersFoo" does not.
+func isHubOnlyField(resourceKey, jsonPath string) bool {
+	path := strings.TrimSuffix(strings.TrimPrefix(jsonPath, "{"), "}")
+	for _, root := range hubOnlyFields[resourceKey] {
+		if path == root {
+			return true
+		}
+		if rest, ok := strings.CutPrefix(path, root); ok && len(rest) > 0 &&
+			(rest[0] == '[' || rest[0] == '.') {
+			return true
+		}
+	}
+	return false
+}
+
 // collectorConfigGVR is the GroupVersionResource for CollectorConfig.
 var collectorConfigGVR = schema.GroupVersionResource{
 	Group:    "search.open-cluster-management.io",
@@ -289,10 +313,12 @@ func loadAndMergeConfigurableCollectionWithClient(dynamicClient dynamic.Interfac
 			// malformed inputs like "{.spec.myField" all produce "{.spec.myField}".
 			jsonPath := "{" + strings.TrimSuffix(strings.TrimPrefix(field.JSONPath, "{"), "}") + "}"
 
+			// Apply the hub-only policy based on the source JSONPath.
 			extractProp := ExtractProperty{
 				Name:     name,
 				JSONPath: jsonPath,
 				DataType: dataTypeFromCRD(field.Type),
+				hubOnly:  isHubOnlyField(resourceKey, jsonPath),
 			}
 
 			resourceConfig.properties = append(resourceConfig.properties, extractProp)
