@@ -11,7 +11,7 @@ require (
 	github.com/openshift/api v0.0.0-20261017003925-24b2699a9b32
 	github.com/stolostron/governance-policy-propagator v0.0.0-20220125192743-95d49290a318
 	github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
 	github.com/tkanos/gonfig v0.0.0-20210106201359-53e13348de2f
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
@@ -81,7 +81,7 @@ require (
 	github.com/stolostron/cluster-lifecycle-api v0.0.0-20240813023109-42b5c115d0a3 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
