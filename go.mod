@@ -22,7 +22,7 @@ require (
 	k8s.io/helm v2.17.0+incompatible
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
-	open-cluster-management.io/multicloud-operators-channel v0.8.0
+	open-cluster-management.io/multicloud-operators-channel v0.16.0
 	open-cluster-management.io/multicloud-operators-subscription v0.8.0 //Use 2.0 when available
 	sigs.k8s.io/application v0.8.3
 )
