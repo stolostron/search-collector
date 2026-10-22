@@ -3737,3 +3737,70 @@ func TestLoadAndMergeConfigurableCollection_HubOnlyFields(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadAndMergeConfigurableCollection_DefaultOnWithOnlyIntegrationRules(t *testing.T) {
+	originalFeatureFlag := config.Cfg.FeatureConfigurableCollection
+	originalNamespace := config.Cfg.PodNamespace
+
+	mergedTransformConfigMu.Lock()
+	originalMerged := mergedTransformConfig
+	originalExcludeRules := excludeRules
+	mergedTransformConfigMu.Unlock()
+
+	t.Cleanup(func() {
+		config.Cfg.FeatureConfigurableCollection = originalFeatureFlag
+		config.Cfg.PodNamespace = originalNamespace
+		mergedTransformConfigMu.Lock()
+		mergedTransformConfig = originalMerged
+		excludeRules = originalExcludeRules
+		mergedTransformConfigMu.Unlock()
+	})
+
+	config.Cfg.FeatureConfigurableCollection = true
+	config.Cfg.PodNamespace = "test-namespace"
+
+	// Integration rules without additional collection fields.
+	bareInclude := func(apiGroup string) map[string]interface{} {
+		return map[string]interface{}{
+			"action": "include",
+			"resourceSelector": map[string]interface{}{
+				"apiGroups": []interface{}{apiGroup},
+				"kinds":     []interface{}{"*"},
+			},
+		}
+	}
+
+	collectionConfig := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "search.open-cluster-management.io/v1alpha1",
+			"kind":       "CollectorConfig",
+			"metadata": map[string]interface{}{
+				"name":      "merged-collector-config",
+				"namespace": "test-namespace",
+			},
+			"spec": map[string]interface{}{
+				"collectionRules": []interface{}{
+					bareInclude("argoproj.io"),
+					bareInclude("operators.coreos.com"),
+				},
+			},
+		},
+	}
+
+	fakeClient := fake.NewSimpleDynamicClient(runtime.NewScheme(), collectionConfig)
+	loadAndMergeConfigurableCollectionWithClient(fakeClient)
+
+	mergedTransformConfigMu.RLock()
+	merged := deepCopyTransformConfig(mergedTransformConfig)
+	mergedTransformConfigMu.RUnlock()
+
+	assert.Len(t, excludeRules, 2, "both integration include rules should be loaded")
+
+	assert.Equal(t, deepCopyTransformConfig(defaultTransformConfig), merged,
+		"bare integration includes must not change the transform config")
+
+	assert.False(t, IsResourceExcluded("argoproj.io", "Application"),
+		"a resource matched by an include rule must not be excluded")
+	assert.False(t, IsResourceExcluded("apps", "Deployment"),
+		"a resource matched by no rule must not be excluded")
+}
