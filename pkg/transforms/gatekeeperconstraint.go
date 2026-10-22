@@ -62,13 +62,8 @@ func (r GkConstraintResource) BuildEdges(ns NodeStore) []Edge {
 	edges := make([]Edge, 0, len(relObjs))
 
 	for _, obj := range relObjs {
-		namespace := obj.Namespace
-		if namespace == "" {
-			namespace = "_NONE"
-		}
-
 		// ignore objects if they aren't in the NodeStore
-		if res, ok := ns.ByKindNamespaceName[obj.Kind][namespace][obj.Name]; ok {
+		if res, ok := lookupRelatedObject(ns, obj); ok {
 			edges = append(edges, Edge{
 				EdgeType:   obj.EdgeType,
 				SourceKind: constraintKind,

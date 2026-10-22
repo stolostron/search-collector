@@ -182,7 +182,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 		} else if volume.PersistentVolumeClaim != nil {
 			volumeClaimName := volume.PersistentVolumeClaim.ClaimName
 			volumeClaimMap[volumeClaimName] = struct{}{}
-			if pvClaimNode, ok := ns.ByKindNamespaceName["PersistentVolumeClaim"][nodeInfo.NameSpace][volumeClaimName]; ok {
+			if pvClaimNode, ok := ns.LookupByKindNamespaceName("PersistentVolumeClaim", nodeInfo.NameSpace, volumeClaimName); ok {
 				if volName, ok := pvClaimNode.Properties["volumeName"].(string); ok && pvClaimNode.Properties["volumeName"] != "" {
 					volumeMap[volName] = struct{}{}
 				}
@@ -201,7 +201,7 @@ func (p PodResource) BuildEdges(ns NodeStore) []Edge {
 	if p.Spec.NodeName != "" {
 		nodeName := p.Spec.NodeName
 		srcNode := ns.ByUID[UID]
-		if dest, ok := ns.ByKindNamespaceName["Node"]["_NONE"][nodeName]; ok {
+		if dest, ok := ns.LookupByKindNamespaceName("Node", "_NONE", nodeName); ok {
 			if UID != dest.UID { //avoid connecting node to itself
 				ret = append(ret, Edge{
 					SourceUID:  UID,

@@ -67,7 +67,7 @@ func (c ChannelResource) BuildEdges(ns NodeStore) []Edge {
 	// deploys edges
 	// HelmRepo channel to deployables edges
 	if c.Spec.Type == "HelmRepo" {
-		deployables := ns.ByKindNamespaceName["Deployable"][c.node.Properties["namespace"].(string)]
+		deployables := ns.NodesByKind("Deployable")[c.node.Properties["namespace"].(string)]
 		if len(deployables) > 1 {
 			nodeInfo.EdgeType = "deploys"
 			deployableMap := make(map[string]struct{}, len(deployables))

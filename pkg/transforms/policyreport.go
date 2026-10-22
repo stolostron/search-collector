@@ -188,7 +188,7 @@ func (pr PolicyReportResource) BuildEdges(ns NodeStore) []Edge {
 			continue
 		}
 
-		policyNode, ok := ns.ByKindNamespaceName[kind][namespace][name]
+		policyNode, ok := ns.LookupByKindNamespaceName(kind, namespace, name)
 		if !ok {
 			continue
 		}
