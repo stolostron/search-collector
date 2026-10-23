@@ -52,3 +52,33 @@ func Test_SetDefaultInt_02(t *testing.T) {
 		t.Errorf("Failed testing setDefault() Expected: %d  Got: %d", 9999, property)
 	}
 }
+
+func Test_InitConfig_ConfigurableCollectionDefaultsOn(t *testing.T) {
+	origCfg := Cfg
+	t.Cleanup(func() { Cfg = origCfg })
+
+	t.Setenv("DEPLOYED_IN_HUB", "true")
+	t.Setenv("FEATURE_CONFIGURABLE_COLLECTION", "")
+	Cfg.FeatureConfigurableCollection = false
+
+	InitConfig()
+
+	if !Cfg.FeatureConfigurableCollection {
+		t.Error("expected configurable collection to be enabled by default")
+	}
+}
+
+func Test_InitConfig_ConfigurableCollectionKillSwitch(t *testing.T) {
+	origCfg := Cfg
+	t.Cleanup(func() { Cfg = origCfg })
+
+	t.Setenv("DEPLOYED_IN_HUB", "true")
+	t.Setenv("FEATURE_CONFIGURABLE_COLLECTION", "false")
+	Cfg.FeatureConfigurableCollection = true
+
+	InitConfig()
+
+	if Cfg.FeatureConfigurableCollection {
+		t.Error("expected configurable collection to be disabled when explicitly set to false")
+	}
+}

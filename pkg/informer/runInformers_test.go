@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stolostron/search-collector/pkg/config"
@@ -15,10 +16,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+	dynamicFake "k8s.io/client-go/dynamic/fake"
+	kubeFake "k8s.io/client-go/kubernetes/fake"
 	restclient "k8s.io/client-go/rest"
 )
+
+// Initialize fake Kubernetes clients for tests that bypass RunInformers.
+func TestMain(m *testing.M) {
+	nsFilterCache.dynamicClient = dynamicFake.NewSimpleDynamicClient(runtime.NewScheme())
+	nsFilterCache.kubeClient = kubeFake.NewSimpleClientset()
+	os.Exit(m.Run())
+}
 
 var mockAddFn = func(gvr schema.GroupVersionResource) func(interface{}) {
 	return func(o interface{}) {}
