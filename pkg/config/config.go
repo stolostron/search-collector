@@ -138,7 +138,7 @@ func InitConfig() {
 	}
 
 	setDefaultBool(&Cfg.DeployedInHub, "DEPLOYED_IN_HUB", false)
-	setDefaultBool(&Cfg.FeatureConfigurableCollection, "FEATURE_CONFIGURABLE_COLLECTION", false)
+	setDefaultBool(&Cfg.FeatureConfigurableCollection, "FEATURE_CONFIGURABLE_COLLECTION", true)
 	setDefault(&Cfg.AggregatorConfigFile, "HUB_CONFIG", "")
 
 	if collectCRDPrinterCols := os.Getenv("COLLECT_CRD_PRINTER_COLUMNS"); collectCRDPrinterCols != "" {
