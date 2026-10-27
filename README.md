@@ -50,9 +50,9 @@ AGGREGATOR_URL     | yes      | <https://localhost:3010> | Deprecated. Use host 
 AGGREGATOR_HOST    | yes      | <https://localhost>      | Location of the aggregator service.
 AGGREGATOR_PORT    | yes      | 3010                     |
 CLUSTER_NAME       | yes      | local-cluster            | Name of cluster where this collector is running.
-HEARTBEAT_MS       | no       | 300000  // 5 min         | Interval(ms) to send empty payload to ensure connection
 MAX_BACKOFF_MS     | no       | 600000  // 10 min        | Maximum backoff in ms to wait after send error
 REDISCOVER_RATE_MS | no       | 120000  // 2 min         | Interval(ms) to poll for changes to CRDs
+RESOURCE_COUNT_INTERVAL_MS | no | 300000 // 5 min       | Interval(ms) to validate resource and edge totals with the indexer
 REPORT_RATE_MS     | no       | 5000    // 5 seconds     | Interval(ms) to queue changes before sending to the aggregator
 RUNTIME_MODE       | no       | production               | Running mode (development or production)
 

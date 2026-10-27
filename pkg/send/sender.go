@@ -61,16 +61,20 @@ type SyncResponse struct {
 	TotalAdded        int
 	TotalUpdated      int
 	TotalDeleted      int
-	TotalResources    int
 	TotalEdgesAdded   int
 	TotalEdgesDeleted int
-	TotalEdges        int
 	AddErrors         []SyncError
 	UpdateErrors      []SyncError
 	DeleteErrors      []SyncError
 	AddEdgeErrors     []SyncError
 	DeleteEdgeErrors  []SyncError
 	Version           string
+}
+
+// ValidationResponse contains the resource and edge totals returned from the Indexer.
+type ValidationResponse struct {
+	TotalResources int
+	TotalEdges     int
 }
 
 // SyncError is used to respond with errors.
@@ -81,19 +85,23 @@ type SyncError struct {
 
 // Keeps the total data for this cluster as well as the data since the last send operation.
 type Sender struct {
-	aggregatorURL      string // URL of the aggregator, minus any path
-	aggregatorSyncPath string // Path of the aggregator's POST route [ /aggregator/clusters/{clustername}/sync ]
-	httpClient         http.Client
-	lastSentTime       int64 // Time we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
-	rec                *reconciler.Reconciler
-	tlsReload          <-chan struct{} // Signals that the TLS profile ConfigMap has changed.
+	aggregatorURL            string // URL of the aggregator, minus any path
+	aggregatorSyncPath       string // Path of the aggregator's POST route [ /aggregator/clusters/{clustername}/sync ]
+	aggregatorValidationPath string // Path of the aggregator's validation GET route [ /aggregator/clusters/{clustername}/validation ]
+	httpClient               http.Client
+	lastSentTime             int64 // Time we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
+	lastValidationTime       time.Time
+	rec                      *reconciler.Reconciler
+	tlsReload                <-chan struct{} // Signals that the TLS profile ConfigMap has changed.
 }
 
 func (s *Sender) reloadSender() {
 	s.aggregatorURL = config.Cfg.AggregatorURL
 	s.aggregatorSyncPath = strings.Join([]string{"/aggregator/clusters/", config.Cfg.ClusterName, "/sync"}, "")
+	s.aggregatorValidationPath = strings.Join([]string{"/aggregator/clusters/", config.Cfg.ClusterName, "/validation"}, "")
 	if !config.Cfg.DeployedInHub {
 		s.aggregatorSyncPath = strings.Join([]string{"/", config.Cfg.ClusterName, "/aggregator/sync"}, "")
+		s.aggregatorValidationPath = strings.Join([]string{"/", config.Cfg.ClusterName, "/aggregator/validation"}, "")
 	}
 	s.httpClient = getHTTPSClient()
 }
@@ -103,20 +111,23 @@ func (s *Sender) reloadSender() {
 // tlsReload is an optional channel that signals the TLS profile has changed and the HTTP client
 // should be recreated. Pass nil to disable TLS hot-reload.
 func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string,
-	tlsReload <-chan struct{}) *Sender {
-
+	tlsReload <-chan struct{},
+) *Sender {
 	// Construct senders
 	s := &Sender{
-		aggregatorURL:      aggregatorURL,
-		aggregatorSyncPath: strings.Join([]string{"/aggregator/clusters/", clusterName, "/sync"}, ""),
-		httpClient:         getHTTPSClient(),
-		lastSentTime:       -1,
-		rec:                rec,
-		tlsReload:          tlsReload,
+		aggregatorURL:            aggregatorURL,
+		aggregatorSyncPath:       strings.Join([]string{"/aggregator/clusters/", clusterName, "/sync"}, ""),
+		aggregatorValidationPath: strings.Join([]string{"/aggregator/clusters/", clusterName, "/validation"}, ""),
+		httpClient:               getHTTPSClient(),
+		lastSentTime:             -1,
+		lastValidationTime:       time.Now(),
+		rec:                      rec,
+		tlsReload:                tlsReload,
 	}
 
 	if !config.Cfg.DeployedInHub {
 		s.aggregatorSyncPath = strings.Join([]string{"/", clusterName, "/aggregator/sync"}, "")
+		s.aggregatorValidationPath = strings.Join([]string{"/", clusterName, "/aggregator/validation"}, "")
 	}
 
 	return s
@@ -124,7 +135,6 @@ func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string,
 
 // Returns a payload and expected total resources, add, update, and delete operations since the last send.
 func (s *Sender) diffPayload() (Payload, int, int) {
-
 	diff := s.rec.Diff()
 
 	payload := Payload{
@@ -144,7 +154,6 @@ func (s *Sender) diffPayload() (Payload, int, int) {
 
 // Fetches complete state from the reconciler and transforms into payload struct
 func (s *Sender) completePayload() (Payload, int, int) {
-
 	complete := s.rec.Complete()
 
 	// Delete and Update aren't needed when we're sending all the data. Just fill out the adds.
@@ -159,10 +168,10 @@ func (s *Sender) completePayload() (Payload, int, int) {
 
 // Send will retry after recoverable errors.
 //   - indexer busy
-func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
+func (s *Sender) sendWithRetry(payload Payload) (SyncResponse, error) {
 	retry := 0
 	for {
-		sendError := s.send(payload, expectedTotalResources, expectedTotalEdges)
+		response, sendError := s.send(payload)
 		retry++
 		nextRetryWait := sendInterval(retry)
 
@@ -180,14 +189,15 @@ func (s *Sender) sendWithRetry(payload Payload, expectedTotalResources int, expe
 			config.InitConfig() // re-initialize config to get the latest certificate.
 			s.reloadSender()    // reload sender variables - Aggregator URL, path and client
 		}
-		return sendError
+		return response, sendError
 	}
 }
 
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it
 // doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
-func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotalEdges int) error {
+func (s *Sender) send(payload Payload) (SyncResponse, error) {
+	r := SyncResponse{}
 	klog.Infof("Sending Resources { add: %2d, update: %2d, delete: %2d, edge add: %2d, edge delete: %2d }",
 		len(payload.AddResources), len(payload.UpdatedResources), len(payload.DeletedResources),
 		len(payload.AddEdges), len(payload.DeleteEdges))
@@ -199,13 +209,13 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return r, err
 	}
 	payloadBuffer := bytes.NewBuffer(payloadBytes)
 
 	req, err := http.NewRequest("POST", s.aggregatorURL+s.aggregatorSyncPath, payloadBuffer)
 	if err != nil {
-		return err
+		return r, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -220,42 +230,71 @@ func (s *Sender) send(payload Payload, expectedTotalResources int, expectedTotal
 	}
 	if err != nil {
 		klog.Error("httpClient error: ", err)
-		return err
+		return r, err
 	}
 
 	metrics.SyncRequestTotal.WithLabelValues(strconv.Itoa(resp.StatusCode), syncType).Inc()
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return errors.New("indexer busy")
+		return r, errors.New("indexer busy")
 	} else if resp.StatusCode != http.StatusOK {
 		msg := fmt.Sprintf("POST to: %s responded with error. StatusCode: %d  Message: %s",
 			s.aggregatorURL+s.aggregatorSyncPath, resp.StatusCode, resp.Status)
 		if resp.StatusCode == http.StatusUnauthorized {
 			msg = "401 Unauthorized"
 		}
-		return errors.New(msg)
+		return r, errors.New(msg)
 	}
 
-	r := SyncResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&r)
 	if err != nil {
 		klog.Error("Error decoding JSON response.")
+		return r, err
+	}
+
+	return r, nil
+}
+
+// validate checks the indexer's persisted totals after the configured interval has elapsed.
+func (s *Sender) validate(expectedTotalResources int, expectedTotalEdges int) error {
+	interval := time.Duration(config.Cfg.ResourceCountIntervalMS) * time.Millisecond
+	if !s.lastValidationTime.IsZero() && time.Since(s.lastValidationTime) < interval {
+		return nil
+	}
+
+	req, err := http.NewRequest(http.MethodGet, s.aggregatorURL+s.aggregatorValidationPath, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := s.httpClient.Do(req)
+	if resp != nil && resp.Body != nil {
+		// #nosec G307
+		defer func() { _ = resp.Body.Close() }()
+	}
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET from: %s responded with error. StatusCode: %d Message: %s",
+			s.aggregatorURL+s.aggregatorValidationPath, resp.StatusCode, resp.Status)
+	}
+
+	validationResponse := ValidationResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&validationResponse); err != nil {
 		return err
 	}
 
-	// Compare size that comes back in r to size that we track, accounting for the errors reported by the aggregator.
-	if r.TotalResources != (expectedTotalResources + len(r.DeleteErrors) - len(r.AddErrors)) {
-		msg := fmt.Sprintf("Aggregator reported wrong number of total resources. Expected %d, got %d",
-			expectedTotalResources, r.TotalResources)
-		return errors.New(msg)
+	s.lastValidationTime = time.Now()
+	if validationResponse.TotalResources != expectedTotalResources {
+		s.lastSentTime = -1
+		return fmt.Errorf("aggregator reported wrong number of total resources. Expected %d, got %d",
+			expectedTotalResources, validationResponse.TotalResources)
+	}
+	if validationResponse.TotalEdges != expectedTotalEdges {
+		s.lastSentTime = -1
+		return fmt.Errorf("aggregator reported wrong number of total intra edges. Expected %d, got %d",
+			expectedTotalEdges, validationResponse.TotalEdges)
 	}
 
-	if r.TotalEdges != (expectedTotalEdges + len(r.DeleteEdgeErrors) - len(r.AddEdgeErrors)) {
-		msg := fmt.Sprintf("Aggregator reported wrong number of total intra edges. Expected %d, got %d",
-			expectedTotalEdges, r.TotalEdges)
-		return errors.New(msg)
-	}
-
-	// Check the total
 	return nil
 }
 
@@ -265,34 +304,31 @@ func (s *Sender) Sync() error {
 	if s.lastSentTime == -1 { // If we have never sent before, we just send the complete.
 		klog.Info("First time sending or last Sync cycle failed, sending complete payload")
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
-		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
+		response, err := s.sendWithRetry(payload)
 		if err != nil {
 			klog.Error("Sync sender error. ", err)
 			return err
 		}
 
 		s.lastSentTime = time.Now().Unix()
-		return nil
+		return s.validate(expectedTotalResources+len(response.DeleteErrors)-len(response.AddErrors),
+			expectedTotalEdges+len(response.DeleteEdgeErrors)-len(response.AddEdgeErrors))
 	}
 
 	// If this isn't the first time we've sent, we can now attempt to send a diff.
 	payload, expectedTotalResources, expectedTotalEdges := s.diffPayload()
 	if payload.empty() {
-		// check if a ping is necessary
-		if time.Now().Unix()-s.lastSentTime < int64(config.Cfg.HeartbeatMS/1000) {
-			klog.V(3).Info("Nothing to send, skipping send cycle.")
-			return nil
-		}
-		klog.V(2).Info("Sending empty payload for heartbeat.")
+		klog.V(3).Info("Nothing to send, skipping send cycle.")
+		return s.validate(expectedTotalResources, expectedTotalEdges)
 	}
-	err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
+	response, err := s.sendWithRetry(payload)
 	if err != nil {
 		// If something went wrong here, form a new complete payload (only necessary because
 		// currentState may have changed since we got it, and we have to keep our diffs synced)
 		klog.Warning("Error on diff payload sending: ", err)
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
 		klog.Warning("Retrying with complete payload")
-		err := s.sendWithRetry(payload, expectedTotalResources, expectedTotalEdges)
+		response, err = s.sendWithRetry(payload)
 		if err != nil {
 			klog.Error("Error resending complete payload.")
 			// If this retry fails, we want to start over with a complete payload next time,
@@ -301,11 +337,13 @@ func (s *Sender) Sync() error {
 			return err
 		}
 		s.lastSentTime = time.Now().Unix()
-		return nil
+		return s.validate(expectedTotalResources+len(response.DeleteErrors)-len(response.AddErrors),
+			expectedTotalEdges+len(response.DeleteEdgeErrors)-len(response.AddEdgeErrors))
 	}
 
 	s.lastSentTime = time.Now().Unix()
-	return nil
+	return s.validate(expectedTotalResources+len(response.DeleteErrors)-len(response.AddErrors),
+		expectedTotalEdges+len(response.DeleteEdgeErrors)-len(response.AddEdgeErrors))
 }
 
 // Starts the send loop to send data on an interval.

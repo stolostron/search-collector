@@ -17,14 +17,16 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/stolostron/search-collector/pkg/config"
 	"github.com/stolostron/search-collector/pkg/transforms"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSenderWrongCount(t *testing.T) {
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := SyncResponse{
+		response := ValidationResponse{
 			TotalResources: 0,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -37,18 +39,18 @@ func TestSenderWrongCount(t *testing.T) {
 	defer ts.Close()
 
 	s := Sender{
-		httpClient:    *ts.Client(),
-		aggregatorURL: ts.URL,
+		httpClient:               *ts.Client(),
+		aggregatorURL:            ts.URL,
+		aggregatorValidationPath: "/validation",
+		lastSentTime:             1,
 	}
 
-	payload := Payload{}
-
-	err := s.send(payload, 5, 0)
+	err := s.validate(5, 0)
 	if err == nil {
-		t.Fatal("send function does not error when expected count differs")
+		t.Fatal("validate function does not error when expected count differs")
 	}
 
-	message := "Aggregator reported wrong number of total resources"
+	message := "aggregator reported wrong number of total resources"
 	if !strings.Contains(err.Error(), message) {
 		t.Errorf("expected error to contain \"%s\": got \"%s\"", message, err.Error())
 	}
@@ -68,7 +70,7 @@ func TestSenderUnavailable(t *testing.T) {
 
 	payload := Payload{}
 
-	err := s.send(payload, 0, 0)
+	_, err := s.send(payload)
 	if err == nil {
 		t.Fatal("send function does not error if server returns a 503")
 	}
@@ -84,11 +86,7 @@ func TestSenderSuccessful(t *testing.T) {
 	n := 5
 
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := SyncResponse{
-			TotalResources: n,
-			TotalAdded:     n,
-			TotalEdges:     n,
-		}
+		response := SyncResponse{TotalAdded: n}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		err := json.NewEncoder(w).Encode(response)
@@ -113,10 +111,36 @@ func TestSenderSuccessful(t *testing.T) {
 		})
 	}
 
-	err := s.send(payload, n, n)
+	_, err := s.send(payload)
 	if err != nil {
 		t.Fatal("send function reports error:", err)
 	}
+}
+
+func TestValidationInterval(t *testing.T) {
+	requestCount := 0
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		_ = json.NewEncoder(w).Encode(ValidationResponse{TotalResources: 5, TotalEdges: 3})
+	}))
+	defer ts.Close()
+
+	oldInterval := config.Cfg.ResourceCountIntervalMS
+	config.Cfg.ResourceCountIntervalMS = 300000
+	defer func() { config.Cfg.ResourceCountIntervalMS = oldInterval }()
+
+	s := Sender{
+		httpClient:               *ts.Client(),
+		aggregatorURL:            ts.URL,
+		aggregatorValidationPath: "/validation",
+		lastValidationTime:       time.Now(),
+	}
+	assert.NoError(t, s.validate(5, 3))
+	assert.Equal(t, 0, requestCount)
+
+	s.lastValidationTime = time.Now().Add(-6 * time.Minute)
+	assert.NoError(t, s.validate(5, 3))
+	assert.Equal(t, 1, requestCount)
 }
 
 func Test_minIsB(t *testing.T) {
