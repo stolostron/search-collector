@@ -6,6 +6,8 @@ package config
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Should use default value when environment variable does not exist.
@@ -17,6 +19,32 @@ func Test_SetDefault_01(t *testing.T) {
 	if property != "default-value" {
 		t.Errorf("Failed testing setDefault() Expected: %s  Got: %s", "default-value", property)
 	}
+}
+
+func TestInitConfigResourceCountInterval(t *testing.T) {
+	oldCfg := Cfg
+	Cfg = Config{}
+	defer func() { Cfg = oldCfg }()
+
+	t.Setenv("DEPLOYED_IN_HUB", "true")
+	t.Setenv("RESOURCE_COUNT_INTERVAL_MS", "12345")
+
+	InitConfig()
+
+	assert.Equal(t, 12345, Cfg.ResourceCountIntervalMS)
+}
+
+func TestInitConfigResourceCountIntervalDefault(t *testing.T) {
+	oldCfg := Cfg
+	Cfg = Config{}
+	defer func() { Cfg = oldCfg }()
+
+	t.Setenv("DEPLOYED_IN_HUB", "true")
+	t.Setenv("RESOURCE_COUNT_INTERVAL_MS", "")
+
+	InitConfig()
+
+	assert.Equal(t, DEFAULT_RESOURCE_COUNT_INTERVAL_MS, Cfg.ResourceCountIntervalMS)
 }
 
 // Should use value from environment variable if it exists.
