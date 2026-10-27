@@ -8,7 +8,7 @@ go 1.26.0
 require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/kennygrant/sanitize v1.2.4
-	github.com/openshift/api v0.0.0-20261022144628-c3d7aef33fc1
+	github.com/openshift/api v0.0.0-20261026215420-da0032bf0c5f
 	github.com/stolostron/governance-policy-propagator v0.0.0-20220125192743-95d49290a318
 	github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0
 	github.com/stretchr/testify v1.12.1
