@@ -254,7 +254,8 @@ func (s *Sender) send(payload Payload) (SyncResponse, error) {
 	return r, nil
 }
 
-// validate checks the indexer's persisted totals after the configured interval has elapsed.
+// validate checks the indexer's persisted totals after the configured interval has elapsed
+// or last validate check returned in error
 func (s *Sender) validate(expectedTotalResources int, expectedTotalEdges int) error {
 	interval := time.Duration(config.Cfg.DataValidationIntervalMS) * time.Millisecond
 	if !s.lastValidationTime.IsZero() && time.Since(s.lastValidationTime) < interval {
@@ -263,7 +264,8 @@ func (s *Sender) validate(expectedTotalResources int, expectedTotalEdges int) er
 
 	req, err := http.NewRequest(http.MethodGet, s.aggregatorURL+s.aggregatorValidationPath, nil)
 	if err != nil {
-		return err
+		klog.Warningf("Unable to create Indexer validation request: %v", err)
+		return nil
 	}
 	resp, err := s.httpClient.Do(req)
 	if resp != nil && resp.Body != nil {
@@ -271,28 +273,35 @@ func (s *Sender) validate(expectedTotalResources int, expectedTotalEdges int) er
 		defer func() { _ = resp.Body.Close() }()
 	}
 	if err != nil {
-		return err
+		klog.Warningf("Indexer validation request failed: %v", err)
+		return nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GET from: %s responded with error. StatusCode: %d Message: %s",
+		klog.Warningf("GET from: %s responded with error. StatusCode: %d Message: %s",
 			s.aggregatorURL+s.aggregatorValidationPath, resp.StatusCode, resp.Status)
+		return nil
 	}
 
 	validationResponse := ValidationResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&validationResponse); err != nil {
-		return err
+		klog.Warningf("Unable to decode Indexer validation response: %v", err)
+		return nil
 	}
 
+	// set lastValidationTime only after successful request
 	s.lastValidationTime = time.Now()
+
 	if validationResponse.TotalResources != expectedTotalResources {
 		s.lastSentTime = -1
-		return fmt.Errorf("indexer reported wrong number of total resources. Expected %d, got %d",
+		klog.Warningf("Indexer reported wrong number of total resources. Expected %d, got %d",
 			expectedTotalResources, validationResponse.TotalResources)
+		return nil
 	}
 	if validationResponse.TotalEdges != expectedTotalEdges {
 		s.lastSentTime = -1
-		return fmt.Errorf("indexer reported wrong number of total intra edges. Expected %d, got %d",
+		klog.Warningf("Indexer reported wrong number of total intra edges. Expected %d, got %d",
 			expectedTotalEdges, validationResponse.TotalEdges)
+		return nil
 	}
 
 	return nil

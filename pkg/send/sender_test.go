@@ -65,16 +65,9 @@ func TestSenderWrongCount(t *testing.T) {
 		lastSentTime:             1,
 	}
 
-	err := s.validate(5, 0)
-	if err == nil {
-		t.Fatal("validate function does not error when expected count differs")
-	}
-
-	message := "indexer reported wrong number of total resources"
-	if !strings.Contains(err.Error(), message) {
-		t.Errorf("expected error to contain \"%s\": got \"%s\"", message, err.Error())
-	}
+	assert.NoError(t, s.validate(5, 0))
 	assert.Equal(t, int64(-1), s.lastSentTime)
+	assert.False(t, s.lastValidationTime.IsZero())
 }
 
 func TestSenderUnavailable(t *testing.T) {
@@ -164,7 +157,7 @@ func TestValidationInterval(t *testing.T) {
 	assert.Equal(t, 1, requestCount)
 }
 
-func TestValidationErrors(t *testing.T) {
+func TestValidationFailuresAreNonFatal(t *testing.T) {
 	oldInterval := config.Cfg.DataValidationIntervalMS
 	config.Cfg.DataValidationIntervalMS = 0
 	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
@@ -173,41 +166,38 @@ func TestValidationErrors(t *testing.T) {
 		name        string
 		client      http.Client
 		url         string
-		body        string
 		resources   int
 		edges       int
-		errorText   string
 		resetsState bool
 	}{
 		{
-			name:      "invalid URL",
-			client:    testHTTPClient(http.StatusOK, `{}`),
-			url:       "https://invalid\n",
-			errorText: "invalid control character",
+			name:   "invalid URL",
+			client: testHTTPClient(http.StatusOK, `{}`),
+			url:    "https://invalid\n",
 		},
 		{
 			name: "transport error",
 			client: http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
 				return nil, errors.New("transport failed")
 			})},
-			errorText: "transport failed",
 		},
 		{
-			name:      "non-OK response",
-			client:    testHTTPClient(http.StatusTooManyRequests, "busy"),
-			errorText: "429 Too Many Requests",
+			name:   "too many requests",
+			client: testHTTPClient(http.StatusTooManyRequests, "busy"),
 		},
 		{
-			name:      "invalid response",
-			client:    testHTTPClient(http.StatusOK, "not-json"),
-			errorText: "invalid character",
+			name:   "server error",
+			client: testHTTPClient(http.StatusInternalServerError, "database unavailable"),
+		},
+		{
+			name:   "invalid response",
+			client: testHTTPClient(http.StatusOK, "not-json"),
 		},
 		{
 			name:        "edge count mismatch",
 			client:      testHTTPClient(http.StatusOK, `{"TotalResources":5,"TotalEdges":2}`),
 			resources:   5,
 			edges:       3,
-			errorText:   "wrong number of total intra edges",
 			resetsState: true,
 		},
 	}
@@ -220,13 +210,13 @@ func TestValidationErrors(t *testing.T) {
 				aggregatorValidationPath: "/validation",
 				lastSentTime:             123,
 			}
-			err := s.validate(test.resources, test.edges)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), test.errorText)
+			assert.NoError(t, s.validate(test.resources, test.edges))
 			if test.resetsState {
 				assert.Equal(t, int64(-1), s.lastSentTime)
+				assert.False(t, s.lastValidationTime.IsZero())
 			} else {
 				assert.Equal(t, int64(123), s.lastSentTime)
+				assert.True(t, s.lastValidationTime.IsZero())
 			}
 		})
 	}
@@ -413,6 +403,57 @@ func TestSyncWithEmptyDiffOnlyValidates(t *testing.T) {
 	require.NoError(t, s.Sync())
 	assert.Equal(t, 0, postCount)
 	assert.Equal(t, 1, getCount)
+}
+
+func TestSyncIgnoresValidationFailure(t *testing.T) {
+	oldInterval := config.Cfg.DataValidationIntervalMS
+	config.Cfg.DataValidationIntervalMS = 0
+	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
+
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodPost {
+			_ = json.NewEncoder(w).Encode(SyncResponse{})
+			return
+		}
+		http.Error(w, "database unavailable", http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	s := Sender{
+		aggregatorURL:            ts.URL,
+		aggregatorSyncPath:       "/sync",
+		aggregatorValidationPath: "/validation",
+		httpClient:               *ts.Client(),
+		lastSentTime:             -1,
+		rec:                      reconciler.NewReconciler(),
+	}
+
+	assert.NoError(t, s.Sync())
+	assert.NotEqual(t, int64(-1), s.lastSentTime)
+	assert.True(t, s.lastValidationTime.IsZero())
+}
+
+func TestValidationFailureRetriesNextCycle(t *testing.T) {
+	oldInterval := config.Cfg.DataValidationIntervalMS
+	config.Cfg.DataValidationIntervalMS = 15 * 60 * 1000
+	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
+
+	requestCount := 0
+	client := http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		requestCount++
+		return &http.Response{
+			StatusCode: http.StatusInternalServerError,
+			Status:     "500 Internal Server Error",
+			Body:       io.NopCloser(strings.NewReader("database unavailable")),
+		}, nil
+	})}
+	s := Sender{httpClient: client, lastSentTime: 123}
+
+	assert.NoError(t, s.validate(0, 0))
+	assert.NoError(t, s.validate(0, 0))
+	assert.Equal(t, 2, requestCount)
+	assert.True(t, s.lastValidationTime.IsZero())
+	assert.Equal(t, int64(123), s.lastSentTime)
 }
 
 func Test_minIsB(t *testing.T) {
