@@ -21,30 +21,30 @@ func Test_SetDefault_01(t *testing.T) {
 	}
 }
 
-func TestInitConfigResourceCountInterval(t *testing.T) {
+func TestInitConfigDataValidationInterval(t *testing.T) {
 	oldCfg := Cfg
 	Cfg = Config{}
 	defer func() { Cfg = oldCfg }()
 
 	t.Setenv("DEPLOYED_IN_HUB", "true")
-	t.Setenv("RESOURCE_COUNT_INTERVAL_MS", "12345")
+	t.Setenv("DATA_VALIDATION_INTERVAL_MS", "12345")
 
 	InitConfig()
 
-	assert.Equal(t, 12345, Cfg.ResourceCountIntervalMS)
+	assert.Equal(t, 12345, Cfg.DataValidationIntervalMS)
 }
 
-func TestInitConfigResourceCountIntervalDefault(t *testing.T) {
+func TestInitConfigDataValidationIntervalDefault(t *testing.T) {
 	oldCfg := Cfg
 	Cfg = Config{}
 	defer func() { Cfg = oldCfg }()
 
 	t.Setenv("DEPLOYED_IN_HUB", "true")
-	t.Setenv("RESOURCE_COUNT_INTERVAL_MS", "")
+	t.Setenv("DATA_VALIDATION_INTERVAL_MS", "")
 
 	InitConfig()
 
-	assert.Equal(t, DEFAULT_RESOURCE_COUNT_INTERVAL_MS, Cfg.ResourceCountIntervalMS)
+	assert.Equal(t, DEFAULT_DATA_VALIDATION_INTERVAL_MS, Cfg.DataValidationIntervalMS)
 }
 
 // Should use value from environment variable if it exists.

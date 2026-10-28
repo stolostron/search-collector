@@ -256,7 +256,7 @@ func (s *Sender) send(payload Payload) (SyncResponse, error) {
 
 // validate checks the indexer's persisted totals after the configured interval has elapsed.
 func (s *Sender) validate(expectedTotalResources int, expectedTotalEdges int) error {
-	interval := time.Duration(config.Cfg.ResourceCountIntervalMS) * time.Millisecond
+	interval := time.Duration(config.Cfg.DataValidationIntervalMS) * time.Millisecond
 	if !s.lastValidationTime.IsZero() && time.Since(s.lastValidationTime) < interval {
 		return nil
 	}

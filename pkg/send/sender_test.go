@@ -146,9 +146,9 @@ func TestValidationInterval(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	oldInterval := config.Cfg.ResourceCountIntervalMS
-	config.Cfg.ResourceCountIntervalMS = 300000
-	defer func() { config.Cfg.ResourceCountIntervalMS = oldInterval }()
+	oldInterval := config.Cfg.DataValidationIntervalMS
+	config.Cfg.DataValidationIntervalMS = 300000
+	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
 
 	s := Sender{
 		httpClient:               *ts.Client(),
@@ -165,9 +165,9 @@ func TestValidationInterval(t *testing.T) {
 }
 
 func TestValidationErrors(t *testing.T) {
-	oldInterval := config.Cfg.ResourceCountIntervalMS
-	config.Cfg.ResourceCountIntervalMS = 0
-	defer func() { config.Cfg.ResourceCountIntervalMS = oldInterval }()
+	oldInterval := config.Cfg.DataValidationIntervalMS
+	config.Cfg.DataValidationIntervalMS = 0
+	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
 
 	tests := []struct {
 		name        string
@@ -233,9 +233,9 @@ func TestValidationErrors(t *testing.T) {
 }
 
 func TestValidationRequest(t *testing.T) {
-	oldInterval := config.Cfg.ResourceCountIntervalMS
-	config.Cfg.ResourceCountIntervalMS = 0
-	defer func() { config.Cfg.ResourceCountIntervalMS = oldInterval }()
+	oldInterval := config.Cfg.DataValidationIntervalMS
+	config.Cfg.DataValidationIntervalMS = 0
+	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
 
 	client := http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		assert.Equal(t, http.MethodGet, req.Method)
@@ -335,9 +335,9 @@ func TestSenderPathsInHub(t *testing.T) {
 }
 
 func TestSyncSerializesSendAndValidation(t *testing.T) {
-	oldInterval := config.Cfg.ResourceCountIntervalMS
-	config.Cfg.ResourceCountIntervalMS = 0
-	defer func() { config.Cfg.ResourceCountIntervalMS = oldInterval }()
+	oldInterval := config.Cfg.DataValidationIntervalMS
+	config.Cfg.DataValidationIntervalMS = 0
+	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
 
 	postStarted := make(chan struct{})
 	releasePost := make(chan struct{})
@@ -384,9 +384,9 @@ func TestSyncSerializesSendAndValidation(t *testing.T) {
 }
 
 func TestSyncWithEmptyDiffOnlyValidates(t *testing.T) {
-	oldInterval := config.Cfg.ResourceCountIntervalMS
-	config.Cfg.ResourceCountIntervalMS = 0
-	defer func() { config.Cfg.ResourceCountIntervalMS = oldInterval }()
+	oldInterval := config.Cfg.DataValidationIntervalMS
+	config.Cfg.DataValidationIntervalMS = 0
+	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
 
 	postCount := 0
 	getCount := 0
