@@ -120,7 +120,7 @@ func NewSender(rec *reconciler.Reconciler, aggregatorURL, clusterName string,
 		aggregatorValidationPath: strings.Join([]string{"/aggregator/clusters/", clusterName, "/validation"}, ""),
 		httpClient:               getHTTPSClient(),
 		lastSentTime:             -1,
-		lastValidationTime:       time.Now(),
+		lastValidationTime:       time.Time{},
 		rec:                      rec,
 		tlsReload:                tlsReload,
 	}
@@ -286,12 +286,12 @@ func (s *Sender) validate(expectedTotalResources int, expectedTotalEdges int) er
 	s.lastValidationTime = time.Now()
 	if validationResponse.TotalResources != expectedTotalResources {
 		s.lastSentTime = -1
-		return fmt.Errorf("aggregator reported wrong number of total resources. Expected %d, got %d",
+		return fmt.Errorf("indexer reported wrong number of total resources. Expected %d, got %d",
 			expectedTotalResources, validationResponse.TotalResources)
 	}
 	if validationResponse.TotalEdges != expectedTotalEdges {
 		s.lastSentTime = -1
-		return fmt.Errorf("aggregator reported wrong number of total intra edges. Expected %d, got %d",
+		return fmt.Errorf("indexer reported wrong number of total intra edges. Expected %d, got %d",
 			expectedTotalEdges, validationResponse.TotalEdges)
 	}
 

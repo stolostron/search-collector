@@ -70,7 +70,7 @@ func TestSenderWrongCount(t *testing.T) {
 		t.Fatal("validate function does not error when expected count differs")
 	}
 
-	message := "aggregator reported wrong number of total resources"
+	message := "indexer reported wrong number of total resources"
 	if !strings.Contains(err.Error(), message) {
 		t.Errorf("expected error to contain \"%s\": got \"%s\"", message, err.Error())
 	}
@@ -324,7 +324,7 @@ func TestSenderPathsInHub(t *testing.T) {
 	s := NewSender(nil, "https://indexer", "test-cluster", nil)
 	assert.Equal(t, "/aggregator/clusters/test-cluster/sync", s.aggregatorSyncPath)
 	assert.Equal(t, "/aggregator/clusters/test-cluster/validation", s.aggregatorValidationPath)
-	assert.False(t, s.lastValidationTime.IsZero())
+	assert.True(t, s.lastValidationTime.IsZero())
 
 	config.Cfg.AggregatorURL = "https://reloaded"
 	config.Cfg.ClusterName = "other-cluster"

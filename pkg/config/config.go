@@ -31,7 +31,7 @@ const (
 	DEFAULT_AGGREGATOR_PORT             = "3010"
 	DEFAULT_AGGREGATOR_URL              = "https://localhost:3010" // this will be deprecated in the future
 	DEFAULT_CLUSTER_NAME                = "local-cluster"
-	DEFAULT_DATA_VALIDATION_INTERVAL_MS = 300000 // 5 min
+	DEFAULT_DATA_VALIDATION_INTERVAL_MS = 900000 // 15 min
 	DEFAULT_MAX_BACKOFF_MS              = 600000 // 10 min
 	DEFAULT_NS_FILTER_CACHE_TTL_MS      = 300000 // 5 min
 	DEFAULT_POD_NAMESPACE               = "open-cluster-management"
