@@ -14,6 +14,7 @@
     },
     "osvVulnerabilityAlerts": true,
     "timezone": "America/New_York",
+    "schedule": ["* 0-8 * * 2"],
     "vulnerabilityAlerts": {
         "enabled": true
     }
