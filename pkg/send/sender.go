@@ -193,6 +193,20 @@ func (s *Sender) sendWithRetry(payload Payload) (SyncResponse, error) {
 	}
 }
 
+/*
+Send flow:
+1.Send the complete state first. On startup, or when a previous failure requires a full resync,
+	the collector sends all resources and edges.
+2.Send changes after that. On later cycles, the collector sends only added, updated,
+	or deleted resources and edges. If there are no changes, it skips the send request.
+3.Retry when the indexer is busy. If the indexer returns HTTP 429, the collector waits and retries the same payload.
+	The wait increases with each retry, includes random jitter, and stops increasing at MAX_BACKOFF_MS.
+4.Recover from other send errors. The collector waits, reloads its configuration and HTTP client,
+	and returns the error to Sync. If a diff send failed, Sync builds a fresh complete payload and attempts a full resync.
+5.Retry failed full resyncs on later cycles. If the complete send fails, the next cycle attempts another complete send.
+	Failed cycles increase the send-loop wait. A successful cycle resets that wait.
+*/
+
 // Sends data to the aggregator and returns an error if it didn't work.
 // Pointer receiver because Sender contains a mutex - that freaked the linter out even though it
 // doesn't use the mutex. Changed it so that if we do need to use the mutex we wont have any problems.
@@ -253,6 +267,17 @@ func (s *Sender) send(payload Payload) (SyncResponse, error) {
 
 	return r, nil
 }
+
+/*
+1. Check totals periodically. After a successful send, or during a cycle with no changes,
+	the collector checks whether RESOURCE_COUNT_INTERVAL_MS has elapsed.
+2. Request the indexer totals. When validation is due, the collector requests the stored resource and edge counts.
+	It compares those counts with the expected counts.
+	After a send, the expected counts account for add and delete errors reported in that send response.
+3. Continue if the counts match. No resync is needed.
+4. Request a full resync if the counts differ.
+	The collector sets lastSentTime to -1 and returns a mismatch error. The next send cycle sends the complete state.
+*/
 
 // validate checks the indexer's persisted totals after the configured interval has elapsed
 // or last validate check returned in error
