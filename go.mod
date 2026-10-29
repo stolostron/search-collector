@@ -108,5 +108,5 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.34.3
 	k8s.io/apiserver => k8s.io/apiserver v0.34.3
 	k8s.io/client-go => k8s.io/client-go v0.34.3
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.25.2
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.22.5
 )
