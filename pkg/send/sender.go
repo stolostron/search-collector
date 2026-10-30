@@ -294,7 +294,7 @@ func (s *Sender) validate() (ValidationResponse, error) {
 		defer func() { _ = resp.Body.Close() }()
 	}
 	if err != nil {
-		return validationResponse, fmt.Errorf("Indexer validation request failed: %w", err)
+		return validationResponse, fmt.Errorf("indexer validation request failed: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return validationResponse, fmt.Errorf("GET from: %s responded with error. StatusCode: %d Message: %s",
