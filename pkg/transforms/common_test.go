@@ -14,9 +14,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stolostron/search-collector/pkg/config"
 	v1 "k8s.io/api/core/v1"
 	machineryV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func TestMain(m *testing.M) {
+	config.InitConfig()
+	m.Run()
+}
 
 var labels = map[string]string{"app": "test", "fake": "true", "component": "testapp"}
 var timestamp = machineryV1.Now()
