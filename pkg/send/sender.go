@@ -89,10 +89,17 @@ type Sender struct {
 	aggregatorSyncPath       string // Path of the aggregator's POST route [ /aggregator/clusters/{clustername}/sync ]
 	aggregatorValidationPath string // Path of the aggregator's validation GET route [ /aggregator/clusters/{clustername}/validation ]
 	httpClient               http.Client
-	lastSentTime             int64 // Time we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
-	lastValidationTime       time.Time
+	lastSentTime             int64     // Time we last successfully sent data to the hub. Gets reset to -1 if a send cycle fails.
+	lastValidationTime       time.Time // Last decoded HTTP 200 validation response, including count mismatches.
 	rec                      *reconciler.Reconciler
 	tlsReload                <-chan struct{} // Signals that the TLS profile ConfigMap has changed.
+}
+
+type validationRetryState struct {
+	backoffFactor int
+	nextRetry     time.Time
+	pendingSince  time.Time
+	overdueLogged bool
 }
 
 func (s *Sender) reloadSender() {
@@ -308,6 +315,50 @@ func (s *Sender) validate() (ValidationResponse, error) {
 	return validationResponse, nil
 }
 
+// validateIfDue schedules validation retries and requests a resync only after a confirmed count mismatch.
+func (s *Sender) validateIfDue(expectedTotalResources, expectedTotalEdges int, retry *validationRetryState) {
+	validationInterval := time.Duration(config.Cfg.ValidationRateMS) * time.Millisecond
+	validationDue := s.lastValidationTime.IsZero() || time.Since(s.lastValidationTime) >= validationInterval
+	if !validationDue || time.Now().Before(retry.nextRetry) {
+		return
+	}
+	if retry.pendingSince.IsZero() {
+		retry.pendingSince = time.Now()
+	}
+	response, validationErr := s.validate()
+	if validationErr != nil {
+		// Schedule one later attempt; never delay sends by sleeping on validation backoff.
+		nextRetryWait := sendInterval(retry.backoffFactor)
+		if nextRetryWait < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
+			retry.backoffFactor++
+		}
+		retry.nextRetry = time.Now().Add(nextRetryWait)
+		klog.Warningf("Validation pending: %v. Retrying in %s.", validationErr, nextRetryWait)
+		if !retry.overdueLogged && time.Since(retry.pendingSince) >= time.Hour {
+			klog.Warningf("Validation has been pending for %s. Continuing capped retries while sending resources.",
+				time.Since(retry.pendingSince))
+			retry.overdueLogged = true
+		}
+		return
+	}
+
+	// A valid response completes this validation, even if a mismatch requires a resync.
+	s.lastValidationTime = time.Now()
+	*retry = validationRetryState{backoffFactor: 1}
+
+	if response.TotalResources != expectedTotalResources {
+		s.lastSentTime = -1
+		klog.Warningf("Indexer reported wrong number of total resources. "+
+			"Resources: expected %d, got %d. Intra edges: expected %d, got %d.",
+			expectedTotalResources, response.TotalResources, expectedTotalEdges, response.TotalEdges)
+	} else if response.TotalEdges != expectedTotalEdges {
+		s.lastSentTime = -1
+		klog.Warningf("Indexer reported wrong number of total intra edges. "+
+			"Resources: expected %d, got %d. Intra edges: expected %d, got %d.",
+			expectedTotalResources, response.TotalResources, expectedTotalEdges, response.TotalEdges)
+	}
+}
+
 // Sends data to the aggregator.
 // Attempts to send a diff, then just sends the complete if the aggregator appears to need that.
 // Returns the expected resource and edge totals for this cycle's snapshot, adjusted for send response errors.
@@ -362,9 +413,7 @@ func (s *Sender) Sync() (int, int, error) {
 func (s *Sender) StartSendLoop(ctx context.Context) {
 	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
 	backoffFactor := 1 // Note: must be 1. Using 0 will send the next payload immediately.
-	validationBackoffFactor := 1
-	var nextValidationRetry, validationPendingSince time.Time
-	validationOverdueLogged := false
+	validationRetry := validationRetryState{backoffFactor: 1}
 
 	for {
 		select {
@@ -389,47 +438,7 @@ func (s *Sender) StartSendLoop(ctx context.Context) {
 			klog.V(2).Info("Send Cycle Completed Successfully")
 			backoffFactor = 1 // Reset backoff to 1 because we had a sucessful send.
 
-			validationInterval := time.Duration(config.Cfg.ValidationRateMS) * time.Millisecond
-			validationDue := s.lastValidationTime.IsZero() || time.Since(s.lastValidationTime) >= validationInterval
-			if validationDue && !time.Now().Before(nextValidationRetry) {
-				if validationPendingSince.IsZero() {
-					validationPendingSince = time.Now()
-				}
-				response, validationErr := s.validate()
-				if validationErr != nil {
-					// Schedule one later attempt; never delay sends by sleeping on validation backoff.
-					nextRetryWait := sendInterval(validationBackoffFactor)
-					if nextRetryWait < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
-						validationBackoffFactor++
-					}
-					nextValidationRetry = time.Now().Add(nextRetryWait)
-					klog.Warningf("Validation pending: %v. Retrying in %s.", validationErr, nextRetryWait)
-					if !validationOverdueLogged && time.Since(validationPendingSince) >= time.Hour {
-						klog.Warningf("Validation has been pending for %s. Continuing capped retries while sending resources.",
-							time.Since(validationPendingSince))
-						validationOverdueLogged = true
-					}
-				} else {
-					// A valid response completes this validation, even if a mismatch requires a resync.
-					s.lastValidationTime = time.Now()
-					validationBackoffFactor = 1
-					nextValidationRetry = time.Time{}
-					validationPendingSince = time.Time{}
-					validationOverdueLogged = false
-
-					if response.TotalResources != expectedTotalResources {
-						s.lastSentTime = -1
-						klog.Warningf("Indexer reported wrong number of total resources. "+
-							"Resources: expected %d, got %d. Intra edges: expected %d, got %d.",
-							expectedTotalResources, response.TotalResources, expectedTotalEdges, response.TotalEdges)
-					} else if response.TotalEdges != expectedTotalEdges {
-						s.lastSentTime = -1
-						klog.Warningf("Indexer reported wrong number of total intra edges. "+
-							"Resources: expected %d, got %d. Intra edges: expected %d, got %d.",
-							expectedTotalResources, response.TotalResources, expectedTotalEdges, response.TotalEdges)
-					}
-				}
-			}
+			s.validateIfDue(expectedTotalResources, expectedTotalEdges, &validationRetry)
 		}
 
 		nextSendWait := sendInterval(backoffFactor)

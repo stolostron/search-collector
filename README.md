@@ -54,7 +54,7 @@ MAX_BACKOFF_MS     | no       | 600000  // 10 min        | Maximum backoff in ms
 REDISCOVER_RATE_MS | no       | 120000  // 2 min         | Interval(ms) to poll for changes to CRDs
 REPORT_RATE_MS     | no       | 5000    // 5 seconds     | Interval(ms) to queue changes before sending to the aggregator
 RUNTIME_MODE       | no       | production               | Running mode (development or production)
-VALIDATION_RATE_MS | no       | 900000  // 15 min        | Interval(ms) to validate resource and edge totals with the indexer
+VALIDATION_RATE_MS | no       | 300000  // 5 min         | Interval(ms) to validate resource and edge totals with the indexer
 
 ### Other Configuration Options
 

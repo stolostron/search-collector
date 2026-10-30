@@ -38,7 +38,7 @@ const (
 	DEFAULT_REPORT_RATE_MS         = 5000  // 5 seconds
 	DEFAULT_RETRY_JITTER_MS        = 5000  // 5 seconds
 	DEFAULT_RUNTIME_MODE           = "production"
-	DEFAULT_VALIDATION_RATE_MS     = 900000 // 15 min
+	DEFAULT_VALIDATION_RATE_MS     = 300000 // 5 min
 )
 
 // Configuration options for the search-collector.
