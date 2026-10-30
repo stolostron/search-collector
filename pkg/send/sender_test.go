@@ -44,32 +44,6 @@ func testHTTPClient(statusCode int, body string) http.Client {
 	})}
 }
 
-func TestSenderWrongCount(t *testing.T) {
-	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := ValidationResponse{
-			TotalResources: 0,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		err := json.NewEncoder(w).Encode(response)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}))
-	defer ts.Close()
-
-	s := Sender{
-		httpClient:               *ts.Client(),
-		aggregatorURL:            ts.URL,
-		aggregatorValidationPath: "/validation",
-		lastSentTime:             1,
-	}
-
-	assert.NoError(t, s.validate(5, 0))
-	assert.Equal(t, int64(-1), s.lastSentTime)
-	assert.False(t, s.lastValidationTime.IsZero())
-}
-
 func TestSenderUnavailable(t *testing.T) {
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -131,74 +105,40 @@ func TestSenderSuccessful(t *testing.T) {
 	}
 }
 
-func TestValidationInterval(t *testing.T) {
-	requestCount := 0
-	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestCount++
-		_ = json.NewEncoder(w).Encode(ValidationResponse{TotalResources: 5, TotalEdges: 3})
-	}))
-	defer ts.Close()
-
-	oldInterval := config.Cfg.DataValidationIntervalMS
-	config.Cfg.DataValidationIntervalMS = 300000
-	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
-
-	s := Sender{
-		httpClient:               *ts.Client(),
-		aggregatorURL:            ts.URL,
-		aggregatorValidationPath: "/validation",
-		lastValidationTime:       time.Now(),
-	}
-	assert.NoError(t, s.validate(5, 3))
-	assert.Equal(t, 0, requestCount)
-
-	s.lastValidationTime = time.Now().Add(-6 * time.Minute)
-	assert.NoError(t, s.validate(5, 3))
-	assert.Equal(t, 1, requestCount)
-}
-
-func TestValidationFailuresAreNonFatal(t *testing.T) {
-	oldInterval := config.Cfg.DataValidationIntervalMS
-	config.Cfg.DataValidationIntervalMS = 0
-	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
-
+func TestValidationRequestErrors(t *testing.T) {
 	tests := []struct {
-		name        string
-		client      http.Client
-		url         string
-		resources   int
-		edges       int
-		resetsState bool
+		name      string
+		client    http.Client
+		url       string
+		errorText string
 	}{
 		{
-			name:   "invalid URL",
-			client: testHTTPClient(http.StatusOK, `{}`),
-			url:    "https://invalid\n",
+			name:      "invalid URL",
+			client:    testHTTPClient(http.StatusOK, `{}`),
+			url:       "https://invalid\n",
+			errorText: "unable to create Indexer validation request",
 		},
 		{
 			name: "transport error",
 			client: http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
 				return nil, errors.New("transport failed")
 			})},
+			errorText: "transport failed",
 		},
 		{
-			name:   "too many requests",
-			client: testHTTPClient(http.StatusTooManyRequests, "busy"),
+			name:      "too many requests",
+			client:    testHTTPClient(http.StatusTooManyRequests, "busy"),
+			errorText: "429 Too Many Requests",
 		},
 		{
-			name:   "server error",
-			client: testHTTPClient(http.StatusInternalServerError, "database unavailable"),
+			name:      "server error",
+			client:    testHTTPClient(http.StatusInternalServerError, "database unavailable"),
+			errorText: "500 Internal Server Error",
 		},
 		{
-			name:   "invalid response",
-			client: testHTTPClient(http.StatusOK, "not-json"),
-		},
-		{
-			name:        "edge count mismatch",
-			client:      testHTTPClient(http.StatusOK, `{"TotalResources":5,"TotalEdges":2}`),
-			resources:   5,
-			edges:       3,
-			resetsState: true,
+			name:      "invalid response",
+			client:    testHTTPClient(http.StatusOK, "not-json"),
+			errorText: "unable to decode Indexer validation response",
 		},
 	}
 
@@ -210,23 +150,15 @@ func TestValidationFailuresAreNonFatal(t *testing.T) {
 				aggregatorValidationPath: "/validation",
 				lastSentTime:             123,
 			}
-			assert.NoError(t, s.validate(test.resources, test.edges))
-			if test.resetsState {
-				assert.Equal(t, int64(-1), s.lastSentTime)
-				assert.False(t, s.lastValidationTime.IsZero())
-			} else {
-				assert.Equal(t, int64(123), s.lastSentTime)
-				assert.True(t, s.lastValidationTime.IsZero())
-			}
+			_, err := s.validate()
+			require.ErrorContains(t, err, test.errorText)
+			assert.Equal(t, int64(123), s.lastSentTime)
+			assert.True(t, s.lastValidationTime.IsZero())
 		})
 	}
 }
 
 func TestValidationRequest(t *testing.T) {
-	oldInterval := config.Cfg.DataValidationIntervalMS
-	config.Cfg.DataValidationIntervalMS = 0
-	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
-
 	client := http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
 		assert.Equal(t, http.MethodGet, req.Method)
 		assert.Equal(t, "https://indexer/aggregator/clusters/test/validation", req.URL.String())
@@ -242,8 +174,9 @@ func TestValidationRequest(t *testing.T) {
 		aggregatorValidationPath: "/aggregator/clusters/test/validation",
 	}
 
-	require.NoError(t, s.validate(5, 3))
-	assert.False(t, s.lastValidationTime.IsZero())
+	response, err := s.validate()
+	require.NoError(t, err)
+	assert.Equal(t, ValidationResponse{TotalResources: 5, TotalEdges: 3}, response)
 }
 
 func TestSendErrorResponses(t *testing.T) {
@@ -324,60 +257,7 @@ func TestSenderPathsInHub(t *testing.T) {
 	assert.Equal(t, "/aggregator/clusters/other-cluster/validation", s.aggregatorValidationPath)
 }
 
-func TestSyncSerializesSendAndValidation(t *testing.T) {
-	oldInterval := config.Cfg.DataValidationIntervalMS
-	config.Cfg.DataValidationIntervalMS = 0
-	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
-
-	postStarted := make(chan struct{})
-	releasePost := make(chan struct{})
-	validationStarted := make(chan struct{}, 1)
-	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		switch req.URL.Path {
-		case "/sync":
-			close(postStarted)
-			<-releasePost
-			_ = json.NewEncoder(w).Encode(SyncResponse{})
-		case "/validation":
-			validationStarted <- struct{}{}
-			_ = json.NewEncoder(w).Encode(ValidationResponse{})
-		default:
-			http.NotFound(w, req)
-		}
-	}))
-	defer ts.Close()
-
-	s := Sender{
-		aggregatorURL:            ts.URL,
-		aggregatorSyncPath:       "/sync",
-		aggregatorValidationPath: "/validation",
-		httpClient:               *ts.Client(),
-		lastSentTime:             -1,
-		rec:                      reconciler.NewReconciler(),
-	}
-	syncDone := make(chan error, 1)
-	go func() { syncDone <- s.Sync() }()
-
-	<-postStarted
-	select {
-	case <-validationStarted:
-		t.Fatal("validation started before the sync response completed")
-	case <-time.After(50 * time.Millisecond):
-	}
-	close(releasePost)
-	require.NoError(t, <-syncDone)
-	select {
-	case <-validationStarted:
-	default:
-		t.Fatal("validation was not requested after sync completed")
-	}
-}
-
-func TestSyncWithEmptyDiffOnlyValidates(t *testing.T) {
-	oldInterval := config.Cfg.DataValidationIntervalMS
-	config.Cfg.DataValidationIntervalMS = 0
-	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
-
+func TestSyncWithEmptyDiffReturnsTotalsWithoutRequests(t *testing.T) {
 	postCount := 0
 	getCount := 0
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -397,24 +277,29 @@ func TestSyncWithEmptyDiffOnlyValidates(t *testing.T) {
 		aggregatorValidationPath: "/validation",
 		httpClient:               *ts.Client(),
 		lastSentTime:             time.Now().Unix(),
-		rec:                      reconciler.NewReconciler(),
+		rec:                      &reconciler.Reconciler{},
 	}
 
-	require.NoError(t, s.Sync())
+	resources, edges, err := s.Sync()
+	require.NoError(t, err)
+	assert.Zero(t, resources)
+	assert.Zero(t, edges)
 	assert.Equal(t, 0, postCount)
-	assert.Equal(t, 1, getCount)
+	assert.Equal(t, 0, getCount)
 }
 
-func TestSyncIgnoresValidationFailure(t *testing.T) {
-	oldInterval := config.Cfg.DataValidationIntervalMS
-	config.Cfg.DataValidationIntervalMS = 0
-	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
-
+func TestSyncReturnsAdjustedTotalsWithoutValidating(t *testing.T) {
+	getCount := 0
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.Method == http.MethodPost {
-			_ = json.NewEncoder(w).Encode(SyncResponse{})
+			// A full resync can fail to delete stale resources and their edges.
+			_ = json.NewEncoder(w).Encode(SyncResponse{
+				DeleteErrors:     []SyncError{{ResourceUID: "stale-resource"}},
+				DeleteEdgeErrors: []SyncError{{ResourceUID: "stale-edge-1"}, {ResourceUID: "stale-edge-2"}},
+			})
 			return
 		}
+		getCount++
 		http.Error(w, "database unavailable", http.StatusInternalServerError)
 	}))
 	defer ts.Close()
@@ -425,35 +310,16 @@ func TestSyncIgnoresValidationFailure(t *testing.T) {
 		aggregatorValidationPath: "/validation",
 		httpClient:               *ts.Client(),
 		lastSentTime:             -1,
-		rec:                      reconciler.NewReconciler(),
+		rec:                      &reconciler.Reconciler{},
 	}
 
-	assert.NoError(t, s.Sync())
+	resources, edges, err := s.Sync()
+	require.NoError(t, err)
+	assert.Equal(t, 1, resources)
+	assert.Equal(t, 2, edges)
+	assert.Zero(t, getCount)
 	assert.NotEqual(t, int64(-1), s.lastSentTime)
 	assert.True(t, s.lastValidationTime.IsZero())
-}
-
-func TestValidationFailureRetriesNextCycle(t *testing.T) {
-	oldInterval := config.Cfg.DataValidationIntervalMS
-	config.Cfg.DataValidationIntervalMS = 15 * 60 * 1000
-	defer func() { config.Cfg.DataValidationIntervalMS = oldInterval }()
-
-	requestCount := 0
-	client := http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
-		requestCount++
-		return &http.Response{
-			StatusCode: http.StatusInternalServerError,
-			Status:     "500 Internal Server Error",
-			Body:       io.NopCloser(strings.NewReader("database unavailable")),
-		}, nil
-	})}
-	s := Sender{httpClient: client, lastSentTime: 123}
-
-	assert.NoError(t, s.validate(0, 0))
-	assert.NoError(t, s.validate(0, 0))
-	assert.Equal(t, 2, requestCount)
-	assert.True(t, s.lastValidationTime.IsZero())
-	assert.Equal(t, int64(123), s.lastSentTime)
 }
 
 func Test_minIsB(t *testing.T) {

@@ -21,30 +21,30 @@ func Test_SetDefault_01(t *testing.T) {
 	}
 }
 
-func TestInitConfigDataValidationInterval(t *testing.T) {
+func TestInitConfigValidationRate(t *testing.T) {
 	oldCfg := Cfg
 	Cfg = Config{}
 	defer func() { Cfg = oldCfg }()
 
 	t.Setenv("DEPLOYED_IN_HUB", "true")
-	t.Setenv("DATA_VALIDATION_INTERVAL_MS", "12345")
+	t.Setenv("VALIDATION_RATE_MS", "12345")
 
 	InitConfig()
 
-	assert.Equal(t, 12345, Cfg.DataValidationIntervalMS)
+	assert.Equal(t, 12345, Cfg.ValidationRateMS)
 }
 
-func TestInitConfigDataValidationIntervalDefault(t *testing.T) {
+func TestInitConfigValidationRateDefault(t *testing.T) {
 	oldCfg := Cfg
 	Cfg = Config{}
 	defer func() { Cfg = oldCfg }()
 
 	t.Setenv("DEPLOYED_IN_HUB", "true")
-	t.Setenv("DATA_VALIDATION_INTERVAL_MS", "")
+	t.Setenv("VALIDATION_RATE_MS", "")
 
 	InitConfig()
 
-	assert.Equal(t, DEFAULT_DATA_VALIDATION_INTERVAL_MS, Cfg.DataValidationIntervalMS)
+	assert.Equal(t, DEFAULT_VALIDATION_RATE_MS, Cfg.ValidationRateMS)
 }
 
 // Should use value from environment variable if it exists.

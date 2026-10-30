@@ -270,27 +270,23 @@ func (s *Sender) send(payload Payload) (SyncResponse, error) {
 
 /*
 1. Check totals periodically. After a successful send, or during a cycle with no changes,
-	the collector checks whether RESOURCE_COUNT_INTERVAL_MS has elapsed.
+	StartSendLoop checks whether the configured validation interval or retry delay has elapsed.
 2. Request the indexer totals. When validation is due, the collector requests the stored resource and edge counts.
 	It compares those counts with the expected counts.
 	After a send, the expected counts account for add and delete errors reported in that send response.
 3. Continue if the counts match. No resync is needed.
 4. Request a full resync if the counts differ.
-	The collector sets lastSentTime to -1 and returns a mismatch error. The next send cycle sends the complete state.
+	The collector sets lastSentTime to -1. The next send cycle sends the complete state.
+5. Keep validation pending if the request fails. Schedule a retry with independent capped backoff and jitter,
+	allowing sends to continue between validation attempts. Warn after an hour pending and continue retrying.
 */
 
-// validate checks the indexer's persisted totals after the configured interval has elapsed
-// or last validate check returned in error
-func (s *Sender) validate(expectedTotalResources int, expectedTotalEdges int) error {
-	interval := time.Duration(config.Cfg.DataValidationIntervalMS) * time.Millisecond
-	if !s.lastValidationTime.IsZero() && time.Since(s.lastValidationTime) < interval {
-		return nil
-	}
-
+// validate makes one request for the indexer's persisted totals. StartSendLoop schedules retries.
+func (s *Sender) validate() (ValidationResponse, error) {
+	validationResponse := ValidationResponse{}
 	req, err := http.NewRequest(http.MethodGet, s.aggregatorURL+s.aggregatorValidationPath, nil)
 	if err != nil {
-		klog.Warningf("Unable to create Indexer validation request: %v", err)
-		return nil
+		return validationResponse, fmt.Errorf("unable to create Indexer validation request: %w", err)
 	}
 	resp, err := s.httpClient.Do(req)
 	if resp != nil && resp.Body != nil {
@@ -298,62 +294,43 @@ func (s *Sender) validate(expectedTotalResources int, expectedTotalEdges int) er
 		defer func() { _ = resp.Body.Close() }()
 	}
 	if err != nil {
-		klog.Warningf("Indexer validation request failed: %v", err)
-		return nil
+		return validationResponse, fmt.Errorf("Indexer validation request failed: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		klog.Warningf("GET from: %s responded with error. StatusCode: %d Message: %s",
+		return validationResponse, fmt.Errorf("GET from: %s responded with error. StatusCode: %d Message: %s",
 			s.aggregatorURL+s.aggregatorValidationPath, resp.StatusCode, resp.Status)
-		return nil
 	}
 
-	validationResponse := ValidationResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&validationResponse); err != nil {
-		klog.Warningf("Unable to decode Indexer validation response: %v", err)
-		return nil
+		return validationResponse, fmt.Errorf("unable to decode Indexer validation response: %w", err)
 	}
 
-	// set lastValidationTime only after successful request
-	s.lastValidationTime = time.Now()
-
-	if validationResponse.TotalResources != expectedTotalResources {
-		s.lastSentTime = -1
-		klog.Warningf("Indexer reported wrong number of total resources. Expected %d, got %d",
-			expectedTotalResources, validationResponse.TotalResources)
-		return nil
-	}
-	if validationResponse.TotalEdges != expectedTotalEdges {
-		s.lastSentTime = -1
-		klog.Warningf("Indexer reported wrong number of total intra edges. Expected %d, got %d",
-			expectedTotalEdges, validationResponse.TotalEdges)
-		return nil
-	}
-
-	return nil
+	return validationResponse, nil
 }
 
 // Sends data to the aggregator.
 // Attempts to send a diff, then just sends the complete if the aggregator appears to need that.
-func (s *Sender) Sync() error {
+// Returns the expected resource and edge totals for this cycle's snapshot, adjusted for send response errors.
+func (s *Sender) Sync() (int, int, error) {
 	if s.lastSentTime == -1 { // If we have never sent before, we just send the complete.
 		klog.Info("First time sending or last Sync cycle failed, sending complete payload")
 		payload, expectedTotalResources, expectedTotalEdges := s.completePayload()
 		response, err := s.sendWithRetry(payload)
 		if err != nil {
 			klog.Error("Sync sender error. ", err)
-			return err
+			return 0, 0, err
 		}
 
 		s.lastSentTime = time.Now().Unix()
-		return s.validate(expectedTotalResources+len(response.DeleteErrors)-len(response.AddErrors),
-			expectedTotalEdges+len(response.DeleteEdgeErrors)-len(response.AddEdgeErrors))
+		return expectedTotalResources + len(response.DeleteErrors) - len(response.AddErrors),
+			expectedTotalEdges + len(response.DeleteEdgeErrors) - len(response.AddEdgeErrors), nil
 	}
 
 	// If this isn't the first time we've sent, we can now attempt to send a diff.
 	payload, expectedTotalResources, expectedTotalEdges := s.diffPayload()
 	if payload.empty() {
 		klog.V(3).Info("Nothing to send, skipping send cycle.")
-		return s.validate(expectedTotalResources, expectedTotalEdges)
+		return expectedTotalResources, expectedTotalEdges, nil
 	}
 	response, err := s.sendWithRetry(payload)
 	if err != nil {
@@ -368,16 +345,16 @@ func (s *Sender) Sync() error {
 			// If this retry fails, we want to start over with a complete payload next time,
 			// so we reset as if we've not sent anything before.
 			s.lastSentTime = -1
-			return err
+			return 0, 0, err
 		}
 		s.lastSentTime = time.Now().Unix()
-		return s.validate(expectedTotalResources+len(response.DeleteErrors)-len(response.AddErrors),
-			expectedTotalEdges+len(response.DeleteEdgeErrors)-len(response.AddEdgeErrors))
+		return expectedTotalResources + len(response.DeleteErrors) - len(response.AddErrors),
+			expectedTotalEdges + len(response.DeleteEdgeErrors) - len(response.AddEdgeErrors), nil
 	}
 
 	s.lastSentTime = time.Now().Unix()
-	return s.validate(expectedTotalResources+len(response.DeleteErrors)-len(response.AddErrors),
-		expectedTotalEdges+len(response.DeleteEdgeErrors)-len(response.AddEdgeErrors))
+	return expectedTotalResources + len(response.DeleteErrors) - len(response.AddErrors),
+		expectedTotalEdges + len(response.DeleteEdgeErrors) - len(response.AddEdgeErrors), nil
 }
 
 // Starts the send loop to send data on an interval.
@@ -385,6 +362,9 @@ func (s *Sender) Sync() error {
 func (s *Sender) StartSendLoop(ctx context.Context) {
 	// Used for exponential backoff, increased each interval. Has to be a float64 since I use it with math.Exp2()
 	backoffFactor := 1 // Note: must be 1. Using 0 will send the next payload immediately.
+	validationBackoffFactor := 1
+	var nextValidationRetry, validationPendingSince time.Time
+	validationOverdueLogged := false
 
 	for {
 		select {
@@ -397,7 +377,7 @@ func (s *Sender) StartSendLoop(ctx context.Context) {
 		s.checkTLSReload()
 
 		klog.V(3).Info("Beginning Send Cycle")
-		err := s.Sync()
+		expectedTotalResources, expectedTotalEdges, err := s.Sync()
 		if err != nil {
 			klog.Error("SEND ERROR: ", err)
 			// Increase the backoffFactor, doubling the wait time. Stops increasing after it passes the max
@@ -408,6 +388,48 @@ func (s *Sender) StartSendLoop(ctx context.Context) {
 		} else {
 			klog.V(2).Info("Send Cycle Completed Successfully")
 			backoffFactor = 1 // Reset backoff to 1 because we had a sucessful send.
+
+			validationInterval := time.Duration(config.Cfg.ValidationRateMS) * time.Millisecond
+			validationDue := s.lastValidationTime.IsZero() || time.Since(s.lastValidationTime) >= validationInterval
+			if validationDue && !time.Now().Before(nextValidationRetry) {
+				if validationPendingSince.IsZero() {
+					validationPendingSince = time.Now()
+				}
+				response, validationErr := s.validate()
+				if validationErr != nil {
+					// Schedule one later attempt; never delay sends by sleeping on validation backoff.
+					nextRetryWait := sendInterval(validationBackoffFactor)
+					if nextRetryWait < time.Duration(config.Cfg.MaxBackoffMS)*time.Millisecond {
+						validationBackoffFactor++
+					}
+					nextValidationRetry = time.Now().Add(nextRetryWait)
+					klog.Warningf("Validation pending: %v. Retrying in %s.", validationErr, nextRetryWait)
+					if !validationOverdueLogged && time.Since(validationPendingSince) >= time.Hour {
+						klog.Warningf("Validation has been pending for %s. Continuing capped retries while sending resources.",
+							time.Since(validationPendingSince))
+						validationOverdueLogged = true
+					}
+				} else {
+					// A valid response completes this validation, even if a mismatch requires a resync.
+					s.lastValidationTime = time.Now()
+					validationBackoffFactor = 1
+					nextValidationRetry = time.Time{}
+					validationPendingSince = time.Time{}
+					validationOverdueLogged = false
+
+					if response.TotalResources != expectedTotalResources {
+						s.lastSentTime = -1
+						klog.Warningf("Indexer reported wrong number of total resources. "+
+							"Resources: expected %d, got %d. Intra edges: expected %d, got %d.",
+							expectedTotalResources, response.TotalResources, expectedTotalEdges, response.TotalEdges)
+					} else if response.TotalEdges != expectedTotalEdges {
+						s.lastSentTime = -1
+						klog.Warningf("Indexer reported wrong number of total intra edges. "+
+							"Resources: expected %d, got %d. Intra edges: expected %d, got %d.",
+							expectedTotalResources, response.TotalResources, expectedTotalEdges, response.TotalEdges)
+					}
+				}
+			}
 		}
 
 		nextSendWait := sendInterval(backoffFactor)
