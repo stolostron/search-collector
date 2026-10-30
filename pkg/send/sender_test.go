@@ -12,46 +12,36 @@ package send
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/stolostron/search-collector/pkg/config"
+	"github.com/stolostron/search-collector/pkg/reconciler"
 	"github.com/stolostron/search-collector/pkg/transforms"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestSenderWrongCount(t *testing.T) {
-	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := SyncResponse{
-			TotalResources: 0,
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		err := json.NewEncoder(w).Encode(response)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}))
-	defer ts.Close()
+type roundTripFunc func(*http.Request) (*http.Response, error)
 
-	s := Sender{
-		httpClient:    *ts.Client(),
-		aggregatorURL: ts.URL,
-	}
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
 
-	payload := Payload{}
-
-	err := s.send(payload, 5, 0)
-	if err == nil {
-		t.Fatal("send function does not error when expected count differs")
-	}
-
-	message := "Aggregator reported wrong number of total resources"
-	if !strings.Contains(err.Error(), message) {
-		t.Errorf("expected error to contain \"%s\": got \"%s\"", message, err.Error())
-	}
+func testHTTPClient(statusCode int, body string) http.Client {
+	return http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: statusCode,
+			Status:     fmt.Sprintf("%d %s", statusCode, http.StatusText(statusCode)),
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}, nil
+	})}
 }
 
 func TestSenderUnavailable(t *testing.T) {
@@ -68,7 +58,7 @@ func TestSenderUnavailable(t *testing.T) {
 
 	payload := Payload{}
 
-	err := s.send(payload, 0, 0)
+	_, err := s.send(payload)
 	if err == nil {
 		t.Fatal("send function does not error if server returns a 503")
 	}
@@ -84,11 +74,7 @@ func TestSenderSuccessful(t *testing.T) {
 	n := 5
 
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := SyncResponse{
-			TotalResources: n,
-			TotalAdded:     n,
-			TotalEdges:     n,
-		}
+		response := SyncResponse{TotalAdded: n}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		err := json.NewEncoder(w).Encode(response)
@@ -113,10 +99,227 @@ func TestSenderSuccessful(t *testing.T) {
 		})
 	}
 
-	err := s.send(payload, n, n)
+	_, err := s.send(payload)
 	if err != nil {
 		t.Fatal("send function reports error:", err)
 	}
+}
+
+func TestValidationRequestErrors(t *testing.T) {
+	tests := []struct {
+		name      string
+		client    http.Client
+		url       string
+		errorText string
+	}{
+		{
+			name:      "invalid URL",
+			client:    testHTTPClient(http.StatusOK, `{}`),
+			url:       "https://invalid\n",
+			errorText: "unable to create Indexer validation request",
+		},
+		{
+			name: "transport error",
+			client: http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+				return nil, errors.New("transport failed")
+			})},
+			errorText: "transport failed",
+		},
+		{
+			name:      "too many requests",
+			client:    testHTTPClient(http.StatusTooManyRequests, "busy"),
+			errorText: "429 Too Many Requests",
+		},
+		{
+			name:      "server error",
+			client:    testHTTPClient(http.StatusInternalServerError, "database unavailable"),
+			errorText: "500 Internal Server Error",
+		},
+		{
+			name:      "invalid response",
+			client:    testHTTPClient(http.StatusOK, "not-json"),
+			errorText: "unable to decode Indexer validation response",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := Sender{
+				httpClient:               test.client,
+				aggregatorURL:            test.url,
+				aggregatorValidationPath: "/validation",
+				lastSentTime:             123,
+			}
+			_, err := s.validate()
+			require.ErrorContains(t, err, test.errorText)
+			assert.Equal(t, int64(123), s.lastSentTime)
+			assert.True(t, s.lastValidationTime.IsZero())
+		})
+	}
+}
+
+func TestValidationRequest(t *testing.T) {
+	client := http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodGet, req.Method)
+		assert.Equal(t, "https://indexer/aggregator/clusters/test/validation", req.URL.String())
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Status:     "200 OK",
+			Body:       io.NopCloser(strings.NewReader(`{"TotalResources":5,"TotalEdges":3}`)),
+		}, nil
+	})}
+	s := Sender{
+		httpClient:               client,
+		aggregatorURL:            "https://indexer",
+		aggregatorValidationPath: "/aggregator/clusters/test/validation",
+	}
+
+	response, err := s.validate()
+	require.NoError(t, err)
+	assert.Equal(t, ValidationResponse{TotalResources: 5, TotalEdges: 3}, response)
+}
+
+func TestSendErrorResponses(t *testing.T) {
+	tests := []struct {
+		name      string
+		sender    Sender
+		payload   Payload
+		errorText string
+	}{
+		{
+			name:      "marshal error",
+			sender:    Sender{},
+			payload:   Payload{AddResources: []transforms.Node{{Properties: map[string]interface{}{"bad": func() {}}}}},
+			errorText: "unsupported type",
+		},
+		{
+			name:      "invalid URL",
+			sender:    Sender{aggregatorURL: "https://invalid\n"},
+			errorText: "invalid control character",
+		},
+		{
+			name: "transport error",
+			sender: Sender{httpClient: http.Client{Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+				return nil, errors.New("transport failed")
+			})}},
+			errorText: "transport failed",
+		},
+		{
+			name:      "busy",
+			sender:    Sender{httpClient: testHTTPClient(http.StatusTooManyRequests, "busy")},
+			errorText: "indexer busy",
+		},
+		{
+			name:      "unauthorized",
+			sender:    Sender{httpClient: testHTTPClient(http.StatusUnauthorized, "unauthorized")},
+			errorText: "401 Unauthorized",
+		},
+		{
+			name:      "invalid response",
+			sender:    Sender{httpClient: testHTTPClient(http.StatusOK, "not-json")},
+			errorText: "invalid character",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := test.sender.send(test.payload)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), test.errorText)
+		})
+	}
+}
+
+func TestSendWithRetryReturnsResponse(t *testing.T) {
+	s := Sender{httpClient: testHTTPClient(http.StatusOK, `{"TotalAdded":4}`)}
+
+	response, err := s.sendWithRetry(Payload{})
+
+	require.NoError(t, err)
+	assert.Equal(t, 4, response.TotalAdded)
+}
+
+func TestSenderPathsInHub(t *testing.T) {
+	oldCfg := config.Cfg
+	config.Cfg.DeployedInHub = true
+	defer func() { config.Cfg = oldCfg }()
+
+	s := NewSender(nil, "https://indexer", "test-cluster", nil)
+	assert.Equal(t, "/aggregator/clusters/test-cluster/sync", s.aggregatorSyncPath)
+	assert.Equal(t, "/aggregator/clusters/test-cluster/validation", s.aggregatorValidationPath)
+	assert.True(t, s.lastValidationTime.IsZero())
+
+	config.Cfg.AggregatorURL = "https://reloaded"
+	config.Cfg.ClusterName = "other-cluster"
+	s.reloadSender()
+	assert.Equal(t, "https://reloaded", s.aggregatorURL)
+	assert.Equal(t, "/aggregator/clusters/other-cluster/sync", s.aggregatorSyncPath)
+	assert.Equal(t, "/aggregator/clusters/other-cluster/validation", s.aggregatorValidationPath)
+}
+
+func TestSyncWithEmptyDiffReturnsTotalsWithoutRequests(t *testing.T) {
+	postCount := 0
+	getCount := 0
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodPost {
+			postCount++
+			_ = json.NewEncoder(w).Encode(SyncResponse{})
+			return
+		}
+		getCount++
+		_ = json.NewEncoder(w).Encode(ValidationResponse{})
+	}))
+	defer ts.Close()
+
+	s := Sender{
+		aggregatorURL:            ts.URL,
+		aggregatorSyncPath:       "/sync",
+		aggregatorValidationPath: "/validation",
+		httpClient:               *ts.Client(),
+		lastSentTime:             time.Now().Unix(),
+		rec:                      &reconciler.Reconciler{},
+	}
+
+	resources, edges, err := s.Sync()
+	require.NoError(t, err)
+	assert.Zero(t, resources)
+	assert.Zero(t, edges)
+	assert.Equal(t, 0, postCount)
+	assert.Equal(t, 0, getCount)
+}
+
+func TestSyncReturnsAdjustedTotalsWithoutValidating(t *testing.T) {
+	getCount := 0
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodPost {
+			// A full resync can fail to delete stale resources and their edges.
+			_ = json.NewEncoder(w).Encode(SyncResponse{
+				DeleteErrors:     []SyncError{{ResourceUID: "stale-resource"}},
+				DeleteEdgeErrors: []SyncError{{ResourceUID: "stale-edge-1"}, {ResourceUID: "stale-edge-2"}},
+			})
+			return
+		}
+		getCount++
+		http.Error(w, "database unavailable", http.StatusInternalServerError)
+	}))
+	defer ts.Close()
+
+	s := Sender{
+		aggregatorURL:            ts.URL,
+		aggregatorSyncPath:       "/sync",
+		aggregatorValidationPath: "/validation",
+		httpClient:               *ts.Client(),
+		lastSentTime:             -1,
+		rec:                      &reconciler.Reconciler{},
+	}
+
+	resources, edges, err := s.Sync()
+	require.NoError(t, err)
+	assert.Equal(t, 1, resources)
+	assert.Equal(t, 2, edges)
+	assert.Zero(t, getCount)
+	assert.NotEqual(t, int64(-1), s.lastSentTime)
+	assert.True(t, s.lastValidationTime.IsZero())
 }
 
 func Test_minIsB(t *testing.T) {

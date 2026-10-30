@@ -26,19 +26,20 @@ import (
 
 // Out of box defaults
 const (
-	COLLECTOR_API_VERSION          = "2.15.0"
-	DEFAULT_AGGREGATOR_URL         = "https://localhost:3010" // this will be deprecated in the future
-	DEFAULT_AGGREGATOR_HOST        = "https://localhost"
-	DEFAULT_AGGREGATOR_PORT        = "3010"
-	DEFAULT_CLUSTER_NAME           = "local-cluster"
-	DEFAULT_POD_NAMESPACE          = "open-cluster-management"
-	DEFAULT_HEARTBEAT_MS           = 300000 // 5 min
-	DEFAULT_MAX_BACKOFF_MS         = 600000 // 10 min
-	DEFAULT_REDISCOVER_RATE_MS     = 60000  // 1 min
-	DEFAULT_REPORT_RATE_MS         = 5000   // 5 seconds
-	DEFAULT_NS_FILTER_CACHE_TTL_MS = 300000 // 5 min
-	DEFAULT_RETRY_JITTER_MS        = 5000   // 5 seconds
-	DEFAULT_RUNTIME_MODE           = "production"
+	COLLECTOR_API_VERSION             = "2.15.0"
+	DEFAULT_AGGREGATOR_HOST           = "https://localhost"
+	DEFAULT_AGGREGATOR_PORT           = "3010"
+	DEFAULT_AGGREGATOR_URL            = "https://localhost:3010" // this will be deprecated in the future
+	DEFAULT_CLUSTER_NAME              = "local-cluster"
+	DEFAULT_MAX_BACKOFF_MS            = 600000 // 10 min
+	DEFAULT_NS_FILTER_CACHE_TTL_MS    = 300000 // 5 min
+	DEFAULT_POD_NAMESPACE             = "open-cluster-management"
+	DEFAULT_REDISCOVER_RATE_MS        = 60000 // 1 min
+	DEFAULT_REPORT_RATE_MS            = 5000  // 5 seconds
+	DEFAULT_RETRY_JITTER_MS           = 5000  // 5 seconds
+	DEFAULT_RUNTIME_MODE              = "production"
+	DEFAULT_VALIDATION_MAX_PENDING_MS = 3600000 // 1 hour
+	DEFAULT_VALIDATION_RATE_MS        = 300000  // 5 min
 )
 
 // Configuration options for the search-collector.
@@ -54,7 +55,6 @@ type Config struct {
 	ClusterName                   string       `env:"CLUSTER_NAME"`                    // The name of of the cluster where this pod is running
 	DeployedInHub                 bool         `env:"DEPLOYED_IN_HUB"`                 // Tracks if deployed in the Hub or Managed cluster
 	FeatureConfigurableCollection bool         `env:"FEATURE_CONFIGURABLE_COLLECTION"` // Enable configurable collection feature to extend transforms config
-	HeartbeatMS                   int          `env:"HEARTBEAT_MS"`                    // Interval(ms) to send empty payload to ensure connection
 	HTTPTimeout                   int          `env:"HTTP_TIMEOUT"`                    // Timeout for http server connections. Default: 5 min
 	KubeConfig                    string       `env:"KUBECONFIG"`                      // Local kubeconfig path
 	MaxBackoffMS                  int          `env:"MAX_BACKOFF_MS"`                  // Maximum backoff in ms to wait after error
@@ -65,10 +65,14 @@ type Config struct {
 	ReportRateMS                  int          `env:"REPORT_RATE_MS"`                  // Interval(ms) to send changes to the aggregator
 	RuntimeMode                   string       `env:"RUNTIME_MODE"`                    // Running mode (development or production)
 	ServerAddress                 string       `env:"SERVER_ADDRESS"`                  // Web server address
+	ValidationMaxPendingMS        int          `env:"VALIDATION_MAX_PENDING_MS"`       // Max time(ms) without a validation response before requesting a full sync
+	ValidationRateMS              int          `env:"VALIDATION_RATE_MS"`              // Interval(ms) between data validations
 }
 
-var Cfg = Config{}
-var FilePath = flag.String("c", "./config.json", "Collector configuration file") // ./config.json is the default
+var (
+	Cfg      = Config{}
+	FilePath = flag.String("c", "./config.json", "Collector configuration file") // ./config.json is the default
+)
 
 func InitConfig() {
 	klog.Info("Loading config from environment.")
@@ -103,12 +107,17 @@ func InitConfig() {
 		setDefault(&Cfg.AggregatorURL, "AGGREGATOR_URL", DEFAULT_AGGREGATOR_URL)
 	}
 
-	setDefaultInt(&Cfg.HeartbeatMS, "HEARTBEAT_MS", DEFAULT_HEARTBEAT_MS)
 	setDefaultInt(&Cfg.MaxBackoffMS, "MAX_BACKOFF_MS", DEFAULT_MAX_BACKOFF_MS)
 	setDefaultInt(&Cfg.NSFilterCacheTTLMS, "NS_FILTER_CACHE_TTL_MS", DEFAULT_NS_FILTER_CACHE_TTL_MS)
 	setDefaultInt(&Cfg.RediscoverRateMS, "REDISCOVER_RATE_MS", DEFAULT_REDISCOVER_RATE_MS)
 	setDefaultInt(&Cfg.ReportRateMS, "REPORT_RATE_MS", DEFAULT_REPORT_RATE_MS)
 	setDefaultInt(&Cfg.RetryJitterMS, "RETRY_JITTER_MS", DEFAULT_RETRY_JITTER_MS)
+	setDefaultInt(&Cfg.ValidationMaxPendingMS, "VALIDATION_MAX_PENDING_MS", DEFAULT_VALIDATION_MAX_PENDING_MS)
+	if Cfg.ValidationMaxPendingMS <= 0 {
+		klog.Warningf("VALIDATION_MAX_PENDING_MS must be positive, using default: %d", DEFAULT_VALIDATION_MAX_PENDING_MS)
+		Cfg.ValidationMaxPendingMS = DEFAULT_VALIDATION_MAX_PENDING_MS
+	}
+	setDefaultInt(&Cfg.ValidationRateMS, "VALIDATION_RATE_MS", DEFAULT_VALIDATION_RATE_MS)
 
 	defaultKubePath := filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	if _, err := os.Stat(defaultKubePath); os.IsNotExist(err) { // #nosec G703
