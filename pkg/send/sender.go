@@ -98,8 +98,7 @@ type Sender struct {
 type validationRetryState struct {
 	backoffFactor int
 	nextRetry     time.Time
-	pendingSince  time.Time
-	overdueLogged bool
+	pendingSince  time.Time // Last validation response, first attempt, or start of a forced-resync grace period.
 }
 
 func (s *Sender) reloadSender() {
@@ -285,7 +284,8 @@ func (s *Sender) send(payload Payload) (SyncResponse, error) {
 4. Request a full resync if the counts differ.
 	The collector sets lastSentTime to -1. The next send cycle sends the complete state.
 5. Keep validation pending if the request fails. Schedule a retry with independent capped backoff and jitter,
-	allowing sends to continue between validation attempts. Warn after an hour pending and continue retrying.
+	allowing sends to continue between validation attempts. Request a full sync after VALIDATION_MAX_PENDING_MS
+	without a validation response, then start a new grace period while continuing validation retries.
 */
 
 // validate makes one request for the indexer's persisted totals. StartSendLoop schedules retries.
@@ -315,15 +315,22 @@ func (s *Sender) validate() (ValidationResponse, error) {
 	return validationResponse, nil
 }
 
-// validateIfDue schedules validation retries and requests a resync only after a confirmed count mismatch.
+// validateIfDue schedules validation retries and requests a resync on a count mismatch or overdue validation.
 func (s *Sender) validateIfDue(expectedTotalResources, expectedTotalEdges int, retry *validationRetryState) {
 	validationInterval := time.Duration(config.Cfg.ValidationRateMS) * time.Millisecond
 	validationDue := s.lastValidationTime.IsZero() || time.Since(s.lastValidationTime) >= validationInterval
-	if !validationDue || time.Now().Before(retry.nextRetry) {
+	if !validationDue {
 		return
 	}
 	if retry.pendingSince.IsZero() {
-		retry.pendingSince = time.Now()
+		retry.pendingSince = s.lastValidationTime
+		if retry.pendingSince.IsZero() {
+			retry.pendingSince = time.Now()
+		}
+	}
+	if time.Now().Before(retry.nextRetry) {
+		s.resyncIfValidationOverdue(retry)
+		return
 	}
 	response, validationErr := s.validate()
 	if validationErr != nil {
@@ -334,11 +341,7 @@ func (s *Sender) validateIfDue(expectedTotalResources, expectedTotalEdges int, r
 		}
 		retry.nextRetry = time.Now().Add(nextRetryWait)
 		klog.Warningf("Validation pending: %v. Retrying in %s.", validationErr, nextRetryWait)
-		if !retry.overdueLogged && time.Since(retry.pendingSince) >= time.Hour {
-			klog.Warningf("Validation has been pending for %s. Continuing capped retries while sending resources.",
-				time.Since(retry.pendingSince))
-			retry.overdueLogged = true
-		}
+		s.resyncIfValidationOverdue(retry)
 		return
 	}
 
@@ -357,6 +360,17 @@ func (s *Sender) validateIfDue(expectedTotalResources, expectedTotalEdges int, r
 			"Resources: expected %d, got %d. Intra edges: expected %d, got %d.",
 			expectedTotalResources, response.TotalResources, expectedTotalEdges, response.TotalEdges)
 	}
+}
+
+func (s *Sender) resyncIfValidationOverdue(retry *validationRetryState) {
+	maxPending := time.Duration(config.Cfg.ValidationMaxPendingMS) * time.Millisecond
+	if time.Since(retry.pendingSince) < maxPending {
+		return
+	}
+	klog.Warningf("Validation has been pending for %s. Requesting complete sync.", time.Since(retry.pendingSince))
+	s.lastSentTime = -1
+	// Give the forced resync a fresh grace period without treating it as a validation response.
+	retry.pendingSince = time.Now()
 }
 
 // Sends data to the aggregator.

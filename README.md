@@ -54,11 +54,13 @@ MAX_BACKOFF_MS     | no       | 600000  // 10 min        | Maximum backoff in ms
 REDISCOVER_RATE_MS | no       | 120000  // 2 min         | Interval(ms) to poll for changes to CRDs
 REPORT_RATE_MS     | no       | 5000    // 5 seconds     | Interval(ms) to queue changes before sending to the aggregator
 RUNTIME_MODE       | no       | production               | Running mode (development or production)
+VALIDATION_MAX_PENDING_MS | no | 3600000 // 1 hour       | Maximum time without a completed validation before requesting a full sync while validation is pending. Must be positive.
 VALIDATION_RATE_MS | no       | 300000  // 5 min         | Interval(ms) to validate resource and edge totals with the indexer
 
 ### Other Configuration Options
 
 - Environment variables can also be set in the `./config.json` for development. If both provide a value for a specific property, the environment variable overrides the file. You can define your own `config.json` file and pass it to the application with the following command: `-c <config_file>`
+- `VALIDATION_MAX_PENDING_MS` is measured from the last decoded validation response, or the first attempt when no response has been received. Each forced full sync starts a new grace period; validation retries continue with backoff. For managed collectors, set the `addon.open-cluster-management.io/search_validation_max_pending` annotation on the `ManagedClusterAddOn` (milliseconds).
 
 
 ### Dev Preview (Search Configurable Collection)

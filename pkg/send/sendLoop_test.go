@@ -25,6 +25,7 @@ func configureSendLoopTest(t *testing.T) {
 	t.Helper()
 	oldCfg := config.Cfg
 	t.Cleanup(func() { config.Cfg = oldCfg })
+	config.Cfg.ValidationMaxPendingMS = config.DEFAULT_VALIDATION_MAX_PENDING_MS
 	config.Cfg.ValidationRateMS = 15 * 60 * 1000
 	config.Cfg.MaxBackoffMS = 8000
 	// rand.Int with an upper bound of 1 produces zero jitter for deterministic timing.
@@ -99,7 +100,7 @@ func TestSendLoopValidationFailuresUseIndependentBackoff(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 				defer cancel()
 				start := time.Now()
-				lastValidation := start.Add(-time.Hour)
+				lastValidation := start.Add(-15 * time.Minute)
 				var validationTimes []time.Duration
 				postCount := 0
 				s := newSendLoopTestSender(func(req *http.Request) (*http.Response, error) {
@@ -121,7 +122,7 @@ func TestSendLoopValidationFailuresUseIndependentBackoff(t *testing.T) {
 				s.StartSendLoop(ctx)
 
 				assert.Equal(t, []time.Duration{0, 2 * time.Second, 6 * time.Second, 14 * time.Second, 22 * time.Second}, validationTimes)
-				assert.Equal(t, 1, postCount, "pending validation must not force a full resync")
+				assert.Equal(t, 1, postCount, "pending validation must not force a full resync before the timeout")
 				assert.Equal(t, start.Unix(), s.lastSentTime)
 				assert.Equal(t, lastValidation, s.lastValidationTime, "failed attempts must not count as completed validation")
 			})
@@ -313,7 +314,7 @@ func TestSendLoopSkipsValidationAfterSendFailure(t *testing.T) {
 	})
 }
 
-func TestSendLoopValidationOverdueKeepsRetryingAtCap(t *testing.T) {
+func TestSendLoopValidationOverdueRequestsResyncAtCap(t *testing.T) {
 	configureSendLoopTest(t)
 	logState := klog.CaptureState()
 	t.Cleanup(logState.Restore)
@@ -326,11 +327,11 @@ func TestSendLoopValidationOverdueKeepsRetryingAtCap(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
 		defer cancel()
 		start := time.Now()
-		var validationTimes []time.Duration
-		postCount := 0
+		var validationTimes, postTimes []time.Duration
 		s := newSendLoopTestSender(func(req *http.Request) (*http.Response, error) {
 			if req.Method == http.MethodPost {
-				postCount++
+				postTimes = append(postTimes, time.Since(start))
+				assert.Equal(t, "true", req.Header.Get("X-Overwrite-State"))
 				return sendLoopResponse(http.StatusOK, `{}`), nil
 			}
 			validationTimes = append(validationTimes, time.Since(start))
@@ -347,10 +348,107 @@ func TestSendLoopValidationOverdueKeepsRetryingAtCap(t *testing.T) {
 			assert.Equal(t, 8*time.Second, validationTimes[i]-validationTimes[i-1])
 		}
 		assert.Greater(t, validationTimes[len(validationTimes)-1], time.Hour)
-		assert.Equal(t, 1, postCount, "overdue validation must not force resync")
+		assert.Equal(t, []time.Duration{0, time.Hour + 2*time.Second}, postTimes)
 		assert.True(t, s.lastValidationTime.IsZero())
 	})
 	klog.Flush()
 	assert.Equal(t, 1, strings.Count(logs.String(), "Validation has been pending for"))
-	assert.Contains(t, logs.String(), "Continuing capped retries while sending resources.")
+	assert.Contains(t, logs.String(), "Requesting complete sync.")
+}
+
+func TestSendLoopValidationMaxPendingOverride(t *testing.T) {
+	configureSendLoopTest(t)
+	config.Cfg.ValidationMaxPendingMS = 10000
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		start := time.Now()
+		var validationTimes, postTimes []time.Duration
+		s := newSendLoopTestSender(func(req *http.Request) (*http.Response, error) {
+			if req.Method == http.MethodPost {
+				postTimes = append(postTimes, time.Since(start))
+				assert.Equal(t, "true", req.Header.Get("X-Overwrite-State"))
+				if len(postTimes) == 3 {
+					cancel()
+				}
+				return sendLoopResponse(http.StatusOK, `{}`), nil
+			}
+			validationTimes = append(validationTimes, time.Since(start))
+			return sendLoopResponse(http.StatusInternalServerError, "unavailable"), nil
+		})
+
+		s.StartSendLoop(ctx)
+
+		// The timeout at 10s must be checked during the retry wait from 6s to 14s.
+		// The new grace period prevents resyncing every 2s after the first forced resync.
+		assert.Equal(t, []time.Duration{0, 12 * time.Second, 22 * time.Second}, postTimes)
+		assert.Equal(t, []time.Duration{0, 2 * time.Second, 6 * time.Second, 14 * time.Second, 22 * time.Second}, validationTimes)
+		assert.True(t, s.lastValidationTime.IsZero(), "a full sync must not count as successful validation")
+	})
+}
+
+func TestSendLoopValidationSuccessRestartsResyncGracePeriod(t *testing.T) {
+	configureSendLoopTest(t)
+	config.Cfg.ValidationMaxPendingMS = 10000
+	config.Cfg.ValidationRateMS = 4000
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		start := time.Now()
+		var validationTimes, postTimes []time.Duration
+		s := newSendLoopTestSender(func(req *http.Request) (*http.Response, error) {
+			if req.Method == http.MethodPost {
+				postTimes = append(postTimes, time.Since(start))
+				if len(postTimes) == 2 {
+					cancel()
+				}
+				return sendLoopResponse(http.StatusOK, `{}`), nil
+			}
+			validationTimes = append(validationTimes, time.Since(start))
+			if len(validationTimes) == 2 {
+				return sendLoopResponse(http.StatusOK, `{"TotalResources":0,"TotalEdges":0}`), nil
+			}
+			return sendLoopResponse(http.StatusTooManyRequests, "busy"), nil
+		})
+
+		s.StartSendLoop(ctx)
+
+		// Success at 2s starts the 10s window, including the normal validation interval.
+		assert.Equal(t, []time.Duration{0, 14 * time.Second}, postTimes)
+		assert.Equal(t, []time.Duration{0, 2 * time.Second, 6 * time.Second, 8 * time.Second, 12 * time.Second}, validationTimes)
+		assert.Equal(t, start.Add(2*time.Second), s.lastValidationTime)
+	})
+}
+
+func TestSendLoopValidationSuccessAtResyncDeadline(t *testing.T) {
+	configureSendLoopTest(t)
+	config.Cfg.ValidationMaxPendingMS = 10000
+	config.Cfg.ValidationRateMS = 4000
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		start := time.Now()
+		postCount, getCount := 0, 0
+		s := newSendLoopTestSender(func(req *http.Request) (*http.Response, error) {
+			if req.Method == http.MethodPost {
+				postCount++
+				return sendLoopResponse(http.StatusOK, `{}`), nil
+			}
+			getCount++
+			if getCount == 1 || time.Since(start) == 10*time.Second {
+				if getCount > 1 {
+					cancel()
+				}
+				return sendLoopResponse(http.StatusOK, `{"TotalResources":0,"TotalEdges":0}`), nil
+			}
+			return sendLoopResponse(http.StatusTooManyRequests, "busy"), nil
+		})
+
+		s.StartSendLoop(ctx)
+
+		assert.Equal(t, 1, postCount)
+		assert.Equal(t, 4, getCount)
+		assert.NotEqual(t, int64(-1), s.lastSentTime)
+		assert.Equal(t, start.Add(10*time.Second), s.lastValidationTime)
+	})
 }
