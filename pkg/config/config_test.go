@@ -6,6 +6,8 @@ package config
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // Should use default value when environment variable does not exist.
@@ -16,6 +18,58 @@ func Test_SetDefault_01(t *testing.T) {
 
 	if property != "default-value" {
 		t.Errorf("Failed testing setDefault() Expected: %s  Got: %s", "default-value", property)
+	}
+}
+
+func TestInitConfigValidationRate(t *testing.T) {
+	oldCfg := Cfg
+	Cfg = Config{}
+	defer func() { Cfg = oldCfg }()
+
+	t.Setenv("DEPLOYED_IN_HUB", "true")
+	t.Setenv("VALIDATION_RATE_MS", "12345")
+
+	InitConfig()
+
+	assert.Equal(t, 12345, Cfg.ValidationRateMS)
+}
+
+func TestInitConfigValidationRateDefault(t *testing.T) {
+	oldCfg := Cfg
+	Cfg = Config{}
+	defer func() { Cfg = oldCfg }()
+
+	t.Setenv("DEPLOYED_IN_HUB", "true")
+	t.Setenv("VALIDATION_RATE_MS", "")
+
+	InitConfig()
+
+	assert.Equal(t, DEFAULT_VALIDATION_RATE_MS, Cfg.ValidationRateMS)
+}
+
+func TestInitConfigValidationMaxPending(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		value    string
+		expected int
+	}{
+		{name: "default", expected: 3600000},
+		{name: "override", value: "120000", expected: 120000},
+		{name: "zero", value: "0", expected: 3600000},
+		{name: "negative", value: "-1", expected: 3600000},
+		{name: "invalid", value: "invalid", expected: 3600000},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			oldCfg := Cfg
+			Cfg = Config{}
+			defer func() { Cfg = oldCfg }()
+			t.Setenv("DEPLOYED_IN_HUB", "true")
+			t.Setenv("VALIDATION_MAX_PENDING_MS", test.value)
+
+			InitConfig()
+
+			assert.Equal(t, test.expected, Cfg.ValidationMaxPendingMS)
+		})
 	}
 }
 
