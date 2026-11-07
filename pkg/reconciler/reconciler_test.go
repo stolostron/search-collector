@@ -455,8 +455,8 @@ func TestReconcilerComplete(t *testing.T) {
 	com := testReconciler.Complete()
 
 	ns := tr.NodeStore{
-		ByUID:               testReconciler.currentNodes,
-		ByKindNamespaceName: nodeTripleMap(testReconciler.currentNodes),
+		ByUID:                    testReconciler.currentNodes,
+		ByGroupKindNamespaceName: nodesIndexMap(testReconciler.currentNodes),
 	}
 
 	// Checks the count of nodes and edges based on the JSON files in pkg/test-data
@@ -478,7 +478,10 @@ func TestReconcilerComplete(t *testing.T) {
 	}
 
 	// Verify some properties are set during BuildEdges on ConfigurationPolicies
-	configPolNode := ns.ByKindNamespaceName["ConfigurationPolicy"]["local-cluster"]["policy-namespace"]
+	configPolNode, ok := ns.LookupByKindNamespaceName("ConfigurationPolicy", "local-cluster", "policy-namespace")
+	if !ok {
+		t.Fatal("unable to find ConfigurationPolicy/local-cluster/policy-namespace in node index")
+	}
 
 	missing := configPolNode.Properties["_missingResources"]
 	if missing != `[{"v":"v1","k":"Namespace","n":"nonexistent"}]` {

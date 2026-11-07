@@ -107,13 +107,25 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 
 	propSet := map[string]struct{}{policyName: {}}
 
-	edges := edgesByDestinationName(propSet, "ValidatingAdmissionPolicy", nodeInfo, ns, []string{})
+	edges := edgesByDestinationGroupName(
+		propSet,
+		"ValidatingAdmissionPolicy",
+		"admissionregistration.k8s.io",
+		nodeInfo,
+		ns,
+		[]string{},
+	)
 
 	if !v.node.hasMetadata("paramRef") {
 		return edges
 	}
 
-	policy, ok := ns.ByKindNamespaceName["ValidatingAdmissionPolicy"]["_NONE"][policyName]
+	policy, ok := ns.LookupByGroupKindNamespaceName(
+		"admissionregistration.k8s.io",
+		"ValidatingAdmissionPolicy",
+		"_NONE",
+		policyName,
+	)
 	if !ok {
 		return edges
 	}
@@ -133,7 +145,7 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 		return edges
 	}
 
-	namespaceToName := ns.ByKindNamespaceName[paramKind]
+	namespaceToName := ns.ByGroupKindNamespaceName[paramGV.Group][paramKind]
 
 	paramRef, ok := v.node.Metadata["paramRef"].(*admissionregistration.ParamRef)
 	if !ok || paramRef == nil {
@@ -143,7 +155,7 @@ func (v VapBindingResource) BuildEdges(ns NodeStore) []Edge {
 	if paramRef.Namespace != "" {
 		// If the namespace is specified, then limit the searches to just this namespace
 		namespaceToName = map[string]map[string]Node{
-			paramRef.Namespace: ns.ByKindNamespaceName[paramKind][paramRef.Namespace],
+			paramRef.Namespace: namespaceToName[paramRef.Namespace],
 		}
 	}
 
