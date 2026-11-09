@@ -174,26 +174,27 @@ func edgesByKyverno(ret []Edge, currNode Node, ns NodeStore) []Edge {
 	}
 
 	var policyKind string
+	var policyGroup string
 	switch {
 	case isLegacy && isNamespaced:
 		policyKind = "Policy"
+		policyGroup = "kyverno.io"
 	case isLegacy && !isNamespaced:
 		policyKind = "ClusterPolicy"
+		policyGroup = "kyverno.io"
 	case !isLegacy && isNamespaced:
 		policyKind = "NamespacedGeneratingPolicy"
+		policyGroup = "policies.kyverno.io"
 	case !isLegacy && !isNamespaced:
 		policyKind = "GeneratingPolicy"
+		policyGroup = "policies.kyverno.io"
 	default:
 		policyKind = "ClusterPolicy"
+		policyGroup = "kyverno.io"
 	}
 
-	policyNode, ok := ns.ByKindNamespaceName[policyKind][policyNamespace][policyName]
+	policyNode, ok := ns.LookupByGroupKindNamespaceName(policyGroup, policyKind, policyNamespace, policyName)
 	if !ok {
-		return ret
-	}
-
-	// Prevent from policy.policy.open-cluster-management.io
-	if policyNode.Properties["apigroup"] != "kyverno.io" && policyNode.Properties["apigroup"] != "policies.kyverno.io" {
 		return ret
 	}
 

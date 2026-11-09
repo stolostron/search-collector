@@ -46,10 +46,10 @@ func TestTransformArgoApplication(t *testing.T) {
 		Properties: map[string]interface{}{"kind": "Service", "namespace": "bgd", "name": "bgd"},
 	}, {
 		UID:        "uuid-123-deployment",
-		Properties: map[string]interface{}{"kind": "Deployment", "namespace": "bgd", "name": "bgd"},
+		Properties: map[string]interface{}{"kind": "Deployment", "apigroup": "apps", "namespace": "bgd", "name": "bgd"},
 	}, {
 		UID:        "uuid-123-route",
-		Properties: map[string]interface{}{"kind": "Route", "namespace": "bgd", "name": "bgd"},
+		Properties: map[string]interface{}{"kind": "Route", "apigroup": "route.openshift.io", "namespace": "bgd", "name": "bgd"},
 	}}
 
 	nodeStore := BuildFakeNodeStore(nodes)
