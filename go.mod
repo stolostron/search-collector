@@ -13,8 +13,8 @@ require (
 	github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0
 	github.com/stretchr/testify v1.12.1
 	github.com/tkanos/gonfig v0.0.0-20210106201359-53e13348de2f
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/time v0.16.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.37.2
 	k8s.io/apimachinery v0.37.2
@@ -31,7 +31,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/openshift/controller-runtime-common v0.0.0-20261008111711-8ec0dc844066
 	github.com/prometheus/client_golang v1.25.0
-	github.com/stolostron/klusterlet-addon-controller v0.0.0-20261012192802-2d751c04050f
+	github.com/stolostron/klusterlet-addon-controller v0.0.0-20261104172029-3393a2a32f03
 	github.com/stolostron/search-v2-operator v0.0.0-20261029022844-6a93ad215552
 	sigs.k8s.io/cluster-api v1.10.4
 )
@@ -79,11 +79,11 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/term v0.46.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/term v0.47.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
