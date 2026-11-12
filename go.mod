@@ -29,7 +29,7 @@ require (
 
 require (
 	github.com/gorilla/mux v1.8.1
-	github.com/openshift/controller-runtime-common v0.0.0-20261008111711-8ec0dc844066
+	github.com/openshift/controller-runtime-common v0.0.0-20261026124434-bdfc411d93cd
 	github.com/prometheus/client_golang v1.25.0
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20261012192802-2d751c04050f
 	github.com/stolostron/search-v2-operator v0.0.0-20261029022844-6a93ad215552
