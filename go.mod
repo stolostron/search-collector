@@ -9,7 +9,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/openshift/api v0.0.0-20261102174502-e51674a80650
-	github.com/stolostron/governance-policy-propagator v0.0.0-20220125192743-95d49290a318
+	github.com/stolostron/governance-policy-propagator v0.0.0-20261109153404-690df44d504a
 	github.com/stolostron/multicloud-operators-deployable v1.2.4-1-20220201-2d1add0
 	github.com/stretchr/testify v1.12.1
 	github.com/tkanos/gonfig v0.0.0-20210106201359-53e13348de2f
